@@ -8,6 +8,13 @@
 ## 🐯 平台简介
 **AgenticCPS** 是一款**企业级智能 CPS 联盟返利与导购平台**，深度融合 **AI 自主编程**、**多平台 CPS 联盟接入** 与 **智能返利决策** 三大核心能力。平台以"多平台商品聚合 + 智能比价决策 + 返利自动结算 + AI 驱动运营 + 自主编程扩展"为核心理念，提供一站式 CPS 返利查询、跨平台智能比价、AI 驱动商品推荐、返利自动结算、MCP 自主编程接口等核心能力，打造**可搜索、可比价、可追踪、可决策、可自主扩展**的新一代 CPS 智能返利解决方案。
 
+
+> gitee: [AgenticCPS](https://gitee.com/zhuangpengli/AgenticCPS.git)
+
+> gitcode: [AgenticCPS](https://gitcode.com/lizhuangpeng/AgenticCPS)
+
+> github: [AgenticCPS](https://github.com/zhuangpengLI/AgenticCPS)
+> 
 > 有任何问题，或者想要的功能，可以在 _Issues_ 中提给我们。
 >
 > 😜 给项目点点 Star 吧，这对我们真的很重要！
