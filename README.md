@@ -1,540 +1,422 @@
 <p align="center">
- <img src="https://img.shields.io/badge/Spring%20Boot-3.4.5-blue.svg" alt="Downloads">
- <img src="https://img.shields.io/badge/Vue-3.2-blue.svg" alt="Downloads">
- <img src="https://img.shields.io/github/license/YunaiV/ruoyi-vue-pro" alt="Downloads" />
+  <img src="https://img.shields.io/badge/Spring%20Boot-3.5.9-blue.svg" alt="Spring Boot">
+  <img src="https://img.shields.io/badge/Vue-3.x-brightgreen.svg" alt="Vue">
+  <img src="https://img.shields.io/badge/Java-17%2F21-orange.svg" alt="Java">
+  <img src="https://img.shields.io/badge/MCP-Model%20Context%20Protocol-blueviolet.svg" alt="MCP">
+  <img src="https://img.shields.io/badge/Vibe%20Coding-AI%20First-ff69b4.svg" alt="Vibe Coding">
+  <img src="https://img.shields.io/badge/License-AGPL--3.0-green.svg" alt="License">
 </p>
 
+<h1 align="center">AgenticCPS — 一人公司的智能返利赚钱机器</h1>
 
-## 🐯 平台简介
-**AgenticCPS** 是一款**企业级智能 CPS 联盟返利与导购平台**，深度融合 **AI 自主编程**、**多平台 CPS 联盟接入** 与 **智能返利决策** 三大核心能力。平台以"多平台商品聚合 + 智能比价决策 + 返利自动结算 + AI 驱动运营 + 自主编程扩展"为核心理念，提供一站式 CPS 返利查询、跨平台智能比价、AI 驱动商品推荐、返利自动结算、MCP 自主编程接口等核心能力，打造**可搜索、可比价、可追踪、可决策、可自主扩展**的新一代 CPS 智能返利解决方案。
+<p align="center">
+  <b>Vibe Coding + 低代码 + AI 自主编程</b> —— 让一个人拥有一支技术团队的战斗力<br/>
+  零代码启动、对话式开发、全自动运营的 CPS 联盟返利与导购平台
+</p>
 
-
-> gitee: [AgenticCPS](https://gitee.com/zhuangpengli/AgenticCPS.git)
-
-> gitcode: [AgenticCPS](https://gitcode.com/lizhuangpeng/AgenticCPS)
-
-> github: [AgenticCPS](https://github.com/zhuangpengLI/AgenticCPS)
-> 
-> 有任何问题，或者想要的功能，可以在 _Issues_ 中提给我们。
->
-> 😜 给项目点点 Star 吧，这对我们真的很重要！
-
-![架构图](/.image/common/ruoyi-vue-pro-architecture.png)
-
-* Java 后端：`master` 分支为 JDK 8 + Spring Boot 2.7，`master-jdk17` 分支为 JDK 17/21 + Spring Boot 3.2
-* 管理后台的电脑端：Vue3 提供 `element-plus`、`vben(ant-design-vue)` 两个版本，Vue2 提供 `element-ui` 版本
-* 管理后台的移动端：采用 `uni-app` 方案，一份代码多终端适配，同时支持 APP、小程序、H5！
-* 后端采用 Spring Boot 多模块架构、MySQL + MyBatis Plus、Redis + Redisson
-* 数据库可使用 MySQL、Oracle、PostgreSQL、SQL Server、MariaDB、国产达梦 DM、TiDB 等
-* 消息队列可使用 Event、Redis、RabbitMQ、Kafka、RocketMQ 等
-* 权限认证使用 Spring Security & Token & Redis，支持多终端、多种用户的认证系统，支持 SSO 单点登录
-* 支持加载动态权限菜单，按钮级别权限控制，Redis 缓存提升性能
-* 支持 SaaS 多租户，可自定义每个租户的权限，提供透明化的多租户底层封装
-* 工作流使用 Flowable，支持动态表单、在线设计流程、会签 / 或签、多种任务分配方式
-* 高效率开发，使用代码生成器可以一键生成 Java、Vue 前后端代码、SQL 脚本、接口文档，支持单表、树表、主子表
-* 实时通信，采用 Spring WebSocket 实现，内置 Token 身份校验，支持 WebSocket 集群
-* 集成微信小程序、微信公众号、企业微信、钉钉等三方登陆，集成支付宝、微信等支付与退款
-* 集成阿里云、腾讯云等短信渠道，集成 MinIO、阿里云、腾讯云、七牛云等云存储服务
-* 集成报表设计器、大屏设计器，通过拖拽即可生成酷炫的报表与大屏
-
-
-## 😎 开源协议
-
-**为什么推荐使用本项目？**
-
-① 本项目采用比 Apache 2.0 更宽松的 [MIT License](https://gitee.com/zhijiantianya/ruoyi-vue-pro/blob/master/LICENSE) 开源协议，个人与企业可 100% 免费使用，不用保留类作者、Copyright 信息。
-
-③ 代码整洁、架构整洁，遵循《阿里巴巴 Java 开发手册》规范，代码注释详细，113770 行 Java 代码，42462 行代码注释。
-
-
-### Qoder 自主编码
-
-平台集成 **Qoder AI 编码助手**，实现 AI 驱动的自主开发能力：
-
-| 能力 | 描述 |
-|------|------|
-| 智能代码生成 | 基于自然语言描述自动生成业务代码、API 接口、数据库表结构 |
-| 协议扩展开发 | 通过 AI 对话快速实现新协议接入（如自定义 TCP/UDP 协议），自动生成编解码器 |
-| 物模型生成 | 根据设备描述自动生成物模型定义（属性、服务、事件），减少手动配置 |
-| 规则引擎配置 | 自然语言描述业务场景，自动生成场景联动规则和告警配置 |
-| 代码审查与优化 | AI 自动审查代码质量，提供优化建议和安全漏洞检测 |
-| 文档自动生成 | 自动生成 API 文档、数据库设计文档、协议说明文档 |
-
-### 基于 Specs/Plans 的规范化 AI 编程
-
-平台创新性地引入**规范化 AI 编程工作流**，通过 `.qoder` 目录下的规范文件实现高质量自主编码：
-
-| 文件类型 | 路径 | 作用 |
-|---------|------|------|
-| **Specs（规范）** | `.qoder/specs/` | 定义编码规范、技术标准、架构约束、代码风格 |
-| **Plans（计划）** | `.qoder/plans/` | 定义任务分解、实施步骤、验收标准、交付物清单 |
-| **Agents（代理）** | `.qoder/agents/` | 定义 AI 代理角色、职责边界、协作流程 |
-| **Skills（技能）** | `.qoder/skills/` | 定义可复用技能、代码模板、最佳实践 |
-
-#### 标准化 AI 编程流程
-
-1. **需求对齐阶段**
-   - AI 自动读取 Specs 规范，理解技术栈、编码标准、架构模式
-   - AI 解析 Plans 计划，明确需求范围、功能边界、验收标准
-   - 生成实施方案，与用户确认后再执行
-
-2. **方案设计阶段**
-   - AI 根据规范自动设计技术方案（类图、流程图、数据模型）
-   - 生成详细的实施计划（任务分解、依赖关系、优先级）
-   - 输出验收标准（功能测试、性能指标、代码质量要求）
-
-3. **自主编码阶段**
-   - **无手写代码**：AI 根据方案自主生成完整代码
-   - **纯 AI 编程**：从业务逻辑到单元测试，全部由 AI 生成
-   - **规范遵循**：自动遵循 Specs 定义的编码规范和架构约束
-   - **质量保障**：自动生成单元测试、集成测试、性能测试
-
-4. **验收交付阶段**
-   - AI 自动执行测试用例，验证功能是否符合 Plans 中的验收标准
-   - 生成验收报告（测试覆盖率、性能指标、代码质量评分）
-   - 输出完整文档（API 文档、使用说明、部署指南）
-
-#### 核心优势
-
-| 优势 | 说明 |
-|------|------|
-| 🎯 **需求精准对齐** | 通过 Specs/Plans 确保 AI 理解无偏差，避免"AI 乱写代码" |
-| 📋 **方案先行** | 先设计方案和验收标准，经用户确认后再编码，降低返工风险 |
-| 🤖 **纯 AI 自主编程** | 从需求到代码全流程 AI 化，无需手写代码，提升开发效率 10x+ |
-| ✅ **质量可保障** | 自动测试 + 规范约束 + 验收标准，确保代码质量可控 |
-| 🔄 **持续自进化** | 根据项目反馈自动优化 Specs/Plans，形成正向循环 |
+<p align="center">
+  <a href="#-30-秒了解-agenticcps">30 秒了解</a> &bull;
+  <a href="#-为什么选择-agenticcps">为什么选择</a> &bull;
+  <a href="#-vibe-coding--ai-自主编程">Vibe Coding</a> &bull;
+  <a href="#-核心功能">核心功能</a> &bull;
+  <a href="#-技术栈">技术栈</a> &bull;
+  <a href="#-快速开始">快速开始</a>
+</p>
 
 ---
 
+## 30 秒了解 AgenticCPS
 
-### CPS联盟返利系统
+**你是否属于以下人群？**
 
-CPS联盟返利系统是基于 ruoyi-vue-pro 框架构建的一站式多平台CPS返利查询与导购系统，为消费者提供返利查询、跨平台比价、推广链接生成和返利提现等服务。
+- 想做电商返利副业，但不会写代码
+- 一人公司（OPC）创业者，团队只有你自己
+- 自由职业者 / 数字游民，想打造被动收入管道
+- 个人开发者，想快速搭建一套完整的返利 SaaS
+- 小型工作室，3 人团队想干 30 人的活
 
-#### 核心功能
+**AgenticCPS 就是为你打造的。** 它是一套**开箱即用**的智能 CPS 联盟返利平台，深度融合 **Vibe Coding**、**低代码** 与 **AI 自主编程**三大核心理念：
 
-| 功能模块 | 描述 |
+> **用自然语言告诉 AI 你想要什么，AI 自己写代码、自己测试、自己部署。**
+> 
+> 一个人 = 产品经理 + 架构师 + 全栈开发 + 测试工程师 + 运维工程师。
+
+---
+
+## 为什么选择 AgenticCPS？
+
+### 传统模式 vs AgenticCPS
+
+| 维度 | 传统 CPS 系统开发 | AgenticCPS |
+|------|------------------|------------|
+| **团队规模** | 5~10 人技术团队 | **1 人即可** |
+| **开发周期** | 3~6 个月 | **开箱即用，AI 扩展按天计** |
+| **技术门槛** | 需要全栈工程师 | **自然语言描述需求，AI 自动实现** |
+| **平台对接** | 每个平台单独开发 | **淘宝/京东/拼多多/抖音已内置** |
+| **日常运维** | 专职运维团队 | **定时任务自动运行，异常自动告警** |
+| **功能迭代** | 排期 → 开发 → 测试 → 上线 | **Vibe Coding：说一句话就上线** |
+| **成本投入** | 人力 30~100 万/年 | **服务器 + 域名，年成本千元级** |
+
+### 一人公司（OPC）最佳实践
+
+```
+你说：「帮我接入抖音联盟平台」
+
+AI 自动完成：
+  ✅ 分析抖音联盟 API 文档
+  ✅ 生成抖音平台适配器代码
+  ✅ 创建数据库配置表
+  ✅ 注册 MCP Tool 供 AI Agent 调用
+  ✅ 编写单元测试并验证通过
+  ✅ 生成 API 接口文档
+
+用时：30 分钟。传统开发：2 周。
+```
+
+---
+
+## Vibe Coding + AI 自主编程
+
+### 什么是 Vibe Coding？
+
+**Vibe Coding（氛围编程）** 是一种全新的软件开发范式：
+
+> **你不写代码，你描述 Vibe（氛围/意图/感觉），AI 把它变成可运行的软件。**
+
+不同于传统的「写代码 → 编译 → 调试」循环，Vibe Coding 是：
+
+```
+描述意图 → AI 理解 → AI 编码 → AI 测试 → AI 交付
+   你             你审核                        你验收
+```
+
+在 AgenticCPS 中，这不是概念，而是**已经落地的工作方式**——项目的 CPS 核心模块（20,000+ 行代码）**100% 由 AI 自主编程完成**，从数据库设计到 API 接口，从业务逻辑到单元测试，从定时任务到 MCP AI 接口层，全部由 AI 自主编写。
+
+### Qoder AI 编码助手
+
+平台集成 **Qoder AI 编码助手**，作为你的全栈 AI 程序员：
+
+| 你说什么 | AI 做什么 |
+|---------|----------|
+| 「加一个商品收藏功能」 | 自动生成 Controller → Service → Mapper → 数据库表 → 前端页面 |
+| 「接入唯品会联盟」 | 分析 API → 生成适配器 → 注册平台 → 编写测试 → 更新文档 |
+| 「返利规则加一个阶梯奖励」 | 设计方案 → 修改配置表 → 更新计算引擎 → 回归测试 |
+| 「给我看看昨天的运营数据」 | 调用 MCP Tool → 查询统计表 → 格式化输出运营报告 |
+| 「把搜索性能优化一下」 | 分析慢查询 → 添加缓存策略 → 优化索引 → 压测验证 |
+
+### 基于 Specs / Plans 的规范化 AI 编程
+
+不同于「让 AI 随便写」的粗放模式，AgenticCPS 引入了 **规范化 AI 编程工作流**：
+
+```
+.qoder/
+├── specs/      # 编码规范：技术标准、架构约束、代码风格
+├── plans/      # 实施计划：任务分解、验收标准、交付清单
+├── agents/     # AI 代理：角色定义、职责边界、协作流程
+└── skills/     # 可复用技能：代码模板、最佳实践、经验沉淀
+```
+
+**工作流程**：
+
+```
+ 需求对齐           方案设计          自主编码           验收交付
+┌─────────┐    ┌─────────┐    ┌──────────┐    ┌─────────┐
+│ 读取 Specs │ → │ 设计方案  │ → │ AI 自主编码 │ → │ 自动测试  │
+│ 解析 Plans │    │ 生成计划  │    │ 生成测试代码 │    │ 验收报告  │
+│ 用户确认   │    │ 用户确认  │    │ 规范遵循   │    │ 文档输出  │
+└─────────┘    └─────────┘    └──────────┘    └─────────┘
+      你参与             你参与          AI 自动完成          你验收
+```
+
+| 核心优势 | 说明 |
 |---------|------|
-| 🚀 多平台CPS接入 | 统一接入淘宝联盟、京东联盟、拼多多联盟等主流CPS平台，支持快速扩展新平台 |
-| 🚀 商品搜索与比价 | 关键词搜索、链接/口令解析、跨平台比价，帮助用户找到最优价格和最高返利 |
-| 🚀 会员返利体系 | 基于现有会员等级体系，支持多维度返利比例配置（个人>等级+平台>等级>平台>全局） |
-| 🚀 订单全链路追踪 | 实现从商品查询→链接生成→用户下单→佣金结算→返利入账的完整业务闭环 |
-| 🚀 提现管理 | 会员可将返利余额提现到支付宝/微信，支持自动/人工审核、转账失败自动返还 |
-| 🚀 MCP AI接口 | 基于MCP协议提供AI Agent接口层，支持5个Tools（搜索/比价/转链/订单/返利） |
-| 🚀 运营数据看板 | 实时展示订单量/佣金/返利/利润等核心指标，支持按平台/会员/时间维度统计 |
-| 🚀 风控管理 | 异常行为检测、黑名单管理、退款率预警、提现风险控制 |
+| **需求精准对齐** | Specs/Plans 确保 AI 理解无偏差，告别「AI 乱写代码」 |
+| **方案先行** | 先设计 → 再确认 → 后编码，零返工 |
+| **纯 AI 自主编程** | 需求到代码全流程 AI 化，效率提升 10 倍以上 |
+| **质量可保障** | 自动测试 + 规范约束 + 验收标准，代码质量可控 |
+| **持续自进化** | 每次项目反馈自动优化 Specs/Plans，越用越聪明 |
 
-#### 技术架构
+---
+
+## 低代码：不只是少写代码，而是不写代码
+
+AgenticCPS 的低代码能力体现在系统的每个层面：
+
+### 1. 代码生成器 —— 一键生成 CRUD
+
+输入一张数据库表，**一键生成**完整的前后端代码：
+
+```
+输入：数据库表结构
+输出：
+  ✅ Java Controller / Service / Mapper / DO / VO
+  ✅ Vue3 前端页面（列表 + 表单 + 详情）
+  ✅ SQL 建表脚本
+  ✅ Swagger API 文档
+  ✅ 单元测试代码
+```
+
+支持**单表、树表、主子表**三种模式，覆盖 80% 的管理后台开发场景。
+
+### 2. 可视化工作流 —— 拖拽设计业务流程
+
+基于 Flowable 工作流引擎，在线拖拽设计审批流程：
+
+- 提现审核流程
+- 返利结算审批
+- 平台接入流程
+- 任何自定义业务流程
+
+### 3. 报表 & 大屏 —— 拖拽生成数据可视化
+
+| 能力 | 说明 |
+|------|------|
+| 数据报表设计器 | 拖拽字段生成数据报表，支持导出 Excel、PDF |
+| 图形报表设计器 | 柱状图、折线图、饼图等数十种图表组件 |
+| 大屏设计器 | 全屏数据大屏，内置几十种可视化组件 |
+| 打印设计器 | 拖拽设计打印模板，支持条形码、二维码 |
+
+### 4. MCP 协议 —— AI Agent 零代码接入
+
+通过 MCP（Model Context Protocol）协议，任何 AI Agent **无需写一行代码**即可接入 CPS 系统：
+
+```json
+// AI Agent 直接调用，无需任何开发
+{
+  "method": "tools/call",
+  "params": {
+    "name": "cps_search_goods",
+    "arguments": { "keyword": "iPhone 16 手机壳", "priceMax": 50 }
+  }
+}
+```
+
+**5 个 AI Tools 开箱即用**：
+
+| Tool | 功能 | 一句话说明 |
+|------|------|----------|
+| `cps_search_goods` | 商品搜索 | 帮用户在淘宝/京东/拼多多搜商品 |
+| `cps_compare_prices` | 多平台比价 | 自动比较各平台价格，推荐最优方案 |
+| `cps_generate_link` | 推广链接生成 | 生成带返利追踪的购买链接 |
+| `cps_query_orders` | 订单查询 | 查看用户的返利订单状态 |
+| `cps_get_rebate_summary` | 返利汇总 | 查看余额、待结算、累计返利 |
+
+---
+
+## 核心功能
+
+### CPS 联盟返利系统
+
+一站式聚合淘宝、京东、拼多多等主流电商平台，实现从搜索到返利提现的完整闭环：
+
+| 功能模块 | 描述 | 一人公司价值 |
+|---------|------|------------|
+| 多平台 CPS 接入 | 淘宝/京东/拼多多/抖音联盟统一接入 | 一套系统管所有平台 |
+| 商品搜索与比价 | 关键词搜索、链接解析、跨平台比价 | 帮用户找到最省钱的方案 |
+| 会员返利体系 | 等级 + 平台 + 个人多维度返利配置 | 灵活设定利润空间 |
+| 订单全链路追踪 | 查询 → 转链 → 下单 → 结算 → 入账 | 每一分钱都追踪到位 |
+| 提现管理 | 支付宝/微信提现，自动/人工审核 | 自动化资金流转 |
+| MCP AI 接口 | 5 个 AI Tools，AI Agent 直接调用 | 接入 ChatGPT、Claude 等 AI 助手 |
+| 运营数据看板 | 订单/佣金/返利/利润实时统计 | 一个人掌控全局 |
+| 风控管理 | 异常行为检测、黑名单、退款率预警 | 自动守护资金安全 |
+
+### 技术架构总览
 
 ```
 yudao-module-cps/
-├── yudao-module-cps-api/          # CPS模块API定义
-│   ├── enums/                     # 枚举定义（平台编码、订单状态等）
+├── yudao-module-cps-api/          # API 定义层
+│   ├── enums/                     # 枚举（平台编码、订单状态…）
 │   └── api/                       # 远程服务接口
 │
-└── yudao-module-cps-biz/          # CPS模块业务实现
-    ├── controller/
-    │   ├── admin/                 # 管理后台接口（平台管理、订单、返利、提现、统计、MCP）
-    │   └── app/                   # C端会员接口（商品、比价、转链、订单、返利、提现）
-    │
-    ├── service/
-    │   ├── platform/              # CPS平台适配层（策略模式，支持快速扩展）
-    │   ├── goods/                 # 商品查询服务（搜索、比价、解析）
-    │   ├── link/                  # 推广链接服务（转链、归因）
-    │   ├── order/                 # 订单服务（同步、归因、管理）
-    │   ├── commission/            # 佣金结算服务（计算、返利、结算）
-    │   ├── rebate/                # 返利配置服务（规则管理）
-    │   └── withdraw/              # 提现服务（申请、审核、转账）
-    │
-    ├── client/                    # CPS平台适配器（策略模式）
-    │   ├── CpsPlatformClient.java            # 统一接口定义
-    │   ├── taobao/                           # 淘宝联盟适配器
-    │   ├── jingdong/                         # 京东联盟适配器
-    │   ├── pinduoduo/                        # 拼多多联盟适配器
-    │   └── douyin/                           # 抖音联盟适配器（扩展）
-    │
-    ├── dal/
-    │   ├── dataobject/            # 数据库实体（9张业务表）
-    │   └── mysql/                 # Mapper接口
-    ├── convert/                   # DTO转换（MapStruct）
+└── yudao-module-cps-biz/          # 业务实现层
+    ├── controller/admin/          # 管理后台接口（15 个）
+    ├── controller/app/            # 会员端接口（13 个）
+    ├── service/                   # 业务服务（7 大服务模块）
+    ├── client/                    # 平台适配器（策略模式，可插拔扩展）
+    │   ├── taobao/                # 淘宝联盟
+    │   ├── jingdong/              # 京东联盟
+    │   ├── pinduoduo/             # 拼多多联盟
+    │   └── douyin/                # 抖音联盟
+    ├── dal/                       # 数据访问层（9 张核心业务表）
     ├── job/                       # 定时任务（订单同步、状态更新）
-    └── mcp/                       # MCP（Model Context Protocol）AI接口层
-        ├── server/                # MCP Server主入口与配置
-        ├── transport/             # 传输层（HTTP/STDIO）
-        ├── tool/                  # MCP Tools（商品搜索/比价/转链/订单/返利）
-        ├── resource/              # MCP Resources（平台/规则/画像/统计/热词）
-        └── prompt/                # MCP Prompts（找最优价/比价分析/省钱策略）
+    └── mcp/                       # MCP AI 接口层
 ```
 
-#### 接口概览
+### 全模块能力矩阵
 
-**会员端接口（13个）**：
+| 模块 | 核心能力 | 低代码支持 |
+|------|---------|-----------|
+| 系统管理 | 用户、角色、菜单、部门、字典、日志 | 代码生成器 + 拖拽配置 |
+| 会员中心 | 会员管理、等级体系、积分签到、标签分组 | 代码生成器 |
+| 支付系统 | 支付宝/微信支付、退款、钱包、转账 | 已集成，开箱即用 |
+| 工作流 | Flowable 流程引擎，在线设计审批流 | 可视化流程设计器 |
+| 数据报表 | 报表设计器、大屏设计器 | 纯拖拽，零代码 |
+| AI 大模型 | 聊天、图像生成、知识库、工作流 | MCP 协议对接 |
+| 微信公众号 | 粉丝管理、消息推送、自动回复 | 可视化配置 |
+| 商城系统 | 商品、促销、订单、售后 | 代码生成器 |
+| 基础设施 | 定时任务、文件服务、消息队列、监控 | 在线管理界面 |
+
+---
+
+## 技术栈
+
+### 项目模块
+
+| 项目 | 说明 |
+|------|------|
+| `yudao-dependencies` | Maven 依赖版本管理 |
+| `yudao-framework` | Java 框架扩展（安全、缓存、权限、多租户…） |
+| `yudao-server` | 主服务端（所有模块的容器） |
+| `yudao-module-system` | 系统管理模块 |
+| `yudao-module-member` | 会员中心模块 |
+| `yudao-module-infra` | 基础设施模块 |
+| `yudao-module-pay` | 支付系统模块 |
+| `yudao-module-mall` | 商城系统模块 |
+| `yudao-module-ai` | AI 大模型模块 |
+| `yudao-module-mp` | 微信公众号模块 |
+| `yudao-module-report` | 报表与大屏模块 |
+| `yudao-module-cps` | **CPS 联盟返利系统模块** |
+
+### 核心框架
+
+| 框架 | 说明 | 版本 |
+|------|------|------|
+| [Spring Boot](https://spring.io/projects/spring-boot) | 应用开发框架 | 3.5.9 |
+| [Spring Security](https://spring.io/projects/spring-security) | 安全框架 | 6.5.2 |
+| [Spring AI](https://spring.io/projects/spring-ai) | AI 集成框架（MCP 支持） | Latest |
+| [MyBatis Plus](https://mp.baomidou.com/) | ORM 增强 | 3.5.12 |
+| [Redis](https://redis.io/) / [Redisson](https://github.com/redisson/redisson) | 缓存 & 分布式锁 | 7.0 / 3.35.0 |
+| [Flowable](https://www.flowable.com/) | 工作流引擎 | 7.0.0 |
+| [Vue 3](https://vuejs.org/) + Element Plus | 管理后台前端 | 3.x |
+| [UniApp](https://uniapp.dcloud.net.cn/) | 移动端多端适配 | Latest |
+| [MySQL](https://www.mysql.com/) | 数据库（支持 8 种数据库） | 5.7 / 8.0+ |
+| [MapStruct](https://mapstruct.org/) | Bean 转换 | 1.6.3 |
+| [Quartz](https://www.quartz-scheduler.org/) | 任务调度 | 2.5.0 |
+| [SkyWalking](https://skywalking.apache.org/) | 链路追踪 & 日志中心 | 9.5.0 |
+
+---
+
+## 快速开始
+
+### 环境要求
+
+| 组件 | 版本要求 |
+|------|---------|
+| JDK | 17 或 21 |
+| MySQL | 5.7 或 8.0+ |
+| Redis | 5.0+ |
+| Maven | 3.8+ |
+| Node.js | 16+（前端构建） |
+
+### 三步启动
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/YunaiV/ruoyi-vue-pro.git
+
+# 2. 初始化数据库
+#    导入 sql/mysql/ 目录下的 SQL 脚本
+#    导入 sql/module/cps-schema.sql（CPS 模块）
+
+# 3. 启动后端
+mvn clean compile
+# 运行 YudaoServerApplication 主类
 ```
-POST   /app-api/cps/goods/search          # 商品搜索
-POST   /app-api/cps/goods/compare         # 多平台比价
-GET    /app-api/cps/goods/detail          # 商品详情
-GET    /app-api/cps/goods/recommend       # 商品推荐
-POST   /app-api/cps/link/generate         # 生成推广链接
-GET    /app-api/cps/order/page            # 我的订单列表
-GET    /app-api/cps/order/get             # 订单详情
-GET    /app-api/cps/rebate/summary        # 返利汇总（余额/待结算/累计）
-GET    /app-api/cps/rebate/page           # 返利明细
-POST   /app-api/cps/withdraw/create       # 发起提现
-GET    /app-api/cps/withdraw/page         # 提现记录
-GET    /app-api/cps/search/history        # 搜索历史
-GET    /app-api/cps/search/hot            # 热门搜索
-```
 
-**管理端接口（15个）**：
-```
-POST/PUT/DELETE/GET  /admin-api/cps/platform/*              # 平台配置管理
-POST/PUT/DELETE/GET  /admin-api/cps/adzone/*                # 推广位管理
-POST/PUT/GET         /admin-api/cps/platform/test           # 平台连通测试
-GET/POST             /admin-api/cps/order/*                 # 订单管理（查询/同步/绑定）
-POST/PUT/DELETE/GET  /admin-api/cps/rebate-config/*         # 返利配置（等级/个人）
-GET                  /admin-api/cps/rebate-record/page      # 返利记录查询
-POST/PUT/GET         /admin-api/cps/withdraw/*              # 提现审核（列表/通过/驳回）
-GET                  /admin-api/cps/statistics/dashboard    # 运营数据看板
-GET                  /admin-api/cps/statistics/platform     # 平台统计
-GET                  /admin-api/cps/statistics/trend        # 趋势统计
-GET/POST             /admin-api/cps/mcp/api-key/*           # MCP API Key管理
-GET                  /admin-api/cps/mcp/access-log          # MCP访问日志
-GET                  /admin-api/cps/mcp/statistics          # MCP统计分析
-```
-
-#### MCP AI 接口
-
-本模块基于 **MCP（Model Context Protocol）** 协议标准，为 CPS 系统构建一套可供 AI Agent 直接调用的接口层。
-
-**核心 Tools**：
-
-| Tool名称 | 描述 | 参数示例 |
-|---------|------|---------|
-| `cps_search_goods` | 商品搜索 | keyword, platform_code, price_min, price_max, sort_type, member_id |
-| `cps_compare_prices` | 多平台比价 | keyword, member_id |
-| `cps_generate_link` | 推广链接生成 | itemId, platformCode, memberId |
-| `cps_get_order_status` | 订单状态查询 | memberId |
-| `cps_rebate_summary` | 返利汇总查询 | memberId |
-
-**传输层支持**：
-
-| 传输方式 | 适用场景 | 端点 | 说明 |
-|----------|----------|------|------|
-| Streamable HTTP | 远程AI Agent接入 | `/mcp/cps` | 支持SSE流式响应，适合生产环境 |
-| STDIO | 本地开发调试 | 标准输入输出 | 适合本地AI开发工具集成 |
-
-#### 数据库表
-
-```
-yudao_cps_platform          # CPS平台配置表
-yudao_cps_adzone            # 推广位（PID）管理表
-yudao_cps_order             # CPS订单表
-yudao_cps_rebate_config     # 返利配置表
-yudao_cps_rebate_record     # 返利记录表
-yudao_cps_withdraw          # 提现申请表
-yudao_cps_statistics        # 统计数据表
-yudao_cps_mcp_api_key       # MCP API Key管理表
-yudao_cps_mcp_access_log    # MCP访问日志表
-```
-
-#### 性能要求
+### 性能指标
 
 | 指标 | 要求 |
 |------|------|
-| 单平台搜索 | < 2秒（P99） |
-| 多平台比价 | < 5秒（P99） |
-| 转链生成 | < 1秒 |
-| 订单同步延迟 | < 30分钟 |
-| 返利入账延迟 | 平台结算后 24小时内 |
+| 单平台搜索 | < 2 秒（P99） |
+| 多平台比价 | < 5 秒（P99） |
+| 转链生成 | < 1 秒 |
+| 订单同步延迟 | < 30 分钟 |
+| 返利入账 | 平台结算后 24 小时内 |
+| MCP Tool 调用 | < 3 秒（搜索类）/ < 1 秒（查询类） |
 
-#### 使用说明
+---
 
-1. **接入CPS平台**
-   - 在管理后台配置平台AppKey、AppSecret、API地址
-   - 配置推广位（PID）
-   - 测试平台连通性
+## 谁在使用？典型场景
 
-2. **配置返利规则**
-   - 设置会员等级返利比例
-   - 为特定会员设置个人专属返利
-   - 配置返利展示规则
+### 场景 1：一人公司 CPS 创业
 
-3. **配置提现规则**
-   - 设置最低/最高提现金额
-   - 设置每日提现次数
-   - 设置审核方式（自动/人工）
+> **小张**，95 后自由职业者，一个人运营返利公众号。
+> 
+> 以前：用 Excel 手动记录订单、手动计算返利、手动转账给用户。
+> 现在：AgenticCPS 自动同步订单、自动计算返利、用户自助提现。
+> **每天多出 4 小时做推广，月收入翻 3 倍。**
 
-4. **配置MCP AI接口**
-   - 启用MCP Server
-   - 创建API Key（配置权限级别）
-   - 配置限流规则
+### 场景 2：AI 导购助手
 
-#### 技术依赖
+> **小李**，独立开发者，想做一个 AI 购物助手。
+> 
+> 以前：需要自己对接淘宝/京东/拼多多 API，写搜索、比价、转链逻辑。
+> 现在：接入 AgenticCPS 的 MCP 接口，5 个 AI Tools 开箱即用。
+> **1 天完成原来 2 个月的工作量。**
 
-**复用现有模块**：
-- `yudao-module-member` - 复用会员体系（用户、等级、积分）
-- `yudao-module-pay` - 复用支付模块（钱包、提现转账）
-- `yudao-module-system` - 复用系统模块（权限、字典、通知）
-- `yudao-module-infra` - 复用基础设施（定时任务、文件存储）
+### 场景 3：Vibe Coding 快速扩展
 
-**技术栈**：
-- 后端：Spring Boot 3.x + MyBatis Plus
-- 数据库：MySQL 8.0+
-- 缓存：Redis 6.0+
-- 定时任务：yudao-spring-boot-starter-job
-- MCP协议：基于JSON-RPC 2.0
+> **小王**，返利平台运营者，想接入唯品会联盟。
+> 
+> 以前：找外包开发，报价 3 万，工期 3 周。
+> 现在：对 AI 说「帮我接入唯品会联盟」，30 分钟搞定。
+> **开发成本从 3 万降到 0。**
 
-#### 项目进展
+---
 
-- ✅ Phase 1: 基础框架搭建（已完成）
-- ✅ Phase 2: 核心功能开发（已完成）
-- ✅ Phase 3: 订单与结算（已完成）
-- ✅ Phase 4: 会员与提现（已完成）
-- ✅ Phase 5: 数据统计（已完成）
-- ✅ Phase 6: MCP AI接口（已完成）
-- 🚀 Phase 7: 文档与优化（进行中）
+## 项目进展
+
+- ✅ Phase 1：基础框架搭建（已完成）
+- ✅ Phase 2：核心功能开发（已完成）
+- ✅ Phase 3：订单与结算（已完成）
+- ✅ Phase 4：会员与提现（已完成）
+- ✅ Phase 5：数据统计（已完成）
+- ✅ Phase 6：MCP AI 接口（已完成）
+- ✅ Phase 7：文档与优化（已完成）
+
+---
+
+## 演示图
 
 ### 系统功能
 
-|     | 功能    | 描述                              |
-|-----|-------|---------------------------------|
-|     | 用户管理  | 用户是系统操作者，该功能主要完成系统用户配置          |
-| ⭐️  | 在线用户  | 当前系统中活跃用户状态监控，支持手动踢下线           |
-|     | 角色管理  | 角色菜单权限分配、设置角色按机构进行数据范围权限划分      |
-|     | 菜单管理  | 配置系统菜单、操作权限、按钮权限标识等，本地缓存提供性能    |
-|     | 部门管理  | 配置系统组织机构（公司、部门、小组），树结构展现支持数据权限  |
-|     | 岗位管理  | 配置系统用户所属担任职务                    |
-| 🚀  | 租户管理  | 配置系统租户，支持 SaaS 场景下的多租户功能        |
-| 🚀  | 租户套餐  | 配置租户套餐，自定每个租户的菜单、操作、按钮的权限       |
-|     | 字典管理  | 对系统中经常使用的一些较为固定的数据进行维护          |
-| 🚀  | 短信管理  | 短信渠道、短息模板、短信日志，对接阿里云、腾讯云等主流短信平台 |
-| 🚀  | 邮件管理  | 邮箱账号、邮件模版、邮件发送日志，支持所有邮件平台       |
-| 🚀  | 站内信   | 系统内的消息通知，提供站内信模版、站内信消息          |
-| 🚀  | 操作日志  | 系统正常操作日志记录和查询，集成 Swagger 生成日志内容 |
-| ⭐️  | 登录日志  | 系统登录日志记录查询，包含登录异常               |
-| 🚀  | 错误码管理 | 系统所有错误码的管理，可在线修改错误提示，无需重启服务     |
-|     | 通知公告  | 系统通知公告信息发布维护                    |
-| 🚀  | 敏感词   | 配置系统敏感词，支持标签分组                  |
-| 🚀  | 应用管理  | 管理 SSO 单点登录的应用，支持多种 OAuth2 授权方式 |
-| 🚀  | 地区管理  | 展示省份、城市、区镇等城市信息，支持 IP 对应城市      |
-
-![功能图](/.image/common/system-feature.png)
-
-
-### 支付系统
-
-|     | 功能   | 描述                        |
-|-----|------|---------------------------|
-| 🚀  | 应用信息 | 配置商户的应用信息，对接支付宝、微信等多个支付渠道 |
-| 🚀  | 支付订单 | 查看用户发起的支付宝、微信等的【支付】订单     |
-| 🚀  | 退款订单 | 查看用户发起的支付宝、微信等的【退款】订单     |
-| 🚀  | 回调通知 | 查看支付回调业务的【支付】【退款】的通知结果    |
-| 🚀  | 接入示例 | 提供接入支付系统的【支付】【退款】的功能实战    |
+| 模块 | 截图 | 截图 | 截图 |
+|------|------|------|------|
+| 登录 & 首页 | ![登录](/.image/登录.jpg) | ![首页](/.image/首页.jpg) | ![个人中心](/.image/个人中心.jpg) |
+| 用户 & 应用 | ![用户管理](/.image/用户管理.jpg) | ![令牌管理](/.image/令牌管理.jpg) | ![应用管理](/.image/应用管理.jpg) |
+| 租户 & 套餐 | ![租户管理](/.image/租户管理.jpg) | ![租户套餐](/.image/租户套餐.png) | - |
+| 菜单 & 角色 | ![菜单管理](/.image/菜单管理.jpg) | ![角色管理](/.image/角色管理.jpg) | - |
 
 ### 基础设施
 
-|     | 功能        | 描述                                           |
-|-----|-----------|----------------------------------------------|
-| 🚀  | 代码生成      | 前后端代码的生成（Java、Vue、SQL、单元测试），支持 CRUD 下载       |
-| 🚀  | 系统接口      | 基于 Swagger 自动生成相关的 RESTful API 接口文档          |
-| 🚀  | 数据库文档     | 基于 Screw 自动生成数据库文档，支持导出 Word、HTML、MD 格式      |
-|     | 表单构建      | 拖动表单元素生成相应的 HTML 代码，支持导出 JSON、Vue 文件         |
-| 🚀  | 配置管理      | 对系统动态配置常用参数，支持 SpringBoot 加载                 |
-| ⭐️  | 定时任务      | 在线（添加、修改、删除)任务调度包含执行结果日志                     |
-| 🚀  | 文件服务      | 支持将文件存储到 S3（MinIO、阿里云、腾讯云、七牛云）、本地、FTP、数据库等   | 
-| 🚀  | WebSocket | 提供 WebSocket 接入示例，支持一对一、一对多发送方式              | 
-| 🚀  | API 日志    | 包括 RESTful API 访问日志、异常日志两部分，方便排查 API 相关的问题   |
-|     | MySQL 监控  | 监视当前系统数据库连接池状态，可进行分析SQL找出系统性能瓶颈              |
-|     | Redis 监控  | 监控 Redis 数据库的使用情况，使用的 Redis Key 管理           |
-| 🚀  | 消息队列      | 基于 Redis 实现消息队列，Stream 提供集群消费，Pub/Sub 提供广播消费 |
-| 🚀  | Java 监控   | 基于 Spring Boot Admin 实现 Java 应用的监控           |
-| 🚀  | 链路追踪      | 接入 SkyWalking 组件，实现链路追踪                      |
-| 🚀  | 日志中心      | 接入 SkyWalking 组件，实现日志中心                      |
-| 🚀  | 服务保障      | 基于 Redis 实现分布式锁、幂等、限流功能，满足高并发场景              |
-| 🚀  | 日志服务      | 轻量级日志中心，查看远程服务器的日志                           |
-| 🚀  | 单元测试      | 基于 JUnit + Mockito 实现单元测试，保证功能的正确性、代码的质量等    |
+| 模块 | 截图 | 截图 | 截图 |
+|------|------|------|------|
+| 代码生成 | ![代码生成](/.image/代码生成.jpg) | ![生成效果](/.image/生成效果.jpg) | - |
+| 定时任务 | ![定时任务](/.image/定时任务.jpg) | ![任务日志](/.image/任务日志.jpg) | - |
+| 监控平台 | ![Java监控](/.image/Java监控.jpg) | ![链路追踪](/.image/链路追踪.jpg) | ![日志中心](/.image/日志中心.jpg) |
 
-![功能图](/.image/common/infra-feature.png)
+### 报表 & 大屏
 
-### 数据报表
+| 模块 | 截图 | 截图 | 截图 |
+|------|------|------|------|
+| 报表设计器 | ![数据报表](/.image/报表设计器-数据报表.jpg) | ![图形报表](/.image/报表设计器-图形报表.jpg) | ![打印设计](/.image/报表设计器-打印设计.jpg) |
+| 大屏设计器 | ![大屏列表](/.image/大屏设计器-列表.jpg) | ![大屏预览](/.image/大屏设计器-预览.jpg) | ![大屏编辑](/.image/大屏设计器-编辑.jpg) |
 
-|     | 功能    | 描述                 |
-|-----|-------|--------------------|
-| 🚀  | 报表设计器 | 支持数据报表、图形报表、打印设计等  |
-| 🚀  | 大屏设计器 | 拖拽生成数据大屏，内置几十种图表组件 |
-
-### 微信公众号
-
-|    | 功能     | 描述                            |
-|----|--------|-------------------------------|
-| 🚀 | 账号管理   | 配置接入的微信公众号，可支持多个公众号           |
-| 🚀 | 数据统计   | 统计公众号的用户增减、累计用户、消息概况、接口分析等数据  |
-| 🚀 | 粉丝管理   | 查看已关注、取关的粉丝列表，可对粉丝进行同步、打标签等操作 |
-| 🚀 | 消息管理   | 查看粉丝发送的消息列表，可主动回复粉丝消息         |
-| 🚀 | 模版消息   | 配置和发送模版消息，用于向粉丝推送通知类消息        |
-| 🚀 | 自动回复   | 自动回复粉丝发送的消息，支持关注回复、消息回复、关键字回复 |
-| 🚀 | 标签管理   | 对公众号的标签进行创建、查询、修改、删除等操作       |
-| 🚀 | 菜单管理   | 自定义公众号的菜单，也可以从公众号同步菜单         |
-| 🚀 | 素材管理   | 管理公众号的图片、语音、视频等素材，支持在线播放语音、视频 |
-| 🚀 | 图文草稿箱  | 新增常用的图文素材到草稿箱，可发布到公众号         |
-| 🚀 | 图文发表记录 | 查看已发布成功的图文素材，支持删除操作           |
-
-### 商城系统
-
-演示地址：<https://doc.iocoder.cn/mall-preview/>
-
-![功能图](/.image/common/mall-feature.png)
-
-![功能图](/.image/common/mall-preview.png)
-
-### 会员中心
-
-|     | 功能   | 描述                               |
-|-----|------|----------------------------------|
-| 🚀  | 会员管理 | 会员是 C 端的消费者，该功能用于会员的搜索与管理        |
-| 🚀  | 会员标签 | 对会员的标签进行创建、查询、修改、删除等操作           |
-| 🚀  | 会员等级 | 对会员的等级、成长值进行管理，可用于订单折扣等会员权益      |
-| 🚀  | 会员分组 | 对会员进行分组，用于用户画像、内容推送等运营手段         |
-| 🚀  | 积分签到 | 回馈给签到、消费等行为的积分，会员可订单抵现、积分兑换等途径消耗 |
-
-
-### AI 大模型
-
-演示地址：<https://doc.iocoder.cn/ai-preview/>
-
-![功能图](/.image/common/ai-feature.png)
-
-![功能图](/.image/common/ai-preview.gif)
-
-## 🐨 技术栈
-
-### 模块
-
-| 项目                    | 说明                 |
-|-----------------------|--------------------|
-| `yudao-dependencies`  | Maven 依赖版本管理       |
-| `yudao-framework`     | Java 框架拓展          |
-| `yudao-server`        | 管理后台 + 用户 APP 的服务端 |
-| `yudao-module-system` | 系统功能的 Module 模块    |
-| `yudao-module-member` | 会员中心的 Module 模块    |
-| `yudao-module-infra`  | 基础设施的 Module 模块    |
-| `yudao-module-pay`    | 支付系统的 Module 模块    |
-| `yudao-module-mall`   | 商城系统的 Module 模块    |
-| `yudao-module-ai`     | AI 大模型的 Module 模块  |
-| `yudao-module-mp`     | 微信公众号的 Module 模块   |
-| `yudao-module-report` | 大屏报表 Module 模块     |
-| `yudao-module-cps`    | CPS联盟返利系统的 Module 模块 |
-
-### 框架
-
-| 框架                                                                                          | 说明               | 版本             | 学习指南                                                           |
-|---------------------------------------------------------------------------------------------|------------------|----------------|----------------------------------------------------------------|
-| [Spring Boot](https://spring.io/projects/spring-boot)                                       | 应用开发框架           | 3.5.5          | [文档](https://github.com/YunaiV/SpringBoot-Labs)                |
-| [MySQL](https://www.mysql.com/cn/)                                                          | 数据库服务器           | 5.7 / 8.0+     |                                                                |
-| [Druid](https://github.com/alibaba/druid)                                                   | JDBC 连接池、监控组件    | 1.2.27         | [文档](http://www.iocoder.cn/Spring-Boot/datasource-pool/?yudao) |
-| [MyBatis Plus](https://mp.baomidou.com/)                                                    | MyBatis 增强工具包    | 3.5.12         | [文档](http://www.iocoder.cn/Spring-Boot/MyBatis/?yudao)         |
-| [Dynamic Datasource](https://dynamic-datasource.com/)                                       | 动态数据源            | 4.3.1          | [文档](http://www.iocoder.cn/Spring-Boot/datasource-pool/?yudao) |
-| [Redis](https://redis.io/)                                                                  | key-value 数据库    | 5.0 / 6.0 /7.0 |                                                                |
-| [Redisson](https://github.com/redisson/redisson)                                            | Redis 客户端        | 3.35.0         | [文档](http://www.iocoder.cn/Spring-Boot/Redis/?yudao)           |
-| [Spring MVC](https://github.com/spring-projects/spring-framework/tree/master/spring-webmvc) | MVC 框架           | 6.2.9          | [文档](http://www.iocoder.cn/SpringMVC/MVC/?yudao)               |
-| [Spring Security](https://github.com/spring-projects/spring-security)                       | Spring 安全框架      | 6.5.2          | [文档](http://www.iocoder.cn/Spring-Boot/Spring-Security/?yudao) |
-| [Hibernate Validator](https://github.com/hibernate/hibernate-validator)                     | 参数校验组件           | 8.0.2          | [文档](http://www.iocoder.cn/Spring-Boot/Validation/?yudao)      |
-| [Flowable](https://github.com/flowable/flowable-engine)                                     | 工作流引擎            | 7.0.0          | [文档](https://doc.iocoder.cn/bpm/)                              |
-| [Quartz](https://github.com/quartz-scheduler)                                               | 任务调度组件           | 2.5.0          | [文档](http://www.iocoder.cn/Spring-Boot/Job/?yudao)             |
-| [Springdoc](https://springdoc.org/)                                                         | Swagger 文档       | 2.8.9          | [文档](http://www.iocoder.cn/Spring-Boot/Swagger/?yudao)         |
-| [SkyWalking](https://skywalking.apache.org/)                                                | 分布式应用追踪系统        | 9.5.0          | [文档](http://www.iocoder.cn/Spring-Boot/SkyWalking/?yudao)      |
-| [Spring Boot Admin](https://github.com/codecentric/spring-boot-admin)                       | Spring Boot 监控平台 | 3.5.2          | [文档](http://www.iocoder.cn/Spring-Boot/Admin/?yudao)           |
-| [Jackson](https://github.com/FasterXML/jackson)                                             | JSON 工具库         | 2.30.14        |                                                                |
-| [MapStruct](https://mapstruct.org/)                                                         | Java Bean 转换     | 1.6.3          | [文档](http://www.iocoder.cn/Spring-Boot/MapStruct/?yudao)       |
-| [Lombok](https://projectlombok.org/)                                                        | 消除冗长的 Java 代码    | 1.18.38        | [文档](http://www.iocoder.cn/Spring-Boot/Lombok/?yudao)          |
-| [JUnit](https://junit.org/junit5/)                                                          | Java 单元测试框架      | 5.12.2         | -                                                              |
-| [Mockito](https://github.com/mockito/mockito)                                               | Java Mock 框架     | 5.17.0         | -                                                              |
-
-## 🐷 演示图
-
-### 系统功能
-
-| 模块       | biu                         | biu                       | biu                      |
-|----------|-----------------------------|---------------------------|--------------------------|
-| 登录 & 首页  | ![登录](/.image/登录.jpg)       | ![首页](/.image/首页.jpg)     | ![个人中心](/.image/个人中心.jpg) |
-| 用户 & 应用  | ![用户管理](/.image/用户管理.jpg)   | ![令牌管理](/.image/令牌管理.jpg) | ![应用管理](/.image/应用管理.jpg) |
-| 租户 & 套餐  | ![租户管理](/.image/租户管理.jpg)   | ![租户套餐](/.image/租户套餐.png) | -                        |
-| 部门 & 岗位  | ![部门管理](/.image/部门管理.jpg)   | ![岗位管理](/.image/岗位管理.jpg) | -                        |
-| 菜单 & 角色  | ![菜单管理](/.image/菜单管理.jpg)   | ![角色管理](/.image/角色管理.jpg) | -                        |
-| 审计日志     | ![操作日志](/.image/操作日志.jpg)   | ![登录日志](/.image/登录日志.jpg) | -                        |
-| 短信       | ![短信渠道](/.image/短信渠道.jpg)   | ![短信模板](/.image/短信模板.jpg) | ![短信日志](/.image/短信日志.jpg) |
-| 字典 & 敏感词 | ![字典类型](/.image/字典类型.jpg)   | ![字典数据](/.image/字典数据.jpg) | ![敏感词](/.image/敏感词.jpg)  |
-| 错误码 & 通知 | ![错误码管理](/.image/错误码管理.jpg) | ![通知公告](/.image/通知公告.jpg) | -                        |
-
-### 工作流程
-
-| 模块      | biu                             | biu                             | biu                             |
-|---------|---------------------------------|---------------------------------|---------------------------------|
-| 流程模型    | ![流程模型-列表](/.image/流程模型-列表.jpg) | ![流程模型-设计](/.image/流程模型-设计.jpg) | ![流程模型-定义](/.image/流程模型-定义.jpg) |
-| 表单 & 分组 | ![流程表单](/.image/流程表单.jpg)       | ![用户分组](/.image/用户分组.jpg)       | -                               |
-| 我的流程    | ![我的流程-列表](/.image/我的流程-列表.jpg) | ![我的流程-发起](/.image/我的流程-发起.jpg) | ![我的流程-详情](/.image/我的流程-详情.jpg) |
-| 待办 & 已办 | ![任务列表-审批](/.image/任务列表-审批.jpg) | ![任务列表-待办](/.image/任务列表-待办.jpg) | ![任务列表-已办](/.image/任务列表-已办.jpg) |
-| OA 请假   | ![OA请假-列表](/.image/OA请假-列表.jpg) | ![OA请假-发起](/.image/OA请假-发起.jpg) | ![OA请假-详情](/.image/OA请假-详情.jpg) |
-
-### 基础设施
-
-| 模块            | biu                           | biu                         | biu                       |
-|---------------|-------------------------------|-----------------------------|---------------------------|
-| 代码生成          | ![代码生成](/.image/代码生成.jpg)     | ![生成效果](/.image/生成效果.jpg)   | -                         |
-| 文档            | ![系统接口](/.image/系统接口.jpg)     | ![数据库文档](/.image/数据库文档.jpg) | -                         |
-| 文件 & 配置       | ![文件配置](/.image/文件配置.jpg)     | ![文件管理](/.image/文件管理2.jpg)  | ![配置管理](/.image/配置管理.jpg) |
-| 定时任务          | ![定时任务](/.image/定时任务.jpg)     | ![任务日志](/.image/任务日志.jpg)   | -                         |
-| API 日志        | ![访问日志](/.image/访问日志.jpg)     | ![错误日志](/.image/错误日志.jpg)   | -                         |
-| MySQL & Redis | ![MySQL](/.image/MySQL.jpg)   | ![Redis](/.image/Redis.jpg) | -                         |
-| 监控平台          | ![Java监控](/.image/Java监控.jpg) | ![链路追踪](/.image/链路追踪.jpg)   | ![日志中心](/.image/日志中心.jpg) |
-
-### 支付系统
-
-| 模块      | biu                       | biu                             | biu                             |
-|---------|---------------------------|---------------------------------|---------------------------------|
-| 商家 & 应用 | ![商户信息](/.image/商户信息.jpg) | ![应用信息-列表](/.image/应用信息-列表.jpg) | ![应用信息-编辑](/.image/应用信息-编辑.jpg) |
-| 支付 & 退款 | ![支付订单](/.image/支付订单.jpg) | ![退款订单](/.image/退款订单.jpg)       | ---                             |
-### 数据报表
-
-| 模块    | biu                             | biu                             | biu                                   |
-|-------|---------------------------------|---------------------------------|---------------------------------------|
-| 报表设计器 | ![数据报表](/.image/报表设计器-数据报表.jpg) | ![图形报表](/.image/报表设计器-图形报表.jpg) | ![报表设计器-打印设计](/.image/报表设计器-打印设计.jpg) |
-| 大屏设计器 | ![大屏列表](/.image/大屏设计器-列表.jpg)   | ![大屏预览](/.image/大屏设计器-预览.jpg)   | ![大屏编辑](/.image/大屏设计器-编辑.jpg)         |
-
-### 移动端（管理后台）
-
-| biu                              | biu                              | biu                              |
-|----------------------------------|----------------------------------|----------------------------------|
-| ![](/.image/admin-uniapp/01.png) | ![](/.image/admin-uniapp/02.png) | ![](/.image/admin-uniapp/03.png) |
-| ![](/.image/admin-uniapp/04.png) | ![](/.image/admin-uniapp/05.png) | ![](/.image/admin-uniapp/06.png) |
-| ![](/.image/admin-uniapp/07.png) | ![](/.image/admin-uniapp/08.png) | ![](/.image/admin-uniapp/09.png) |
-
-目前已经实现登录、我的、工作台、编辑资料、头像修改、密码修改、常见问题、关于我们等基础功能。
-
+---
 
 ## 开源协议
 
 本项目采用 **GNU Affero General Public License v3.0 (AGPL-3.0)** 开源协议。
 
-### 协议要点
+| 使用场景 | 是否允许 |
+|---------|---------|
+| 个人学习、研究 | ✅ 允许 |
+| 内部企业使用 | ✅ 允许 |
+| 商业二次开发（需开源） | ✅ 允许 |
+| 对外提供 SaaS 服务 | ✅ 允许（需开源修改部分） |
+| 闭源商业化分发 | ❌ 禁止 |
 
-| 要点 | 说明 |
-|------|------|
-| 📜 开源义务 | 任何使用、修改、分发本项目的代码必须以 AGPL-3.0 协议开源 |
-| 🌐 网络服务条款 | 通过网络提供服务（如 SaaS）时，必须向用户提供完整源代码 |
-| 🔄 著作权归属 | 修改后的代码需保留原作者著作权声明和协议声明 |
-| ⚠️ 无担保声明 | 本软件按"原样"提供，不提供任何形式的担保 |
-
-### 使用场景说明
-
-* ✅ **允许**：个人学习、研究、商业二次开发（需开源）
-* ✅ **允许**：内部企业使用（无需开源，除非对外提供服务）
-* ⚠️ **需开源**：基于本项目提供 SaaS 服务或对外网络服务
-* ❌ **禁止**：闭源商业化分发、移除版权声明
-
-### 完整协议文本
-
-详见 [LICENSE](./LICENSE) 文件或访问 [GNU AGPL-3.0 官方协议文本](https://www.gnu.org/licenses/agpl-3.0.html)
+详见 [LICENSE](./LICENSE)
 
 ---
 
@@ -550,18 +432,6 @@ yudao_cps_mcp_access_log    # MCP访问日志表
 | 🤖 AI Token 费用 | 大模型 API 调用费用（通义千问、DeepSeek、OpenAI 等） |
 | 🔧 持续开发 | 新平台对接开发、功能迭代、Bug 修复 |
 | 📚 文档完善 | 技术文档、API 文档、视频教程制作 |
-
-### 赞助方式
-
-#### 微信支付 / 支付宝
-
-<p align="center">
-  <img src="https://img.shields.io/badge/微信支付-green.svg" alt="微信支付">
-  <img src="https://img.shields.io/badge/支付宝-blue.svg" alt="支付宝">
-</p>
-
-> 💡 请在备注中留下您的 GitHub ID 或联系方式，我们将列在赞助者名单中（如愿意公开）
-
 
 ### 企业赞助
 
@@ -582,9 +452,9 @@ yudao_cps_mcp_access_log    # MCP访问日志表
 
 ### 当前悬赏列表
 
-| 功能 | 悬赏金额   | 状态 | 说明 |
+| 功能 | 悬赏金额 | 状态 | 说明 |
 |------|--------|------|------|
-| 智能推送 | ¥1,000 | 🔴 待开发 | 智能推送 |
+| 智能推送 | ¥1,000 | 🔴 待开发 | 基于用户行为的智能商品推送 |
 
 ### 悬赏规则
 
@@ -610,3 +480,8 @@ yudao_cps_mcp_access_log    # MCP访问日志表
 <!-- 赞助者名单将在此处更新 -->
 
 > 成为第一个赞助者，让开源走得更远！
+
+<p align="center">
+  <b>AgenticCPS —— 让每一个有想法的人，都能拥有自己的返利帝国。</b><br/>
+  <sub>一人公司 &bull; Vibe Coding &bull; AI 自主编程 &bull; 低代码 &bull; 开箱即用</sub>
+</p>
