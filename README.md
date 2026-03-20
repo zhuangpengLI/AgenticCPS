@@ -14,6 +14,12 @@
   零代码启动、对话式开发、全自动运营的 CPS 联盟返利与导购平台
 </p>
 
+> gitee: [AgenticCPS](https://gitee.com/zhuangpengli/AgenticCPS.git)
+
+> gitcode: [AgenticCPS](https://gitcode.com/lizhuangpeng/AgenticCPS)
+
+> github: [AgenticCPS](https://github.com/zhuangpengLI/AgenticCPS)
+
 <p align="center">
   <a href="#-30-秒了解-agenticcps">30 秒了解</a> &bull;
   <a href="#-为什么选择-agenticcps">为什么选择</a> &bull;
