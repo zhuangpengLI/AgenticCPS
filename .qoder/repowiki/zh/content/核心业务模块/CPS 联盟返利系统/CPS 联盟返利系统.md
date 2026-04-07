@@ -3,17 +3,26 @@
 <cite>
 **本文引用的文件**
 - [README.md](file://README.md)
+- [backend/README.md](file://backend/README.md)
 - [CPS系统PRD文档.md](file://docs/CPS系统PRD文档.md)
 - [DtkJavaOpenPlatformSdkApplication.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/DtkJavaOpenPlatformSdkApplication.java)
 - [AbstractDtkApiClient.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/client/AbstractDtkApiClient.java)
 - [DtkApiClient.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/client/DtkApiClient.java)
 - [DtkApiRequest.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/client/DtkApiRequest.java)
 - [DtkClient.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/client/DtkClient.java)
-- [DtkApiConstant.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/constant/DtkApiConstant.java)
-- [DtkActivityLinkRequest.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/request/mastertool/DtkActivityLinkRequest.java)
-- [DtkCommodityMaterialsRequest.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/request/mastertool/DtkCommodityMaterialsRequest.java)
-- [DtkCouponQueryRequest.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/request/mastertool/DtkCouponQueryRequest.java)
+- [CpsAdzoneTypeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java)
+- [CpsErrorCodeConstants.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java)
+- [CpsOrderStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java)
+- [CpsPlatformCodeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java)
+- [CpsRebateStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java)
 </cite>
+
+## 更新摘要
+**所做更改**
+- 新增了CPS模块的完整架构组件分析，包括枚举类、DTO层、HTTP客户端基础设施
+- 更新了多平台客户端适配器系统的详细实现
+- 增强了业务流程图和数据模型设计
+- 补充了错误处理机制和接口规范
 
 ## 目录
 1. [简介](#简介)
@@ -28,12 +37,14 @@
 10. [附录](#附录)
 
 ## 简介
-本文件面向“CPS 联盟返利系统”的技术与业务实现，围绕 CPS（Cost Per Sale）模式，系统性阐述多平台对接（淘宝、京东、拼多多、抖音）、商品搜索与比价、推广链接生成、订单同步与结算、返利计算与入账、返利规则配置与结算周期管理等关键能力。文档结合产品需求与系统架构，提供业务流程图、数据模型设计、接口规范与错误处理机制说明，帮助读者快速理解并高效落地。
+本文件面向"CPS 联盟返利系统"的技术与业务实现，围绕 CPS（Cost Per Sale）模式，系统性阐述多平台对接（淘宝、京东、拼多多、抖音）、商品搜索与比价、推广链接生成、订单同步与结算、返利计算与入账、返利规则配置与结算周期管理等关键能力。文档结合产品需求与系统架构，提供业务流程图、数据模型设计、接口规范与错误处理机制说明，帮助读者快速理解并高效落地。
+
+**更新** 基于应用变更新增了CPS模块的完整实现，包括多平台客户端适配器系统、枚举类、DTO层、HTTP客户端基础设施等核心架构组件。
 
 ## 项目结构
 - 后端采用模块化分层架构，核心模块包含系统管理、会员中心、基础设施、支付系统、商城系统、AI 大模型、微信公众号、报表与大屏等；其中 CPS 联盟返利系统位于独立模块中，采用 API 定义层 + 业务实现层的分层设计。
 - 前端包含管理后台（admin-vue3）、移动端（admin-uniapp、mall-uniapp）等多端应用，支撑会员端与管理端的完整业务闭环。
-- 项目提供 MCP（Model Context Protocol）接口，允许 AI Agent 直接调用搜索、比价、转链、订单查询、返利汇总等工具，实现“零代码接入”。
+- 项目提供 MCP（Model Context Protocol）接口，允许 AI Agent 直接调用搜索、比价、转链、订单查询、返利汇总等工具，实现"零代码接入"。
 
 ```mermaid
 graph TB
@@ -74,9 +85,11 @@ Biz --> MCP
 
 **图表来源**
 - [README.md: 229-249:229-249](file://README.md#L229-L249)
+- [backend/README.md: 225-230:225-230](file://backend/README.md#L225-L230)
 
 **章节来源**
 - [README.md: 229-249:229-249](file://README.md#L229-L249)
+- [backend/README.md: 225-230:225-230](file://backend/README.md#L225-L230)
 - [README.md: 267-302:267-302](file://README.md#L267-L302)
 
 ## 核心组件
@@ -85,13 +98,18 @@ Biz --> MCP
 - 数据访问层：围绕订单、返利、会员、平台配置等核心实体进行持久化。
 - MCP 接口层：提供 cps_search、cps_compare_prices、cps_generate_link、cps_query_orders、cps_get_rebate_summary 等 AI Tools，支持自然语言交互。
 - 定时任务：按固定周期拉取平台订单，增量比对并触发结算/扣回流程。
+- **新增** 枚举类系统：统一管理平台编码、订单状态、返利状态、推广位类型等核心业务枚举。
+- **新增** DTO层：定义跨模块传输的数据传输对象，确保数据一致性。
+- **新增** HTTP客户端基础设施：提供统一的HTTP请求封装和错误处理机制。
 
 **章节来源**
 - [README.md: 232-249:232-249](file://README.md#L232-L249)
 - [CPS系统PRD文档.md: 80-261:80-261](file://docs/CPS系统PRD文档.md#L80-L261)
+- [CpsAdzoneTypeEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java#L1-L40)
+- [CpsErrorCodeConstants.java:1-60](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L1-L60)
 
 ## 架构总览
-系统采用“前端 + 后端 + 多平台联盟”三层架构：
+系统采用"前端 + 后端 + 多平台联盟"三层架构：
 - 前端负责用户交互与数据展示；
 - 后端提供统一 API、业务编排与平台适配；
 - 平台适配器封装各联盟差异，屏蔽平台差异，统一返回标准化数据。
@@ -125,7 +143,7 @@ Adapter --> DY
 ### 商品搜索与比价
 - 输入识别：支持关键词、商品链接、口令（淘口令等）识别，自动判定平台与商品 ID。
 - 并发查询：启用的平台并发查询，聚合结果后按会员等级计算预估返利，支持按价格、返利、销量排序。
-- 比价展示：以表格形式对比不同平台的券后价、返利、实付金额，提供“最省钱”等推荐。
+- 比价展示：以表格形式对比不同平台的券后价、返利、实付金额，提供"最省钱"等推荐。
 
 ```mermaid
 flowchart TD
@@ -160,7 +178,7 @@ participant FE as "前端"
 participant API as "后端API"
 participant AD as "平台适配器"
 participant PL as "联盟平台"
-U->>FE : 选择商品并点击“获取链接”
+U->>FE : 选择商品并点击"获取链接"
 FE->>API : 生成推广链接请求
 API->>AD : 获取PID并注入归因参数
 AD->>PL : 调用转链API
@@ -179,7 +197,7 @@ FE-->>U : 展示并可复制/分享
 ### 订单同步与结算流程
 - 定时任务：每 5 分钟触发一次，遍历启用平台，增量查询订单。
 - 新增订单：解析归因参数，匹配会员，入库并标记待结算。
-- 状态变更：当订单变为“已结算”，计算可分配佣金与返利比例，入账到会员钱包并通知；若变为“已退款”，根据是否已入账执行扣回或取消待结算。
+- 状态变更：当订单变为"已结算"，计算可分配佣金与返利比例，入账到会员钱包并通知；若变为"已退款"，根据是否已入账执行扣回或取消待结算。
 - 可分配佣金 = 商品佣金 - 平台服务费；返利金额 = 可分配佣金 × 返利比例。
 
 ```mermaid
@@ -278,6 +296,71 @@ PlatformAdapter <|-- DouYinAdapter
 **章节来源**
 - [README.md: 241-248:241-248](file://README.md#L241-L248)
 
+### 枚举类系统
+**新增** 系统化的枚举类管理，确保业务状态的一致性和可维护性：
+
+- 平台编码枚举（CpsPlatformCodeEnum）：统一管理淘宝、京东、拼多多、抖音等平台标识
+- 订单状态枚举（CpsOrderStatusEnum）：标准化订单生命周期状态
+- 返利状态枚举（CpsRebateStatusEnum）：统一返利处理状态
+- 推广位类型枚举（CpsAdzoneTypeEnum）：区分通用、渠道专属、用户专属推广位
+- 错误码常量（CpsErrorCodeConstants）：集中管理CPS系统各类错误码
+
+```mermaid
+classDiagram
+class CpsPlatformCodeEnum {
+<<enumeration>>
++TAOBAO
++JD
++PDD
++DOUYIN
++getByCode(code)
+}
+class CpsOrderStatusEnum {
+<<enumeration>>
++CREATED
++PAID
++RECEIVED
++SETTLED
++REBATE_RECEIVED
++REFUNDED
++INVALID
++getByStatus(status)
+}
+class CpsRebateStatusEnum {
+<<enumeration>>
++PENDING
++RECEIVED
++REFUNDED
+}
+class CpsAdzoneTypeEnum {
+<<enumeration>>
++GENERAL
++CHANNEL
++MEMBER
+}
+class CpsErrorCodeConstants {
+<<interface>>
++PLATFORM_NOT_EXISTS
++ORDER_NOT_EXISTS
++WITHDRAW_NOT_EXISTS
++...
+}
+```
+
+**图表来源**
+- [CpsPlatformCodeEnum.java:1-45](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java#L1-L45)
+- [CpsOrderStatusEnum.java:1-48](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java#L1-L48)
+- [CpsRebateStatusEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java#L1-L40)
+- [CpsAdzoneTypeEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java#L1-L40)
+- [CpsErrorCodeConstants.java:1-60](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L1-L60)
+
+**章节来源**
+- [CpsPlatformCodeEnum.java:1-45](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java#L1-L45)
+- [CpsOrderStatusEnum.java:1-48](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java#L1-L48)
+- [CpsRebateStatusEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java#L1-L40)
+- [CpsAdzoneTypeEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java#L1-L40)
+- [CpsErrorCodeConstants.java:1-60](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L1-L60)
+
 ### MCP AI 接口与工具
 - 工具清单：cps_search（商品搜索）、cps_compare_prices（多平台比价）、cps_generate_link（推广链接生成）、cps_query_orders（订单查询）、cps_get_rebate_summary（返利汇总）。
 - 权限分级：public（仅查询）、member（会员级操作）、admin（管理权限）。
@@ -335,21 +418,20 @@ Biz --> MQ["消息队列"]
 - MCP 工具调用：搜索类 < 3 秒，查询类 < 1 秒。
 - 优化建议：缓存热门商品、预估返利计算前置、并发查询平台时引入超时与熔断、订单增量查询减少无效 IO。
 
-[本节为通用性能指导，无需列出具体文件来源]
-
 ## 故障排查指南
-- 平台连通性：通过“平台连通测试”验证 AppKey/Secret 与 API 地址配置是否正确。
-- 订单未归因：在“异常订单处理”中手动绑定会员，或检查归因参数注入是否符合平台规范。
+- 平台连通性：通过"平台连通测试"验证 AppKey/Secret 与 API 地址配置是否正确。
+- 订单未归因：在"异常订单处理"中手动绑定会员，或检查归因参数注入是否符合平台规范。
 - 提现异常：检查余额、限额、黑名单与转账接口返回状态，必要时重试或人工审核。
-- MCP 工具调用失败：查看“MCP 访问日志”，定位 API Key 权限、限流与参数问题。
+- MCP 工具调用失败：查看"MCP 访问日志"，定位 API Key 权限、限流与参数问题。
+- **新增** 枚举类问题：检查平台编码、订单状态、返利状态等枚举值是否正确配置。
 
 **章节来源**
 - [CPS系统PRD文档.md: 317-352:317-352](file://docs/CPS系统PRD文档.md#L317-L352)
 
 ## 结论
-AgenticCPS 通过“AI 自主编程 + 低代码 + MCP 协议”实现了 CPS 联盟返利系统的高扩展与高效率：多平台统一接入、自动化订单同步与结算、灵活的返利规则与提现流程，配合 MCP 工具链，使系统既能满足个人创业团队的轻量化需求，也能支撑规模化运营与持续创新。
+AgenticCPS 通过"AI 自主编程 + 低代码 + MCP 协议"实现了 CPS 联盟返利系统的高扩展与高效率：多平台统一接入、自动化订单同步与结算、灵活的返利规则与提现流程，配合 MCP 工具链，使系统既能满足个人创业团队的轻量化需求，也能支撑规模化运营与持续创新。
 
-[本节为总结性内容，无需列出具体文件来源]
+**更新** 新增的CPS模块架构组件进一步增强了系统的稳定性和可维护性，包括完善的枚举类系统、DTO层设计和HTTP客户端基础设施，为系统的长期发展奠定了坚实基础。
 
 ## 附录
 
@@ -359,6 +441,7 @@ AgenticCPS 通过“AI 自主编程 + 低代码 + MCP 协议”实现了 CPS 联
 - 会员钱包表：记录余额、累计收入、待结算金额等。
 - 平台配置表：记录 AppKey/Secret、默认推广位、平台服务费率、启用状态等。
 - MCP 配置表：记录 API Key、权限级别、限流规则、使用统计等。
+- **新增** 枚举配置表：存储平台编码、订单状态、返利状态等枚举配置。
 
 **章节来源**
 - [CPS系统PRD文档.md: 553-757:553-757](file://docs/CPS系统PRD文档.md#L553-L757)
@@ -369,20 +452,23 @@ AgenticCPS 通过“AI 自主编程 + 低代码 + MCP 协议”实现了 CPS 联
 - 推广链接生成：返回推广链接与口令（淘宝），注入平台归因参数。
 - 订单查询：支持按会员、时间范围查询订单状态与返利进度。
 - 返利汇总：返回可提现余额、待结算金额、累计收入。
+- **新增** 枚举查询接口：提供平台编码、订单状态、返利状态等枚举值查询。
 
 **章节来源**
 - [README.md: 185-209:185-209](file://README.md#L185-L209)
 - [CPS系统PRD文档.md: 265-374:265-374](file://docs/CPS系统PRD文档.md#L265-L374)
 
 ### 错误处理机制（概要）
-- 平台 API 超时：展示已返回平台结果，超时平台提示“暂时无法查询”。
-- 全部平台无结果：提示“未找到相关商品，请换个关键词试试”。
-- 未登录查询：正常展示商品，返利金额显示“登录查看返利”。
+- 平台 API 超时：展示已返回平台结果，超时平台提示"暂时无法查询"。
+- 全部平台无结果：提示"未找到相关商品，请换个关键词试试"。
+- 未登录查询：正常展示商品，返利金额显示"登录查看返利"。
 - 提现失败：返还余额并标记异常，通知会员。
+- **新增** 枚举类错误：统一的错误码管理，提供详细的错误信息和解决方案。
 
 **章节来源**
 - [CPS系统PRD文档.md: 412-416:412-416](file://docs/CPS系统PRD文档.md#L412-L416)
 - [CPS系统PRD文档.md: 547-552:547-552](file://docs/CPS系统PRD文档.md#L547-L552)
+- [CpsErrorCodeConstants.java:1-60](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L1-L60)
 
 ### Java SDK 示例（数据淘开放平台）
 - SDK 应用入口：DtkJavaOpenPlatformSdkApplication
