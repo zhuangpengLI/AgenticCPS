@@ -21,6 +21,7 @@
         <module>yudao-module-pay</module>
         <module>yudao-module-mall</module>
         <module>yudao-module-ai</module>
+        <module>yudao-module-cps</module>
     </modules>
 
     <name>${project.artifactId}</name>
