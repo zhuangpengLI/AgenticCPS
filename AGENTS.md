@@ -1,55 +1,60 @@
-# CLAUDE.md
+﻿# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI Agents (Qoder, Claude Code, etc.) when working with code in this repository.
 
 ## Project Overview
 
 AgenticCPS is a **CPS (Cost Per Sale) Alliance Rebate System** built on ruoyi-vue-pro. It aggregates Taobao, JD.com, Pinduoduo, and Douyin affiliate platforms to provide rebate search, price comparison, order tracking, and settlement services. The system features AI Agent integration via MCP (Model Context Protocol).
 
-**Key differentiator**: This project uses Vibe Coding + AI autonomous programming — CPS module code is 100% AI-generated.
+**Key differentiator**: This project uses Vibe Coding + AI autonomous programming — CPS module code is 100% AI-generated (20,000+ lines of code including business services, scheduled jobs, MCP interface layer, and unit tests).
 
 ## Architecture
 
 ```
 AgenticCPS/
-├── backend/                    # Spring Boot 3.x Java backend
-│   ├── yudao-server/          # Main application entry point
+├── backend/                    # Spring Boot 3.5.9 Java backend
+│   ├── yudao-server/          # Main application entry point (port 48080)
 │   ├── yudao-module-cps/       # CPS rebate core module (primary focus)
 │   │   ├── yudao-module-cps-api/    # API definitions (enums, remote interfaces)
 │   │   └── yudao-module-cps-biz/    # Business implementation
-│   │       ├── controller/admin/    # Admin REST APIs
-│   │       ├── controller/app/      # Member-facing REST APIs
-│   │       ├── service/             # Business services
+│   │       ├── controller/admin/    # Admin REST APIs (15 controllers)
+│   │       ├── controller/app/      # Member-facing REST APIs (13 controllers)
+│   │       ├── service/             # Business services (7 service modules)
 │   │       ├── client/              # CPS platform adapters (Strategy pattern)
 │   │       │   ├── taobao/          # Taobao affiliate adapter
 │   │       │   ├── jingdong/        # JD.com affiliate adapter
 │   │       │   ├── pinduoduo/       # Pinduoduo affiliate adapter
 │   │       │   └── douyin/          # Douyin affiliate adapter
-│   │       ├── dal/                  # Data access layer (MyBatis Plus)
-│   │       ├── job/                  # Scheduled jobs (Quartz)
+│   │       ├── dal/                  # Data access layer (MyBatis Plus, 9 core tables)
+│   │       ├── job/                  # Scheduled jobs (Quartz - order sync, status update)
 │   │       └── mcp/                  # MCP AI interface layer
-│   ├── yudao-module-ai/      # AI module (Spring AI + MCP support)
+│   │           └── tool/             # 5 MCP tool functions
+│   ├── yudao-module-ai/      # AI module (Spring AI 1.1.2 + MCP support)
 │   ├── yudao-module-member/  # Member management
 │   ├── yudao-module-pay/     # Payment/wallet system
 │   ├── yudao-module-mall/    # E-commerce module
 │   ├── yudao-module-system/  # System management (auth, perms, menus)
 │   ├── yudao-module-infra/   # Infrastructure (Redis, file storage, MQ)
-│   ├── yudao-framework/       # Framework extensions
+│   ├── yudao-module-report/  # Report & dashboard module
+│   ├── yudao-module-mp/      # WeChat Official Account module
+│   ├── yudao-framework/       # Framework extensions (Web, Security, MyBatis, Redis, Job, Tenant, Data Permission, MQ, Monitor, Excel)
+│   ├── yudao-dependencies/   # Centralized dependency version management
 │   └── sql/                   # Database schema scripts for each module
 │
 ├── frontend/
 │   ├── admin-vue3/           # Vue3 admin panel (Element Plus + TypeScript)
-│   ├── admin-uniapp/         # uni-app mobile admin
-│   └── mall-uniapp/          # E-commerce mobile app
+│   ├── admin-uniapp/         # uni-app mobile admin (Node.js >= 20, pnpm >= 9)
+│   └── mall-uniapp/          # E-commerce mobile app (UniApp multi-platform)
 │
 ├── script/                    # Build and deployment scripts
+│   └── docker/               # Docker Compose for one-click deployment
 │
 ├── references/                # Agent reference documents, literature & standards
 │
 ├── releases/                  # Version release packages
 │
 ├── agent_improvement/         # AI agent improvement & rules
-│   └── memory/               # Code generation rules and Claude memory
+│   └── memory/               # Code generation rules and AI memory
 │       ├── MEMORY.md         # Memory index
 │       └── codegen-rules.md  # Code generation rules (Velocity templates)
 │
@@ -71,13 +76,17 @@ When discussing requirements, you can refer to these projects for business logic
 |-------|-------------|
 | Backend Framework | Spring Boot 3.5.9, Spring Security 6.5.2 |
 | Language | Java 17/21 |
-| ORM | MyBatis Plus 3.5.12 |
+| ORM | MyBatis Plus 3.5.15 |
 | Cache | Redis 7.0, Redisson 3.35.0 |
-| Database | MySQL 5.7/8.0+ |
+| Database | MySQL 5.7/8.0+ (also supports Oracle, PostgreSQL, SQLServer, DM, KingBase, GaussDB, openGauss) |
 | Frontend | Vue 3.5.12, Element Plus 2.11.1, TypeScript 5.3.3 |
-| Build Tool | Maven 3.8+, pnpm 8.6+ |
-| Mobile | UniApp |
-| AI | Spring AI + MCP Protocol |
+| Build Tool | Maven 3.8+, pnpm 8.6+ (admin-uniapp requires pnpm >= 9) |
+| Mobile | UniApp (admin-uniapp: Node.js >= 20; mall-uniapp: multi-platform) |
+| AI | Spring AI 1.1.2 + MCP Protocol (Streamable HTTP, JSON-RPC 2.0) |
+| Workflow | Flowable 7.2.0 |
+| Job Scheduler | Quartz 2.5.0 |
+| APM | SkyWalking 9.5.0 |
+| MapStruct | 1.6.3 |
 
 ## Common Commands
 
@@ -156,16 +165,27 @@ public interface CpsPlatformClient {
 }
 ```
 
-To add a new platform (e.g., Weibo), implement this interface and register as a Spring Bean. No core logic changes required.
+To add a new platform (e.g., Weibo), implement this interface and register as a Spring Bean. No core logic changes required. Platform registration is managed by `CpsPlatformClientFactory`.
 
 ### MCP AI Interface Layer
 
-Located in `yudao-module-cps-biz/mcp/`:
-- **Tools**: AI-callable functions (search, compare, generate link, query orders)
-- **Resources**: Read-only data sources (platform configs, rebate rules, statistics)
-- **Prompts**: Pre-defined interaction templates
+Located in `yudao-module-cps-biz/mcp/tool/`, 5 tool functions registered via Spring AI:
 
-MCP uses JSON-RPC 2.0 over Streamable HTTP at endpoint `/mcp/cps`.
+| Tool Class | Tool Name | Description |
+|-----------|-----------|-------------|
+| `CpsSearchGoodsToolFunction` | `cps_search_goods` | Search goods across platforms with keyword, platform filter, price range, pagination |
+| `CpsComparePricesToolFunction` | `cps_compare_prices` | Cross-platform price comparison, returns cheapest/highest-rebate/best-overall |
+| `CpsGenerateLinkToolFunction` | `cps_generate_link` | Generate promotion links with rebate tracking (short/long/token/mobile) |
+| `CpsQueryOrdersToolFunction` | `cps_query_orders` | Query member orders and rebate status |
+| `CpsGetRebateSummaryToolFunction` | `cps_get_rebate_summary` | Query rebate account: balance, pending, total, recent records |
+
+**MCP Protocol Details:**
+- Transport: Streamable HTTP (JSON-RPC 2.0)
+- Endpoint: `/mcp/cps`
+- Authentication: API Key (managed via `cps_mcp_api_key` table)
+- Access logging: `cps_mcp_access_log` table (tool name, params, duration, client IP)
+- Security: Spring Security permits MCP SSE and HTTP endpoints for AI Agent access
+- Context: `ToolContext` passes current logged-in member ID for order attribution
 
 ### Rebate Calculation Priority
 
@@ -179,6 +199,8 @@ System resolves rebate rate in this order:
                   ↓
               已退款 / 已失效
 ```
+
+Order sync is handled by Quartz scheduled jobs with incremental sync every 5 minutes.
 
 ## Code Generation Rules
 
@@ -216,13 +238,30 @@ See `agent_improvement/memory/codegen-rules.md` for full details.
 | Environment | File | Port |
 |-------------|------|------|
 | Local Dev | `application-local.yaml` | 48080 |
-| Docker | environment variables | 48080 |
+| Docker | environment variables (`docker.env`) | 48080 |
 
 Key configs in `application-local.yaml`:
-- `spring.datasource.dynamic` — MySQL connection
+- `spring.datasource.dynamic` — MySQL connection (Druid connection pool)
 - `spring.data.redis` — Redis connection
-- `yudao.cps.mcp.*` — MCP server settings
+- `yudao.cps.mcp.*` — MCP server settings (SSE/HTTP endpoint config)
 - CPS platform API keys (淘宝/京东/拼多多/抖音)
+
+### Docker Deployment
+
+```bash
+cd backend/script/docker
+
+# Start all services (MySQL 8, Redis 6, backend, frontend)
+docker-compose up -d
+
+# Stop all services
+docker-compose down
+
+# View logs
+docker-compose logs -f server
+```
+
+Docker port mappings: backend 48080 → 48080, MySQL 3306 → 3306, Redis 6379 → 6379, frontend 8080 → 80.
 
 ## Important Notes
 
@@ -231,3 +270,17 @@ Key configs in `application-local.yaml`:
 - **Multi-tenancy**: All CPS queries must include tenant isolation
 - **Soft delete**: Use MyBatis Plus `deleted` column, never hard delete CPS data
 - **Password**: Default admin password is `admin` (change in production)
+- **Database support**: Primary MySQL, also supports Oracle, PostgreSQL, SQLServer, 达梦, 人大金仓, GaussDB, openGauss
+- **pnpm version**: admin-uniapp requires pnpm >= 9, Node.js >= 20; admin-vue3 requires pnpm >= 8.6, Node.js >= 16
+
+## Performance Benchmarks
+
+| Metric | Target |
+|--------|--------|
+| Single platform search | < 2s (P99) |
+| Multi-platform price comparison | < 5s (P99) |
+| Promotion link generation | < 1s |
+| Order sync delay | < 30 minutes |
+| Rebate credit | Within 24h after platform settlement |
+| MCP Tool call (search) | < 3s |
+| MCP Tool call (query) | < 1s |

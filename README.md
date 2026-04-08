@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <img src="https://img.shields.io/badge/Spring%20Boot-3.5.9-blue.svg" alt="Spring Boot">
   <img src="https://img.shields.io/badge/Vue-3.x-brightgreen.svg" alt="Vue">
   <img src="https://img.shields.io/badge/Java-17%2F21-orange.svg" alt="Java">
@@ -197,15 +197,15 @@ AgenticCPS 的低代码能力体现在系统的每个层面：
 }
 ```
 
-**5 个 AI Tools 开箱即用**：
+**5 个 AI Tools 开筱即用**：
 
 | Tool | 功能 | 一句话说明 |
-|------|------|----------|
-| `cps_search_goods` | 商品搜索 | 帮用户在淘宝/京东/拼多多搜商品 |
-| `cps_compare_prices` | 多平台比价 | 自动比较各平台价格，推荐最优方案 |
-| `cps_generate_link` | 推广链接生成 | 生成带返利追踪的购买链接 |
-| `cps_query_orders` | 订单查询 | 查看用户的返利订单状态 |
-| `cps_get_rebate_summary` | 返利汇总 | 查看余额、待结算、累计返利 |
+|------|------|-----------|
+| `cps_search_goods` | 商品搜索 | 帮用户在淘宝/京东/拼多多/抖音搜商品，支持平台筛选与价格区间 |
+| `cps_compare_prices` | 多平台比价 | 自动比较各平台价格，输出最便宜/返利最高/综合最优方案 |
+| `cps_generate_link` | 推广链接生成 | 生成带返利追踪的购买链接（短链/长链/口令/移动端） |
+| `cps_query_orders` | 订单查询 | 查看用户的返利订单列表与全链路状态 |
+| `cps_get_rebate_summary` | 返利汇总 | 查看余额、待结算、累计返利与最近记录 |
 
 ---
 
@@ -289,13 +289,13 @@ yudao-module-cps/
 |------|------|------|
 | [Spring Boot](https://spring.io/projects/spring-boot) | 应用开发框架 | 3.5.9 |
 | [Spring Security](https://spring.io/projects/spring-security) | 安全框架 | 6.5.2 |
-| [Spring AI](https://spring.io/projects/spring-ai) | AI 集成框架（MCP 支持） | Latest |
-| [MyBatis Plus](https://mp.baomidou.com/) | ORM 增强 | 3.5.12 |
+| [Spring AI](https://spring.io/projects/spring-ai) | AI 集成框架（MCP 支持） | 1.1.2 |
+| [MyBatis Plus](https://mp.baomidou.com/) | ORM 增强 | 3.5.15 |
 | [Redis](https://redis.io/) / [Redisson](https://github.com/redisson/redisson) | 缓存 & 分布式锁 | 7.0 / 3.35.0 |
-| [Flowable](https://www.flowable.com/) | 工作流引擎 | 7.0.0 |
-| [Vue 3](https://vuejs.org/) + Element Plus | 管理后台前端 | 3.x |
+| [Flowable](https://www.flowable.com/) | 工作流引擎 | 7.2.0 |
+| [Vue 3](https://vuejs.org/) + Element Plus | 管理后台前端 | 3.5.12 / 2.11.1 |
 | [UniApp](https://uniapp.dcloud.net.cn/) | 移动端多端适配 | Latest |
-| [MySQL](https://www.mysql.com/) | 数据库（支持 8 种数据库） | 5.7 / 8.0+ |
+| [MySQL](https://www.mysql.com/) | 数据库（支持 Oracle/PG/SQLServer/达梦/人大金仓/GaussDB/openGauss） | 5.7 / 8.0+ |
 | [MapStruct](https://mapstruct.org/) | Bean 转换 | 1.6.3 |
 | [Quartz](https://www.quartz-scheduler.org/) | 任务调度 | 2.5.0 |
 | [SkyWalking](https://skywalking.apache.org/) | 链路追踪 & 日志中心 | 9.5.0 |
@@ -308,25 +308,62 @@ yudao-module-cps/
 
 | 组件 | 版本要求 |
 |------|---------|
-| JDK | 17 或 21 |
+| JDK | 17 或 21（推荐 21） |
 | MySQL | 5.7 或 8.0+ |
 | Redis | 5.0+ |
 | Maven | 3.8+ |
-| Node.js | 16+（前端构建） |
+| Node.js | 16+（admin-vue3）/ 20+（admin-uniapp） |
+| pnpm | 8.6+（admin-vue3）/ 9+（admin-uniapp） |
 
 ### 三步启动
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/YunaiV/ruoyi-vue-pro.git
+git clone https://github.com/zhuangpengLI/AgenticCPS.git
+cd AgenticCPS/backend
 
 # 2. 初始化数据库
-#    导入 sql/mysql/ 目录下的 SQL 脚本
-#    导入 sql/module/cps-schema.sql（CPS 模块）
+#    导入 sql/mysql/ruoyi-vue-pro.sql（主库表结构）
+#    按需导入各模块子 SQL（如 CPS 模块）
+#    配置 application-local.yaml 中的数据库连接信息
 
 # 3. 启动后端
 mvn clean compile
-# 运行 YudaoServerApplication 主类
+# 运行 YudaoServerApplication 主类（端口：48080）
+```
+
+### Docker 一键部署
+
+```bash
+cd backend/script/docker
+
+# 拉起所有服务（MySQL 8, Redis 6, 后端服务, 前端面板）
+docker-compose up -d
+
+# 查看服务日志
+docker-compose logs -f server
+
+# 停止所有服务
+docker-compose down
+```
+
+端口映射：后端 48080 → 48080，MySQL 3306 → 3306，Redis 6379 → 6379，前端 80 → 8080
+
+### 前端启动
+
+```bash
+# 管理后台（admin-vue3）
+cd frontend/admin-vue3
+pnpm install   # 需要 pnpm >= 8.6, Node.js >= 16
+pnpm dev
+
+# 管理后台（admin-uniapp）
+cd frontend/admin-uniapp
+pnpm install   # 需要 pnpm >= 9, Node.js >= 20
+pnpm dev:h5    # H5 端
+
+# 生产打包
+pnpm build:prod
 ```
 
 ### 性能指标

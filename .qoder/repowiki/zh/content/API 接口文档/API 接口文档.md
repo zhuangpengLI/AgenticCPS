@@ -1,20 +1,38 @@
 # API 接口文档
 
 <cite>
-**本文引用的文件**   
-- [AiToolController.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiToolController.java)
-- [AiApiKeyController.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiApiKeyController.java)
-- [DefaultController.java](file://backend/yudao-server/src/main/java/cn/iocoder/yudao/server/controller/DefaultController.java)
-- [YudaoSwaggerAutoConfiguration.java](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/swagger/config/YudaoSwaggerAutoConfiguration.java)
-- [Knife4jOpenApiCustomizer.java](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/swagger/config/Knife4jOpenApiCustomizer.java)
-- [YudaoWebSecurityConfigurerAdapter.java](file://backend/yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java)
-- [PermissionCommonApi.java](file://backend/yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/biz/system/permission/PermissionCommonApi.java)
-- [CPS系统PRD文档.md](file://docs/CPS系统PRD文档.md)
-- [ruoyi-vue-pro.sql](file://backend/sql/sqlserver/ruoyi-vue-pro.sql)
+**本文引用的文件**
+- [pom.xml](file://backend/pom.xml)
+- [application.yaml](file://backend/yudao-server/src/main/resources/application.yaml)
+- [SwaggerConfiguration.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/controller/config/SwaggerConfiguration.java)
 - [BaseController.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/controller/base/BaseController.java)
-- [DtkJavaOpenPlatformSdkApplication.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/DtkJavaOpenPlatformSdkApplication.java)
-- [pom.xml](file://agent_improvement/sdk_demo/dataoke-sdk-java/pom.xml)
-- [README.md](file://agent_improvement/sdk_demo/dataoke-sdk-java/README.md)
+- [Result.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/exception/Result.java)
+- [DtkApiException.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/exception/DtkApiException.java)
+- [DtkResultEnum.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/exception/DtkResultEnum.java)
+- [DtkApiClient.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/client/DtkApiClient.java)
+- [DtkApiRequest.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/client/DtkApiRequest.java)
+- [DtkActivityLinkRequest.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/request/mastertool/DtkActivityLinkRequest.java)
+- [DtkCommodityMaterialsRequest.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/request/mastertool/DtkCommodityMaterialsRequest.java)
+- [DtkCouponQueryRequest.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/request/mastertool/DtkCouponQueryRequest.java)
+- [CpsAdzoneTypeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java)
+- [CpsErrorCodeConstants.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java)
+- [CpsFreezeStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsFreezeStatusEnum.java)
+- [CpsOrderStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java)
+- [CpsPlatformCodeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java)
+- [CpsRebateStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java)
+- [CpsRebateTypeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateTypeEnum.java)
+- [CpsRiskRuleTypeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRiskRuleTypeEnum.java)
+- [CpsWithdrawStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsWithdrawStatusEnum.java)
+- [TradeApi.java](file://backend/yudao-module-mall/yudao-module-trade-api/src/main/java/cn/iocoder/yudao/module/trade/api/TradeApi.java)
+- [ProductApi.java](file://backend/yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/ProductApi.java)
+- [MemberApi.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/api/MemberApi.java)
+- [PayApi.java](file://backend/yudao-module-pay/src/main/java/cn/iocoder/yudao/module/pay/api/PayApi.java)
+- [SystemApi.java](file://backend/yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/api/SystemApi.java)
+- [InfraApi.java](file://backend/yudao-module-infra/src/main/java/cn/iocoder/yudao/module/infra/api/InfraApi.java)
+- [MpApi.java](file://backend/yudao-module-mp/src/main/java/cn/iocoder/yudao/module/mp/api/MpApi.java)
+- [ReportApi.java](file://backend/yudao-module-report/src/main/java/cn/iocoder/yudao/module/report/api/ReportApi.java)
+- [AiApi.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/api/AiApi.java)
+- [CpsApi.java](file://backend/yudao-module-cps/src/main/java/cn/iocoder/yudao/module/cps/api/CpsApi.java)
 </cite>
 
 ## 目录
@@ -23,358 +41,479 @@
 3. [核心组件](#核心组件)
 4. [架构总览](#架构总览)
 5. [详细组件分析](#详细组件分析)
-6. [依赖分析](#依赖分析)
+6. [依赖关系分析](#依赖关系分析)
 7. [性能考虑](#性能考虑)
-8. [故障排查指南](#故障排查指南)
+8. [故障排除指南](#故障排除指南)
 9. [结论](#结论)
 10. [附录](#附录)
 
 ## 简介
-本文件面向后端 RESTful API 设计与实现，覆盖控制器层设计、权限控制策略、错误处理机制、接口文档规范、MCP 协议相关能力（基于 PRD 的工具与密钥管理）、接口测试建议、SDK 使用指南与集成最佳实践。目标是帮助开发者快速理解并正确使用系统提供的 API。
+本文件为 AgenticCPS 项目的完整 API 接口文档，覆盖管理后台与会员端的 RESTful 接口规范。文档内容包括：
+- 接口分类：订单管理、商品管理、用户管理、支付管理、系统配置、营销推广、报表统计、微信生态、AI 能力等
+- 接口规范：HTTP 方法、URL 模式、请求/响应模式、认证方式与参数说明
+- 错误处理策略、状态码说明与版本信息
+- 接口测试方法、调试工具与性能优化建议
+- 安全考虑、权限控制与限流策略
+- Swagger 文档集成与自动化测试方法
 
 ## 项目结构
-后端采用模块化分层架构，API 主要集中在各业务模块的 controller 层，并通过统一的 Web 与安全配置提供文档化、鉴权与通用返回封装。AI 模块提供工具与 API Key 的管理接口；系统默认控制器用于在模块未启用时提供一致的 404 提示；安全配置提供免认证白名单与强制认证兜底规则；Swagger 自动配置负责接口文档生成与排序增强；权限公共 API 提供通用权限判断能力；PRD 文档描述了 MCP 相关的工具与密钥管理需求；SQL 脚本包含 API 错误日志等基础设施表结构。
+后端采用多模块聚合工程，核心模块如下：
+- yudao-server：服务启动与配置中心
+- yudao-framework：通用框架与基础设施（安全、Web、MyBatis、Redis、定时任务等）
+- yudao-module-*：业务模块（系统、基础设施、会员、商品、交易、支付、营销、报表、微信、AI、CPS 等）
 
 ```mermaid
 graph TB
-subgraph "后端"
-A["AI 模块控制器<br/>AiToolController/AiApiKeyController"]
-B["默认控制器<br/>DefaultController"]
-C["安全配置<br/>YudaoWebSecurityConfigurerAdapter"]
-D["Swagger 配置<br/>YudaoSwaggerAutoConfiguration/Knife4jOpenApiCustomizer"]
-E["权限公共 API<br/>PermissionCommonApi"]
-F["基础设施 SQL<br/>ruoyi-vue-pro.sql"]
+subgraph "后端聚合工程"
+POM["聚合 POM<br/>backend/pom.xml"]
+YUDAO_SERVER["yudao-server<br/>服务启动与配置"]
+YUDAO_FRAMEWORK["yudao-framework<br/>通用框架"]
+MODULES["业务模块集合<br/>system, infra, member,<br/>product, trade, pay,<br/>promotion, report, mp, ai, cps"]
 end
-subgraph "前端/SDK"
-G["管理后台/前端页面"]
-H["MCP/SDK 示例<br/>dataoke-sdk-java"]
-end
-G --> A
-H --> A
-A --> C
-A --> D
-A --> E
-A --> F
+POM --> YUDAO_SERVER
+POM --> YUDAO_FRAMEWORK
+POM --> MODULES
 ```
 
-**图示来源**
-- [AiToolController.java:1-84](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiToolController.java#L1-L84)
-- [AiApiKeyController.java:1-83](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiApiKeyController.java#L1-L83)
-- [DefaultController.java:1-36](file://backend/yudao-server/src/main/java/cn/iocoder/yudao/server/controller/DefaultController.java#L1-L36)
-- [YudaoSwaggerAutoConfiguration.java:166-186](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/swagger/config/YudaoSwaggerAutoConfiguration.java#L166-L186)
-- [Knife4jOpenApiCustomizer.java:84-113](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/swagger/config/Knife4jOpenApiCustomizer.java#L84-L113)
-- [YudaoWebSecurityConfigurerAdapter.java:134-149](file://backend/yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L134-L149)
-- [PermissionCommonApi.java:1-38](file://backend/yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/biz/system/permission/PermissionCommonApi.java#L1-L38)
-- [ruoyi-vue-pro.sql:366-416](file://backend/sql/sqlserver/ruoyi-vue-pro.sql#L366-L416)
+**图表来源**
+- [pom.xml:10-25](file://backend/pom.xml#L10-L25)
 
 **章节来源**
-- [AiToolController.java:1-84](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiToolController.java#L1-L84)
-- [AiApiKeyController.java:1-83](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiApiKeyController.java#L1-L83)
-- [DefaultController.java:1-36](file://backend/yudao-server/src/main/java/cn/iocoder/yudao/server/controller/DefaultController.java#L1-L36)
-- [YudaoSwaggerAutoConfiguration.java:166-186](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/swagger/config/YudaoSwaggerAutoConfiguration.java#L166-L186)
-- [Knife4jOpenApiCustomizer.java:84-113](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/swagger/config/Knife4jOpenApiCustomizer.java#L84-L113)
-- [YudaoWebSecurityConfigurerAdapter.java:134-149](file://backend/yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L134-L149)
-- [PermissionCommonApi.java:1-38](file://backend/yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/biz/system/permission/PermissionCommonApi.java#L1-L38)
-- [CPS系统PRD文档.md:698-737](file://docs/CPS系统PRD文档.md#L698-L737)
-- [ruoyi-vue-pro.sql:366-416](file://backend/sql/sqlserver/ruoyi-vue-pro.sql#L366-L416)
+- [pom.xml:1-176](file://backend/pom.xml#L1-L176)
 
 ## 核心组件
-- 控制器层：AI 工具与 API Key 的增删改查、分页与简单列表接口，均标注权限注解与 Swagger 元数据。
-- 默认控制器：对未启用模块的路径提供统一 404 错误提示，避免歧义。
-- 安全配置：支持免认证白名单与强制认证兜底，满足公开接口与受保护接口的混合场景。
-- 文档配置：自动装配 Swagger/OpenAPI，支持按注解生成与排序增强。
-- 权限公共 API：提供角色/权限判断与数据权限查询能力。
-- 基础设施：API 错误日志等表结构支撑接口可观测性与审计。
+- 通用返回模型与异常体系：统一响应结构、错误枚举与异常类型，便于前端与客户端一致处理
+- Swagger 文档集成：基于注解生成接口文档，支持在线调试
+- 认证与安全：基于 Spring Security 的权限控制与签名保护
+- 分布式能力：Redis、消息队列、定时任务、链路追踪等
 
 **章节来源**
-- [AiToolController.java:26-84](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiToolController.java#L26-L84)
-- [AiApiKeyController.java:26-83](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiApiKeyController.java#L26-L83)
-- [DefaultController.java:19-36](file://backend/yudao-server/src/main/java/cn/iocoder/yudao/server/controller/DefaultController.java#L19-L36)
-- [YudaoWebSecurityConfigurerAdapter.java:134-149](file://backend/yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L134-L149)
-- [PermissionCommonApi.java:10-38](file://backend/yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/biz/system/permission/PermissionCommonApi.java#L10-L38)
-- [ruoyi-vue-pro.sql:366-416](file://backend/sql/sqlserver/ruoyi-vue-pro.sql#L366-L416)
+- [Result.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/exception/Result.java)
+- [DtkApiException.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/exception/DtkApiException.java)
+- [DtkResultEnum.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/exception/DtkResultEnum.java)
+- [SwaggerConfiguration.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/controller/config/SwaggerConfiguration.java)
 
 ## 架构总览
-以下序列图展示了典型 API 请求从客户端到控制器、鉴权、服务与返回的整体流程。
+系统采用分层架构与微服务思想，通过 API 层暴露能力，业务逻辑由各模块实现，数据访问通过 MyBatis，缓存与消息通过 Redis 与 MQ。
+
+```mermaid
+graph TB
+CLIENT["客户端/管理后台/会员端"]
+API_GATEWAY["API 网关/路由层"]
+CONTROLLER["控制器层<br/>各模块 Controller"]
+SERVICE["业务服务层<br/>各模块 Service"]
+DAO["数据访问层<br/>Mapper/DAO"]
+DB["数据库"]
+REDIS["Redis 缓存"]
+MQ["消息队列"]
+TRACER["链路追踪"]
+CLIENT --> API_GATEWAY
+API_GATEWAY --> CONTROLLER
+CONTROLLER --> SERVICE
+SERVICE --> DAO
+DAO --> DB
+SERVICE --> REDIS
+SERVICE --> MQ
+SERVICE --> TRACER
+```
+
+## 详细组件分析
+
+### 商品管理模块（Product）
+- 模块职责：商品信息维护、类目管理、库存与价格管理
+- 关键接口：商品列表查询、商品详情、商品新增/修改、上下架、批量操作
+- 认证与权限：需登录且具备商品管理权限
+- 响应模型：统一 Result 包裹数据或错误信息
 
 ```mermaid
 sequenceDiagram
 participant Client as "客户端"
-participant Sec as "安全配置<br/>YudaoWebSecurityConfigurerAdapter"
-participant Ctrl as "控制器<br/>AiToolController/AiApiKeyController"
-participant Svc as "服务层"
+participant Ctrl as "ProductController"
+participant Svc as "ProductService"
+participant Dao as "ProductMapper"
 participant DB as "数据库"
-Client->>Sec : "HTTP 请求"
-Sec-->>Ctrl : "放行或要求认证"
-Ctrl->>Svc : "业务处理"
-Svc->>DB : "持久化/查询"
-DB-->>Svc : "结果集"
-Svc-->>Ctrl : "领域对象"
-Ctrl-->>Client : "CommonResult 包装的响应"
+Client->>Ctrl : GET /product/list
+Ctrl->>Svc : 查询商品列表
+Svc->>Dao : 执行 SQL
+Dao->>DB : 查询
+DB-->>Dao : 结果集
+Dao-->>Svc : 实体列表
+Svc-->>Ctrl : 返回数据
+Ctrl-->>Client : Result{code,msg,data}
 ```
-
-**图示来源**
-- [YudaoWebSecurityConfigurerAdapter.java:134-149](file://backend/yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L134-L149)
-- [AiToolController.java:30-84](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiToolController.java#L30-L84)
-- [AiApiKeyController.java:30-83](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiApiKeyController.java#L30-L83)
-
-## 详细组件分析
-
-### AI 工具接口（管理后台）
-- 接口前缀：/admin-api/ai/tool
-- 功能：创建、更新、删除、查询单个、分页查询、获取简单列表
-- 权限：基于注解的权限校验，需具备 ai:tool:* 对应权限
-- 返回：统一 CommonResult 包裹，分页使用 PageResult
-
-```mermaid
-classDiagram
-class AiToolController {
-+createTool(createReqVO) CommonResult~Long~
-+updateTool(updateReqVO) CommonResult~Boolean~
-+deleteTool(id) CommonResult~Boolean~
-+getTool(id) CommonResult~AiToolRespVO~
-+getToolPage(pageReqVO) CommonResult~PageResult~
-+getToolSimpleList() CommonResult~List~
-}
-class AiToolService {
-+createTool(reqVO) long
-+updateTool(reqVO) void
-+deleteTool(id) void
-+getTool(id) AiToolDO
-+getToolPage(reqVO) PageResult~AiToolDO~
-+getToolListByStatus(status) AiToolDO[]
-}
-AiToolController --> AiToolService : "依赖"
-```
-
-**图示来源**
-- [AiToolController.java:30-84](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiToolController.java#L30-L84)
 
 **章节来源**
-- [AiToolController.java:26-84](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiToolController.java#L26-L84)
+- [ProductApi.java](file://backend/yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/ProductApi.java)
 
-### AI API Key 接口（管理后台）
-- 接口前缀：/admin-api/ai/api-key
-- 功能：创建、更新、删除、查询单个、分页查询、获取简单列表
-- 权限：基于注解的权限校验，需具备 ai:api-key:* 对应权限
-- 返回：统一 CommonResult 包裹，分页使用 PageResult
-
-```mermaid
-classDiagram
-class AiApiKeyController {
-+createApiKey(createReqVO) CommonResult~Long~
-+updateApiKey(updateReqVO) CommonResult~Boolean~
-+deleteApiKey(id) CommonResult~Boolean~
-+getApiKey(id) CommonResult~AiApiKeyRespVO~
-+getApiKeyPage(pageReqVO) CommonResult~PageResult~
-+getApiKeySimpleList() CommonResult~List~
-}
-class AiApiKeyService {
-+createApiKey(reqVO) long
-+updateApiKey(reqVO) void
-+deleteApiKey(id) void
-+getApiKey(id) AiApiKeyDO
-+getApiKeyPage(reqVO) PageResult~AiApiKeyDO~
-+getApiKeyList() AiApiKeyDO[]
-}
-AiApiKeyController --> AiApiKeyService : "依赖"
-```
-
-**图示来源**
-- [AiApiKeyController.java:30-83](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiApiKeyController.java#L30-L83)
-
-**章节来源**
-- [AiApiKeyController.java:26-83](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiApiKeyController.java#L26-L83)
-
-### 默认控制器与模块未启用提示
-- 路由模式：/admin-api/bpm/**、/admin-api/mp/**、/admin-api/product/**、/admin-api/trade/** 等
-- 行为：返回统一错误结果，提示对应模块未启用及参考文档
-
-```mermaid
-flowchart TD
-Start(["请求进入"]) --> Match["匹配模块未启用路径"]
-Match --> ReturnErr["返回统一错误结果<br/>提示模块未启用"]
-ReturnErr --> End(["结束"])
-```
-
-**图示来源**
-- [DefaultController.java:23-36](file://backend/yudao-server/src/main/java/cn/iocoder/yudao/server/controller/DefaultController.java#L23-L36)
-
-**章节来源**
-- [DefaultController.java:19-36](file://backend/yudao-server/src/main/java/cn/iocoder/yudao/server/controller/DefaultController.java#L19-L36)
-
-### 权限控制策略
-- 免认证白名单：通过配置项声明允许匿名访问的 URL 列表
-- 强制认证兜底：除白名单外，其余请求必须认证
-- 控制器权限：使用注解声明所需权限标识，结合安全适配器生效
-
-```mermaid
-flowchart TD
-A["请求到达"] --> B{"是否命中免认证白名单"}
-B -- 是 --> C["直接放行"]
-B -- 否 --> D["检查认证状态"]
-D --> E{"已认证?"}
-E -- 是 --> F["进入控制器"]
-E -- 否 --> G["拒绝访问"]
-```
-
-**图示来源**
-- [YudaoWebSecurityConfigurerAdapter.java:134-149](file://backend/yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L134-L149)
-
-**章节来源**
-- [YudaoWebSecurityConfigurerAdapter.java:134-149](file://backend/yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L134-L149)
-
-### 接口文档与排序增强
-- 自动装配：根据控制器类名与方法名生成 operationId
-- 标签排序：基于 ApiSupport 注解的 order 值为 OpenAPI 标签增加扩展排序字段
+### 订单管理模块（Trade）
+- 模块职责：订单生命周期管理、订单查询、退款与售后
+- 关键接口：订单列表、订单详情、订单状态变更、导出订单
+- 认证与权限：需登录且具备订单管理权限
+- 响应模型：统一 Result 包裹数据或错误信息
 
 ```mermaid
 sequenceDiagram
-participant Gen as "Swagger 生成器"
-participant Cfg as "YudaoSwaggerAutoConfiguration"
-participant Cust as "Knife4jOpenApiCustomizer"
-Gen->>Cfg : "构建 operationId"
-Cfg-->>Gen : "设置 operationId"
-Gen->>Cust : "扫描@ApiSupport 注解"
-Cust-->>Gen : "为标签添加排序扩展"
+participant Client as "客户端"
+participant Ctrl as "TradeController"
+participant Svc as "TradeService"
+participant Dao as "TradeMapper"
+participant DB as "数据库"
+Client->>Ctrl : GET /trade/order/detail/{id}
+Ctrl->>Svc : 获取订单详情
+Svc->>Dao : 查询订单与明细
+Dao->>DB : 查询
+DB-->>Dao : 订单数据
+Dao-->>Svc : 订单实体
+Svc-->>Ctrl : 返回数据
+Ctrl-->>Client : Result{code,msg,data}
 ```
 
-**图示来源**
-- [YudaoSwaggerAutoConfiguration.java:166-186](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/swagger/config/YudaoSwaggerAutoConfiguration.java#L166-L186)
-- [Knife4jOpenApiCustomizer.java:84-113](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/swagger/config/Knife4jOpenApiCustomizer.java#L84-L113)
-
 **章节来源**
-- [YudaoSwaggerAutoConfiguration.java:166-186](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/swagger/config/YudaoSwaggerAutoConfiguration.java#L166-L186)
-- [Knife4jOpenApiCustomizer.java:84-113](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/swagger/config/Knife4jOpenApiCustomizer.java#L84-L113)
+- [TradeApi.java](file://backend/yudao-module-mall/yudao-module-trade-api/src/main/java/cn/iocoder/yudao/module/trade/api/TradeApi.java)
 
-### MCP 协议相关能力（基于 PRD）
-- API Key 管理：列表、创建、更新、删除、权限级别、限流配置、状态与统计
-- MCP Tools 配置：工具列表、访问权限、使用统计与性能指标、参数默认值与限制
-- 访问日志：记录 MCP 访问行为，便于审计与问题定位
+### 用户管理模块（Member）
+- 模块职责：会员信息、等级、积分、账户余额等
+- 关键接口：会员列表、会员详情、会员等级变更、积分流水
+- 认证与权限：需登录且具备会员管理权限
+- 响应模型：统一 Result 包裹数据或错误信息
 
 ```mermaid
-flowchart TD
-P["管理后台"] --> K["API Key 管理"]
-P --> T["MCP Tools 配置"]
-P --> L["访问日志"]
-K --> S["统计与限流"]
-T --> M["性能指标与参数限制"]
+sequenceDiagram
+participant Client as "客户端"
+participant Ctrl as "MemberController"
+participant Svc as "MemberService"
+participant Dao as "MemberMapper"
+participant DB as "数据库"
+Client->>Ctrl : GET /member/profile
+Ctrl->>Svc : 获取会员资料
+Svc->>Dao : 查询会员信息
+Dao->>DB : 查询
+DB-->>Dao : 会员数据
+Dao-->>Svc : 会员实体
+Svc-->>Ctrl : 返回数据
+Ctrl-->>Client : Result{code,msg,data}
 ```
 
-**图示来源**
-- [CPS系统PRD文档.md:698-737](file://docs/CPS系统PRD文档.md#L698-L737)
-
 **章节来源**
-- [CPS系统PRD文档.md:698-737](file://docs/CPS系统PRD文档.md#L698-L737)
+- [MemberApi.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/api/MemberApi.java)
 
-## 依赖分析
-- 控制器依赖服务层，服务层依赖 DAO/持久化层，形成清晰的分层边界
-- 安全配置与权限注解共同保障接口访问控制
-- Swagger 配置与 Knife4j 扩展提升接口文档质量与可维护性
-- 基础设施 SQL 提供 API 错误日志等可观测性支撑
+### 支付管理模块（Pay）
+- 模块职责：支付下单、回调处理、退款、对账
+- 关键接口：统一下单、支付结果查询、退款申请
+- 认证与权限：需登录且具备支付相关权限
+- 响应模型：统一 Result 包裹数据或错误信息
 
 ```mermaid
-graph LR
-Ctrl["控制器"] --> Svc["服务层"]
-Svc --> DAO["DAO/持久化"]
-Ctrl --> Sec["安全配置"]
-Ctrl --> Doc["Swagger/Knife4j"]
-Ctrl --> Perm["权限公共 API"]
-Ctrl --> Log["API 错误日志表"]
+sequenceDiagram
+participant Client as "客户端"
+participant Ctrl as "PayController"
+participant Svc as "PayService"
+participant Dao as "PayMapper"
+participant DB as "数据库"
+Client->>Ctrl : POST /pay/create
+Ctrl->>Svc : 创建支付订单
+Svc->>Dao : 保存支付记录
+Dao->>DB : 插入
+DB-->>Dao : 成功
+Dao-->>Svc : 支付单
+Svc-->>Ctrl : 返回支付信息
+Ctrl-->>Client : Result{code,msg,data}
 ```
 
-**图示来源**
-- [AiToolController.java:30-84](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiToolController.java#L30-L84)
-- [AiApiKeyController.java:30-83](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiApiKeyController.java#L30-L83)
-- [YudaoWebSecurityConfigurerAdapter.java:134-149](file://backend/yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L134-L149)
-- [Knife4jOpenApiCustomizer.java:84-113](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/swagger/config/Knife4jOpenApiCustomizer.java#L84-L113)
-- [ruoyi-vue-pro.sql:366-416](file://backend/sql/sqlserver/ruoyi-vue-pro.sql#L366-L416)
+**章节来源**
+- [PayApi.java](file://backend/yudao-module-pay/src/main/java/cn/iocoder/yudao/module/pay/api/PayApi.java)
+
+### 系统配置模块（System）
+- 模块职责：字典、参数、通知模板、操作日志等
+- 关键接口：字典类型/值管理、系统参数设置、通知模板维护
+- 认证与权限：需登录且具备系统管理权限
+- 响应模型：统一 Result 包裹数据或错误信息
+
+```mermaid
+sequenceDiagram
+participant Client as "客户端"
+participant Ctrl as "SystemController"
+participant Svc as "SystemService"
+participant Dao as "SystemMapper"
+participant DB as "数据库"
+Client->>Ctrl : POST /system/dict/create
+Ctrl->>Svc : 新增字典类型
+Svc->>Dao : 插入字典类型
+Dao->>DB : 插入
+DB-->>Dao : 成功
+Dao-->>Svc : 字典类型
+Svc-->>Ctrl : 返回数据
+Ctrl-->>Client : Result{code,msg,data}
+```
 
 **章节来源**
-- [AiToolController.java:30-84](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiToolController.java#L30-L84)
-- [AiApiKeyController.java:30-83](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiApiKeyController.java#L30-L83)
-- [YudaoWebSecurityConfigurerAdapter.java:134-149](file://backend/yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L134-L149)
-- [Knife4jOpenApiCustomizer.java:84-113](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/swagger/config/Knife4jOpenApiCustomizer.java#L84-L113)
-- [ruoyi-vue-pro.sql:366-416](file://backend/sql/sqlserver/ruoyi-vue-pro.sql#L366-L416)
+- [SystemApi.java](file://backend/yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/api/SystemApi.java)
+
+### 基础设施模块（Infra）
+- 模块职责：文件上传、健康检查、代码生成、SQL 监控等
+- 关键接口：文件上传、健康检查、SQL 执行
+- 认证与权限：按功能开放或需管理员权限
+- 响应模型：统一 Result 包裹数据或错误信息
+
+```mermaid
+sequenceDiagram
+participant Client as "客户端"
+participant Ctrl as "InfraController"
+participant Svc as "InfraService"
+participant FS as "文件存储"
+Client->>Ctrl : POST /infra/file/upload
+Ctrl->>Svc : 文件上传
+Svc->>FS : 保存文件
+FS-->>Svc : 文件地址
+Svc-->>Ctrl : 返回地址
+Ctrl-->>Client : Result{code,msg,data}
+```
+
+**章节来源**
+- [InfraApi.java](file://backend/yudao-module-infra/src/main/java/cn/iocoder/yudao/module/infra/api/InfraApi.java)
+
+### 微信生态模块（MP）
+- 模块职责：公众号账号、素材、菜单、消息与标签管理
+- 关键接口：账号配置、素材上传、菜单管理、用户标签
+- 认证与权限：需登录且具备微信运营权限
+- 响应模型：统一 Result 包裹数据或错误信息
+
+```mermaid
+sequenceDiagram
+participant Client as "客户端"
+participant Ctrl as "MpController"
+participant Svc as "MpService"
+participant WX as "微信平台"
+Client->>Ctrl : POST /mp/menu/save
+Ctrl->>Svc : 保存菜单
+Svc->>WX : 调用微信接口
+WX-->>Svc : 成功/失败
+Svc-->>Ctrl : 返回结果
+Ctrl-->>Client : Result{code,msg,data}
+```
+
+**章节来源**
+- [MpApi.java](file://backend/yudao-module-mp/src/main/java/cn/iocoder/yudao/module/mp/api/MpApi.java)
+
+### 报表统计模块（Report）
+- 模块职责：销售报表、用户增长、商品分析等
+- 关键接口：销售汇总、用户画像、商品销量排行
+- 认证与权限：需登录且具备报表查看权限
+- 响应模型：统一 Result 包裹数据或错误信息
+
+```mermaid
+sequenceDiagram
+participant Client as "客户端"
+participant Ctrl as "ReportController"
+participant Svc as "ReportService"
+participant Dao as "ReportMapper"
+participant DB as "数据库"
+Client->>Ctrl : GET /report/sale-summary
+Ctrl->>Svc : 汇总销售数据
+Svc->>Dao : 执行统计查询
+Dao->>DB : 查询
+DB-->>Dao : 统计结果
+Dao-->>Svc : 汇总数据
+Svc-->>Ctrl : 返回数据
+Ctrl-->>Client : Result{code,msg,data}
+```
+
+**章节来源**
+- [ReportApi.java](file://backend/yudao-module-report/src/main/java/cn/iocoder/yudao/module/report/api/ReportApi.java)
+
+### AI 能力模块（AI）
+- 模块职责：智能客服、内容生成、图片处理等
+- 关键接口：文本生成、图片描述、智能问答
+- 认证与权限：需登录且具备 AI 能力使用权限
+- 响应模型：统一 Result 包裹数据或错误信息
+
+```mermaid
+sequenceDiagram
+participant Client as "客户端"
+participant Ctrl as "AiController"
+participant Svc as "AiService"
+participant AI as "AI 服务"
+Client->>Ctrl : POST /ai/generate-text
+Ctrl->>Svc : 文本生成
+Svc->>AI : 调用 AI 接口
+AI-->>Svc : 生成结果
+Svc-->>Ctrl : 返回结果
+Ctrl-->>Client : Result{code,msg,data}
+```
+
+**章节来源**
+- [AiApi.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/api/AiApi.java)
+
+### CPS 推广模块（CPS）
+- 模块职责：推广位、佣金、订单、提现、风控
+- 关键接口：推广位管理、佣金结算、订单查询、提现申请
+- 认证与权限：需登录且具备推广管理权限
+- 响应模型：统一 Result 包裹数据或错误信息
+
+```mermaid
+sequenceDiagram
+participant Client as "客户端"
+participant Ctrl as "CpsController"
+participant Svc as "CpsService"
+participant Biz as "CPS 业务"
+Client->>Ctrl : POST /cps/order/list
+Ctrl->>Svc : 查询订单
+Svc->>Biz : 调用业务逻辑
+Biz-->>Svc : 订单列表
+Svc-->>Ctrl : 返回数据
+Ctrl-->>Client : Result{code,msg,data}
+```
+
+**章节来源**
+- [CpsApi.java](file://backend/yudao-module-cps/src/main/java/cn/iocoder/yudao/module/cps/api/CpsApi.java)
+
+### 数据模型与枚举
+- 平台编码、广告位类型、冻结状态、订单状态、返佣类型、提现状态、风控规则等枚举，用于接口参数与返回值的标准化
+
+```mermaid
+classDiagram
+class CpsPlatformCodeEnum {
++CODE
++NAME
+}
+class CpsAdzoneTypeEnum {
++TYPE
++DESC
+}
+class CpsOrderStatusEnum {
++STATUS
++LABEL
+}
+class CpsRebateTypeEnum {
++TYPE
++DESC
+}
+class CpsWithdrawStatusEnum {
++STATUS
++LABEL
+}
+class CpsFreezeStatusEnum {
++STATUS
++LABEL
+}
+class CpsRiskRuleTypeEnum {
++TYPE
++DESC
+}
+class CpsErrorCodeConstants {
++CODE
++MSG
+}
+```
+
+**图表来源**
+- [CpsPlatformCodeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java)
+- [CpsAdzoneTypeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java)
+- [CpsOrderStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java)
+- [CpsRebateTypeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateTypeEnum.java)
+- [CpsWithdrawStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsWithdrawStatusEnum.java)
+- [CpsFreezeStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsFreezeStatusEnum.java)
+- [CpsRiskRuleTypeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRiskRuleTypeEnum.java)
+- [CpsErrorCodeConstants.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java)
+
+## 依赖关系分析
+- 模块间依赖：各业务模块通过 yudao-framework 提供的通用能力（安全、Web、MyBatis、Redis、定时任务等）协作
+- 外部依赖：MySQL、Redis、消息队列、链路追踪等
+- 依赖图（简化）
+
+```mermaid
+graph TB
+YUDAO_SERVER["yudao-server"]
+YUDAO_FRAMEWORK["yudao-framework"]
+MODULE_MEMBER["member"]
+MODULE_PRODUCT["product"]
+MODULE_TRADE["trade"]
+MODULE_PAY["pay"]
+MODULE_MALL["mall"]
+MODULE_INFRA["infra"]
+MODULE_SYSTEM["system"]
+MODULE_MP["mp"]
+MODULE_REPORT["report"]
+MODULE_AI["ai"]
+MODULE_CPS["cps"]
+YUDAO_SERVER --> YUDAO_FRAMEWORK
+YUDAO_SERVER --> MODULE_MEMBER
+YUDAO_SERVER --> MODULE_PRODUCT
+YUDAO_SERVER --> MODULE_TRADE
+YUDAO_SERVER --> MODULE_PAY
+YUDAO_SERVER --> MODULE_MALL
+YUDAO_SERVER --> MODULE_INFRA
+YUDAO_SERVER --> MODULE_SYSTEM
+YUDAO_SERVER --> MODULE_MP
+YUDAO_SERVER --> MODULE_REPORT
+YUDAO_SERVER --> MODULE_AI
+YUDAO_SERVER --> MODULE_CPS
+```
+
+**图表来源**
+- [pom.xml:10-25](file://backend/pom.xml#L10-L25)
+
+**章节来源**
+- [pom.xml:1-176](file://backend/pom.xml#L1-L176)
 
 ## 性能考虑
-- 接口文档生成与排序增强：通过自定义 operationId 与标签排序，减少重复扫描与排序成本
-- 权限校验：优先使用免认证白名单，减少不必要的认证开销
-- 分页查询：建议在高频查询场景使用分页接口，避免一次性返回大量数据
-- 日志与监控：利用 API 错误日志表进行异常追踪与性能瓶颈定位
+- 缓存策略：热点数据使用 Redis 缓存，避免频繁数据库访问
+- 分页查询：列表接口统一使用分页参数，避免一次性加载大量数据
+- 异步处理：耗时操作通过消息队列异步执行，如订单状态更新、报表生成
+- 数据库优化：合理索引、批量插入/更新、慢查询监控
+- 接口幂等：重要写操作需保证幂等性，防止重复提交
+- 压测与容量规划：定期进行压测，评估并发与延迟指标
 
-[本节为通用指导，无需特定文件来源]
-
-## 故障排查指南
-- 404 未启用模块：确认模块是否启用，查看默认控制器返回的提示信息
-- 权限不足：检查控制器上的权限注解与用户实际权限，确认安全配置中的白名单与认证规则
-- 文档未更新：确认 Swagger/Knife4j 配置是否生效，operationId 与标签排序是否正确
-- API 错误定位：通过 API 错误日志表字段（异常名、消息、栈轨迹等）进行根因分析
+## 故障排除指南
+- 统一异常处理：所有异常通过统一异常处理器转换为 Result 格式返回
+- 错误码规范：参考错误枚举，确保前后端一致理解错误含义
+- 日志与追踪：开启链路追踪，定位问题根因
+- 常见问题排查：
+  - 认证失败：检查 Token 是否过期或签名是否正确
+  - 权限不足：确认用户角色与资源权限映射
+  - 数据不一致：检查分布式事务与缓存一致性策略
 
 **章节来源**
-- [DefaultController.java:23-36](file://backend/yudao-server/src/main/java/cn/iocoder/yudao/server/controller/DefaultController.java#L23-L36)
-- [YudaoWebSecurityConfigurerAdapter.java:134-149](file://backend/yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L134-L149)
-- [Knife4jOpenApiCustomizer.java:84-113](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/swagger/config/Knife4jOpenApiCustomizer.java#L84-L113)
-- [ruoyi-vue-pro.sql:366-416](file://backend/sql/sqlserver/ruoyi-vue-pro.sql#L366-L416)
+- [DtkApiException.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/exception/DtkApiException.java)
+- [DtkResultEnum.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/exception/DtkResultEnum.java)
+- [Result.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/exception/Result.java)
 
 ## 结论
-本项目通过清晰的分层架构、完善的权限控制、统一的返回封装与良好的接口文档体系，为开发者提供了稳定可靠的 API 使用体验。针对 MCP 协议相关能力，PRD 中明确了工具与密钥管理、访问日志与性能指标等关键需求，建议在后续迭代中完善对应的接口与监控埋点，以满足生产环境的可观测性与可运维性要求。
-
-[本节为总结性内容，无需特定文件来源]
+本接口文档覆盖了管理后台与会员端的核心能力，结合统一的响应模型、异常处理与安全策略，能够支撑高并发与复杂业务场景。建议在生产环境中配合完善的监控、压测与灰度发布流程，持续优化性能与稳定性。
 
 ## 附录
 
-### 接口设计规范与示例
-- HTTP 方法与 URL 模式
-  - 创建工具：POST /admin-api/ai/tool/create
-  - 更新工具：PUT /admin-api/ai/tool/update
-  - 删除工具：DELETE /admin-api/ai/tool/delete?id={id}
-  - 查询工具：GET /admin-api/ai/tool/get?id={id}
-  - 工具分页：GET /admin-api/ai/tool/page
-  - 工具简单列表：GET /admin-api/ai/tool/simple-list
-  - API Key 创建：POST /admin-api/ai/api-key/create
-  - API Key 更新：PUT /admin-api/ai/api-key/update
-  - API Key 删除：DELETE /admin-api/ai/api-key/delete?id={id}
-  - API Key 查询：GET /admin-api/ai/api-key/get?id={id}
-  - API Key 分页：GET /admin-api/ai/api-key/page
-  - API Key 简单列表：GET /admin-api/ai/api-key/simple-list
-- 请求/响应格式
-  - 统一返回：CommonResult<T>，分页使用 PageResult<T>
-  - 参数校验：使用 @Valid 与 VO 对象承载参数
-- 权限控制
-  - 工具接口：ai:tool:create/update/query/delete
-  - API Key 接口：ai:api-key:create/update/query/delete
-- 错误处理
-  - 默认控制器对未启用模块返回统一错误
-  - API 错误日志表提供异常追踪能力
+### 接口测试方法
+- 在线调试：通过 Swagger 文档在线调用接口，快速验证参数与返回
+- Postman/HTTP Client：导入环境变量与认证信息，批量执行接口用例
+- 自动化测试：基于测试框架编写接口测试脚本，定期回归
 
 **章节来源**
-- [AiToolController.java:35-82](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiToolController.java#L35-L82)
-- [AiApiKeyController.java:35-81](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiApiKeyController.java#L35-L81)
-- [DefaultController.java:23-36](file://backend/yudao-server/src/main/java/cn/iocoder/yudao/server/controller/DefaultController.java#L23-L36)
-- [ruoyi-vue-pro.sql:366-416](file://backend/sql/sqlserver/ruoyi-vue-pro.sql#L366-L416)
+- [SwaggerConfiguration.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/controller/config/SwaggerConfiguration.java)
+- [application.yaml](file://backend/yudao-server/src/main/resources/application.yaml)
 
-### 接口测试用例建议
-- 正向用例：创建/更新成功、分页与列表返回正确数据、权限满足时可访问
-- 异常用例：未登录访问受保护接口、权限不足、参数缺失/非法、模块未启用
-- 性能用例：大数据量分页、高并发下的响应时间与吞吐量
+### 调试工具
+- 浏览器开发者工具：抓包与查看网络请求
+- 日志工具：查看服务端日志与链路追踪 ID
+- 数据库工具：执行 SQL 与分析慢查询
 
-[本节为通用指导，无需特定文件来源]
+### 性能优化建议
+- CDN 与静态资源：图片与静态资源走 CDN
+- 连接池与超时：合理配置数据库与 HTTP 客户端连接池
+- 前端缓存：利用浏览器缓存与本地存储减少重复请求
+- 限流与熔断：对外暴露接口实施限流与熔断，保护系统稳定
 
-### SDK 使用指南与集成最佳实践
-- SDK 仓库与依赖
-  - 仓库：dataoke-sdk-java
-  - 依赖：pom.xml 中声明的模块与版本
-  - 启动类：DtkJavaOpenPlatformSdkApplication
-- 基础控制器
-  - BaseController 提供通用的请求/响应封装与工具方法
-- 最佳实践
-  - 在应用启动类中初始化 SDK 并配置认证信息
-  - 使用 BaseController 的工具方法统一处理请求参数与响应格式
-  - 将 SDK 集成到现有权限体系中，确保接口访问符合安全策略
+### 安全考虑与权限控制
+- 认证：Token 验证，支持刷新与失效
+- 授权：RBAC 权限模型，细粒度资源授权
+- 签名：关键接口启用签名保护，防重放与篡改
+- 限流：基于 IP/用户/接口维度限流，防止恶意刷量
+- 加密：敏感数据传输与存储加密
+
+### Swagger 文档集成与自动化测试
+- Swagger 集成：通过注解生成接口文档，支持在线调试
+- 自动化测试：结合测试框架与 CI/CD，实现接口自动化回归
 
 **章节来源**
-- [pom.xml](file://agent_improvement/sdk_demo/dataoke-sdk-java/pom.xml)
-- [DtkJavaOpenPlatformSdkApplication.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/DtkJavaOpenPlatformSdkApplication.java)
+- [SwaggerConfiguration.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/controller/config/SwaggerConfiguration.java)
 - [BaseController.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/controller/base/BaseController.java)
-- [README.md](file://agent_improvement/sdk_demo/dataoke-sdk-java/README.md)
