@@ -1,4 +1,4 @@
-﻿package cn.iocoder.yudao.module.cps.job;
+package cn.iocoder.yudao.module.cps.job;
 
 import cn.iocoder.yudao.framework.quartz.core.handler.JobHandler;
 import cn.iocoder.yudao.module.cps.service.statistics.CpsStatisticsService;

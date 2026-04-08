@@ -1,4 +1,4 @@
-﻿package cn.iocoder.yudao.module.cps.dal.dataobject.withdraw;
+package cn.iocoder.yudao.module.cps.dal.dataobject.withdraw;
 
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import cn.iocoder.yudao.module.cps.enums.CpsWithdrawStatusEnum;

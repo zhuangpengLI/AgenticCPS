@@ -1,4 +1,4 @@
-﻿package cn.iocoder.yudao.module.cps.dal.dataobject.rebate;
+package cn.iocoder.yudao.module.cps.dal.dataobject.rebate;
 
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;

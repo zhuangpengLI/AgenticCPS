@@ -1,4 +1,4 @@
-﻿package cn.iocoder.yudao.module.cps.dal.dataobject.order;
+package cn.iocoder.yudao.module.cps.dal.dataobject.order;
 
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import cn.iocoder.yudao.module.cps.enums.CpsFreezeStatusEnum;

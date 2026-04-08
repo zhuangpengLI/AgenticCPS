@@ -2,19 +2,27 @@
 
 <cite>
 **本文引用的文件**
-- [CPS系统PRD文档.md](file://docs/CPS系统PRD文档.md)
+- [yudao-module-cps/pom.xml](file://backend/yudao-module-cps/pom.xml)
+- [yudao-module-cps-api/pom.xml](file://backend/yudao-module-cps/yudao-module-cps-api/pom.xml)
+- [CpsPlatformCodeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java)
 - [CpsAdzoneTypeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java)
 - [CpsOrderStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java)
 - [CpsRebateStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java)
-- [CpsRiskRuleTypeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRiskRuleTypeEnum.java)
-- [CpsPlatformCodeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java)
 - [CpsRebateTypeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateTypeEnum.java)
 - [CpsWithdrawStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsWithdrawStatusEnum.java)
+- [CpsRiskRuleTypeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRiskRuleTypeEnum.java)
 - [CpsErrorCodeConstants.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java)
 - [CpsFreezeStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsFreezeStatusEnum.java)
-- [CpsOrderServiceImpl.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/service/order/CpsOrderServiceImpl.java)
+- [CPS系统PRD文档.md](file://docs/CPS系统PRD文档.md)
 - [index.vue](file://frontend/mall-uniapp/pages/commission/index.vue)
 </cite>
+
+## 更新摘要
+**所做更改**
+- 新增多平台适配器集成和MCP协议支持的业务描述
+- 补充完整的CPS管理功能模块说明
+- 更新平台配置、推广位管理、订单处理、返利计算、提现结算、风险控制等核心业务流程
+- 增强系统架构图以反映新的技术特性
 
 ## 目录
 1. [引言](#引言)
@@ -30,6 +38,8 @@
 
 ## 引言
 本文件面向CPS（Cost Per Sale）联盟营销业务，系统性阐述其核心概念、业务流程与价值主张，并结合仓库中的PRD与代码实现，给出系统架构、模块划分、技术选型、关键指标、收益分配与风控策略、以及可视化流程图与时序图。CPS模式通过聚合主流电商联盟平台能力，为消费者提供返利查询、跨平台比价与推广链接生成，为推广者提供佣金收益，为平台运营方提供可持续的佣金分成与数据洞察。
+
+**更新** 本版本反映了CPS业务模块现已包含完整的CPS管理功能，涵盖平台配置、推广位管理、订单处理、返利计算、提现结算、风险控制等核心业务流程，支持多平台适配器集成和MCP协议。
 
 ## 项目结构
 该仓库采用前后端分离与多模块分层的工程组织方式：
@@ -52,7 +62,9 @@ subgraph "外部平台"
 TB["淘宝联盟"]
 JD["京东联盟"]
 PDD["拼多多联盟"]
-end
+DY["抖音联盟"]
+MCP["MCP协议适配器"]
+END
 FE_Mall --> API
 FE_Admin --> API
 API --> BIZ
@@ -60,24 +72,28 @@ BIZ --> FRAME
 BIZ --> TB
 BIZ --> JD
 BIZ --> PDD
+BIZ --> DY
+BIZ --> MCP
 ```
 
 **章节来源**
-- [CPS系统PRD文档.md: 19-78:19-78](file://docs/CPS系统PRD文档.md#L19-L78)
-- [index.vue: 1-58:1-58](file://frontend/mall-uniapp/pages/commission/index.vue#L1-L58)
+- [yudao-module-cps/pom.xml: 17-20:17-20](file://backend/yudao-module-cps/pom.xml#L17-L20)
+- [CpsPlatformCodeEnum.java: 18-22:18-22](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java#L18-L22)
 
 ## 核心组件
 - 平台与推广位
-  - 平台编码枚举涵盖淘宝、京东、拼多多等主流联盟平台，用于统一接入与配置。
+  - 平台编码枚举涵盖淘宝、京东、拼多多、抖音等主流联盟平台，用于统一接入与配置。
   - 推广位类型枚举区分通用、渠道专属与用户专属，支撑精细化收益分配与风控。
 - 订单与返利
   - 订单状态枚举覆盖下单、付款、收货、结算、返利到账、退款、失效等关键节点。
-  - 返利状态与类型枚举分别刻画“待结算/已到账/已扣回”与“返利入账/返利扣回/系统调整”的生命周期。
+  - 返利状态与类型枚举分别刻画"待结算/已到账/已扣回"与"返利入账/返利扣回/系统调整"的生命周期。
 - 提现与风控
   - 提现状态枚举覆盖申请、审核、通过、驳回、成功、失败、退回等环节。
   - 风控规则类型包含频率限制与黑名单两类，支撑自动化风控与人工干预。
 - 错误码体系
   - 以段式编号规范定义平台配置、推广位、订单、返利、账户、提现、统计、MCP、转链、冻结、风控等模块的错误码，便于统一异常处理与排障。
+
+**更新** 新增MCP协议支持和更多平台适配器集成能力。
 
 **章节来源**
 - [CpsPlatformCodeEnum.java: 1-45:1-45](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java#L1-L45)
@@ -88,9 +104,10 @@ BIZ --> PDD
 - [CpsWithdrawStatusEnum.java: 1-44:1-44](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsWithdrawStatusEnum.java#L1-L44)
 - [CpsRiskRuleTypeEnum.java: 1-39:1-39](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRiskRuleTypeEnum.java#L1-L39)
 - [CpsErrorCodeConstants.java: 1-65:1-65](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L1-L65)
+- [CpsFreezeStatusEnum.java: 1-41:1-41](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsFreezeStatusEnum.java#L1-L41)
 
 ## 架构总览
-系统围绕“会员—平台—运营”三方协作展开，采用多平台API接入与统一订单同步机制，配合返利结算与提现流程，形成闭环。
+系统围绕"会员—平台—运营"三方协作展开，采用多平台API接入与统一订单同步机制，配合返利结算与提现流程，形成闭环。新增MCP协议适配器支持AI智能推荐和Agent集成。
 
 ```mermaid
 graph TB
@@ -104,27 +121,34 @@ end
 subgraph "业务核心"
 SVC["CPS 业务服务<br/>订单/返利/提现/风控"]
 ENUM["枚举与错误码<br/>状态/类型/规则"]
-end
+MCP["MCP协议适配器<br/>AI智能推荐"]
+END
 subgraph "平台对接"
 PTB["淘宝联盟"]
 PJD["京东联盟"]
 PPDD["拼多多联盟"]
-end
+PDY["抖音联盟"]
+END
 U --> |"搜索/比价/生成推广链接"| SVC
 OP --> |"配置/审核/统计"| SVC
 SUPER --> |"系统配置/风控"| SVC
 SVC --> ENUM
+SVC --> MCP
 SVC --> PTB
 SVC --> PJD
 SVC --> PPDD
+SVC --> PDY
 ```
 
+**更新** 新增MCP协议适配器和更多电商平台支持。
+
 **图表来源**
-- [CPS系统PRD文档.md: 80-261:80-261](file://docs/CPS系统PRD文档.md#L80-L261)
+- [yudao-module-cps/pom.xml: 17-20:17-20](file://backend/yudao-module-cps/pom.xml#L17-L20)
 - [CpsPlatformCodeEnum.java: 18-22:18-22](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java#L18-L22)
 
 **章节来源**
-- [CPS系统PRD文档.md: 80-261:80-261](file://docs/CPS系统PRD文档.md#L80-L261)
+- [yudao-module-cps/pom.xml: 17-20:17-20](file://backend/yudao-module-cps/pom.xml#L17-L20)
+- [CpsPlatformCodeEnum.java: 18-22:18-22](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java#L18-L22)
 
 ## 详细组件分析
 
@@ -200,7 +224,7 @@ SVC-->>U : "展示并记录转链日志"
 - [CPS系统PRD文档.md: 152-181:152-181](file://docs/CPS系统PRD文档.md#L152-L181)
 
 ### 订单同步与结算流程
-- 定时任务每5分钟触发，遍历启用平台，增量查询订单；解析新订单进行归因匹配入库，更新已有订单状态；当订单变为“已结算”，触发返利结算流程（计算可分配佣金、查询返利比例、入账钱包、创建返利记录并通知会员）；若变为“已退款”，触发返利扣回流程（已入账则扣减余额，未入账则取消待结算记录）。
+- 定时任务每5分钟触发，遍历启用平台，增量查询订单；解析新订单进行归因匹配入库，更新已有订单状态；当订单变为"已结算"，触发返利结算流程（计算可分配佣金、查询返利比例、入账钱包、创建返利记录并通知会员）；若变为"已退款"，触发返利扣回流程（已入账则扣减余额，未入账则取消待结算记录）。
 
 ```mermaid
 flowchart TD
@@ -353,7 +377,9 @@ OP["管理后台"] --> API
 - [CpsRiskRuleTypeEnum.java: 18-20:18-20](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRiskRuleTypeEnum.java#L18-L20)
 
 ## 结论
-本CPS系统通过标准化的多平台接入、清晰的订单与返利状态机、完善的提现与风控机制，构建了从“搜索/比价/推广—订单同步—返利结算—提现到账”的完整闭环。配合管理后台的配置、审核与数据看板，既能满足运营效率，也能保障用户体验与平台收益的可持续增长。
+本CPS系统通过标准化的多平台接入、清晰的订单与返利状态机、完善的提现与风控机制，构建了从"搜索/比价/推广—订单同步—返利结算—提现到账"的完整闭环。配合管理后台的配置、审核与数据看板，既能满足运营效率，也能保障用户体验与平台收益的可持续增长。
+
+**更新** 新版本增强了多平台适配器集成能力和MCP协议支持，为未来的AI智能推荐和Agent集成奠定了基础。
 
 ## 附录
 - 关键指标建议
@@ -364,3 +390,7 @@ OP["管理后台"] --> API
   - 用户满意度：提现成功率、返利到账时效
 - 商业模式解读
   - 平台通过佣金分成与广告位收益获益，CPS系统作为流量入口与转化通道，持续优化ROI与用户体验是关键。
+- 技术演进方向
+  - 支持更多电商平台接入，包括抖音等新兴平台
+  - 集成MCP协议实现AI智能推荐和Agent自动化
+  - 优化多平台适配器架构，提升系统扩展性和维护性
