@@ -47,7 +47,7 @@
 
 ## 更新摘要
 **所做更改**
-- 更新CPS模块管理后台API路径，修正为/admin-api前缀
+- 更新CPS模块管理后台API路径，从/admin-api/cps/*标准化为/cps/*
 - 新增CPS推广位管理、返利配置、提现管理、数据统计、平台配置、风控规则、冻结解冻等完整管理接口
 - 新增CPS会员端API，包括商品搜索、推广链接生成、返利账户和记录查询
 - 完善CPS模块的接口分类和权限控制说明
@@ -378,13 +378,15 @@ Ctrl-->>Client : Result{code,msg,data}
 - 冻结解冻：冻结配置管理、冻结记录管理、手动解冻
 - 数据统计：运营看板、趋势图表、平台占比
 
+**更新** 管理后台API路径已标准化，从/admin-api/cps/*更新为/cps/*
+
 ```mermaid
 sequenceDiagram
 participant Client as "管理后台客户端"
 participant Ctrl as "CpsOrderController"
 participant Svc as "CpsOrderService"
 participant Biz as "CPS 业务"
-Client->>Ctrl : GET /admin-api/cps/order/page
+Client->>Ctrl : GET /cps/order/page
 Ctrl->>Svc : 查询订单分页
 Svc->>Biz : 调用业务逻辑
 Biz-->>Svc : 订单分页数据
@@ -530,7 +532,7 @@ YUDAO_SERVER --> MODULE_CPS
 - [Result.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/exception/Result.java)
 
 ## 结论
-本接口文档覆盖了管理后台与会员端的核心能力，结合统一的响应模型、异常处理与安全策略，能够支撑高并发与复杂业务场景。CPS模块现已完整支持管理后台的推广位、订单、返利、提现、风控、冻结解冻、平台配置和数据统计等功能，以及会员端的商品搜索、推广链接生成、返利账户和记录查询功能。建议在生产环境中配合完善的监控、压测与灰度发布流程，持续优化性能与稳定性。
+本接口文档覆盖了管理后台与会员端的核心能力，结合统一的响应模型、异常处理与安全策略，能够支撑高并发与复杂业务场景。CPS模块现已完整支持管理后台的推广位、订单、返利、提现、风控、冻结解冻、平台配置和数据统计等功能，以及会员端的商品搜索、推广链接生成、返利账户和记录查询功能。管理后台API路径已标准化为/cps/*，提升了接口的一致性和可维护性。建议在生产环境中配合完善的监控、压测与灰度发布流程，持续优化性能与稳定性。
 
 ## 附录
 

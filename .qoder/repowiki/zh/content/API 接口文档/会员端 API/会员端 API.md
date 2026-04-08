@@ -4,7 +4,7 @@
 **本文引用的文件**
 - [MemberUserController.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/user/MemberUserController.java)
 - [MemberStatisticsController.java](file://backend/yudao-module-mall/yudao-module-statistics/src/main/java/cn/iocoder/yudao/module/statistics/controller/admin/member/MemberStatisticsController.java)
-- [CpsOrderController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/icode\ry/yudao/module/cps/controller/admin/order/CpsOrderController.java)
+- [CpsOrderController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/order/CpsOrderController.java)
 - [PayOrderController.java](file://backend/yudao-module-pay/src/main/java/cn/iocoder/yudao/module/pay/controller/admin/order/PayOrderController.java)
 - [TradeOrderController.java](file://backend/yudao-module-trade/src/main/java/cn/iocoder/yudao/module/trade/controller/admin/order/TradeOrderController.java)
 - [ProductSpuController.java](file://backend/yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java)
@@ -29,6 +29,9 @@
 - [AiMusicController.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/AiMusicController.java)
 - [AiWorkflowController.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/workflow/AiWorkflowController.java)
 - [AiWriteController.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/write/AiWriteController.java)
+- [AppCpsRebateController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/rebate/AppCpsRebateController.java)
+- [CpsRebateConfigController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateConfigController.java)
+- [CpsRebateRecordController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateRecordController.java)
 - [CommonResult.java](file://backend/yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/pojo/CommonResult.java)
 - [PageResult.java](file://backend/yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/pojo/PageResult.java)
 - [WebFrameworkUtils.java](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/web/core/util/WebFrameworkUtils.java)
@@ -58,6 +61,12 @@
 - [AiWriteDO.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/write/AiWriteDO.java)
 </cite>
 
+## 更新摘要
+**变更内容**
+- 更新会员端返利接口路径，从 `/app-api/cps/rebate` 标准化为 `/cps/rebate`
+- 更新PRD文档中的接口路径说明
+- 新增App端返利接口的详细说明
+
 ## 目录
 1. [简介](#简介)
 2. [项目结构](#项目结构)
@@ -71,7 +80,7 @@
 10. [附录](#附录)
 
 ## 简介
-本文件为会员端 API 接口文档，聚焦移动端与小程序端的接口规范，覆盖商品搜索、推广链接生成、订单查询、用户认证、钱包管理等核心功能。文档对每个接口提供请求参数、响应格式、认证方式与业务逻辑说明，并给出调用示例、错误处理与状态码说明。同时结合移动端特性，补充网络优化与用户体验相关的接口设计建议。
+本文件为会员端 API 接口文档，聚焦移动端与小程序端的接口规范，覆盖商品搜索、推广链接生成、订单查询、用户认证、钱包管理、返利管理等核心功能。文档对每个接口提供请求参数、响应格式、认证方式与业务逻辑说明，并给出调用示例、错误处理与状态码说明。同时结合移动端特性，补充网络优化与用户体验相关的接口设计建议。
 
 ## 项目结构
 后端采用模块化架构，会员相关能力主要分布在 member、mall、trade、pay、cps、ai 等模块中；前端包含 admin-uniapp、admin-vue3、mall-uniapp 等多端实现。会员端 API 主要通过 Spring MVC 控制器暴露，统一返回体使用 CommonResult，分页使用 PageResult。
@@ -95,6 +104,11 @@ subgraph "交易与支付"
 TO["TradeOrderController<br/>交易订单"]
 PO["PayOrderController<br/>支付订单"]
 CO["CpsOrderController<br/>CPS 订单"]
+end
+subgraph "返利管理"
+ARC["AppCpsRebateController<br/>App返利接口"]
+CRC["CpsRebateConfigController<br/>返利配置"]
+RCR["CpsRebateRecordController<br/>返利记录"]
 end
 subgraph "AI 能力"
 AC["AiChatConversationController<br/>对话"]
@@ -123,6 +137,9 @@ MU --- PC
 MU --- TO
 MU --- PO
 MU --- CO
+MU --- ARC
+MU --- CRC
+MU --- RCR
 MU --- AC
 MU --- AM
 MU --- AI
@@ -139,7 +156,7 @@ MU --- AW
 MU --- AX
 ```
 
-图表来源
+**图表来源**
 - [MemberUserController.java:41-124](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/user/MemberUserController.java#L41-L124)
 - [MemberLevelController.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/level/MemberLevelController.java)
 - [MemberGroupController.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/group/MemberGroupController.java)
@@ -152,6 +169,9 @@ MU --- AX
 - [TradeOrderController.java](file://backend/yudao-module-trade/src/main/java/cn/iocoder/yudao/module/trade/controller/admin/order/TradeOrderController.java)
 - [PayOrderController.java](file://backend/yudao-module-pay/src/main/java/cn/iocoder/yudao/module/pay/controller/admin/order/PayOrderController.java)
 - [CpsOrderController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/order/CpsOrderController.java)
+- [AppCpsRebateController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/rebate/AppCpsRebateController.java)
+- [CpsRebateConfigController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateConfigController.java)
+- [CpsRebateRecordController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateRecordController.java)
 - [AiChatConversationController.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatConversationController.java)
 - [AiChatMessageController.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatMessageController.java)
 - [AiImageController.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/image/AiImageController.java)
@@ -167,7 +187,7 @@ MU --- AX
 - [AiWorkflowController.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/workflow/AiWorkflowController.java)
 - [AiWriteController.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/write/AiWriteController.java)
 
-章节来源
+**章节来源**
 - [MemberUserController.java:41-124](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/user/MemberUserController.java#L41-L124)
 
 ## 核心组件
@@ -176,7 +196,7 @@ MU --- AX
 - 认证与权限：基于 Spring Security 的注解进行权限控制，如 hasPermission。
 - 登录上下文：通过 WebFrameworkUtils 获取当前登录用户 ID，用于审计与操作记录。
 
-章节来源
+**章节来源**
 - [CommonResult.java](file://backend/yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/pojo/CommonResult.java)
 - [PageResult.java](file://backend/yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/pojo/PageResult.java)
 - [WebFrameworkUtils.java](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/web/core/util/WebFrameworkUtils.java)
@@ -203,7 +223,7 @@ Svc-->>Ctrl : "业务结果"
 Ctrl-->>Client : "CommonResult/分页结果"
 ```
 
-图表来源
+**图表来源**
 - [MemberUserController.java:54-96](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/user/MemberUserController.java#L54-L96)
 - [CommonResult.java](file://backend/yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/pojo/CommonResult.java)
 - [PageResult.java](file://backend/yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/pojo/PageResult.java)
@@ -234,12 +254,12 @@ Svc-->>Ctrl : "true"
 Ctrl-->>Client : "CommonResult<Boolean>"
 ```
 
-图表来源
+**图表来源**
 - [MemberUserController.java:62-68](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/user/MemberUserController.java#L62-L68)
 - [MemberLevelDO.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/dal/dataobject/level/MemberLevelDO.java)
 - [MemberPointRecordDO.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/dal/dataobject/point/MemberPointRecordDO.java)
 
-章节来源
+**章节来源**
 - [MemberUserController.java:54-121](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/user/MemberUserController.java#L54-L121)
 
 ### 商品搜索（SPU）
@@ -248,7 +268,7 @@ Ctrl-->>Client : "CommonResult<Boolean>"
 - 响应：分页返回商品列表，包含主图、标题、券后价、佣金比例等关键信息
 - 移动端优化：支持懒加载、图片压缩、本地缓存策略
 
-章节来源
+**章节来源**
 - [ProductSpuController.java](file://backend/yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java)
 
 ### 推广链接生成
@@ -257,7 +277,7 @@ Ctrl-->>Client : "CommonResult<Boolean>"
 - 响应：短链或长链地址，包含追踪参数
 - 注意：需校验推广位权限与商品有效性
 
-章节来源
+**章节来源**
 - [CpsOrderController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/order/CpsOrderController.java)
 - [CpsErrorCodeConstants.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java)
 
@@ -285,12 +305,12 @@ Svc-->>Ctrl : "PageResult"
 Ctrl-->>Client : "CommonResult<PageResult>"
 ```
 
-图表来源
+**图表来源**
 - [TradeOrderController.java](file://backend/yudao-module-trade/src/main/java/cn/iocoder/yudao/module/trade/controller/admin/order/TradeOrderController.java)
 - [PayOrderController.java](file://backend/yudao-module-pay/src/main/java/cn/iocoder/yudao/module/pay/controller/admin/order/PayOrderController.java)
 - [CpsOrderController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/order/CpsOrderController.java)
 
-章节来源
+**章节来源**
 - [TradeOrderController.java](file://backend/yudao-module-trade/src/main/java/cn/iocoder/yudao/module/trade/controller/admin/order/TradeOrderController.java)
 - [PayOrderController.java](file://backend/yudao-module-pay/src/main/java/cn/iocoder/yudao/module/pay/controller/admin/order/PayOrderController.java)
 - [CpsOrderController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/order/CpsOrderController.java)
@@ -301,7 +321,7 @@ Ctrl-->>Client : "CommonResult<PageResult>"
 - 权限：接口通过注解声明所需权限，如 hasPermission
 - 登录上下文：通过 WebFrameworkUtils 获取当前登录用户 ID，用于审计与操作记录
 
-章节来源
+**章节来源**
 - [SecurityConstants.java](file://backend/yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/util/SecurityConstants.java)
 - [WebFrameworkUtils.java](file://backend/yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/web/core/util/WebFrameworkUtils.java)
 
@@ -311,7 +331,7 @@ Ctrl-->>Client : "CommonResult<PageResult>"
 - 响应：账户余额、流水列表、提现状态
 - 移动端优化：离线缓存最近流水、余额数字动画、弱网提示
 
-章节来源
+**章节来源**
 - [MemberPointRecordController.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/point/MemberPointRecordController.java)
 - [MemberUserDO.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/dal/dataobject/user/MemberUserDO.java)
 
@@ -321,7 +341,7 @@ Ctrl-->>Client : "CommonResult<PageResult>"
 - 分组：用户分组管理、分组规则
 - 响应：等级/标签/分组实体列表与详情
 
-章节来源
+**章节来源**
 - [MemberLevelController.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/level/MemberLevelController.java)
 - [MemberTagController.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/tag/MemberTagController.java)
 - [MemberGroupController.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/group/MemberGroupController.java)
@@ -347,15 +367,69 @@ Grant --> Record["记录签到日志"]
 Record --> Done(["结束"])
 ```
 
-图表来源
+**图表来源**
 - [MemberSignInConfigController.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/signin/MemberSignInConfigController.java)
 - [MemberSignInRecordController.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/signin/MemberSignInRecordController.java)
 - [MemberSignInConfigDO.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/dal/dataobject/signin/MemberSignInConfigDO.java)
 - [MemberSignInRecordDO.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/dal/dataobject/signin/MemberSignInRecordDO.java)
 
-章节来源
+**章节来源**
 - [MemberSignInConfigController.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/signin/MemberSignInConfigController.java)
 - [MemberSignInRecordController.java](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/signin/MemberSignInRecordController.java)
+
+### 返利管理（App端）
+**更新** 返利接口路径已标准化为 `/cps/rebate`
+
+- 接口：返利账户查询、返利记录分页查询
+- 路径：`/cps/rebate/account`、`/cps/rebate/record/page`
+- 权限：需要登录认证
+- 关键点：
+  - 返利账户包含累计返利总额、可用余额、冻结余额、已提现金额等信息
+  - 返利记录包含平台编码、平台订单号、商品标题、订单金额、返利金额、返利类型、返利状态等
+  - 自动初始化返利账户，确保会员首次使用时有账户信息
+
+```mermaid
+sequenceDiagram
+participant Client as "客户端"
+participant Ctrl as "AppCpsRebateController"
+participant Svc as "CpsRebateRecordService/CpsRebateSettleService"
+participant DAO as "CpsRebateAccountDO/CpsRebateRecordDO"
+participant DB as "数据库"
+Client->>Ctrl : "GET /cps/rebate/account"
+Ctrl->>Ctrl : "获取当前登录用户ID"
+Ctrl->>Svc : "getOrInitAccount(memberId)"
+Svc->>DAO : "查询/初始化账户"
+DAO->>DB : "SQL 执行"
+DB-->>DAO : "账户信息"
+DAO-->>Svc : "账户对象"
+Svc-->>Ctrl : "账户对象"
+Ctrl-->>Client : "CommonResult<AppCpsRebateAccountRespVO>"
+```
+
+**图表来源**
+- [AppCpsRebateController.java:44-50](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/rebate/AppCpsRebateController.java#L44-L50)
+- [AppCpsRebateController.java:58-65](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/rebate/AppCpsRebateController.java#L58-L65)
+
+**章节来源**
+- [AppCpsRebateController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/rebate/AppCpsRebateController.java)
+
+### 返利配置管理（管理端）
+- 接口：返利配置的创建、更新、删除、查询、分页查询、获取启用列表
+- 路径：`/cps/rebate-config/*`
+- 权限：需要相应管理权限
+- 关键点：支持多维度返利配置，包括等级返利规则和会员专属返利
+
+**章节来源**
+- [CpsRebateConfigController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateConfigController.java)
+
+### 返利记录管理（管理端）
+- 接口：返利记录分页查询、详情查询、触发订单退款回扣
+- 路径：`/cps/rebate-record/*`
+- 权限：需要相应管理权限
+- 关键点：支持手动触发退款回扣，确保订单取消或退货时的财务准确性
+
+**章节来源**
+- [CpsRebateRecordController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateRecordController.java)
 
 ### AI 能力（移动端可选）
 - 对话：创建会话、发送消息、历史记录
@@ -365,7 +439,7 @@ Record --> Done(["结束"])
 - 工具：外部工具集成
 - 移动端优化：离线缓存常用对话、图片压缩上传、弱网重试
 
-章节来源
+**章节来源**
 - [AiChatConversationController.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatConversationController.java)
 - [AiChatMessageController.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatMessageController.java)
 - [AiImageController.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/image/AiImageController.java)
@@ -389,17 +463,17 @@ Ctrl --> CR["CommonResult/分页"]
 Ctrl --> EC["错误码常量"]
 ```
 
-图表来源
+**图表来源**
 - [MemberUserController.java:43-52](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/user/MemberUserController.java#L43-L52)
 - [CommonResult.java](file://backend/yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/pojo/CommonResult.java)
 - [ErrorCodeConstants.java](file://backend/yudao-module-mp/src/main/java/cn/iocoder/yudao/module/mp/enums/ErrorCodeConstants.java)
 
-章节来源
+**章节来源**
 - [MemberUserController.java:43-52](file://backend/yudao-module-member/src/main/java/cn/iocoder/yudao/module/member/controller/admin/user/MemberUserController.java#L43-L52)
 
 ## 性能考虑
 - 分页与过滤：优先在数据库侧完成分页与过滤，避免一次性返回大量数据
-- 缓存策略：热点数据（商品详情、用户信息）可引入 Redis 缓存，设置合理过期时间
+- 缓存策略：热点数据（商品详情、用户信息、返利账户）可引入 Redis 缓存，设置合理过期时间
 - 网络优化：移动端建议启用 HTTP/2、GZIP 压缩、请求合并与防抖
 - 图片优化：按屏幕密度提供多尺寸资源、懒加载、骨架屏
 - 弱网处理：失败重试、降级策略、离线缓存
@@ -411,20 +485,22 @@ Ctrl --> EC["错误码常量"]
 - 业务异常：业务逻辑失败返回对应错误码与提示信息
 - 日志定位：结合服务端日志与链路追踪，快速定位问题
 
-章节来源
+**章节来源**
 - [ErrorCodeConstants.java](file://backend/yudao-module-mp/src/main/java/cn/iocoder/yudao/module/mp/enums/ErrorCodeConstants.java)
 - [CpsErrorCodeConstants.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java)
 
 ## 结论
-会员端 API 以模块化方式组织，统一的返回体与分页结构提升了跨端一致性。围绕商品搜索、推广链接、订单查询、认证与钱包管理等核心场景提供了清晰的接口规范。结合移动端特性，建议在缓存、网络与图片优化方面持续改进，以提升用户体验与稳定性。
+会员端 API 以模块化方式组织，统一的返回体与分页结构提升了跨端一致性。围绕商品搜索、推广链接、订单查询、认证与钱包管理、返利管理等核心场景提供了清晰的接口规范。最新的返利接口路径标准化为 `/cps/rebate`，统一了 App 端和管理端的接口风格。结合移动端特性，建议在缓存、网络与图片优化方面持续改进，以提升用户体验与稳定性。
 
 ## 附录
-- 调用示例（示意）
+- 调用示例（更新）
   - 获取会员分页：GET /member/user/page?pageNo=1&pageSize=20
   - 更新会员等级：PUT /member/user/update-level { userId, levelId }
   - 订单分页：GET /trade/order/page?pageNo=1&pageSize=20&userId=1001
   - 生成推广链接：POST /cps/order/generate { goodsId, adzoneId }
-  - 提现申请：POST /wallet/withdraw { amount, bankCardId }
+  - 提现申请：POST /cps/withdraw/create { amount, bankCardId }
+  - **返利账户查询**：GET /cps/rebate/account
+  - **返利记录分页**：GET /cps/rebate/record/page?pageNo=1&pageSize=10
 - 响应格式
   - 成功：CommonResult.success(data)
   - 分页：CommonResult.success(PageResult)
@@ -432,3 +508,7 @@ Ctrl --> EC["错误码常量"]
 - 认证方式
   - Authorization: Bearer {token}
   - 需具备相应权限标识
+- **接口路径标准化**
+  - App端返利接口：`/cps/rebate/account`、`/cps/rebate/record/page`
+  - 管理端返利配置：`/cps/rebate-config/*`
+  - 管理端返利记录：`/cps/rebate-record/*`

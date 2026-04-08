@@ -110,7 +110,7 @@ export const getCpsRebateRecord = async (id: number) => {
   return await request.get({ url: '/cps/rebate-record/get', params: { id } })
 }
 
-// 退款回扣（逆向扣回返利�?
+// 退款回扣（逆向扣回返利）
 export const reverseCpsRebate = async (orderId: number) => {
   return await request.post({ url: '/cps/rebate-record/reverse', params: { orderId } })
 }

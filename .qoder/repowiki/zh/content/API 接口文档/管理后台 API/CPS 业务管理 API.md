@@ -2,326 +2,550 @@
 
 <cite>
 **本文引用的文件**
+- [CpsOrderController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/order/CpsOrderController.java)
+- [CpsAdzoneController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/adzone/CpsAdzoneController.java)
+- [CpsPlatformController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/platform/CpsPlatformController.java)
+- [CpsFreezeController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/freeze/CpsFreezeController.java)
+- [CpsWithdrawController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/withdraw/CpsWithdrawController.java)
+- [CpsRebateConfigController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateConfigController.java)
+- [CpsRebateRecordController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateRecordController.java)
+- [CpsRiskRuleController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/risk/CpsRiskRuleController.java)
+- [CpsStatisticsController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/statistics/CpsStatisticsController.java)
+- [CpsTransferRecordController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/transfer/CpsTransferRecordController.java)
+- [AppCpsGoodsController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/goods/AppCpsGoodsController.java)
+- [AppCpsRebateController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/rebate/AppCpsRebateController.java)
 - [CpsOrderStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java)
 - [CpsRebateStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java)
 - [CpsAdzoneTypeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java)
 - [CpsErrorCodeConstants.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java)
 </cite>
 
+## 更新摘要
+**所做更改**
+- 更新了管理后台API路径标准化的变更，包括所有CPS模块的接口路径前缀统一为 `/cps/` 前缀
+- 更新了接口调用示例，反映新的标准化路径格式
+- 补充了完整的管理后台API接口清单和权限控制说明
+- 更新了错误码处理和接口文档结构
+
 ## 目录
 1. [简介](#简介)
-2. [项目结构](#项目结构)
-3. [核心组件](#核心组件)
-4. [架构总览](#架构总览)
-5. [详细组件分析](#详细组件分析)
-6. [依赖分析](#依赖分析)
-7. [性能考虑](#性能考虑)
-8. [故障排除指南](#故障排除指南)
-9. [结论](#结论)
-10. [附录](#附录)
+2. [管理后台API路径标准化](#管理后台api路径标准化)
+3. [核心模块接口](#核心模块接口)
+4. [订单管理接口](#订单管理接口)
+5. [推广位管理接口](#推广位管理接口)
+6. [平台配置管理接口](#平台配置管理接口)
+7. [冻结解冻管理接口](#冻结解冻管理接口)
+8. [提现管理接口](#提现管理接口)
+9. [返利配置管理接口](#返利配置管理接口)
+10. [返利记录管理接口](#返利记录管理接口)
+11. [风控规则管理接口](#风控规则管理接口)
+12. [数据统计接口](#数据统计接口)
+13. [转链记录管理接口](#转链记录管理接口)
+14. [APP端接口](#app端接口)
+15. [错误码处理](#错误码处理)
+16. [接口调用示例](#接口调用示例)
+17. [权限控制说明](#权限控制说明)
 
 ## 简介
-本文件为 CPS 业务管理系统的接口文档，聚焦于订单管理、商品管理、推广位管理与返利管理等核心业务接口。文档基于仓库中现有的枚举与错误码定义，梳理了订单状态、返利状态、推广位类型以及错误码体系，并通过统一的 RESTful 设计规范，给出各模块的请求参数、响应结构、错误码处理与调用示例，帮助开发者快速理解并集成 CPS 业务流程。
+本文档为 CPS 业务管理系统管理后台的完整 API 接口文档，基于最新的管理后台API路径标准化变更，详细文档化订单管理、商品管理、推广位管理、平台配置、冻结解冻、提现管理、返利管理、风控规则、数据统计和转链记录等核心业务接口。文档涵盖了所有管理后台接口的请求参数、响应数据结构、权限控制和错误码处理，帮助开发者快速理解和集成 CPS 业务流程。
 
-## 项目结构
-CPS 模块位于后端工程中，采用多模块分层设计，核心能力由 API 层的枚举与错误码支撑，业务逻辑在对应业务模块中实现。当前仓库中已提供的文件主要集中在 API 层，用于定义状态、类型与错误码常量，便于前后端统一约定。
+## 管理后台API路径标准化
+根据最新的管理后台API路径标准化变更，所有CPS模块的接口路径前缀统一为 `/cps/` 前缀，确保接口命名的一致性和规范性：
+
+- 订单管理：`/cps/order`
+- 推广位管理：`/cps/adzone`
+- 平台配置：`/cps/platform`
+- 冻结解冻：`/cps/freeze`
+- 提现管理：`/cps/withdraw`
+- 返利配置：`/cps/rebate-config`
+- 返利记录：`/cps/rebate-record`
+- 风控规则：`/cps/risk/rule`
+- 数据统计：`/cps/statistics`
+- 转链记录：`/cps/transfer-record`
+
+## 核心模块接口
+CPS系统采用模块化设计，每个功能模块都有独立的控制器和完整的CRUD接口：
 
 ```mermaid
 graph TB
-subgraph "CPS API 层"
-E1["CpsOrderStatusEnum<br/>订单状态枚举"]
-E2["CpsRebateStatusEnum<br/>返利状态枚举"]
-E3["CpsAdzoneTypeEnum<br/>推广位类型枚举"]
-E4["CpsErrorCodeConstants<br/>错误码常量"]
+subgraph "管理后台模块"
+A["订单管理<br/>/cps/order"]
+B["推广位管理<br/>/cps/adzone"]
+C["平台配置<br/>/cps/platform"]
+D["冻结解冻<br/>/cps/freeze"]
+E["提现管理<br/>/cps/withdraw"]
+F["返利配置<br/>/cps/rebate-config"]
+G["返利记录<br/>/cps/rebate-record"]
+H["风控规则<br/>/cps/risk/rule"]
+I["数据统计<br/>/cps/statistics"]
+J["转链记录<br/>/cps/transfer-record"]
 end
-subgraph "业务模块"
-M1["订单管理模块"]
-M2["推广位管理模块"]
-M3["返利管理模块"]
-M4["商品管理模块"]
+subgraph "APP端模块"
+K["商品搜索<br/>/cps/goods"]
+L["返利账户<br/>/cps/rebate"]
 end
-E1 --> M1
-E2 --> M3
-E3 --> M2
-E4 --> M1
-E4 --> M2
-E4 --> M3
-E4 --> M4
 ```
 
 **图表来源**
-- [CpsOrderStatusEnum.java:1-48](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java#L1-L48)
-- [CpsRebateStatusEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java#L1-L40)
-- [CpsAdzoneTypeEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java#L1-L40)
-- [CpsErrorCodeConstants.java:1-65](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L1-L65)
+- [CpsOrderController.java:28](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/order/CpsOrderController.java#L28)
+- [CpsAdzoneController.java:26](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/adzone/CpsAdzoneController.java#L26)
+- [CpsPlatformController.java:26](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/platform/CpsPlatformController.java#L26)
+- [CpsFreezeController.java:30](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/freeze/CpsFreezeController.java#L30)
+- [CpsWithdrawController.java:28](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/withdraw/CpsWithdrawController.java#L28)
+- [CpsRebateConfigController.java:31](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateConfigController.java#L31)
+- [CpsRebateRecordController.java:28](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateRecordController.java#L28)
+- [CpsRiskRuleController.java:31](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/risk/CpsRiskRuleController.java#L31)
+- [CpsStatisticsController.java:35](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/statistics/CpsStatisticsController.java#L35)
+- [CpsTransferRecordController.java:29](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/transfer/CpsTransferRecordController.java#L29)
+- [AppCpsGoodsController.java:30](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/goods/AppCpsGoodsController.java#L30)
+- [AppCpsRebateController.java:32](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/rebate/AppCpsRebateController.java#L32)
 
-**章节来源**
-- [CpsOrderStatusEnum.java:1-48](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java#L1-L48)
-- [CpsRebateStatusEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java#L1-L40)
-- [CpsAdzoneTypeEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java#L1-L40)
-- [CpsErrorCodeConstants.java:1-65](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L1-L65)
+## 订单管理接口
+订单管理接口负责订单的查询、详情获取和手动同步功能。
 
-## 核心组件
-本节对订单状态、返利状态、推广位类型与错误码进行深入解析，明确其在 RESTful 接口中的使用方式与约束。
+### 接口列表
+- **获取订单分页**：`GET /cps/order/page`
+- **获取订单详情**：`GET /cps/order/get?id={id}`
+- **手动触发订单同步**：`POST /cps/order/sync`
 
-- 订单状态枚举：定义了从“已下单”到“已到账/已失效”的完整生命周期状态，用于订单查询与状态更新接口。
-- 返利状态枚举：定义了“待结算”“已到账”“已扣回”的返利状态，用于返利记录与结算接口。
-- 推广位类型枚举：定义了“通用”“渠道专属”“用户专属”的推广位类型，用于推广位创建与查询接口。
-- 错误码常量：按模块划分错误域，覆盖平台配置、推广位、订单、返利配置、返利记录、返利账户、提现、统计、MCP、转链、冻结、风控等场景。
+### 请求参数
+- **分页查询**：支持订单号、平台编码、时间范围、状态等条件筛选
+- **详情查询**：必需参数 `id`（订单ID）
+- **手动同步**：必需参数 `platformCode`（平台编码），可选参数 `hours`（追溯小时数，默认2）
 
-**章节来源**
-- [CpsOrderStatusEnum.java:16-25](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java#L16-L25)
-- [CpsRebateStatusEnum.java:16-21](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java#L16-L21)
-- [CpsAdzoneTypeEnum.java:16-21](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java#L16-L21)
-- [CpsErrorCodeConstants.java:10-64](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L10-L64)
-
-## 架构总览
-下图展示了 CPS 业务在系统中的位置与关键交互：前端通过 RESTful API 调用后端服务；后端根据 API 层的枚举与错误码进行状态校验与错误返回；业务模块负责具体的数据处理与持久化。
-
-```mermaid
-graph TB
-FE["前端应用<br/>Admin-uniapp / Vue3"]
-API["RESTful API 层"]
-ENUM["CPS 枚举与错误码<br/>订单/返利/推广位/错误码"]
-SVC["业务服务层<br/>订单/推广位/返利/商品"]
-DB["数据存储"]
-FE --> API
-API --> ENUM
-API --> SVC
-SVC --> DB
+### 响应结构
+```json
+{
+  "code": 0,
+  "msg": "成功",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "orderSn": "202401010001",
+        "platformCode": "taobao",
+        "status": 2,
+        "createTime": "2024-01-01 10:00:00"
+      }
+    ],
+    "total": 1
+  }
+}
 ```
 
-**图表来源**
-- [CpsOrderStatusEnum.java:1-48](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java#L1-L48)
-- [CpsRebateStatusEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java#L1-L40)
-- [CpsAdzoneTypeEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java#L1-L40)
-- [CpsErrorCodeConstants.java:1-65](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L1-L65)
+**章节来源**
+- [CpsOrderController.java:35-61](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/order/CpsOrderController.java#L35-L61)
 
-## 详细组件分析
+## 推广位管理接口
+推广位管理接口负责推广位的创建、更新、删除、查询和平台关联查询。
 
-### 订单管理接口
-订单管理涉及订单查询与状态更新两大类接口。基于订单状态枚举，接口应支持按状态过滤、状态变更与批量更新。
+### 接口列表
+- **创建推广位**：`POST /cps/adzone/create`
+- **更新推广位**：`PUT /cps/adzone/update`
+- **删除推广位**：`DELETE /cps/adzone/delete?id={id}`
+- **获取推广位**：`GET /cps/adzone/get?id={id}`
+- **获取推广位分页**：`GET /cps/adzone/page`
+- **获取平台推广位列表**：`GET /cps/adzone/list-by-platform?platformCode={platformCode}`
 
-- 接口目标
-  - 订单查询：支持按订单号、平台、时间范围、状态等条件筛选。
-  - 状态更新：支持将订单从“已下单”推进至“已付款/已收货/已结算/已到账/已失效”。
+### 请求参数
+- **创建/更新**：推广位基本信息（名称、类型、平台编码等）
+- **删除**：必需参数 `id`（推广位ID）
+- **详情查询**：必需参数 `id`（推广位ID）
+- **平台查询**：必需参数 `platformCode`（平台编码）
 
-- 请求参数
-  - 查询参数：订单号、平台编码、开始/结束时间、状态列表、分页参数。
-  - 更新参数：订单号、目标状态（必须为合法状态）、操作人标识。
-
-- 响应结构
-  - 列表响应：包含订单基础信息、平台信息、佣金与返利信息、状态与时间戳。
-  - 单条响应：包含订单详情与状态流转历史。
-
-- 错误码
-  - 订单不存在：参见错误码常量中“订单不存在”。
-  - 订单状态不合法：参见错误码常量中“订单状态不合法”。
-
-```mermaid
-sequenceDiagram
-participant Client as "客户端"
-participant API as "订单管理接口"
-participant Enum as "订单状态枚举"
-participant Biz as "订单业务服务"
-Client->>API : "POST /cps/order/updateStatus"
-API->>Enum : "校验目标状态是否合法"
-Enum-->>API : "状态合法/非法"
-API->>Biz : "执行状态更新"
-Biz-->>API : "更新结果"
-API-->>Client : "返回成功或错误码"
+### 响应结构
+```json
+{
+  "code": 0,
+  "msg": "成功",
+  "data": {
+    "id": 1,
+    "name": "默认推广位",
+    "type": 1,
+    "platformCode": "taobao",
+    "createTime": "2024-01-01 10:00:00"
+  }
+}
 ```
 
-**图表来源**
-- [CpsOrderStatusEnum.java:16-25](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java#L16-L25)
-- [CpsErrorCodeConstants.java:21-25](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L21-L25)
-
 **章节来源**
-- [CpsOrderStatusEnum.java:16-25](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java#L16-L25)
-- [CpsErrorCodeConstants.java:21-25](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L21-L25)
+- [CpsAdzoneController.java:33-81](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/adzone/CpsAdzoneController.java#L33-L81)
 
-### 商品管理接口
-商品管理接口负责商品信息的维护与查询，包括商品上下架、价格更新、佣金比例调整等。
+## 平台配置管理接口
+平台配置接口负责CPS平台的配置管理，包括平台信息维护和状态控制。
 
-- 接口目标
-  - 商品查询：支持按商品ID、标题、分类、状态等条件筛选。
-  - 商品维护：支持新增、修改、上下架与批量更新。
+### 接口列表
+- **创建平台配置**：`POST /cps/platform/create`
+- **更新平台配置**：`PUT /cps/platform/update`
+- **删除平台配置**：`DELETE /cps/platform/delete?id={id}`
+- **获取平台配置**：`GET /cps/platform/get?id={id}`
+- **获取平台配置分页**：`GET /cps/platform/page`
+- **获取已启用平台列表**：`GET /cps/platform/list-enabled`
 
-- 请求参数
-  - 查询参数：商品ID、关键词、分类、状态、分页。
-  - 维护参数：商品基础信息、价格、佣金比例、库存、图片URL等。
+### 请求参数
+- **创建/更新**：平台配置信息（编码、名称、API密钥等）
+- **删除**：必需参数 `id`（平台ID）
+- **详情查询**：必需参数 `id`（平台ID）
 
-- 响应结构
-  - 列表响应：商品基础信息、价格区间、佣金比例、状态与时间戳。
-  - 单条响应：商品详情与历史变更记录。
-
-- 错误码
-  - 可结合“统计记录不存在”等通用错误码进行扩展。
-
-**章节来源**
-- [CpsErrorCodeConstants.java:44-45](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L44-L45)
-
-### 推广位管理接口
-推广位管理接口负责推广位的创建、查询与类型管理，支持通用、渠道专属与用户专属三种类型。
-
-- 接口目标
-  - 推广位查询：支持按平台、类型、状态、创建时间等条件筛选。
-  - 推广位维护：支持创建默认推广位、修改类型与状态。
-
-- 请求参数
-  - 查询参数：平台编码、类型、状态、分页。
-  - 维护参数：平台编码、推广位名称、类型（通用/渠道专属/用户专属）、备注。
-
-- 响应结构
-  - 列表响应：推广位ID、平台、类型、状态、创建时间。
-  - 单条响应：推广位详情与绑定关系。
-
-- 错误码
-  - 推广位不存在：参见错误码常量中“推广位不存在”。
-  - 默认推广位已存在：参见错误码常量中“平台已存在默认推广位”。
-
-```mermaid
-flowchart TD
-Start(["开始"]) --> CheckType["校验推广位类型"]
-CheckType --> TypeValid{"类型有效？"}
-TypeValid --> |否| ReturnInvalid["返回类型不合法错误"]
-TypeValid --> |是| CheckDefault["检查默认推广位是否存在"]
-CheckDefault --> HasDefault{"已存在默认推广位？"}
-HasDefault --> |是| ReturnDup["返回默认推广位重复错误"]
-HasDefault --> |否| Create["创建推广位"]
-Create --> Done(["完成"])
-ReturnInvalid --> Done
-ReturnDup --> Done
+### 响应结构
+```json
+{
+  "code": 0,
+  "msg": "成功",
+  "data": {
+    "id": 1,
+    "code": "taobao",
+    "name": "淘宝",
+    "enabled": true,
+    "createTime": "2024-01-01 10:00:00"
+  }
+}
 ```
 
-**图表来源**
-- [CpsAdzoneTypeEnum.java:16-21](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java#L16-L21)
-- [CpsErrorCodeConstants.java:17-20](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L17-L20)
-
 **章节来源**
-- [CpsAdzoneTypeEnum.java:16-21](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java#L16-L21)
-- [CpsErrorCodeConstants.java:17-20](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L17-L20)
+- [CpsPlatformController.java:33-80](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/platform/CpsPlatformController.java#L33-L80)
 
-### 返利管理接口
-返利管理接口涵盖返利配置、返利记录与返利账户管理，支持返利计算、状态更新与提现申请。
+## 冻结解冻管理接口
+冻结解冻接口提供冻结配置的CRUD管理和冻结记录的查询及手动解冻功能。
 
-- 接口目标
-  - 返利配置：设置不同等级与平台的返利比例。
-  - 返利记录：查询返利明细、状态与结算情况。
-  - 返利账户：查询可用余额、冻结金额与提现申请。
+### 接口列表
+- **创建冻结配置**：`POST /cps/freeze/config/create`
+- **更新冻结配置**：`PUT /cps/freeze/config/update`
+- **删除冻结配置**：`DELETE /cps/freeze/config/delete?id={id}`
+- **获取冻结配置分页**：`GET /cps/freeze/config/page`
+- **获取冻结记录分页**：`GET /cps/freeze/record/page`
+- **手动解冻**：`PUT /cps/freeze/record/manual-unfreeze?id={id}`
 
-- 请求参数
-  - 配置参数：等级、平台编码、返利比例、生效时间。
-  - 记录参数：订单号、推广位ID、状态、分页。
-  - 账户参数：账户ID、提现金额、银行信息、验证码。
+### 请求参数
+- **配置管理**：冻结规则配置（阈值、时间、状态等）
+- **记录查询**：冻结记录分页参数
+- **手动解冻**：必需参数 `id`（冻结记录ID）
 
-- 响应结构
-  - 配置响应：配置ID、等级、平台、比例、状态。
-  - 记录响应：订单号、推广位、返利金额、状态、结算时间。
-  - 账户响应：账户ID、可用余额、冻结余额、累计收入。
-
-- 错误码
-  - 返利配置不存在/重复：参见错误码常量中“返利配置不存在/重复”。
-  - 返利记录不存在：参见错误码常量中“返利记录不存在”。
-  - 返利账户不存在/余额不足/已冻结：参见错误码常量中“返利账户相关错误”。
-
-```mermaid
-sequenceDiagram
-participant Client as "客户端"
-participant API as "返利管理接口"
-participant Enum as "返利状态枚举"
-participant Biz as "返利业务服务"
-Client->>API : "GET /cps/rebate/list"
-API->>Enum : "过滤状态待结算/已到账/已扣回"
-Enum-->>API : "状态集合"
-API->>Biz : "查询返利记录"
-Biz-->>API : "返回记录列表"
-API-->>Client : "返回响应"
+### 响应结构
+```json
+{
+  "code": 0,
+  "msg": "成功",
+  "data": {
+    "id": 1,
+    "configId": 1,
+    "memberId": 1001,
+    "amount": 100.00,
+    "status": 1,
+    "createTime": "2024-01-01 10:00:00"
+  }
+}
 ```
 
-**图表来源**
-- [CpsRebateStatusEnum.java:16-21](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java#L16-L21)
-- [CpsErrorCodeConstants.java:26-36](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L26-L36)
-
 **章节来源**
-- [CpsRebateStatusEnum.java:16-21](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java#L16-L21)
-- [CpsErrorCodeConstants.java:26-36](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L26-L36)
+- [CpsFreezeController.java:39-90](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/freeze/CpsFreezeController.java#L39-L90)
 
-## 依赖分析
-CPS 枚举与错误码作为 API 层的核心契约，被各业务模块共享使用，形成低耦合高内聚的接口设计。
+## 提现管理接口
+提现管理接口负责提现申请的审核和状态管理。
 
-```mermaid
-graph TB
-ENUM["CPS 枚举与错误码"]
-ORD["订单模块"]
-ADZ["推广位模块"]
-REB["返利模块"]
-PROD["商品模块"]
-ENUM --> ORD
-ENUM --> ADZ
-ENUM --> REB
-ENUM --> PROD
+### 接口列表
+- **提现申请分页查询**：`GET /cps/withdraw/page`
+- **获取提现申请详情**：`GET /cps/withdraw/get?id={id}`
+- **审核通过提现申请**：`PUT /cps/withdraw/approve?id={id}&reviewNote={note}`
+- **驳回提现申请**：`PUT /cps/withdraw/reject?id={id}&reviewNote={note}`
+
+### 请求参数
+- **分页查询**：提现申请分页参数
+- **详情查询**：必需参数 `id`（提现ID）
+- **审核通过**：必需参数 `id`（提现ID），可选参数 `reviewNote`（审核意见）
+- **驳回**：必需参数 `id`（提现ID），必需参数 `reviewNote`（审核意见）
+
+### 响应结构
+```json
+{
+  "code": 0,
+  "msg": "成功",
+  "data": true
+}
 ```
 
-**图表来源**
-- [CpsOrderStatusEnum.java:1-48](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java#L1-L48)
-- [CpsRebateStatusEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java#L1-L40)
-- [CpsAdzoneTypeEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java#L1-L40)
-- [CpsErrorCodeConstants.java:1-65](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L1-L65)
+**章节来源**
+- [CpsWithdrawController.java:35-73](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/withdraw/CpsWithdrawController.java#L35-L73)
+
+## 返利配置管理接口
+返利配置接口负责不同等级和平台的返利比例配置管理。
+
+### 接口列表
+- **创建返利配置**：`POST /cps/rebate-config/create`
+- **更新返利配置**：`PUT /cps/rebate-config/update`
+- **删除返利配置**：`DELETE /cps/rebate-config/delete?id={id}`
+- **获取返利配置详情**：`GET /cps/rebate-config/get?id={id}`
+- **获取返利配置分页**：`GET /cps/rebate-config/page`
+- **获取已启用返利配置列表**：`GET /cps/rebate-config/list-enabled`
+
+### 请求参数
+- **创建/更新**：返利配置信息（等级、平台编码、返利比例等）
+- **删除**：必需参数 `id`（配置ID）
+- **详情查询**：必需参数 `id`（配置ID）
+
+### 响应结构
+```json
+{
+  "code": 0,
+  "msg": "成功",
+  "data": {
+    "id": 1,
+    "level": 1,
+    "platformCode": "taobao",
+    "rate": 0.15,
+    "enabled": true,
+    "createTime": "2024-01-01 10:00:00"
+  }
+}
+```
 
 **章节来源**
-- [CpsOrderStatusEnum.java:1-48](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java#L1-L48)
-- [CpsRebateStatusEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java#L1-L40)
-- [CpsAdzoneTypeEnum.java:1-40](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsAdzoneTypeEnum.java#L1-L40)
-- [CpsErrorCodeConstants.java:1-65](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L1-L65)
+- [CpsRebateConfigController.java:38-85](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateConfigController.java#L38-L85)
 
-## 性能考虑
-- 状态枚举与错误码集中管理：减少重复定义，提升一致性与可维护性。
-- 分页与条件过滤：订单与返利列表查询建议使用分页与精确条件，避免全量扫描。
-- 缓存策略：对常用配置（如返利比例、推广位默认值）可引入缓存以降低数据库压力。
-- 批量操作：对状态批量更新与记录批量查询，建议采用异步或批处理方式提升吞吐。
+## 返利记录管理接口
+返利记录接口负责返利明细的查询和订单退款回扣处理。
 
-## 故障排除指南
-- 订单状态更新失败
-  - 检查目标状态是否在订单状态枚举范围内。
-  - 核对订单是否存在且未失效。
-  - 参考错误码：订单不存在、订单状态不合法。
+### 接口列表
+- **获取返利记录分页**：`GET /cps/rebate-record/page`
+- **获取返利记录详情**：`GET /cps/rebate-record/get?id={id}`
+- **触发订单退款回扣**：`POST /cps/rebate-record/reverse?orderId={orderId}`
 
-- 推广位创建失败
-  - 检查推广位类型是否合法。
-  - 确认平台是否已存在默认推广位。
-  - 参考错误码：推广位不存在、平台已存在默认推广位。
+### 请求参数
+- **分页查询**：返利记录分页参数
+- **详情查询**：必需参数 `id`（返利记录ID）
+- **退款回扣**：必需参数 `orderId`（订单ID）
 
-- 返利账户异常
-  - 核对账户是否存在与状态正常。
-  - 检查可用余额是否充足。
-  - 参考错误码：返利账户不存在、可用余额不足、账户已冻结。
+### 响应结构
+```json
+{
+  "code": 0,
+  "msg": "成功",
+  "data": {
+    "id": 1,
+    "orderId": 1001,
+    "adzoneId": 1,
+    "amount": 15.00,
+    "status": 2,
+    "createTime": "2024-01-01 10:00:00"
+  }
+}
+```
 
-- 提现申请异常
-  - 核对提现金额是否满足最低限额。
-  - 检查当日提现次数是否超限。
-  - 参考错误码：提现状态不合法、提现金额低于最低限额、今日提现次数已达上限。
+**章节来源**
+- [CpsRebateRecordController.java:35-59](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateRecordController.java#L35-L59)
+
+## 风控规则管理接口
+风控规则接口提供频率限制和黑名单的CRUD管理功能。
+
+### 接口列表
+- **创建风控规则**：`POST /cps/risk/rule/create`
+- **更新风控规则**：`PUT /cps/risk/rule/update`
+- **删除风控规则**：`DELETE /cps/risk/rule/delete?id={id}`
+- **获取风控规则分页**：`GET /cps/risk/rule/page`
+
+### 请求参数
+- **创建/更新**：风控规则配置（类型、阈值、时间窗口等）
+- **删除**：必需参数 `id`（规则ID）
+- **分页查询**：风控规则分页参数
+
+### 响应结构
+```json
+{
+  "code": 0,
+  "msg": "成功",
+  "data": {
+    "id": 1,
+    "ruleType": 1,
+    "threshold": 100,
+    "timeWindow": 3600,
+    "action": "blacklist",
+    "createTime": "2024-01-01 10:00:00"
+  }
+}
+```
+
+**章节来源**
+- [CpsRiskRuleController.java:38-69](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/risk/CpsRiskRuleController.java#L38-L69)
+
+## 数据统计接口
+数据统计接口提供运营看板、趋势图表和平台占比统计功能。
+
+### 接口列表
+- **运营数据看板**：`GET /cps/statistics/dashboard`
+- **趋势图表数据**：`GET /cps/statistics/trend?startDate={date}&endDate={date}&platformCode={code}`
+- **平台占比统计**：`GET /cps/statistics/platform-summary?startDate={date}&endDate={date}`
+
+### 请求参数
+- **看板**：无需参数
+- **趋势数据**：必需参数 `startDate`、`endDate`，可选参数 `platformCode`（默认全平台）
+- **平台统计**：必需参数 `startDate`、`endDate`
+
+### 响应结构
+```json
+{
+  "code": 0,
+  "msg": "成功",
+  "data": {
+    "totalOrders": 100,
+    "totalCommission": 1000.00,
+    "totalRebate": 150.00,
+    "totalProfit": 850.00,
+    "conversionRate": 0.05
+  }
+}
+```
+
+**章节来源**
+- [CpsStatisticsController.java:42-72](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/statistics/CpsStatisticsController.java#L42-L72)
+
+## 转链记录管理接口
+转链记录接口负责推广链接生成记录的查询管理。
+
+### 接口列表
+- **转链记录分页查询**：`GET /cps/transfer-record/page`
+
+### 请求参数
+- **分页查询**：转链记录分页参数
+
+### 响应结构
+```json
+{
+  "code": 0,
+  "msg": "成功",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "goodsId": 1001,
+        "adzoneId": 1,
+        "platformCode": "taobao",
+        "shortUrl": "https://t.cn/xxxx",
+        "createTime": "2024-01-01 10:00:00"
+      }
+    ],
+    "total": 1
+  }
+}
+```
+
+**章节来源**
+- [CpsTransferRecordController.java:36-43](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/transfer/CpsTransferRecordController.java#L36-L43)
+
+## APP端接口
+APP端接口为用户端提供商品搜索和返利功能。
+
+### 商品搜索与转链接口
+- **商品搜索**：`GET /cps/goods/search`
+- **生成推广链接**：`POST /cps/goods/link`
+
+### 返利账户接口
+- **获取我的返利账户**：`GET /cps/rebate/account`
+- **获取我的返利记录分页**：`GET /cps/rebate/record/page`
+
+### 请求参数
+- **商品搜索**：关键词、分页、排序、价格区间等
+- **生成链接**：商品ID、推广位ID、平台编码等
+- **账户查询**：无需参数
+- **返利记录**：分页参数（pageNo、pageSize）
+
+**章节来源**
+- [AppCpsGoodsController.java:37-91](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/goods/AppCpsGoodsController.java#L37-L91)
+- [AppCpsRebateController.java:44-65](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/rebate/AppCpsRebateController.java#L44-L65)
+
+## 错误码处理
+CPS系统采用统一的错误码处理机制，所有接口遵循相同的错误响应格式：
+
+```json
+{
+  "code": 1001,
+  "msg": "订单不存在",
+  "data": null
+}
+```
+
+### 错误码分类
+- **通用错误**：1000-1999（如参数验证失败、权限不足）
+- **订单相关**：2000-2999（订单不存在、状态不合法）
+- **推广位相关**：3000-3999（推广位不存在、默认推广位重复）
+- **返利相关**：4000-4999（返利配置不存在、账户余额不足）
+- **平台相关**：5000-5999（平台配置错误、API调用失败）
 
 **章节来源**
 - [CpsErrorCodeConstants.java:17-43](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L17-L43)
 
-## 结论
-本文档基于现有枚举与错误码定义，构建了 CPS 业务管理的接口蓝图，明确了订单、商品、推广位与返利四大模块的接口边界与数据流转关系。后续可在该基础上完善控制器与服务层的具体实现细节，并补充接口调用示例与更详尽的响应结构说明。
+## 接口调用示例
 
-## 附录
-- 接口调用示例（示意）
-  - 订单状态更新
-    - 方法：POST
-    - 路径：/cps/order/updateStatus
-    - 请求体：包含订单号与目标状态（必须为合法状态）
-    - 响应：成功或错误码
-  - 推广位创建
-    - 方法：POST
-    - 路径：/cps/adzone/create
-    - 请求体：包含平台编码、推广位名称、类型
-    - 响应：成功或错误码
-  - 返利记录查询
-    - 方法：GET
-    - 路径：/cps/rebate/list
-    - 查询参数：订单号、推广位ID、状态、分页
-    - 响应：记录列表
+### 订单管理调用示例
+```bash
+# 获取订单分页
+curl -X GET "http://localhost:8080/cps/order/page?pageNo=1&pageSize=10"
+
+# 获取订单详情
+curl -X GET "http://localhost:8080/cps/order/get?id=1"
+
+# 手动同步订单
+curl -X POST "http://localhost:8080/cps/order/sync?platformCode=taobao&hours=2"
+```
+
+### 推广位管理调用示例
+```bash
+# 创建推广位
+curl -X POST "http://localhost:8080/cps/adzone/create" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"默认推广位","platformCode":"taobao","type":1}'
+
+# 获取推广位分页
+curl -X GET "http://localhost:8080/cps/adzone/page?pageNo=1&pageSize=10"
+```
+
+### 提现管理调用示例
+```bash
+# 审核通过提现申请
+curl -X PUT "http://localhost:8080/cps/withdraw/approve?id=1&reviewNote=审核通过"
+
+# 获取提现申请详情
+curl -X GET "http://localhost:8080/cps/withdraw/get?id=1"
+```
+
+### 返利记录管理调用示例
+```bash
+# 获取返利记录分页
+curl -X GET "http://localhost:8080/cps/rebate-record/page?pageNo=1&pageSize=10"
+
+# 触发订单退款回扣
+curl -X POST "http://localhost:8080/cps/rebate-record/reverse?orderId=1001"
+```
+
+## 权限控制说明
+所有管理后台接口都实现了细粒度的权限控制，使用Spring Security的注解进行权限验证：
+
+### 权限前缀
+- `cps:order:*` - 订单管理权限
+- `cps:adzone:*` - 推广位管理权限  
+- `cps:platform:*` - 平台配置权限
+- `cps:freeze-config:*` - 冻结配置权限
+- `cps:freeze-record:*` - 冻结记录权限
+- `cps:withdraw:*` - 提现管理权限
+- `cps:rebate-config:*` - 返利配置权限
+- `cps:rebate-record:*` - 返利记录权限
+- `cps:risk-rule:*` - 风控规则权限
+- `cps:statistics:*` - 数据统计权限
+- `cps:transfer-record:*` - 转链记录权限
+
+### 权限注解示例
+```java
+@PreAuthorize("@ss.hasPermission('cps:order:query')")
+public CommonResult<PageResult<CpsOrderRespVO>> getOrderPage(@Valid CpsOrderPageReqVO pageReqVO)
+```
+
+**章节来源**
+- [CpsOrderController.java:37](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/order/CpsOrderController.java#L37)
+- [CpsAdzoneController.java:35](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/adzone/CpsAdzoneController.java#L35)
+- [CpsPlatformController.java:35](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/platform/CpsPlatformController.java#L35)
+- [CpsFreezeController.java:41](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/freeze/CpsFreezeController.java#L41)
+- [CpsWithdrawController.java:56](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/withdraw/CpsWithdrawController.java#L56)
+- [CpsRebateConfigController.java:40](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateConfigController.java#L40)
+- [CpsRebateRecordController.java:55](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateRecordController.java#L55)
+- [CpsRiskRuleController.java:40](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/risk/CpsRiskRuleController.java#L40)
+- [CpsStatisticsController.java:44](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/statistics/CpsStatisticsController.java#L44)
+- [CpsTransferRecordController.java:38](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/transfer/CpsTransferRecordController.java#L38)
