@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.dal.dataobject.platform;
+﻿package cn.iocoder.yudao.module.cps.dal.dataobject.platform;
 
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
@@ -14,8 +14,8 @@ import java.math.BigDecimal;
  *
  * @author CPS System
  */
-@TableName("yudao_cps_platform")
-@KeySequence("yudao_cps_platform_seq")
+@TableName("cps_platform")
+@KeySequence("cps_platform_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)

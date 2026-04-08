@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.dal.dataobject.adzone;
+﻿package cn.iocoder.yudao.module.cps.dal.dataobject.adzone;
 
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
@@ -13,8 +13,8 @@ import lombok.*;
  *
  * @author CPS System
  */
-@TableName("yudao_cps_adzone")
-@KeySequence("yudao_cps_adzone_seq")
+@TableName("cps_adzone")
+@KeySequence("cps_adzone_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)

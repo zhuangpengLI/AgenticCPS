@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.dal.dataobject.order;
+﻿package cn.iocoder.yudao.module.cps.dal.dataobject.order;
 
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import cn.iocoder.yudao.module.cps.enums.CpsFreezeStatusEnum;
@@ -16,8 +16,8 @@ import java.time.LocalDateTime;
  *
  * @author CPS System
  */
-@TableName("yudao_cps_order")
-@KeySequence("yudao_cps_order_seq")
+@TableName("cps_order")
+@KeySequence("cps_order_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)

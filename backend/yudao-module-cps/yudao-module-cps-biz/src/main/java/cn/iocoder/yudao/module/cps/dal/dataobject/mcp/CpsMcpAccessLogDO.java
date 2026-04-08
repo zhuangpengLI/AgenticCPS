@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.dal.dataobject.mcp;
+﻿package cn.iocoder.yudao.module.cps.dal.dataobject.mcp;
 
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;
@@ -11,8 +11,8 @@ import lombok.*;
  *
  * @author CPS System
  */
-@TableName("yudao_cps_mcp_access_log")
-@KeySequence("yudao_cps_mcp_access_log_seq")
+@TableName("cps_mcp_access_log")
+@KeySequence("cps_mcp_access_log_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)

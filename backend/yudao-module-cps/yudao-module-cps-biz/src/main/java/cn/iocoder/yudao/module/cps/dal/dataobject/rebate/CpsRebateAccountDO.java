@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.dal.dataobject.rebate;
+﻿package cn.iocoder.yudao.module.cps.dal.dataobject.rebate;
 
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;
@@ -14,8 +14,8 @@ import java.math.BigDecimal;
  *
  * @author CPS System
  */
-@TableName("yudao_cps_rebate_account")
-@KeySequence("yudao_cps_rebate_account_seq")
+@TableName("cps_rebate_account")
+@KeySequence("cps_rebate_account_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)

@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.dal.dataobject.rebate;
+﻿package cn.iocoder.yudao.module.cps.dal.dataobject.rebate;
 
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
@@ -14,8 +14,8 @@ import java.math.BigDecimal;
  *
  * @author CPS System
  */
-@TableName("yudao_cps_rebate_config")
-@KeySequence("yudao_cps_rebate_config_seq")
+@TableName("cps_rebate_config")
+@KeySequence("cps_rebate_config_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)

@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.dal.dataobject.order;
+﻿package cn.iocoder.yudao.module.cps.dal.dataobject.order;
 
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;
@@ -15,8 +15,8 @@ import java.time.LocalDateTime;
  *
  * @author CPS System
  */
-@TableName("yudao_cps_order_sync_log")
-@KeySequence("yudao_cps_order_sync_log_seq")
+@TableName("cps_order_sync_log")
+@KeySequence("cps_order_sync_log_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)

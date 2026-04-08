@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.job;
+﻿package cn.iocoder.yudao.module.cps.job;
 
 import cn.iocoder.yudao.framework.quartz.core.handler.JobHandler;
 import cn.iocoder.yudao.module.cps.service.statistics.CpsStatisticsService;
@@ -11,7 +11,7 @@ import java.time.LocalDate;
 /**
  * CPS 统计数据汇总定时任务
  *
- * <p>每日凌晨聚合前一天订单数据，写入 {@code yudao_cps_statistics} 统计表。</p>
+ * <p>每日凌晨聚合前一天订单数据，写入 {@code cps_statistics} 统计表。</p>
  *
  * <h3>Quartz 注册方式</h3>
  * 在管理后台【基础设施 - 定时任务】手动添加：

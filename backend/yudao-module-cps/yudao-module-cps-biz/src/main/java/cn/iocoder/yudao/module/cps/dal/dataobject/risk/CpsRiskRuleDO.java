@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.dal.dataobject.risk;
+﻿package cn.iocoder.yudao.module.cps.dal.dataobject.risk;
 
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import cn.iocoder.yudao.module.cps.enums.CpsRiskRuleTypeEnum;
@@ -20,8 +20,8 @@ import lombok.*;
  * @author CPS System
  * @see CpsRiskRuleTypeEnum
  */
-@TableName("yudao_cps_risk_rule")
-@KeySequence("yudao_cps_risk_rule_seq")
+@TableName("cps_risk_rule")
+@KeySequence("cps_risk_rule_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)

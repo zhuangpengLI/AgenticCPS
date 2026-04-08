@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.service.rebate;
+﻿package cn.iocoder.yudao.module.cps.service.rebate;
 
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.module.cps.dal.dataobject.order.CpsOrderDO;
@@ -30,9 +30,9 @@ import java.util.List;
  * <ol>
  *   <li>扫描已收货/已结算且未入账的订单</li>
  *   <li>按返利配置优先级计算应得返利金额</li>
- *   <li>写入返利记录（{@code yudao_cps_rebate_record}）</li>
+ *   <li>写入返利记录（{@code cps_rebate_record}）</li>
  *   <li>更新订单状态为"已到账"，记录 rebate_time</li>
- *   <li>乐观锁更新返利账户余额（{@code yudao_cps_rebate_account}）</li>
+ *   <li>乐观锁更新返利账户余额（{@code cps_rebate_account}）</li>
  * </ol>
  * </p>
  *

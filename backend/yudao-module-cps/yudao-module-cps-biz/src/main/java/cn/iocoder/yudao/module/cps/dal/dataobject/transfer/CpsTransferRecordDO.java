@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.dal.dataobject.transfer;
+﻿package cn.iocoder.yudao.module.cps.dal.dataobject.transfer;
 
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;
@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
  *
  * @author CPS System
  */
-@TableName("yudao_cps_transfer_record")
-@KeySequence("yudao_cps_transfer_record_seq")
+@TableName("cps_transfer_record")
+@KeySequence("cps_transfer_record_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)

@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.dal.dataobject.withdraw;
+﻿package cn.iocoder.yudao.module.cps.dal.dataobject.withdraw;
 
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import cn.iocoder.yudao.module.cps.enums.CpsWithdrawStatusEnum;
@@ -15,8 +15,8 @@ import java.time.LocalDateTime;
  *
  * @author CPS System
  */
-@TableName("yudao_cps_withdraw")
-@KeySequence("yudao_cps_withdraw_seq")
+@TableName("cps_withdraw")
+@KeySequence("cps_withdraw_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
