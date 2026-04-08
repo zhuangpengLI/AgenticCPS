@@ -25,4 +25,14 @@ public interface CpsRebateRecordMapper extends BaseMapperX<CpsRebateRecordDO> {
                 .orderByDesc(CpsRebateRecordDO::getId));
     }
 
+    /**
+     * 按订单ID查询返利记录（判断是否已结算过）
+     */
+    default CpsRebateRecordDO selectByOrderIdAndType(Long orderId, String rebateType) {
+        return selectOne(new LambdaQueryWrapperX<CpsRebateRecordDO>()
+                .eq(CpsRebateRecordDO::getOrderId, orderId)
+                .eq(CpsRebateRecordDO::getRebateType, rebateType)
+                .last("LIMIT 1"));
+    }
+
 }

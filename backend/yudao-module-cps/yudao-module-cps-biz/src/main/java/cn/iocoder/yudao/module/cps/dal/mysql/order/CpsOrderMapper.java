@@ -7,6 +7,9 @@ import cn.iocoder.yudao.module.cps.controller.admin.order.vo.CpsOrderPageReqVO;
 import cn.iocoder.yudao.module.cps.dal.dataobject.order.CpsOrderDO;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * CPS订单 Mapper
  *
@@ -28,6 +31,32 @@ public interface CpsOrderMapper extends BaseMapperX<CpsOrderDO> {
 
     default CpsOrderDO selectByPlatformOrderId(String platformOrderId) {
         return selectOne(CpsOrderDO::getPlatformOrderId, platformOrderId);
+    }
+
+    /**
+     * 查询待结算订单（已收货 or 已结算状态，且有会员归因，且返利未入账）
+     *
+     * @param statusList 订单状态列表（received / settled）
+     * @param limit      每批最大数量
+     */
+    default List<CpsOrderDO> selectPendingSettleOrders(List<String> statusList, int limit) {
+        return selectList(new LambdaQueryWrapperX<CpsOrderDO>()
+                .in(CpsOrderDO::getOrderStatus, statusList)
+                .isNotNull(CpsOrderDO::getMemberId)
+                .isNull(CpsOrderDO::getRebateTime)     // 返利未入账
+                .orderByAsc(CpsOrderDO::getId)
+                .last("LIMIT " + limit));
+    }
+
+    /**
+     * 查询指定会员的订单分页（App端「我的订单」）
+     */
+    default PageResult<CpsOrderDO> selectPageByMemberId(CpsOrderPageReqVO reqVO, Long memberId) {
+        return selectPage(reqVO, new LambdaQueryWrapperX<CpsOrderDO>()
+                .eq(CpsOrderDO::getMemberId, memberId)
+                .eqIfPresent(CpsOrderDO::getPlatformCode, reqVO.getPlatformCode())
+                .eqIfPresent(CpsOrderDO::getOrderStatus, reqVO.getOrderStatus())
+                .orderByDesc(CpsOrderDO::getId));
     }
 
 }

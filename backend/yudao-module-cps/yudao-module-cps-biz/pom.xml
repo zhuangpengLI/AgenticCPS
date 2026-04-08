@@ -90,6 +90,13 @@
             <groupId>cn.iocoder.boot</groupId>
             <artifactId>yudao-spring-boot-starter-excel</artifactId>
         </dependency>
+
+        <!-- Spring AI Model（MCP Tool Function 所需的 ToolContext 等接口） -->
+        <dependency>
+            <groupId>cn.iocoder.boot</groupId>
+            <artifactId>yudao-module-ai</artifactId>
+            <version>${revision}</version>
+        </dependency>
     </dependencies>
 
 </project>
