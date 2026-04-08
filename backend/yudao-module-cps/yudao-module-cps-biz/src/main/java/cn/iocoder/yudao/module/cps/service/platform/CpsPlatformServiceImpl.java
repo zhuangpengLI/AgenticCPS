@@ -3,11 +3,14 @@ package cn.iocoder.yudao.module.cps.service.platform;
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.iocoder.yudao.module.cps.config.CpsCacheConfig;
 import cn.iocoder.yudao.module.cps.controller.admin.platform.vo.CpsPlatformPageReqVO;
 import cn.iocoder.yudao.module.cps.controller.admin.platform.vo.CpsPlatformSaveReqVO;
 import cn.iocoder.yudao.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import cn.iocoder.yudao.module.cps.dal.mysql.platform.CpsPlatformMapper;
 import jakarta.annotation.Resource;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -39,6 +42,7 @@ public class CpsPlatformServiceImpl implements CpsPlatformService {
     }
 
     @Override
+    @CacheEvict(cacheNames = CpsCacheConfig.CACHE_PLATFORM, key = "#updateReqVO.platformCode")
     public void updatePlatform(CpsPlatformSaveReqVO updateReqVO) {
         // 校验存在
         validatePlatformExists(updateReqVO.getId());
@@ -73,6 +77,8 @@ public class CpsPlatformServiceImpl implements CpsPlatformService {
     }
 
     @Override
+    @Cacheable(cacheNames = CpsCacheConfig.CACHE_PLATFORM, key = "#platformCode",
+            cacheManager = "cpsCacheManager")
     public CpsPlatformDO getPlatformByCode(String platformCode) {
         return platformMapper.selectByPlatformCode(platformCode);
     }

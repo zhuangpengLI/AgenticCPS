@@ -55,5 +55,10 @@ public interface CpsErrorCodeConstants {
     // ========== 冻结 1-100-011-000 ==========
     ErrorCode FREEZE_CONFIG_NOT_EXISTS = new ErrorCode(1_100_011_000, "冻结配置不存在");
     ErrorCode FREEZE_RECORD_NOT_EXISTS = new ErrorCode(1_100_011_001, "冻结记录不存在");
+    ErrorCode FREEZE_RECORD_STATUS_INVALID = new ErrorCode(1_100_011_002, "冻结记录状态不合法，无法执行此操作");
+
+    // ========== 风控 1-100-012-000 ==========
+    ErrorCode RISK_RULE_NOT_EXISTS = new ErrorCode(1_100_012_000, "风控规则不存在");
+    ErrorCode RISK_TRANSFER_BLOCKED = new ErrorCode(1_100_012_001, "转链请求被风控拦截");
 
 }
