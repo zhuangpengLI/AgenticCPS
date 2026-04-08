@@ -6,9 +6,12 @@ import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.cps.controller.admin.order.vo.CpsOrderPageReqVO;
 import cn.iocoder.yudao.module.cps.dal.dataobject.order.CpsOrderDO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * CPS订单 Mapper
@@ -58,5 +61,17 @@ public interface CpsOrderMapper extends BaseMapperX<CpsOrderDO> {
                 .eqIfPresent(CpsOrderDO::getOrderStatus, reqVO.getOrderStatus())
                 .orderByDesc(CpsOrderDO::getId));
     }
+
+    /**
+     * 按日期统计各平台订单聊合数据（给定日期、租户）
+     */
+    List<Map<String, Object>> selectDailyStatsByDate(@Param("statDate") LocalDate statDate,
+                                                     @Param("tenantId") Long tenantId);
+
+    /**
+     * 实时看板：返回指定日期全平台汇总数据
+     */
+    Map<String, Object> selectRealtimeDashboard(@Param("statDate") LocalDate statDate,
+                                                @Param("tenantId") Long tenantId);
 
 }
