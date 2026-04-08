@@ -34,17 +34,17 @@ export interface CpsRiskRulePageReqVO {
 // ===== 风控规则 API =====
 
 export const createCpsRiskRule = async (data: CpsRiskRuleSaveVO) => {
-  return await request.post({ url: '/admin-api/cps/risk/rule/create', data })
+  return await request.post({ url: '/cps/risk/rule/create', data })
 }
 
 export const updateCpsRiskRule = async (data: CpsRiskRuleSaveVO) => {
-  return await request.put({ url: '/admin-api/cps/risk/rule/update', data })
+  return await request.put({ url: '/cps/risk/rule/update', data })
 }
 
 export const deleteCpsRiskRule = async (id: number) => {
-  return await request.delete({ url: '/admin-api/cps/risk/rule/delete', params: { id } })
+  return await request.delete({ url: '/cps/risk/rule/delete', params: { id } })
 }
 
 export const getCpsRiskRulePage = async (params: CpsRiskRulePageReqVO) => {
-  return await request.get({ url: '/admin-api/cps/risk/rule/page', params })
+  return await request.get({ url: '/cps/risk/rule/page', params })
 }

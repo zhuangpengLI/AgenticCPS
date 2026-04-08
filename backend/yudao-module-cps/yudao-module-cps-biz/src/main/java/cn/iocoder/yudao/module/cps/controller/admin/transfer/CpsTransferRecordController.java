@@ -26,7 +26,7 @@ import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
  */
 @Tag(name = "管理后台 - CPS转链记录")
 @RestController
-@RequestMapping("/admin-api/cps/transfer-record")
+@RequestMapping("/cps/transfer-record")
 @Validated
 public class CpsTransferRecordController {
 

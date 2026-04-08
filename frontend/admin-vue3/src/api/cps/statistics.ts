@@ -34,16 +34,16 @@ export interface CpsPlatformSummaryVO {
 export const CpsStatisticsApi = {
   /** 运营数据看板 */
   getDashboard: () =>
-    request.get<CpsDashboardVO>({ url: '/admin-api/cps/statistics/dashboard' }),
+    request.get<CpsDashboardVO>({ url: '/cps/statistics/dashboard' }),
 
   /** 趋势折线图数据 */
   getTrend: (params: { startDate: string; endDate: string; platformCode?: string }) =>
-    request.get<CpsTrendVO>({ url: '/admin-api/cps/statistics/trend', params }),
+    request.get<CpsTrendVO>({ url: '/cps/statistics/trend', params }),
 
   /** 平台占比饼图数据 */
   getPlatformSummary: (params: { startDate: string; endDate: string }) =>
     request.get<CpsPlatformSummaryVO[]>({
-      url: '/admin-api/cps/statistics/platform-summary',
+      url: '/cps/statistics/platform-summary',
       params
     })
 }

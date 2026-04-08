@@ -33,7 +33,25 @@
 - [ReportApi.java](file://backend/yudao-module-report/src/main/java/cn/iocoder/yudao/module/report/api/ReportApi.java)
 - [AiApi.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/api/AiApi.java)
 - [CpsApi.java](file://backend/yudao-module-cps/src/main/java/cn/iocoder/yudao/module/cps/api/CpsApi.java)
+- [CpsAdzoneController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/adzone/CpsAdzoneController.java)
+- [CpsOrderController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/order/CpsOrderController.java)
+- [CpsRebateConfigController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/rebate/CpsRebateConfigController.java)
+- [CpsWithdrawController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/withdraw/CpsWithdrawController.java)
+- [AppCpsGoodsController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/goods/AppCpsGoodsController.java)
+- [AppCpsRebateController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/rebate/AppCpsRebateController.java)
+- [CpsStatisticsController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/statistics/CpsStatisticsController.java)
+- [CpsPlatformController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/platform/CpsPlatformController.java)
+- [CpsRiskRuleController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/risk/CpsRiskRuleController.java)
+- [CpsFreezeController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/freeze/CpsFreezeController.java)
 </cite>
+
+## 更新摘要
+**所做更改**
+- 更新CPS模块管理后台API路径，修正为/admin-api前缀
+- 新增CPS推广位管理、返利配置、提现管理、数据统计、平台配置、风控规则、冻结解冻等完整管理接口
+- 新增CPS会员端API，包括商品搜索、推广链接生成、返利账户和记录查询
+- 完善CPS模块的接口分类和权限控制说明
+- 更新CPS数据模型与枚举说明
 
 ## 目录
 1. [简介](#简介)
@@ -49,7 +67,7 @@
 
 ## 简介
 本文件为 AgenticCPS 项目的完整 API 接口文档，覆盖管理后台与会员端的 RESTful 接口规范。文档内容包括：
-- 接口分类：订单管理、商品管理、用户管理、支付管理、系统配置、营销推广、报表统计、微信生态、AI 能力等
+- 接口分类：订单管理、商品管理、用户管理、支付管理、系统配置、营销推广、报表统计、微信生态、AI 能力、CPS推广等
 - 接口规范：HTTP 方法、URL 模式、请求/响应模式、认证方式与参数说明
 - 错误处理策略、状态码说明与版本信息
 - 接口测试方法、调试工具与性能优化建议
@@ -345,27 +363,60 @@ Ctrl-->>Client : Result{code,msg,data}
 - [AiApi.java](file://backend/yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/api/AiApi.java)
 
 ### CPS 推广模块（CPS）
-- 模块职责：推广位、佣金、订单、提现、风控
-- 关键接口：推广位管理、佣金结算、订单查询、提现申请
+- 模块职责：推广位、佣金、订单、提现、风控、冻结解冻、数据统计
+- 关键接口：推广位管理、佣金结算、订单查询、提现申请、平台配置、风控规则
 - 认证与权限：需登录且具备推广管理权限
 - 响应模型：统一 Result 包裹数据或错误信息
 
+#### 管理后台CPS接口
+- 推广位管理：创建、更新、删除、查询、分页、按平台查询
+- 订单管理：订单分页、订单详情、手动同步
+- 返利配置：创建、更新、删除、查询、分页、启用列表
+- 提现管理：分页查询、详情、审核通过、驳回
+- 平台配置：创建、更新、删除、查询、分页、启用列表
+- 风控规则：创建、更新、删除、分页
+- 冻结解冻：冻结配置管理、冻结记录管理、手动解冻
+- 数据统计：运营看板、趋势图表、平台占比
+
 ```mermaid
 sequenceDiagram
-participant Client as "客户端"
-participant Ctrl as "CpsController"
-participant Svc as "CpsService"
+participant Client as "管理后台客户端"
+participant Ctrl as "CpsOrderController"
+participant Svc as "CpsOrderService"
 participant Biz as "CPS 业务"
-Client->>Ctrl : POST /cps/order/list
-Ctrl->>Svc : 查询订单
+Client->>Ctrl : GET /admin-api/cps/order/page
+Ctrl->>Svc : 查询订单分页
 Svc->>Biz : 调用业务逻辑
-Biz-->>Svc : 订单列表
+Biz-->>Svc : 订单分页数据
 Svc-->>Ctrl : 返回数据
 Ctrl-->>Client : Result{code,msg,data}
 ```
 
 **章节来源**
-- [CpsApi.java](file://backend/yudao-module-cps/src/main/java/cn/iocoder/yudao/module/cps/api/CpsApi.java)
+- [CpsOrderController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/order/CpsOrderController.java)
+
+#### 会员端CPS接口
+- 商品搜索：单平台搜索、聚合搜索、分页参数
+- 推广链接：生成推广链接（短链、长链、淘口令等）
+- 返利账户：获取返利账户余额
+- 返利记录：分页查询返利记录
+
+```mermaid
+sequenceDiagram
+participant Client as "会员APP客户端"
+participant Ctrl as "AppCpsGoodsController"
+participant Svc as "CpsGoodsService"
+participant Platform as "第三方平台"
+Client->>Ctrl : GET /cps/goods/search
+Ctrl->>Svc : 搜索商品
+Svc->>Platform : 调用平台API
+Platform-->>Svc : 商品数据
+Svc-->>Ctrl : 商品列表
+Ctrl-->>Client : AppCpsGoodsSearchResult
+```
+
+**章节来源**
+- [AppCpsGoodsController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/app/goods/AppCpsGoodsController.java)
 
 ### 数据模型与枚举
 - 平台编码、广告位类型、冻结状态、订单状态、返佣类型、提现状态、风控规则等枚举，用于接口参数与返回值的标准化
@@ -479,7 +530,7 @@ YUDAO_SERVER --> MODULE_CPS
 - [Result.java](file://agent_improvement/sdk_demo/dataoke-sdk-java/src/main/java/com/dtk/api/exception/Result.java)
 
 ## 结论
-本接口文档覆盖了管理后台与会员端的核心能力，结合统一的响应模型、异常处理与安全策略，能够支撑高并发与复杂业务场景。建议在生产环境中配合完善的监控、压测与灰度发布流程，持续优化性能与稳定性。
+本接口文档覆盖了管理后台与会员端的核心能力，结合统一的响应模型、异常处理与安全策略，能够支撑高并发与复杂业务场景。CPS模块现已完整支持管理后台的推广位、订单、返利、提现、风控、冻结解冻、平台配置和数据统计等功能，以及会员端的商品搜索、推广链接生成、返利账户和记录查询功能。建议在生产环境中配合完善的监控、压测与灰度发布流程，持续优化性能与稳定性。
 
 ## 附录
 

@@ -45,18 +45,18 @@ export interface CpsOrderPageReqVO {
 
 // 查询订单分页列表
 export const getCpsOrderPage = async (params: CpsOrderPageReqVO) => {
-  return await request.get({ url: '/admin-api/cps/order/page', params })
+  return await request.get({ url: '/cps/order/page', params })
 }
 
 // 查询订单详情
 export const getCpsOrder = async (id: number) => {
-  return await request.get({ url: '/admin-api/cps/order/get', params: { id } })
+  return await request.get({ url: '/cps/order/get', params: { id } })
 }
 
 // 手动触发订单同步
 export const syncCpsOrders = async (platformCode: string, hours = 2) => {
   return await request.post({
-    url: '/admin-api/cps/order/sync',
+    url: '/cps/order/sync',
     params: { platformCode, hours }
   })
 }

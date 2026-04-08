@@ -28,7 +28,7 @@ import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
  */
 @Tag(name = "管理后台 - CPS风控规则")
 @RestController
-@RequestMapping("/admin-api/cps/risk/rule")
+@RequestMapping("/cps/risk/rule")
 @Validated
 public class CpsRiskRuleController {
 

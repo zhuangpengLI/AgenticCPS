@@ -29,7 +29,7 @@ import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
  */
 @Tag(name = "用户 APP - 我的返利")
 @RestController
-@RequestMapping("/app-api/cps/rebate")
+@RequestMapping("/cps/rebate")
 @Validated
 public class AppCpsRebateController {
 

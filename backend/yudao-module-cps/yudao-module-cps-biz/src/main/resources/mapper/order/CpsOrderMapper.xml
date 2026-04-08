@@ -15,7 +15,7 @@
             COALESCE(SUM(CASE WHEN order_status IN ('ordered','paid','received') THEN commission_amount ELSE 0 END), 0) AS pending_commission_amount,
             COALESCE(SUM(real_rebate), 0) AS rebate_amount,
             COUNT(DISTINCT member_id) AS active_member_count
-        FROM yudao_cps_order
+        FROM cps_order
         WHERE DATE(create_time) = #{statDate}
           AND deleted = 0
           AND tenant_id = #{tenantId}
@@ -31,7 +31,7 @@
             COALESCE(SUM(real_rebate), 0) AS rebate_amount,
             COALESCE(SUM(commission_amount) - SUM(real_rebate), 0) AS profit_amount,
             COUNT(DISTINCT member_id) AS active_member_count
-        FROM yudao_cps_order
+        FROM cps_order
         WHERE DATE(create_time) = #{statDate}
           AND deleted = 0
           AND tenant_id = #{tenantId}

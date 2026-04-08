@@ -25,7 +25,7 @@ import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
  */
 @Tag(name = "管理后台 - CPS 订单管理")
 @RestController
-@RequestMapping("/admin-api/cps/order")
+@RequestMapping("/cps/order")
 @Validated
 public class CpsOrderController {
 

@@ -30,5 +30,5 @@ export interface CpsTransferRecordPageReqVO {
 
 // 获取转链记录分页列表
 export const getCpsTransferRecordPage = async (params: CpsTransferRecordPageReqVO) => {
-  return await request.get({ url: '/admin-api/cps/transfer-record/page', params })
+  return await request.get({ url: '/cps/transfer-record/page', params })
 }

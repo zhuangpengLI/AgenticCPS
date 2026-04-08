@@ -25,7 +25,7 @@ import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
  */
 @Tag(name = "管理后台 - CPS提现管理")
 @RestController
-@RequestMapping("/admin-api/cps/withdraw")
+@RequestMapping("/cps/withdraw")
 @Validated
 public class CpsWithdrawController {
 

@@ -102,15 +102,15 @@ export const getEnabledCpsRebateConfigList = async () => {
 
 // 获取返利记录分页列表
 export const getCpsRebateRecordPage = async (params: CpsRebateRecordPageReqVO) => {
-  return await request.get({ url: '/admin-api/cps/rebate-record/page', params })
+  return await request.get({ url: '/cps/rebate-record/page', params })
 }
 
 // 获取返利记录详情
 export const getCpsRebateRecord = async (id: number) => {
-  return await request.get({ url: '/admin-api/cps/rebate-record/get', params: { id } })
+  return await request.get({ url: '/cps/rebate-record/get', params: { id } })
 }
 
 // 退款回扣（逆向扣回返利�?
 export const reverseCpsRebate = async (orderId: number) => {
-  return await request.post({ url: '/admin-api/cps/rebate-record/reverse', params: { orderId } })
+  return await request.post({ url: '/cps/rebate-record/reverse', params: { orderId } })
 }

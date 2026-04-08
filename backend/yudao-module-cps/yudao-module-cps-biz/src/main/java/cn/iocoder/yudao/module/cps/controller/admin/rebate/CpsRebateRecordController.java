@@ -25,7 +25,7 @@ import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
  */
 @Tag(name = "管理后台 - CPS返利记录")
 @RestController
-@RequestMapping("/admin-api/cps/rebate-record")
+@RequestMapping("/cps/rebate-record")
 @Validated
 public class CpsRebateRecordController {
 

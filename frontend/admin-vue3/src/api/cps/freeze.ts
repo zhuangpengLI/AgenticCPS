@@ -52,27 +52,27 @@ export interface CpsFreezeRecordPageReqVO {
 // ===== 冻结配置 API =====
 
 export const createCpsFreezeConfig = async (data: CpsFreezeConfigSaveVO) => {
-  return await request.post({ url: '/admin-api/cps/freeze/config/create', data })
+  return await request.post({ url: '/cps/freeze/config/create', data })
 }
 
 export const updateCpsFreezeConfig = async (data: CpsFreezeConfigSaveVO) => {
-  return await request.put({ url: '/admin-api/cps/freeze/config/update', data })
+  return await request.put({ url: '/cps/freeze/config/update', data })
 }
 
 export const deleteCpsFreezeConfig = async (id: number) => {
-  return await request.delete({ url: '/admin-api/cps/freeze/config/delete', params: { id } })
+  return await request.delete({ url: '/cps/freeze/config/delete', params: { id } })
 }
 
 export const getCpsFreezeConfigPage = async (params: CpsFreezeConfigPageReqVO) => {
-  return await request.get({ url: '/admin-api/cps/freeze/config/page', params })
+  return await request.get({ url: '/cps/freeze/config/page', params })
 }
 
 // ===== 冻结记录 API =====
 
 export const getCpsFreezeRecordPage = async (params: CpsFreezeRecordPageReqVO) => {
-  return await request.get({ url: '/admin-api/cps/freeze/record/page', params })
+  return await request.get({ url: '/cps/freeze/record/page', params })
 }
 
 export const manualUnfreeze = async (id: number) => {
-  return await request.put({ url: '/admin-api/cps/freeze/record/manual-unfreeze', params: { id } })
+  return await request.put({ url: '/cps/freeze/record/manual-unfreeze', params: { id } })
 }

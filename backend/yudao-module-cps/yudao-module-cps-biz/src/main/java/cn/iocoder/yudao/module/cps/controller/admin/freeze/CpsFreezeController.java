@@ -27,7 +27,7 @@ import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
  */
 @Tag(name = "管理后台 - CPS冻结解冻")
 @RestController
-@RequestMapping("/admin-api/cps/freeze")
+@RequestMapping("/cps/freeze")
 @Validated
 public class CpsFreezeController {
 

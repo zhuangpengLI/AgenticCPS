@@ -32,7 +32,7 @@ import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
  */
 @Tag(name = "管理后台 - CPS数据统计")
 @RestController
-@RequestMapping("/admin-api/cps/statistics")
+@RequestMapping("/cps/statistics")
 @Validated
 public class CpsStatisticsController {
 
