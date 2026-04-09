@@ -19,6 +19,8 @@ public enum CpsPlatformCodeEnum implements ArrayValuable<String> {
     JD("jd", "京东联盟"),
     PDD("pdd", "拼多多联盟"),
     DOUYIN("douyin", "抖音联盟"),
+    VIP("vip", "唯品会联盟"),
+    MEITUAN("meituan", "美团联盟"),
     ;
 
     public static final String[] ARRAYS = Arrays.stream(values()).map(CpsPlatformCodeEnum::getCode).toArray(String[]::new);

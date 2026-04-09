@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.dal.dataobject.platform;
+package cn.iocoder.yudao.module.cps.dal.dataobject.vendor;
 
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
@@ -7,22 +7,20 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
-import java.math.BigDecimal;
-
 /**
- * CPS平台配置 DO
+ * CPS API 供应商配置 DO
  *
  * @author CPS System
  */
-@TableName("cps_platform")
-@KeySequence("cps_platform_seq")
+@TableName("cps_api_vendor")
+@KeySequence("cps_api_vendor_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CpsPlatformDO extends TenantBaseDO {
+public class CpsApiVendorDO extends TenantBaseDO {
 
     /**
      * 主键ID
@@ -30,31 +28,35 @@ public class CpsPlatformDO extends TenantBaseDO {
     @TableId
     private Long id;
     /**
-     * 平台编码（唯一标识）
+     * 供应商编码（如 dataoke / haodanku / miaoyouquan / shihuizhu / official）
+     */
+    private String vendorCode;
+    /**
+     * 供应商名称
+     */
+    private String vendorName;
+    /**
+     * 供应商类型：aggregator(聚合平台) / official(官方API)
+     */
+    private String vendorType;
+    /**
+     * 电商平台编码（如 taobao / jd / pdd / vip / meituan / douyin）
      */
     private String platformCode;
     /**
-     * 平台名称
-     */
-    private String platformName;
-    /**
-     * 平台Logo图片URL
-     */
-    private String platformLogo;
-    /**
-     * AppKey
+     * API Key
      */
     private String appKey;
     /**
-     * AppSecret（加密存储）
+     * API Secret（加密存储）
      */
     private String appSecret;
     /**
-     * API基础URL
+     * API 基础URL
      */
     private String apiBaseUrl;
     /**
-     * 授权令牌
+     * 授权令牌（OAuth2 token / unionId 等）
      */
     private String authToken;
     /**
@@ -62,13 +64,13 @@ public class CpsPlatformDO extends TenantBaseDO {
      */
     private String defaultAdzoneId;
     /**
-     * 平台服务费率（百分比）
+     * 扩展配置（JSON格式），存储供应商特有参数
      */
-    private BigDecimal platformServiceRate;
+    private String extraConfig;
     /**
-     * 排序权重
+     * 优先级，数字越大优先级越高
      */
-    private Integer sort;
+    private Integer priority;
     /**
      * 状态（0禁用 1启用）
      *
@@ -76,20 +78,8 @@ public class CpsPlatformDO extends TenantBaseDO {
      */
     private Integer status;
     /**
-     * 扩展配置（JSON格式）
-     */
-    private String extraConfig;
-    /**
      * 备注
      */
     private String remark;
-    /**
-     * 当前激活的供应商编码（用于路由选择）
-     */
-    private String activeVendorCode;
-    /**
-     * 支持的供应商列表（逗号分隔）
-     */
-    private String supportedVendors;
 
 }

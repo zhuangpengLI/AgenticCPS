@@ -61,4 +61,8 @@ public interface CpsErrorCodeConstants {
     ErrorCode RISK_RULE_NOT_EXISTS = new ErrorCode(1_100_012_000, "风控规则不存在");
     ErrorCode RISK_TRANSFER_BLOCKED = new ErrorCode(1_100_012_001, "转链请求被风控拦截");
 
+    // ========== API供应商 1-100-013-000 ==========
+    ErrorCode VENDOR_NOT_EXISTS = new ErrorCode(1_100_013_000, "API供应商配置不存在");
+    ErrorCode VENDOR_PLATFORM_DUPLICATE = new ErrorCode(1_100_013_001, "供应商[{}]+平台[{}]的配置已存在");
+
 }

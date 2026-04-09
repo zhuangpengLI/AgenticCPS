@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.cps.client.jd;
+package cn.iocoder.yudao.module.cps.client.vip;
 
 import cn.iocoder.yudao.module.cps.client.CpsApiVendorClient;
 import cn.iocoder.yudao.module.cps.client.CpsPlatformClient;
@@ -13,25 +13,23 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 京东联盟平台适配器（委托模式）
+ * 唯品会联盟平台适配器（委托模式）
  *
  * <p>面向业务层的顶层适配器，通过 {@link CpsPlatformClientFactory} 获取当前激活的
  * {@link CpsApiVendorClient} 实现，委托执行具体的 API 调用。</p>
- *
- * <p>支持的供应商：大淘客、好单库、京东联盟官方API（通过后台配置切换）</p>
  *
  * @author CPS System
  */
 @Slf4j
 @Component
-public class JdPlatformClientAdapter implements CpsPlatformClient {
+public class VipPlatformClientAdapter implements CpsPlatformClient {
 
     @Resource
     private CpsPlatformClientFactory factory;
 
     @Override
     public String getPlatformCode() {
-        return CpsPlatformCodeEnum.JD.getCode();
+        return CpsPlatformCodeEnum.VIP.getCode();
     }
 
     @Override
@@ -39,7 +37,7 @@ public class JdPlatformClientAdapter implements CpsPlatformClient {
         CpsApiVendorClient vendor = factory.getActiveVendorClient(getPlatformCode());
         CpsVendorConfig config = factory.getActiveVendorConfig(getPlatformCode());
         if (vendor == null || config == null) {
-            log.warn("[京东适配器] 未找到激活的供应商或配置");
+            log.warn("[唯品会适配器] 未找到激活的供应商或配置");
             return buildEmptyResult(request);
         }
         return vendor.searchGoods(request, config);
@@ -50,7 +48,7 @@ public class JdPlatformClientAdapter implements CpsPlatformClient {
         CpsApiVendorClient vendor = factory.getActiveVendorClient(getPlatformCode());
         CpsVendorConfig config = factory.getActiveVendorConfig(getPlatformCode());
         if (vendor == null || config == null) {
-            log.warn("[京东适配器] 未找到激活的供应商或配置");
+            log.warn("[唯品会适配器] 未找到激活的供应商或配置");
             return null;
         }
         return vendor.generatePromotionLink(request, config);
@@ -61,7 +59,7 @@ public class JdPlatformClientAdapter implements CpsPlatformClient {
         CpsApiVendorClient vendor = factory.getActiveVendorClient(getPlatformCode());
         CpsVendorConfig config = factory.getActiveVendorConfig(getPlatformCode());
         if (vendor == null || config == null) {
-            log.warn("[京东适配器] 未找到激活的供应商或配置");
+            log.warn("[唯品会适配器] 未找到激活的供应商或配置");
             return Collections.emptyList();
         }
         return vendor.queryOrders(request, config);
@@ -72,7 +70,7 @@ public class JdPlatformClientAdapter implements CpsPlatformClient {
         CpsApiVendorClient vendor = factory.getActiveVendorClient(getPlatformCode());
         CpsVendorConfig config = factory.getActiveVendorConfig(getPlatformCode());
         if (vendor == null || config == null) {
-            log.warn("[京东适配器] 未找到激活的供应商或配置");
+            log.warn("[唯品会适配器] 连接测试功能暂未实现");
             return false;
         }
         return vendor.testConnection(config);

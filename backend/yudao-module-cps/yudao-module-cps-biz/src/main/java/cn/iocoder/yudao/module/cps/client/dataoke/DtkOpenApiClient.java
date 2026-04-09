@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.cps.client.dataoke;
 
+import cn.iocoder.yudao.module.cps.client.dto.CpsVendorConfig;
 import cn.iocoder.yudao.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import cn.hutool.crypto.digest.DigestUtil;
 import cn.hutool.http.HttpRequest;
@@ -15,26 +16,50 @@ import java.util.*;
  *
  * <p>大淘客 API 签名规则：MD5(appKey=xxx&timer=xxx&nonce=xxx + appSecret)</p>
  *
+ * <p>支持三种构造方式：
+ * <ul>
+ *   <li>通过 {@link CpsVendorConfig} 构建（推荐，新架构）</li>
+ *   <li>通过 {@link CpsPlatformDO} 构建（兼容旧架构）</li>
+ *   <li>通过 appKey/appSecret 直接构建</li>
+ * </ul>
+ * </p>
+ *
  * @author CPS System
  */
 @Slf4j
 public class DtkOpenApiClient {
 
-    private static final String BASE_URL = "https://openapi.dataoke.com/api";
+    private static final String DEFAULT_BASE_URL = "https://openapi.dataoke.com/api";
 
     private final String appKey;
     private final String appSecret;
+    private final String baseUrl;
     private final ObjectMapper objectMapper;
 
+    /**
+     * 通过供应商配置构建（推荐，新架构使用）
+     */
+    public DtkOpenApiClient(CpsVendorConfig config) {
+        this.appKey = config.getAppKey();
+        this.appSecret = config.getAppSecret();
+        this.baseUrl = config.getApiBaseUrl() != null ? config.getApiBaseUrl() : DEFAULT_BASE_URL;
+        this.objectMapper = new ObjectMapper();
+    }
+
+    /**
+     * 通过平台配置构建（兼容旧架构）
+     */
     public DtkOpenApiClient(CpsPlatformDO platform) {
         this.appKey = platform.getAppKey();
         this.appSecret = platform.getAppSecret();
+        this.baseUrl = platform.getApiBaseUrl() != null ? platform.getApiBaseUrl() : DEFAULT_BASE_URL;
         this.objectMapper = new ObjectMapper();
     }
 
     public DtkOpenApiClient(String appKey, String appSecret) {
         this.appKey = appKey;
         this.appSecret = appSecret;
+        this.baseUrl = DEFAULT_BASE_URL;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -74,7 +99,7 @@ public class DtkOpenApiClient {
                 queryStr.append(k).append("=").append(v);
             }
         });
-        String url = BASE_URL + path + "?" + queryStr;
+        String url = baseUrl + path + "?" + queryStr;
         try {
             HttpResponse response = HttpRequest.get(url).timeout(5000).execute();
             String responseBody = response.body();

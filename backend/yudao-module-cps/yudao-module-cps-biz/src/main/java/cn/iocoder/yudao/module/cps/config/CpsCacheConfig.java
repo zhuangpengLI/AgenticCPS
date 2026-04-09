@@ -30,6 +30,8 @@ public class CpsCacheConfig {
 
     /** 平台配置缓存名称 */
     public static final String CACHE_PLATFORM = "cps:platform";
+    /** API供应商配置缓存名称 */
+    public static final String CACHE_API_VENDOR = "cps:apiVendor";
     /** 返利配置缓存名称 */
     public static final String CACHE_REBATE_CONFIG = "cps:rebateConfig";
     /** 风控频率限制规则缓存名称 */
@@ -50,6 +52,8 @@ public class CpsCacheConfig {
         return RedisCacheManager.builder(factory)
                 // 平台配置缓存 30 分钟（变更频率低）
                 .withCacheConfiguration(CACHE_PLATFORM, defaultConfig.entryTtl(Duration.ofMinutes(30)))
+                // API供应商配置缓存 30 分钟（变更频率低）
+                .withCacheConfiguration(CACHE_API_VENDOR, defaultConfig.entryTtl(Duration.ofMinutes(30)))
                 // 返利配置缓存 10 分钟
                 .withCacheConfiguration(CACHE_REBATE_CONFIG, defaultConfig.entryTtl(Duration.ofMinutes(10)))
                 // 风控频率规则缓存 5 分钟（需要相对及时更新）
