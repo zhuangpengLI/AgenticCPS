@@ -2,21 +2,21 @@
 
 <cite>
 **本文引用的文件**
-- [LoginUser.java](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/LoginUser.java)
-- [SecurityFrameworkUtils.java](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/util/SecurityFrameworkUtils.java)
-- [PermissionService.java](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/permission/PermissionService.java)
-- [RoleService.java](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/permission/RoleService.java)
-- [RoleDO.java](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/RoleDO.java)
-- [MenuDO.java](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/MenuDO.java)
-- [UserRoleDO.java](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/UserRoleDO.java)
-- [RoleMenuDO.java](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/RoleMenuDO.java)
-- [DataScopeEnum.java](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/enums/permission/DataScopeEnum.java)
-- [RoleTypeEnum.java](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/enums/permission/RoleTypeEnum.java)
-- [AuthPermissionInfoRespVO.java](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/controller/admin/auth/vo/AuthPermissionInfoRespVO.java)
-- [OAuth2ApproveDO.java](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java)
-- [OAuth2ApproveService.java](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/oauth2/OAuth2ApproveService.java)
-- [OAuth2OpenAuthorizeInfoRespVO.java](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/controller/admin/oauth2/vo/open/OAuth2OpenAuthorizeInfoRespVO.java)
-- [OAuth2OpenControllerTest.java](file://yudao-module-system/src/test/java/cn/iocoder/yudao/module/system/controller/admin/oauth2/OAuth2OpenControllerTest.java)
+- [LoginUser.java](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/LoginUser.java)
+- [SecurityFrameworkUtils.java](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/util/SecurityFrameworkUtils.java)
+- [PermissionService.java](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/permission/PermissionService.java)
+- [RoleService.java](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/permission/RoleService.java)
+- [RoleDO.java](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/RoleDO.java)
+- [MenuDO.java](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/MenuDO.java)
+- [UserRoleDO.java](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/UserRoleDO.java)
+- [RoleMenuDO.java](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/RoleMenuDO.java)
+- [DataScopeEnum.java](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/enums/permission/DataScopeEnum.java)
+- [RoleTypeEnum.java](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/enums/permission/RoleTypeEnum.java)
+- [AuthPermissionInfoRespVO.java](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/controller/admin/auth/vo/AuthPermissionInfoRespVO.java)
+- [OAuth2ApproveDO.java](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java)
+- [OAuth2ApproveService.java](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/oauth2/OAuth2ApproveService.java)
+- [OAuth2OpenAuthorizeInfoRespVO.java](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/controller/admin/oauth2/vo/open/OAuth2OpenAuthorizeInfoRespVO.java)
+- [OAuth2OpenControllerTest.java](file://qiji-module-system/src/test/java/com.qiji.cps/module/system/controller/admin/oauth2/OAuth2OpenControllerTest.java)
 </cite>
 
 ## 目录
@@ -71,23 +71,23 @@ L --> K
 ```
 
 **图表来源**
-- [LoginUser.java:1-76](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/LoginUser.java#L1-L76)
-- [SecurityFrameworkUtils.java:76-143](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/util/SecurityFrameworkUtils.java#L76-L143)
-- [PermissionService.java:1-147](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/permission/PermissionService.java#L1-L147)
-- [RoleService.java:1-132](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/permission/RoleService.java#L1-L132)
-- [RoleDO.java:1-79](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/RoleDO.java#L1-L79)
-- [MenuDO.java:1-110](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/MenuDO.java#L1-L110)
-- [UserRoleDO.java:1-36](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/UserRoleDO.java#L1-L36)
-- [RoleMenuDO.java:1-36](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/RoleMenuDO.java#L1-L36)
-- [DataScopeEnum.java:1-41](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/enums/permission/DataScopeEnum.java#L1-L41)
-- [RoleTypeEnum.java:1-22](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/enums/permission/RoleTypeEnum.java#L1-L22)
-- [OAuth2ApproveDO.java:1-63](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java#L1-L63)
-- [OAuth2ApproveService.java:1-39](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/oauth2/OAuth2ApproveService.java#L1-L39)
+- [LoginUser.java:1-76](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/LoginUser.java#L1-L76)
+- [SecurityFrameworkUtils.java:76-143](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/util/SecurityFrameworkUtils.java#L76-L143)
+- [PermissionService.java:1-147](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/permission/PermissionService.java#L1-L147)
+- [RoleService.java:1-132](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/permission/RoleService.java#L1-L132)
+- [RoleDO.java:1-79](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/RoleDO.java#L1-L79)
+- [MenuDO.java:1-110](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/MenuDO.java#L1-L110)
+- [UserRoleDO.java:1-36](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/UserRoleDO.java#L1-L36)
+- [RoleMenuDO.java:1-36](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/RoleMenuDO.java#L1-L36)
+- [DataScopeEnum.java:1-41](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/enums/permission/DataScopeEnum.java#L1-L41)
+- [RoleTypeEnum.java:1-22](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/enums/permission/RoleTypeEnum.java#L1-L22)
+- [OAuth2ApproveDO.java:1-63](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java#L1-L63)
+- [OAuth2ApproveService.java:1-39](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/oauth2/OAuth2ApproveService.java#L1-L39)
 
 **章节来源**
-- [LoginUser.java:1-76](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/LoginUser.java#L1-L76)
-- [PermissionService.java:1-147](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/permission/PermissionService.java#L1-L147)
-- [RoleService.java:1-132](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/permission/RoleService.java#L1-L132)
+- [LoginUser.java:1-76](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/LoginUser.java#L1-L76)
+- [PermissionService.java:1-147](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/permission/PermissionService.java#L1-L147)
+- [RoleService.java:1-132](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/permission/RoleService.java#L1-L132)
 
 ## 核心组件
 - LoginUser：登录用户上下文对象，承载用户标识、用户类型、扩展信息、租户信息、授权范围、过期时间等，贯穿认证与鉴权全流程
@@ -98,17 +98,17 @@ L --> K
 - OAuth2ApproveDO/OAuth2ApproveService：OAuth2授权范围的记录与审批逻辑
 
 **章节来源**
-- [LoginUser.java:1-76](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/LoginUser.java#L1-L76)
-- [PermissionService.java:1-147](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/permission/PermissionService.java#L1-L147)
-- [RoleService.java:1-132](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/permission/RoleService.java#L1-L132)
-- [RoleDO.java:1-79](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/RoleDO.java#L1-L79)
-- [MenuDO.java:1-110](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/MenuDO.java#L1-L110)
-- [UserRoleDO.java:1-36](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/UserRoleDO.java#L1-L36)
-- [RoleMenuDO.java:1-36](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/RoleMenuDO.java#L1-L36)
-- [DataScopeEnum.java:1-41](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/enums/permission/DataScopeEnum.java#L1-L41)
-- [RoleTypeEnum.java:1-22](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/enums/permission/RoleTypeEnum.java#L1-L22)
-- [OAuth2ApproveDO.java:1-63](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java#L1-L63)
-- [OAuth2ApproveService.java:1-39](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/oauth2/OAuth2ApproveService.java#L1-L39)
+- [LoginUser.java:1-76](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/LoginUser.java#L1-L76)
+- [PermissionService.java:1-147](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/permission/PermissionService.java#L1-L147)
+- [RoleService.java:1-132](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/permission/RoleService.java#L1-L132)
+- [RoleDO.java:1-79](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/RoleDO.java#L1-L79)
+- [MenuDO.java:1-110](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/MenuDO.java#L1-L110)
+- [UserRoleDO.java:1-36](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/UserRoleDO.java#L1-L36)
+- [RoleMenuDO.java:1-36](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/RoleMenuDO.java#L1-L36)
+- [DataScopeEnum.java:1-41](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/enums/permission/DataScopeEnum.java#L1-L41)
+- [RoleTypeEnum.java:1-22](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/enums/permission/RoleTypeEnum.java#L1-L22)
+- [OAuth2ApproveDO.java:1-63](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java#L1-L63)
+- [OAuth2ApproveService.java:1-39](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/oauth2/OAuth2ApproveService.java#L1-L39)
 
 ## 架构总览
 RBAC在AgenticCPS中的运行时架构：
@@ -134,9 +134,9 @@ Auth-->>Client : "返回登录用户权限信息"
 ```
 
 **图表来源**
-- [AuthPermissionInfoRespVO.java:1-40](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/controller/admin/auth/vo/AuthPermissionInfoRespVO.java#L1-L40)
-- [SecurityFrameworkUtils.java:76-143](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/util/SecurityFrameworkUtils.java#L76-L143)
-- [PermissionService.java:1-147](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/permission/PermissionService.java#L1-L147)
+- [AuthPermissionInfoRespVO.java:1-40](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/controller/admin/auth/vo/AuthPermissionInfoRespVO.java#L1-L40)
+- [SecurityFrameworkUtils.java:76-143](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/util/SecurityFrameworkUtils.java#L76-L143)
+- [PermissionService.java:1-147](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/permission/PermissionService.java#L1-L147)
 
 ## 详细组件分析
 
@@ -169,11 +169,11 @@ class LoginUser {
 ```
 
 **图表来源**
-- [LoginUser.java:1-76](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/LoginUser.java#L1-L76)
+- [LoginUser.java:1-76](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/LoginUser.java#L1-L76)
 
 **章节来源**
-- [LoginUser.java:1-76](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/LoginUser.java#L1-L76)
-- [SecurityFrameworkUtils.java:76-143](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/util/SecurityFrameworkUtils.java#L76-L143)
+- [LoginUser.java:1-76](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/LoginUser.java#L1-L76)
+- [SecurityFrameworkUtils.java:76-143](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/util/SecurityFrameworkUtils.java#L76-L143)
 
 ### 权限与角色映射
 - 用户-角色：通过UserRoleDO建立用户与角色的多对多关系
@@ -211,19 +211,19 @@ MENU ||--o{ ROLE_MENU : "授权"
 ```
 
 **图表来源**
-- [UserRoleDO.java:1-36](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/UserRoleDO.java#L1-L36)
-- [RoleMenuDO.java:1-36](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/RoleMenuDO.java#L1-L36)
-- [RoleDO.java:1-79](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/RoleDO.java#L1-L79)
-- [MenuDO.java:1-110](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/MenuDO.java#L1-L110)
+- [UserRoleDO.java:1-36](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/UserRoleDO.java#L1-L36)
+- [RoleMenuDO.java:1-36](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/RoleMenuDO.java#L1-L36)
+- [RoleDO.java:1-79](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/RoleDO.java#L1-L79)
+- [MenuDO.java:1-110](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/MenuDO.java#L1-L110)
 
 **章节来源**
-- [PermissionService.java:1-147](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/permission/PermissionService.java#L1-L147)
-- [RoleService.java:1-132](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/permission/RoleService.java#L1-L132)
-- [RoleDO.java:1-79](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/RoleDO.java#L1-L79)
-- [MenuDO.java:1-110](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/MenuDO.java#L1-L110)
-- [UserRoleDO.java:1-36](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/UserRoleDO.java#L1-L36)
-- [RoleMenuDO.java:1-36](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/RoleMenuDO.java#L1-L36)
-- [DataScopeEnum.java:1-41](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/enums/permission/DataScopeEnum.java#L1-L41)
+- [PermissionService.java:1-147](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/permission/PermissionService.java#L1-L147)
+- [RoleService.java:1-132](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/permission/RoleService.java#L1-L132)
+- [RoleDO.java:1-79](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/RoleDO.java#L1-L79)
+- [MenuDO.java:1-110](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/MenuDO.java#L1-L110)
+- [UserRoleDO.java:1-36](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/UserRoleDO.java#L1-L36)
+- [RoleMenuDO.java:1-36](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/RoleMenuDO.java#L1-L36)
+- [DataScopeEnum.java:1-41](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/enums/permission/DataScopeEnum.java#L1-L41)
 
 ### OAuth2授权范围与Scope
 - Scope概念：OAuth2授权范围用于限制客户端能访问的资源与权限集合
@@ -250,16 +250,16 @@ Open-->>Client : "授权完成"
 ```
 
 **图表来源**
-- [OAuth2OpenAuthorizeInfoRespVO.java:1-38](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/controller/admin/oauth2/vo/open/OAuth2OpenAuthorizeInfoRespVO.java#L1-L38)
-- [OAuth2ApproveService.java:1-39](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/oauth2/OAuth2ApproveService.java#L1-L39)
-- [OAuth2ApproveDO.java:1-63](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java#L1-L63)
-- [OAuth2OpenControllerTest.java:202-227](file://yudao-module-system/src/test/java/cn/iocoder/yudao/module/system/controller/admin/oauth2/OAuth2OpenControllerTest.java#L202-L227)
+- [OAuth2OpenAuthorizeInfoRespVO.java:1-38](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/controller/admin/oauth2/vo/open/OAuth2OpenAuthorizeInfoRespVO.java#L1-L38)
+- [OAuth2ApproveService.java:1-39](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/oauth2/OAuth2ApproveService.java#L1-L39)
+- [OAuth2ApproveDO.java:1-63](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java#L1-L63)
+- [OAuth2OpenControllerTest.java:202-227](file://qiji-module-system/src/test/java/com.qiji.cps/module/system/controller/admin/oauth2/OAuth2OpenControllerTest.java#L202-L227)
 
 **章节来源**
-- [OAuth2ApproveDO.java:1-63](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java#L1-L63)
-- [OAuth2ApproveService.java:1-39](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/oauth2/OAuth2ApproveService.java#L1-L39)
-- [OAuth2OpenAuthorizeInfoRespVO.java:1-38](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/controller/admin/oauth2/vo/open/OAuth2OpenAuthorizeInfoRespVO.java#L1-L38)
-- [OAuth2OpenControllerTest.java:202-227](file://yudao-module-system/src/test/java/cn/iocoder/yudao/module/system/controller/admin/oauth2/OAuth2OpenControllerTest.java#L202-L227)
+- [OAuth2ApproveDO.java:1-63](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java#L1-L63)
+- [OAuth2ApproveService.java:1-39](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/oauth2/OAuth2ApproveService.java#L1-L39)
+- [OAuth2OpenAuthorizeInfoRespVO.java:1-38](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/controller/admin/oauth2/vo/open/OAuth2OpenAuthorizeInfoRespVO.java#L1-L38)
+- [OAuth2OpenControllerTest.java:202-227](file://qiji-module-system/src/test/java/com.qiji.cps/module/system/controller/admin/oauth2/OAuth2OpenControllerTest.java#L202-L227)
 
 ### 登录用户权限信息响应体
 - AuthPermissionInfoRespVO封装了用户信息、角色集合、权限集合与菜单树，用于前端渲染与权限控制
@@ -282,10 +282,10 @@ AuthPermissionInfoRespVO --> UserVO : "包含"
 ```
 
 **图表来源**
-- [AuthPermissionInfoRespVO.java:1-40](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/controller/admin/auth/vo/AuthPermissionInfoRespVO.java#L1-L40)
+- [AuthPermissionInfoRespVO.java:1-40](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/controller/admin/auth/vo/AuthPermissionInfoRespVO.java#L1-L40)
 
 **章节来源**
-- [AuthPermissionInfoRespVO.java:1-40](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/controller/admin/auth/vo/AuthPermissionInfoRespVO.java#L1-L40)
+- [AuthPermissionInfoRespVO.java:1-40](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/controller/admin/auth/vo/AuthPermissionInfoRespVO.java#L1-L40)
 
 ## 依赖分析
 - LoginUser与SecurityFrameworkUtils：前者为数据载体，后者提供获取当前用户、设置上下文的能力
@@ -304,19 +304,19 @@ OAuth2ApproveService --> OAuth2ApproveDO
 ```
 
 **图表来源**
-- [LoginUser.java:1-76](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/LoginUser.java#L1-L76)
-- [SecurityFrameworkUtils.java:76-143](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/util/SecurityFrameworkUtils.java#L76-L143)
-- [PermissionService.java:1-147](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/permission/PermissionService.java#L1-L147)
-- [RoleService.java:1-132](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/permission/RoleService.java#L1-L132)
-- [RoleDO.java:1-79](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/RoleDO.java#L1-L79)
-- [DataScopeEnum.java:1-41](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/enums/permission/DataScopeEnum.java#L1-L41)
-- [RoleTypeEnum.java:1-22](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/enums/permission/RoleTypeEnum.java#L1-L22)
-- [OAuth2ApproveService.java:1-39](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/service/oauth2/OAuth2ApproveService.java#L1-L39)
-- [OAuth2ApproveDO.java:1-63](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java#L1-L63)
+- [LoginUser.java:1-76](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/LoginUser.java#L1-L76)
+- [SecurityFrameworkUtils.java:76-143](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/util/SecurityFrameworkUtils.java#L76-L143)
+- [PermissionService.java:1-147](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/permission/PermissionService.java#L1-L147)
+- [RoleService.java:1-132](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/permission/RoleService.java#L1-L132)
+- [RoleDO.java:1-79](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/RoleDO.java#L1-L79)
+- [DataScopeEnum.java:1-41](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/enums/permission/DataScopeEnum.java#L1-L41)
+- [RoleTypeEnum.java:1-22](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/enums/permission/RoleTypeEnum.java#L1-L22)
+- [OAuth2ApproveService.java:1-39](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/service/oauth2/OAuth2ApproveService.java#L1-L39)
+- [OAuth2ApproveDO.java:1-63](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java#L1-L63)
 
 **章节来源**
-- [RoleTypeEnum.java:1-22](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/enums/permission/RoleTypeEnum.java#L1-L22)
-- [DataScopeEnum.java:1-41](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/enums/permission/DataScopeEnum.java#L1-L41)
+- [RoleTypeEnum.java:1-22](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/enums/permission/RoleTypeEnum.java#L1-L22)
+- [DataScopeEnum.java:1-41](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/enums/permission/DataScopeEnum.java#L1-L41)
 
 ## 性能考虑
 - 缓存利用：PermissionService提供从缓存获取角色-菜单、用户-角色等关系的方法，建议在高频查询场景启用缓存
@@ -339,9 +339,9 @@ OAuth2ApproveService --> OAuth2ApproveDO
   - 确认客户端scope与用户选择一致
 
 **章节来源**
-- [SecurityFrameworkUtils.java:76-143](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/util/SecurityFrameworkUtils.java#L76-L143)
-- [OAuth2ApproveDO.java:1-63](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java#L1-L63)
-- [OAuth2OpenControllerTest.java:202-227](file://yudao-module-system/src/test/java/cn/iocoder/yudao/module/system/controller/admin/oauth2/OAuth2OpenControllerTest.java#L202-L227)
+- [SecurityFrameworkUtils.java:76-143](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/util/SecurityFrameworkUtils.java#L76-L143)
+- [OAuth2ApproveDO.java:1-63](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/oauth2/OAuth2ApproveDO.java#L1-L63)
+- [OAuth2OpenControllerTest.java:202-227](file://qiji-module-system/src/test/java/com.qiji.cps/module/system/controller/admin/oauth2/OAuth2OpenControllerTest.java#L202-L227)
 
 ## 结论
 AgenticCPS的RBAC模型以LoginUser为核心上下文，结合PermissionService/RoleService实现用户-角色-权限的灵活映射，并通过数据范围与OAuth2授权范围增强多租户与第三方集成能力。通过合理的数据库设计与缓存策略，可在保障安全性的同时提升系统性能与可维护性。
@@ -382,10 +382,10 @@ system_menu ||--o{ system_role_menu : "授权"
 ```
 
 **图表来源**
-- [UserRoleDO.java:1-36](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/UserRoleDO.java#L1-L36)
-- [RoleMenuDO.java:1-36](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/RoleMenuDO.java#L1-L36)
-- [RoleDO.java:1-79](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/RoleDO.java#L1-L79)
-- [MenuDO.java:1-110](file://yudao-module-system/src/main/java/cn/iocoder/yudao/module/system/dal/dataobject/permission/MenuDO.java#L1-L110)
+- [UserRoleDO.java:1-36](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/UserRoleDO.java#L1-L36)
+- [RoleMenuDO.java:1-36](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/RoleMenuDO.java#L1-L36)
+- [RoleDO.java:1-79](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/RoleDO.java#L1-L79)
+- [MenuDO.java:1-110](file://qiji-module-system/src/main/java/com.qiji.cps/module/system/dal/dataobject/permission/MenuDO.java#L1-L110)
 
 ### 角色与权限配置示例（概念性）
 - 管理员角色：内置角色，拥有全部数据范围与系统级权限

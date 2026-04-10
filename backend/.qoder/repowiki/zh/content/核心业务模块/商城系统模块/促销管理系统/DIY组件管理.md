@@ -2,17 +2,17 @@
 
 <cite>
 **本文引用的文件**
-- [DiyPageController.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyPageController.java)
-- [DiyTemplateController.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyTemplateController.java)
-- [DiyPageDO.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyPageDO.java)
-- [DiyTemplateDO.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java)
-- [DiyPageService.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/service/diy/DiyPageService.java)
-- [DiyTemplateService.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/service/diy/DiyTemplateService.java)
-- [DiyPageConvert.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/convert/diy/DiyPageConvert.java)
-- [DiyTemplateConvert.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/convert/diy/DiyTemplateConvert.java)
-- [AppDiyPageController.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/app/diy/AppDiyPageController.java)
-- [AppDiyTemplateController.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/app/diy/AppDiyTemplateController.java)
-- [DiyPageServiceImplTest.java](file://yudao-module-mall/yudao-module-promotion/src/test/java/cn/iocoder/yudao/module/promotion/service/diy/DiyPageServiceImplTest.java)
+- [DiyPageController.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyPageController.java)
+- [DiyTemplateController.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyTemplateController.java)
+- [DiyPageDO.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyPageDO.java)
+- [DiyTemplateDO.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java)
+- [DiyPageService.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/service/diy/DiyPageService.java)
+- [DiyTemplateService.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/service/diy/DiyTemplateService.java)
+- [DiyPageConvert.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/convert/diy/DiyPageConvert.java)
+- [DiyTemplateConvert.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/convert/diy/DiyTemplateConvert.java)
+- [AppDiyPageController.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/app/diy/AppDiyPageController.java)
+- [AppDiyTemplateController.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/app/diy/AppDiyTemplateController.java)
+- [DiyPageServiceImplTest.java](file://qiji-module-mall/qiji-module-promotion/src/test/java/com.qiji.cps/module/promotion/service/diy/DiyPageServiceImplTest.java)
 </cite>
 
 ## 目录
@@ -68,18 +68,18 @@ S2 --> X2
 ```
 
 图表来源
-- [DiyPageController.java:1-100](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyPageController.java#L1-L100)
-- [DiyTemplateController.java:1-106](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyTemplateController.java#L1-L106)
-- [DiyPageService.java:1-83](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/service/diy/DiyPageService.java#L1-L83)
-- [DiyTemplateService.java:1-79](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/service/diy/DiyTemplateService.java#L1-L79)
-- [DiyPageDO.java:1-58](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyPageDO.java#L1-L58)
-- [DiyTemplateDO.java:1-65](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L1-L65)
-- [DiyPageConvert.java:1-38](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/convert/diy/DiyPageConvert.java#L1-L38)
-- [DiyTemplateConvert.java:1-40](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/convert/diy/DiyTemplateConvert.java#L1-L40)
+- [DiyPageController.java:1-100](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyPageController.java#L1-L100)
+- [DiyTemplateController.java:1-106](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyTemplateController.java#L1-L106)
+- [DiyPageService.java:1-83](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/service/diy/DiyPageService.java#L1-L83)
+- [DiyTemplateService.java:1-79](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/service/diy/DiyTemplateService.java#L1-L79)
+- [DiyPageDO.java:1-58](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyPageDO.java#L1-L58)
+- [DiyTemplateDO.java:1-65](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L1-L65)
+- [DiyPageConvert.java:1-38](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/convert/diy/DiyPageConvert.java#L1-L38)
+- [DiyTemplateConvert.java:1-40](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/convert/diy/DiyTemplateConvert.java#L1-L40)
 
 章节来源
-- [DiyPageController.java:1-100](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyPageController.java#L1-L100)
-- [DiyTemplateController.java:1-106](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyTemplateController.java#L1-L106)
+- [DiyPageController.java:1-100](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyPageController.java#L1-L100)
+- [DiyTemplateController.java:1-106](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyTemplateController.java#L1-L106)
 
 ## 核心组件
 - 页面控制器：提供页面的增删改查、分页、属性获取与更新等接口
@@ -90,14 +90,14 @@ S2 --> X2
 - 转换器：负责VO与DO之间的映射，以及属性视图对象的转换
 
 章节来源
-- [DiyPageController.java:1-100](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyPageController.java#L1-L100)
-- [DiyTemplateController.java:1-106](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyTemplateController.java#L1-L106)
-- [DiyPageService.java:1-83](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/service/diy/DiyPageService.java#L1-L83)
-- [DiyTemplateService.java:1-79](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/service/diy/DiyTemplateService.java#L1-L79)
-- [DiyPageDO.java:1-58](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyPageDO.java#L1-L58)
-- [DiyTemplateDO.java:1-65](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L1-L65)
-- [DiyPageConvert.java:1-38](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/convert/diy/DiyPageConvert.java#L1-L38)
-- [DiyTemplateConvert.java:1-40](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/convert/diy/DiyTemplateConvert.java#L1-L40)
+- [DiyPageController.java:1-100](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyPageController.java#L1-L100)
+- [DiyTemplateController.java:1-106](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyTemplateController.java#L1-L106)
+- [DiyPageService.java:1-83](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/service/diy/DiyPageService.java#L1-L83)
+- [DiyTemplateService.java:1-79](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/service/diy/DiyTemplateService.java#L1-L79)
+- [DiyPageDO.java:1-58](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyPageDO.java#L1-L58)
+- [DiyTemplateDO.java:1-65](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L1-L65)
+- [DiyPageConvert.java:1-38](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/convert/diy/DiyPageConvert.java#L1-L38)
+- [DiyTemplateConvert.java:1-40](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/convert/diy/DiyTemplateConvert.java#L1-L40)
 
 ## 架构总览
 DIY组件管理遵循“控制器-服务-数据访问-转换”的分层设计，Admin与App两端分别暴露不同维度的接口，页面与模板之间通过外键关联，属性以JSON字符串形式存储，便于灵活扩展。
@@ -123,10 +123,10 @@ Ctrl-->>Admin : 返回属性视图
 ```
 
 图表来源
-- [DiyPageController.java:32-97](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyPageController.java#L32-L97)
-- [DiyPageService.java:19-82](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/service/diy/DiyPageService.java#L19-L82)
-- [DiyPageConvert.java:31-35](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/convert/diy/DiyPageConvert.java#L31-L35)
-- [DiyPageDO.java:26-57](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyPageDO.java#L26-L57)
+- [DiyPageController.java:32-97](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyPageController.java#L32-L97)
+- [DiyPageService.java:19-82](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/service/diy/DiyPageService.java#L19-L82)
+- [DiyPageConvert.java:31-35](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/convert/diy/DiyPageConvert.java#L31-L35)
+- [DiyPageDO.java:26-57](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyPageDO.java#L26-L57)
 
 ## 详细组件分析
 
@@ -161,12 +161,12 @@ DIYPAGE }o--|| DIYTEMPLATE : "属于"
 ```
 
 图表来源
-- [DiyPageDO.java:26-57](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyPageDO.java#L26-L57)
-- [DiyTemplateDO.java:30-64](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L30-L64)
+- [DiyPageDO.java:26-57](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyPageDO.java#L26-L57)
+- [DiyTemplateDO.java:30-64](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L30-L64)
 
 章节来源
-- [DiyPageDO.java:1-58](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyPageDO.java#L1-L58)
-- [DiyTemplateDO.java:1-65](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L1-L65)
+- [DiyPageDO.java:1-58](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyPageDO.java#L1-L58)
+- [DiyTemplateDO.java:1-65](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L1-L65)
 
 ### 业务规则与约束
 - 模板唯一使用：模板DO中提供“是否使用”字段，服务层需保证同一时刻仅有一个模板被标记为使用中
@@ -175,8 +175,8 @@ DIYPAGE }o--|| DIYTEMPLATE : "属于"
 - 页面与模板关联：页面通过templateId关联模板，支持按模板查询页面列表
 
 章节来源
-- [DiyTemplateDO.java:42-48](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L42-L48)
-- [DiyPageDO.java:34-38](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyPageDO.java#L34-L38)
+- [DiyTemplateDO.java:42-48](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L42-L48)
+- [DiyPageDO.java:34-38](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyPageDO.java#L34-L38)
 
 ### 组件类型与可视化编辑器
 - 组件类型：可在属性JSON中定义组件类型标识，如商品展示、活动入口、富文本、视频播放等
@@ -218,21 +218,21 @@ Pctrl-->>Admin : 返回成功
 ```
 
 图表来源
-- [DiyTemplateController.java:51-57](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyTemplateController.java#L51-L57)
-- [DiyTemplateController.java:77-83](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyTemplateController.java#L77-L83)
-- [DiyPageController.java:74-97](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyPageController.java#L74-L97)
+- [DiyTemplateController.java:51-57](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyTemplateController.java#L51-L57)
+- [DiyTemplateController.java:77-83](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyTemplateController.java#L77-L83)
+- [DiyPageController.java:74-97](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyPageController.java#L74-L97)
 
 章节来源
-- [DiyPageController.java:1-100](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyPageController.java#L1-L100)
-- [DiyTemplateController.java:1-106](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyTemplateController.java#L1-L106)
+- [DiyPageController.java:1-100](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyPageController.java#L1-L100)
+- [DiyTemplateController.java:1-106](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyTemplateController.java#L1-L106)
 
 ### 应用端接口与使用
 - 应用端控制器提供页面与模板的属性查询接口，供小程序/APP渲染使用
 - 页面属性与模板属性均以JSON返回，前端按组件类型解析并渲染
 
 章节来源
-- [AppDiyPageController.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/app/diy/AppDiyPageController.java)
-- [AppDiyTemplateController.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/app/diy/AppDiyTemplateController.java)
+- [AppDiyPageController.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/app/diy/AppDiyPageController.java)
+- [AppDiyTemplateController.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/app/diy/AppDiyTemplateController.java)
 
 ### 类关系与职责
 ```mermaid
@@ -254,14 +254,14 @@ DiyTemplateService --> DiyTemplateConvert : "转换"
 ```
 
 图表来源
-- [DiyPageController.java:29-30](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyPageController.java#L29-L30)
-- [DiyTemplateController.java:31-34](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyTemplateController.java#L31-L34)
-- [DiyPageService.java:19-82](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/service/diy/DiyPageService.java#L19-L82)
-- [DiyTemplateService.java:17-79](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/service/diy/DiyTemplateService.java#L17-L79)
-- [DiyPageDO.java:26-57](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyPageDO.java#L26-L57)
-- [DiyTemplateDO.java:30-64](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L30-L64)
-- [DiyPageConvert.java:16-37](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/convert/diy/DiyPageConvert.java#L16-L37)
-- [DiyTemplateConvert.java:18-39](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/convert/diy/DiyTemplateConvert.java#L18-L39)
+- [DiyPageController.java:29-30](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyPageController.java#L29-L30)
+- [DiyTemplateController.java:31-34](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyTemplateController.java#L31-L34)
+- [DiyPageService.java:19-82](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/service/diy/DiyPageService.java#L19-L82)
+- [DiyTemplateService.java:17-79](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/service/diy/DiyTemplateService.java#L17-L79)
+- [DiyPageDO.java:26-57](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyPageDO.java#L26-L57)
+- [DiyTemplateDO.java:30-64](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L30-L64)
+- [DiyPageConvert.java:16-37](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/convert/diy/DiyPageConvert.java#L16-L37)
+- [DiyTemplateConvert.java:18-39](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/convert/diy/DiyTemplateConvert.java#L18-L39)
 
 ## 依赖分析
 - 控制器依赖服务接口，服务接口依赖DO与转换器
@@ -279,16 +279,16 @@ TS --> TConv["DiyTemplateConvert"]
 ```
 
 图表来源
-- [DiyPageController.java:29-30](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyPageController.java#L29-L30)
-- [DiyTemplateController.java:31-34](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyTemplateController.java#L31-L34)
-- [DiyPageService.java:19-82](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/service/diy/DiyPageService.java#L19-L82)
-- [DiyTemplateService.java:17-79](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/service/diy/DiyTemplateService.java#L17-L79)
-- [DiyPageConvert.java:16-37](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/convert/diy/DiyPageConvert.java#L16-L37)
-- [DiyTemplateConvert.java:18-39](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/convert/diy/DiyTemplateConvert.java#L18-L39)
+- [DiyPageController.java:29-30](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyPageController.java#L29-L30)
+- [DiyTemplateController.java:31-34](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyTemplateController.java#L31-L34)
+- [DiyPageService.java:19-82](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/service/diy/DiyPageService.java#L19-L82)
+- [DiyTemplateService.java:17-79](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/service/diy/DiyTemplateService.java#L17-L79)
+- [DiyPageConvert.java:16-37](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/convert/diy/DiyPageConvert.java#L16-L37)
+- [DiyTemplateConvert.java:18-39](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/convert/diy/DiyTemplateConvert.java#L18-L39)
 
 章节来源
-- [DiyPageController.java:1-100](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyPageController.java#L1-L100)
-- [DiyTemplateController.java:1-106](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyTemplateController.java#L1-L106)
+- [DiyPageController.java:1-100](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyPageController.java#L1-L100)
+- [DiyTemplateController.java:1-106](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyTemplateController.java#L1-L106)
 
 ## 性能考虑
 - JSON属性解析：建议在服务层对属性JSON进行轻量校验与必要字段校验，避免每次渲染时重复解析
@@ -304,8 +304,8 @@ TS --> TConv["DiyTemplateConvert"]
 - 属性JSON格式错误：前端编辑器需确保属性JSON合法，后端在更新属性时进行基本校验
 
 章节来源
-- [DiyPageController.java:32-54](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyPageController.java#L32-L54)
-- [DiyTemplateController.java:36-66](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/diy/DiyTemplateController.java#L36-L66)
+- [DiyPageController.java:32-54](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyPageController.java#L32-L54)
+- [DiyTemplateController.java:36-66](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/diy/DiyTemplateController.java#L36-L66)
 
 ## 结论
 DIY组件管理以“页面-模板”为核心模型，通过JSON化属性实现灵活扩展，Admin与App双端接口满足管理与渲染需求。系统具备清晰的分层职责与良好的扩展性，建议在前端引入可视化编辑器与组件库，配合模板库与版本管理策略，进一步提升易用性与维护效率。

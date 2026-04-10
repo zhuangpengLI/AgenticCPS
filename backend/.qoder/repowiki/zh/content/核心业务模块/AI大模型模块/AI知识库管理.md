@@ -2,16 +2,16 @@
 
 <cite>
 **本文引用的文件**
-- [AiKnowledgeController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/knowledge/AiKnowledgeController.java)
-- [AiKnowledgeService.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeService.java)
-- [AiKnowledgeServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeServiceImpl.java)
-- [AiKnowledgeDO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/knowledge/AiKnowledgeDO.java)
-- [AiKnowledgeSegmentController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/knowledge/AiKnowledgeSegmentController.java)
-- [AiDocumentSplitStrategyEnum.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/AiDocumentSplitStrategyEnum.java)
-- [AiKnowledgeMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/knowledge/AiKnowledgeMapper.java)
-- [AiUtils.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/AiUtils.java)
-- [FileTypeUtils.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/FileTypeUtils.java)
-- [pom.xml](file://yudao-module-ai/pom.xml)
+- [AiKnowledgeController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/knowledge/AiKnowledgeController.java)
+- [AiKnowledgeService.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeService.java)
+- [AiKnowledgeServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeServiceImpl.java)
+- [AiKnowledgeDO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/knowledge/AiKnowledgeDO.java)
+- [AiKnowledgeSegmentController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/knowledge/AiKnowledgeSegmentController.java)
+- [AiDocumentSplitStrategyEnum.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/AiDocumentSplitStrategyEnum.java)
+- [AiKnowledgeMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/knowledge/AiKnowledgeMapper.java)
+- [AiUtils.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/AiUtils.java)
+- [FileTypeUtils.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/FileTypeUtils.java)
+- [pom.xml](file://qiji-module-ai/pom.xml)
 </cite>
 
 ## 目录
@@ -35,7 +35,7 @@
 - 管理API：知识库基础信息、分段管理、查询与优化相关的接口定义与使用示例。
 
 ## 项目结构
-AI知识库模块位于yudao-module-ai中，采用按功能域划分的层次化组织方式：
+AI知识库模块位于qiji-module-ai中，采用按功能域划分的层次化组织方式：
 - controller层：对外暴露REST接口，如知识库管理、分段管理等。
 - service层：封装业务逻辑，如知识库CRUD、分段查询、向量化执行等。
 - dal层：MyBatis映射，包含数据对象与Mapper接口。
@@ -77,24 +77,24 @@ S2 --> P1
 ```
 
 图表来源
-- [AiKnowledgeController.java:1-85](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
-- [AiKnowledgeSegmentController.java:1-25](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/knowledge/AiKnowledgeSegmentController.java#L1-L25)
-- [AiKnowledgeService.java:1-71](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeService.java#L1-L71)
-- [AiKnowledgeServiceImpl.java:1-36](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
-- [AiKnowledgeDO.java:1-65](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/knowledge/AiKnowledgeDO.java#L1-L65)
-- [AiKnowledgeMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/knowledge/AiKnowledgeMapper.java)
-- [AiUtils.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/AiUtils.java)
-- [FileTypeUtils.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/FileTypeUtils.java)
-- [AiDocumentSplitStrategyEnum.java:1-54](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/AiDocumentSplitStrategyEnum.java#L1-L54)
-- [pom.xml:1-265](file://yudao-module-ai/pom.xml#L1-L265)
+- [AiKnowledgeController.java:1-85](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
+- [AiKnowledgeSegmentController.java:1-25](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/knowledge/AiKnowledgeSegmentController.java#L1-L25)
+- [AiKnowledgeService.java:1-71](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeService.java#L1-L71)
+- [AiKnowledgeServiceImpl.java:1-36](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
+- [AiKnowledgeDO.java:1-65](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/knowledge/AiKnowledgeDO.java#L1-L65)
+- [AiKnowledgeMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/knowledge/AiKnowledgeMapper.java)
+- [AiUtils.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/AiUtils.java)
+- [FileTypeUtils.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/FileTypeUtils.java)
+- [AiDocumentSplitStrategyEnum.java:1-54](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/AiDocumentSplitStrategyEnum.java#L1-L54)
+- [pom.xml:1-265](file://qiji-module-ai/pom.xml#L1-L265)
 
 章节来源
-- [AiKnowledgeController.java:1-85](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
-- [AiKnowledgeService.java:1-71](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeService.java#L1-L71)
-- [AiKnowledgeServiceImpl.java:1-36](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
-- [AiKnowledgeDO.java:1-65](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/knowledge/AiKnowledgeDO.java#L1-L65)
-- [AiDocumentSplitStrategyEnum.java:1-54](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/AiDocumentSplitStrategyEnum.java#L1-L54)
-- [pom.xml:1-265](file://yudao-module-ai/pom.xml#L1-L265)
+- [AiKnowledgeController.java:1-85](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
+- [AiKnowledgeService.java:1-71](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeService.java#L1-L71)
+- [AiKnowledgeServiceImpl.java:1-36](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
+- [AiKnowledgeDO.java:1-65](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/knowledge/AiKnowledgeDO.java#L1-L65)
+- [AiDocumentSplitStrategyEnum.java:1-54](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/AiDocumentSplitStrategyEnum.java#L1-L54)
+- [pom.xml:1-265](file://qiji-module-ai/pom.xml#L1-L265)
 
 ## 核心组件
 - 控制器
@@ -111,13 +111,13 @@ S2 --> P1
   - AI工具与文件类型工具：支撑向量化与文件类型识别。
 
 章节来源
-- [AiKnowledgeController.java:1-85](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
-- [AiKnowledgeService.java:1-71](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeService.java#L1-L71)
-- [AiKnowledgeServiceImpl.java:1-36](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
-- [AiKnowledgeDO.java:1-65](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/knowledge/AiKnowledgeDO.java#L1-L65)
-- [AiDocumentSplitStrategyEnum.java:1-54](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/AiDocumentSplitStrategyEnum.java#L1-L54)
-- [AiUtils.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/AiUtils.java)
-- [FileTypeUtils.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/FileTypeUtils.java)
+- [AiKnowledgeController.java:1-85](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
+- [AiKnowledgeService.java:1-71](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeService.java#L1-L71)
+- [AiKnowledgeServiceImpl.java:1-36](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
+- [AiKnowledgeDO.java:1-65](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/knowledge/AiKnowledgeDO.java#L1-L65)
+- [AiDocumentSplitStrategyEnum.java:1-54](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/AiDocumentSplitStrategyEnum.java#L1-L54)
+- [AiUtils.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/AiUtils.java)
+- [FileTypeUtils.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/FileTypeUtils.java)
 
 ## 架构总览
 整体架构遵循“控制层-服务层-数据访问层-外部依赖”的分层设计，结合Spring AI提供的文档解析与向量存储能力，形成从文档到向量的闭环。
@@ -134,10 +134,10 @@ SVC --> UTIL["AI工具/文件类型工具"]
 ```
 
 图表来源
-- [AiKnowledgeController.java:1-85](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
-- [AiKnowledgeServiceImpl.java:1-36](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
-- [AiKnowledgeMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/knowledge/AiKnowledgeMapper.java)
-- [pom.xml:147-196](file://yudao-module-ai/pom.xml#L147-L196)
+- [AiKnowledgeController.java:1-85](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
+- [AiKnowledgeServiceImpl.java:1-36](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
+- [AiKnowledgeMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/knowledge/AiKnowledgeMapper.java)
+- [pom.xml:147-196](file://qiji-module-ai/pom.xml#L147-L196)
 
 ## 详细组件分析
 
@@ -195,16 +195,16 @@ AiKnowledgeServiceImpl --> AiKnowledgeDO : "持久化"
 ```
 
 图表来源
-- [AiKnowledgeController.java:1-85](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
-- [AiKnowledgeService.java:1-71](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeService.java#L1-L71)
-- [AiKnowledgeServiceImpl.java:1-36](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
-- [AiKnowledgeDO.java:1-65](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/knowledge/AiKnowledgeDO.java#L1-L65)
+- [AiKnowledgeController.java:1-85](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
+- [AiKnowledgeService.java:1-71](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeService.java#L1-L71)
+- [AiKnowledgeServiceImpl.java:1-36](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
+- [AiKnowledgeDO.java:1-65](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/knowledge/AiKnowledgeDO.java#L1-L65)
 
 章节来源
-- [AiKnowledgeController.java:1-85](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
-- [AiKnowledgeService.java:1-71](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeService.java#L1-L71)
-- [AiKnowledgeServiceImpl.java:1-36](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
-- [AiKnowledgeDO.java:1-65](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/knowledge/AiKnowledgeDO.java#L1-L65)
+- [AiKnowledgeController.java:1-85](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
+- [AiKnowledgeService.java:1-71](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeService.java#L1-L71)
+- [AiKnowledgeServiceImpl.java:1-36](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
+- [AiKnowledgeDO.java:1-65](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/knowledge/AiKnowledgeDO.java#L1-L65)
 
 ### 分段策略与文档处理
 - 分段策略枚举
@@ -234,14 +234,14 @@ Store --> End(["结束"])
 ```
 
 图表来源
-- [AiDocumentSplitStrategyEnum.java:1-54](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/AiDocumentSplitStrategyEnum.java#L1-L54)
-- [FileTypeUtils.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/FileTypeUtils.java)
-- [pom.xml:180-196](file://yudao-module-ai/pom.xml#L180-L196)
+- [AiDocumentSplitStrategyEnum.java:1-54](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/AiDocumentSplitStrategyEnum.java#L1-L54)
+- [FileTypeUtils.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/FileTypeUtils.java)
+- [pom.xml:180-196](file://qiji-module-ai/pom.xml#L180-L196)
 
 章节来源
-- [AiDocumentSplitStrategyEnum.java:1-54](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/AiDocumentSplitStrategyEnum.java#L1-L54)
-- [FileTypeUtils.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/FileTypeUtils.java)
-- [pom.xml:180-196](file://yudao-module-ai/pom.xml#L180-L196)
+- [AiDocumentSplitStrategyEnum.java:1-54](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/AiDocumentSplitStrategyEnum.java#L1-L54)
+- [FileTypeUtils.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/FileTypeUtils.java)
+- [pom.xml:180-196](file://qiji-module-ai/pom.xml#L180-L196)
 
 ### 向量数据库集成与检索
 - 向量存储方案
@@ -270,13 +270,13 @@ Controller-->>Client : "返回检索结果"
 ```
 
 图表来源
-- [AiKnowledgeController.java:1-85](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
-- [AiKnowledgeServiceImpl.java:1-36](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
-- [pom.xml:147-178](file://yudao-module-ai/pom.xml#L147-L178)
+- [AiKnowledgeController.java:1-85](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
+- [AiKnowledgeServiceImpl.java:1-36](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
+- [pom.xml:147-178](file://qiji-module-ai/pom.xml#L147-L178)
 
 章节来源
-- [pom.xml:147-178](file://yudao-module-ai/pom.xml#L147-L178)
-- [AiKnowledgeServiceImpl.java:1-36](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
+- [pom.xml:147-178](file://qiji-module-ai/pom.xml#L147-L178)
+- [AiKnowledgeServiceImpl.java:1-36](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
 
 ### 分段管理与查询
 - 分段控制器
@@ -285,7 +285,7 @@ Controller-->>Client : "返回检索结果"
   - 结合分段策略与向量存储，实现高质量检索。
 
 章节来源
-- [AiKnowledgeSegmentController.java:1-25](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/knowledge/AiKnowledgeSegmentController.java#L1-L25)
+- [AiKnowledgeSegmentController.java:1-25](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/knowledge/AiKnowledgeSegmentController.java#L1-L25)
 
 ## 依赖分析
 - Spring AI生态
@@ -297,18 +297,18 @@ Controller-->>Client : "返回检索结果"
 
 ```mermaid
 graph TB
-A["yudao-module-ai(pom)"] --> B["spring-ai-starter-model-*"]
+A["qiji-module-ai(pom)"] --> B["spring-ai-starter-model-*"]
 A --> C["spring-ai-tika-document-reader"]
 A --> D["spring-ai-starter-vector-store-*"]
-A --> E["yudao-module-system"]
-A --> F["yudao-module-infra"]
+A --> E["qiji-module-system"]
+A --> F["qiji-module-infra"]
 ```
 
 图表来源
-- [pom.xml:1-265](file://yudao-module-ai/pom.xml#L1-L265)
+- [pom.xml:1-265](file://qiji-module-ai/pom.xml#L1-L265)
 
 章节来源
-- [pom.xml:1-265](file://yudao-module-ai/pom.xml#L1-L265)
+- [pom.xml:1-265](file://qiji-module-ai/pom.xml#L1-L265)
 
 ## 性能考虑
 - 分段策略选择
@@ -332,9 +332,9 @@ A --> F["yudao-module-infra"]
   - 校验分段策略与文件类型匹配度。
 
 章节来源
-- [AiKnowledgeService.java:1-71](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeService.java#L1-L71)
-- [AiKnowledgeServiceImpl.java:1-36](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
-- [pom.xml:180-196](file://yudao-module-ai/pom.xml#L180-L196)
+- [AiKnowledgeService.java:1-71](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeService.java#L1-L71)
+- [AiKnowledgeServiceImpl.java:1-36](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/knowledge/AiKnowledgeServiceImpl.java#L1-L36)
+- [pom.xml:180-196](file://qiji-module-ai/pom.xml#L180-L196)
 
 ## 结论
 该AI知识库管理模块以清晰的分层架构为基础，结合Spring AI生态实现了从文档解析、分段策略、向量化存储到检索查询的完整链路。通过灵活的分段策略与多样的向量存储方案，能够满足不同业务场景下的知识管理需求。建议在生产环境中重点关注分段策略适配、向量检索参数调优与向量数据库运维保障。
@@ -373,7 +373,7 @@ A --> F["yudao-module-infra"]
   - 返回：启用状态的知识库精简列表（id与name）
 
 章节来源
-- [AiKnowledgeController.java:1-85](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
+- [AiKnowledgeController.java:1-85](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/knowledge/AiKnowledgeController.java#L1-L85)
 
 ### 使用示例与最佳实践
 - 示例：创建知识库

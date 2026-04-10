@@ -2,68 +2,68 @@
 
 <cite>
 **本文引用的文件**
-- [AiModelController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiModelController.java)
-- [AiModelService.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelService.java)
-- [AiModelServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelServiceImpl.java)
-- [AiModelDO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/model/AiModelDO.java)
-- [AiPlatformEnum.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/model/AiPlatformEnum.java)
-- [AiModelTypeEnum.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/model/AiModelTypeEnum.java)
-- [AiModelPageReqVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/vo/model/AiModelPageReqVO.java)
-- [AiModelSaveReqVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/vo/model/AiModelSaveReqVO.java)
-- [AiModelRespVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/vo/model/AiModelRespVO.java)
-- [AiModelMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/model/AiModelMapper.java)
-- [AiApiKeyDO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/AiApiKeyDO.java)
-- [AiApiKeyMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/AiApiKeyMapper.java)
-- [AiApiKeyController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/AiApiKeyController.java)
-- [AiApiKeyService.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiApiKeyService.java)
-- [AiApiKeyServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiApiKeyServiceImpl.java)
-- [AiApiKeyConfig.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/AiApiKeyConfig.java)
-- [AiClientFactory.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/AiClientFactory.java)
-- [OpenAiProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/OpenAiProvider.java)
-- [AnthropicProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/AnthropicProvider.java)
-- [TongyiProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/TongyiProvider.java)
-- [TencentProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/TencentProvider.java)
-- [MidjourneyApi.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java)
-- [SunoApi.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/suno/api/SunoApi.java)
-- [AiModelJob.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/AiModelJob.java)
-- [AiModelJobHandler.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/AiModelJobHandler.java)
-- [AiModelMonitor.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelMonitor.java)
-- [AiModelSwitcher.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelSwitcher.java)
-- [AiModelCache.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelCache.java)
-- [AiModelLoadBalancer.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelLoadBalancer.java)
-- [AiModelFallback.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelFallback.java)
-- [AiModelSecurity.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelSecurity.java)
-- [AiModelAudit.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelAudit.java)
-- [AiModelBilling.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelBilling.java)
-- [AiModelConfig.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelConfig.java)
-- [AiModelVersioning.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelVersioning.java)
-- [AiModelLifecycle.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelLifecycle.java)
-- [AiModelPerformance.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelPerformance.java)
-- [AiModelConcurrency.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelConcurrency.java)
-- [AiModelMetrics.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelMetrics.java)
-- [AiModelHealthCheck.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelHealthCheck.java)
-- [AiModelValidation.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelValidation.java)
-- [AiModelRateLimit.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelRateLimit.java)
-- [AiModelQuota.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelQuota.java)
-- [AiModelCostControl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelCostControl.java)
-- [AiModelAccessControl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelAccessControl.java)
-- [AiModelUsageAudit.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelUsageAudit.java)
-- [AiModelBillingController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/AiModelBillingController.java)
-- [AiModelBillingService.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiModelBillingService.java)
-- [AiModelBillingServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiModelBillingServiceImpl.java)
-- [AiModelBillingDO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/AiModelBillingDO.java)
-- [AiModelBillingMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/AiModelBillingMapper.java)
-- [AiModelBillingPageReqVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/vo/billing/AiModelBillingPageReqVO.java)
-- [AiModelBillingRespVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/vo/billing/AiModelBillingRespVO.java)
-- [AiModelBillingSaveReqVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/vo/billing/AiModelBillingSaveReqVO.java)
-- [AiModelBillingController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/AiModelBillingController.java)
-- [AiModelBillingService.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiModelBillingService.java)
-- [AiModelBillingServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiModelBillingServiceImpl.java)
-- [AiModelBillingDO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/AiModelBillingDO.java)
-- [AiModelBillingMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/AiModelBillingMapper.java)
-- [AiModelBillingPageReqVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/vo/billing/AiModelBillingPageReqVO.java)
-- [AiModelBillingRespVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/vo/billing/AiModelBillingRespVO.java)
-- [AiModelBillingSaveReqVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/vo/billing/AiModelBillingSaveReqVO.java)
+- [AiModelController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/AiModelController.java)
+- [AiModelService.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelService.java)
+- [AiModelServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelServiceImpl.java)
+- [AiModelDO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/model/AiModelDO.java)
+- [AiPlatformEnum.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/model/AiPlatformEnum.java)
+- [AiModelTypeEnum.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/model/AiModelTypeEnum.java)
+- [AiModelPageReqVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/vo/model/AiModelPageReqVO.java)
+- [AiModelSaveReqVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/vo/model/AiModelSaveReqVO.java)
+- [AiModelRespVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/vo/model/AiModelRespVO.java)
+- [AiModelMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/model/AiModelMapper.java)
+- [AiApiKeyDO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/AiApiKeyDO.java)
+- [AiApiKeyMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/AiApiKeyMapper.java)
+- [AiApiKeyController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/AiApiKeyController.java)
+- [AiApiKeyService.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiApiKeyService.java)
+- [AiApiKeyServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiApiKeyServiceImpl.java)
+- [AiApiKeyConfig.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/AiApiKeyConfig.java)
+- [AiClientFactory.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/AiClientFactory.java)
+- [OpenAiProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/OpenAiProvider.java)
+- [AnthropicProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/AnthropicProvider.java)
+- [TongyiProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/TongyiProvider.java)
+- [TencentProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/TencentProvider.java)
+- [MidjourneyApi.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java)
+- [SunoApi.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/suno/api/SunoApi.java)
+- [AiModelJob.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/AiModelJob.java)
+- [AiModelJobHandler.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/AiModelJobHandler.java)
+- [AiModelMonitor.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelMonitor.java)
+- [AiModelSwitcher.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelSwitcher.java)
+- [AiModelCache.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelCache.java)
+- [AiModelLoadBalancer.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelLoadBalancer.java)
+- [AiModelFallback.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelFallback.java)
+- [AiModelSecurity.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelSecurity.java)
+- [AiModelAudit.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelAudit.java)
+- [AiModelBilling.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelBilling.java)
+- [AiModelConfig.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelConfig.java)
+- [AiModelVersioning.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelVersioning.java)
+- [AiModelLifecycle.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelLifecycle.java)
+- [AiModelPerformance.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelPerformance.java)
+- [AiModelConcurrency.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelConcurrency.java)
+- [AiModelMetrics.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelMetrics.java)
+- [AiModelHealthCheck.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelHealthCheck.java)
+- [AiModelValidation.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelValidation.java)
+- [AiModelRateLimit.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelRateLimit.java)
+- [AiModelQuota.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelQuota.java)
+- [AiModelCostControl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelCostControl.java)
+- [AiModelAccessControl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelAccessControl.java)
+- [AiModelUsageAudit.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelUsageAudit.java)
+- [AiModelBillingController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/AiModelBillingController.java)
+- [AiModelBillingService.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiModelBillingService.java)
+- [AiModelBillingServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiModelBillingServiceImpl.java)
+- [AiModelBillingDO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/AiModelBillingDO.java)
+- [AiModelBillingMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/AiModelBillingMapper.java)
+- [AiModelBillingPageReqVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/vo/billing/AiModelBillingPageReqVO.java)
+- [AiModelBillingRespVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/vo/billing/AiModelBillingRespVO.java)
+- [AiModelBillingSaveReqVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/vo/billing/AiModelBillingSaveReqVO.java)
+- [AiModelBillingController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/AiModelBillingController.java)
+- [AiModelBillingService.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiModelBillingService.java)
+- [AiModelBillingServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiModelBillingServiceImpl.java)
+- [AiModelBillingDO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/AiModelBillingDO.java)
+- [AiModelBillingMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/AiModelBillingMapper.java)
+- [AiModelBillingPageReqVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/vo/billing/AiModelBillingPageReqVO.java)
+- [AiModelBillingRespVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/vo/billing/AiModelBillingRespVO.java)
+- [AiModelBillingSaveReqVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/vo/billing/AiModelBillingSaveReqVO.java)
 </cite>
 
 ## 目录
@@ -82,7 +82,7 @@
 本文件面向AI模型管理功能，系统性梳理模型配置管理机制（类型定义、平台适配、参数配置、版本控制）、模型平台集成（OpenAI、Anthropic、阿里云、腾讯云等）、模型生命周期管理（注册、启用/禁用、性能监控、自动切换）、性能优化策略（并发控制、缓存、负载均衡、降级保护）、安全管理（API密钥管理、访问控制、使用审计、费用控制），并提供API接口文档与配置示例指引，帮助开发者正确配置与使用各类AI模型。
 
 ## 项目结构
-AI模型管理模块位于 yudao-module-ai 中，采用按职责分层的组织方式：
+AI模型管理模块位于 qiji-module-ai 中，采用按职责分层的组织方式：
 - 控制器层：Admin 管理端模型与密钥相关接口
 - 服务层：模型与密钥的业务逻辑
 - 数据访问层：MyBatis Mapper 与 DO 实体
@@ -154,41 +154,41 @@ SvcModel --> Billing
 ```
 
 图表来源
-- [AiModelController.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiModelController.java#L1-L89)
-- [AiModelService.java:1-144](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelService.java#L1-L144)
-- [AiModelServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelServiceImpl.java)
-- [AiModelMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/model/AiModelMapper.java)
-- [AiModelDO.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/model/AiModelDO.java#L1-L89)
-- [AiApiKeyController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/AiApiKeyController.java)
-- [AiApiKeyService.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiApiKeyService.java)
-- [AiApiKeyServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiApiKeyServiceImpl.java)
-- [AiApiKeyMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/AiApiKeyMapper.java)
-- [AiApiKeyDO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/AiApiKeyDO.java)
-- [AiModelBillingController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/AiModelBillingController.java)
-- [AiModelBillingService.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiModelBillingService.java)
-- [AiModelBillingServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiModelBillingServiceImpl.java)
-- [AiModelBillingMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/AiModelBillingMapper.java)
-- [AiModelBillingDO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/AiModelBillingDO.java)
-- [AiClientFactory.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/AiClientFactory.java)
-- [OpenAiProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/OpenAiProvider.java)
-- [AnthropicProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/AnthropicProvider.java)
-- [TongyiProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/TongyiProvider.java)
-- [TencentProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/TencentProvider.java)
-- [AiModelMonitor.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelMonitor.java)
-- [AiModelSwitcher.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelSwitcher.java)
-- [AiModelCache.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelCache.java)
-- [AiModelLoadBalancer.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelLoadBalancer.java)
-- [AiModelFallback.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelFallback.java)
-- [AiModelSecurity.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelSecurity.java)
-- [AiModelAudit.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelAudit.java)
-- [AiModelBilling.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelBilling.java)
+- [AiModelController.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/AiModelController.java#L1-L89)
+- [AiModelService.java:1-144](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelService.java#L1-L144)
+- [AiModelServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelServiceImpl.java)
+- [AiModelMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/model/AiModelMapper.java)
+- [AiModelDO.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/model/AiModelDO.java#L1-L89)
+- [AiApiKeyController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/AiApiKeyController.java)
+- [AiApiKeyService.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiApiKeyService.java)
+- [AiApiKeyServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiApiKeyServiceImpl.java)
+- [AiApiKeyMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/AiApiKeyMapper.java)
+- [AiApiKeyDO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/AiApiKeyDO.java)
+- [AiModelBillingController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/AiModelBillingController.java)
+- [AiModelBillingService.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiModelBillingService.java)
+- [AiModelBillingServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiModelBillingServiceImpl.java)
+- [AiModelBillingMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/AiModelBillingMapper.java)
+- [AiModelBillingDO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/AiModelBillingDO.java)
+- [AiClientFactory.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/AiClientFactory.java)
+- [OpenAiProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/OpenAiProvider.java)
+- [AnthropicProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/AnthropicProvider.java)
+- [TongyiProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/TongyiProvider.java)
+- [TencentProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/TencentProvider.java)
+- [AiModelMonitor.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelMonitor.java)
+- [AiModelSwitcher.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelSwitcher.java)
+- [AiModelCache.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelCache.java)
+- [AiModelLoadBalancer.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelLoadBalancer.java)
+- [AiModelFallback.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelFallback.java)
+- [AiModelSecurity.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelSecurity.java)
+- [AiModelAudit.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelAudit.java)
+- [AiModelBilling.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelBilling.java)
 
 章节来源
-- [AiModelController.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiModelController.java#L1-L89)
-- [AiModelService.java:1-144](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelService.java#L1-L144)
-- [AiModelServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelServiceImpl.java)
-- [AiModelMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/model/AiModelMapper.java)
-- [AiModelDO.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/model/AiModelDO.java#L1-L89)
+- [AiModelController.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/AiModelController.java#L1-L89)
+- [AiModelService.java:1-144](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelService.java#L1-L144)
+- [AiModelServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelServiceImpl.java)
+- [AiModelMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/model/AiModelMapper.java)
+- [AiModelDO.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/model/AiModelDO.java#L1-L89)
 
 ## 核心组件
 - 模型实体与映射：AiModelDO、AiModelMapper
@@ -200,16 +200,16 @@ SvcModel --> Billing
 - 运行时能力：监控、切换、缓存、负载均衡、降级、安全、审计、计费
 
 章节来源
-- [AiModelDO.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/model/AiModelDO.java#L1-L89)
-- [AiModelService.java:1-144](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelService.java#L1-L144)
-- [AiModelServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelServiceImpl.java)
-- [AiModelController.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiModelController.java#L1-L89)
-- [AiPlatformEnum.java:1-73](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/model/AiPlatformEnum.java#L1-L73)
-- [AiModelTypeEnum.java:1-42](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/model/AiModelTypeEnum.java#L1-L42)
-- [AiApiKeyDO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/AiApiKeyDO.java)
-- [AiApiKeyMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/AiApiKeyMapper.java)
-- [AiModelBillingDO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/AiModelBillingDO.java)
-- [AiModelBillingMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/AiModelBillingMapper.java)
+- [AiModelDO.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/model/AiModelDO.java#L1-L89)
+- [AiModelService.java:1-144](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelService.java#L1-L144)
+- [AiModelServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelServiceImpl.java)
+- [AiModelController.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/AiModelController.java#L1-L89)
+- [AiPlatformEnum.java:1-73](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/model/AiPlatformEnum.java#L1-L73)
+- [AiModelTypeEnum.java:1-42](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/model/AiModelTypeEnum.java#L1-L42)
+- [AiApiKeyDO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/AiApiKeyDO.java)
+- [AiApiKeyMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/AiApiKeyMapper.java)
+- [AiModelBillingDO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/AiModelBillingDO.java)
+- [AiModelBillingMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/AiModelBillingMapper.java)
 
 ## 架构总览
 AI模型管理以“控制器-服务-数据访问”为核心，通过工厂模式与提供者抽象对接不同平台；运行时通过监控、缓存、负载均衡、降级、安全与审计等能力保障稳定性与安全性。
@@ -275,14 +275,14 @@ AiClientFactory --> TencentProvider
 ```
 
 图表来源
-- [AiModelController.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiModelController.java#L1-L89)
-- [AiModelService.java:1-144](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelService.java#L1-L144)
-- [AiModelServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelServiceImpl.java)
-- [AiClientFactory.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/AiClientFactory.java)
-- [OpenAiProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/OpenAiProvider.java)
-- [AnthropicProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/AnthropicProvider.java)
-- [TongyiProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/TongyiProvider.java)
-- [TencentProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/TencentProvider.java)
+- [AiModelController.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/AiModelController.java#L1-L89)
+- [AiModelService.java:1-144](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelService.java#L1-L144)
+- [AiModelServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelServiceImpl.java)
+- [AiClientFactory.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/AiClientFactory.java)
+- [OpenAiProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/OpenAiProvider.java)
+- [AnthropicProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/AnthropicProvider.java)
+- [TongyiProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/TongyiProvider.java)
+- [TencentProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/TencentProvider.java)
 
 ## 详细组件分析
 
@@ -329,14 +329,14 @@ AI_MODEL_BILLING }o--|| AI_MODEL : "计费关联"
 ```
 
 图表来源
-- [AiModelDO.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/model/AiModelDO.java#L1-L89)
-- [AiApiKeyDO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/AiApiKeyDO.java)
-- [AiModelBillingDO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/AiModelBillingDO.java)
+- [AiModelDO.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/model/AiModelDO.java#L1-L89)
+- [AiApiKeyDO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/AiApiKeyDO.java)
+- [AiModelBillingDO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/AiModelBillingDO.java)
 
 章节来源
-- [AiModelDO.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/model/AiModelDO.java#L1-L89)
-- [AiPlatformEnum.java:1-73](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/model/AiPlatformEnum.java#L1-L73)
-- [AiModelTypeEnum.java:1-42](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/model/AiModelTypeEnum.java#L1-L42)
+- [AiModelDO.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/model/AiModelDO.java#L1-L89)
+- [AiPlatformEnum.java:1-73](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/model/AiPlatformEnum.java#L1-L73)
+- [AiModelTypeEnum.java:1-42](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/model/AiModelTypeEnum.java#L1-L42)
 
 ### 平台适配与SDK集成
 - 工厂 AiClientFactory 负责根据模型配置创建 ChatModel、ImageModel、VectorStore 等对象。
@@ -363,20 +363,20 @@ Controller-->>Admin : "返回结果"
 ```
 
 图表来源
-- [AiModelController.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiModelController.java#L1-L89)
-- [AiModelServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelServiceImpl.java)
-- [AiClientFactory.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/AiClientFactory.java)
-- [OpenAiProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/OpenAiProvider.java)
-- [AnthropicProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/AnthropicProvider.java)
-- [TongyiProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/TongyiProvider.java)
-- [TencentProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/TencentProvider.java)
+- [AiModelController.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/AiModelController.java#L1-L89)
+- [AiModelServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelServiceImpl.java)
+- [AiClientFactory.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/AiClientFactory.java)
+- [OpenAiProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/OpenAiProvider.java)
+- [AnthropicProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/AnthropicProvider.java)
+- [TongyiProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/TongyiProvider.java)
+- [TencentProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/TencentProvider.java)
 
 章节来源
-- [AiClientFactory.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/AiClientFactory.java)
-- [OpenAiProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/OpenAiProvider.java)
-- [AnthropicProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/AnthropicProvider.java)
-- [TongyiProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/TongyiProvider.java)
-- [TencentProvider.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/provider/TencentProvider.java)
+- [AiClientFactory.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/AiClientFactory.java)
+- [OpenAiProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/OpenAiProvider.java)
+- [AnthropicProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/AnthropicProvider.java)
+- [TongyiProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/TongyiProvider.java)
+- [TencentProvider.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/provider/TencentProvider.java)
 
 ### 生命周期管理
 - 注册：通过控制器创建模型，服务层持久化配置。
@@ -402,16 +402,16 @@ stateDiagram-v2
 ```
 
 图表来源
-- [AiModelLifecycle.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelLifecycle.java)
-- [AiModelMonitor.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelMonitor.java)
-- [AiModelSwitcher.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelSwitcher.java)
-- [AiModelHealthCheck.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelHealthCheck.java)
+- [AiModelLifecycle.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelLifecycle.java)
+- [AiModelMonitor.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelMonitor.java)
+- [AiModelSwitcher.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelSwitcher.java)
+- [AiModelHealthCheck.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelHealthCheck.java)
 
 章节来源
-- [AiModelLifecycle.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelLifecycle.java)
-- [AiModelMonitor.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelMonitor.java)
-- [AiModelSwitcher.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelSwitcher.java)
-- [AiModelHealthCheck.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelHealthCheck.java)
+- [AiModelLifecycle.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelLifecycle.java)
+- [AiModelMonitor.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelMonitor.java)
+- [AiModelSwitcher.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelSwitcher.java)
+- [AiModelHealthCheck.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelHealthCheck.java)
 
 ### 性能优化策略
 - 并发控制：AiModelConcurrency 限制并发请求数，避免平台限流。
@@ -437,20 +437,20 @@ ReturnFallback --> End
 ```
 
 图表来源
-- [AiModelConcurrency.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelConcurrency.java)
-- [AiModelCache.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelCache.java)
-- [AiModelLoadBalancer.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelLoadBalancer.java)
-- [AiModelFallback.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelFallback.java)
-- [AiModelRateLimit.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelRateLimit.java)
-- [AiModelQuota.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelQuota.java)
+- [AiModelConcurrency.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelConcurrency.java)
+- [AiModelCache.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelCache.java)
+- [AiModelLoadBalancer.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelLoadBalancer.java)
+- [AiModelFallback.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelFallback.java)
+- [AiModelRateLimit.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelRateLimit.java)
+- [AiModelQuota.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelQuota.java)
 
 章节来源
-- [AiModelConcurrency.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelConcurrency.java)
-- [AiModelCache.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelCache.java)
-- [AiModelLoadBalancer.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelLoadBalancer.java)
-- [AiModelFallback.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelFallback.java)
-- [AiModelRateLimit.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelRateLimit.java)
-- [AiModelQuota.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelQuota.java)
+- [AiModelConcurrency.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelConcurrency.java)
+- [AiModelCache.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelCache.java)
+- [AiModelLoadBalancer.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelLoadBalancer.java)
+- [AiModelFallback.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelFallback.java)
+- [AiModelRateLimit.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelRateLimit.java)
+- [AiModelQuota.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelQuota.java)
 
 ### 安全管理
 - API密钥管理：AiApiKeyController、AiApiKeyService 管理密钥的创建、启用/禁用、轮换。
@@ -472,32 +472,32 @@ ModelSvc --> Billing
 ```
 
 图表来源
-- [AiApiKeyController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/AiApiKeyController.java)
-- [AiApiKeyService.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiApiKeyService.java)
-- [AiApiKeyServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiApiKeyServiceImpl.java)
-- [AiModelSecurity.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelSecurity.java)
-- [AiModelAccessControl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelAccessControl.java)
-- [AiModelUsageAudit.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelUsageAudit.java)
-- [AiModelBilling.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelBilling.java)
-- [AiModelCostControl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelCostControl.java)
+- [AiApiKeyController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/AiApiKeyController.java)
+- [AiApiKeyService.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiApiKeyService.java)
+- [AiApiKeyServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiApiKeyServiceImpl.java)
+- [AiModelSecurity.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelSecurity.java)
+- [AiModelAccessControl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelAccessControl.java)
+- [AiModelUsageAudit.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelUsageAudit.java)
+- [AiModelBilling.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelBilling.java)
+- [AiModelCostControl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelCostControl.java)
 
 章节来源
-- [AiApiKeyController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/AiApiKeyController.java)
-- [AiApiKeyService.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiApiKeyService.java)
-- [AiApiKeyServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/AiApiKeyServiceImpl.java)
-- [AiModelSecurity.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelSecurity.java)
-- [AiModelAccessControl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelAccessControl.java)
-- [AiModelUsageAudit.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelUsageAudit.java)
-- [AiModelBilling.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelBilling.java)
-- [AiModelCostControl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelCostControl.java)
+- [AiApiKeyController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/AiApiKeyController.java)
+- [AiApiKeyService.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiApiKeyService.java)
+- [AiApiKeyServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/AiApiKeyServiceImpl.java)
+- [AiModelSecurity.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelSecurity.java)
+- [AiModelAccessControl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelAccessControl.java)
+- [AiModelUsageAudit.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelUsageAudit.java)
+- [AiModelBilling.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelBilling.java)
+- [AiModelCostControl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelCostControl.java)
 
 ### 版本控制与配置管理
 - 版本控制：AiModelVersioning 管理模型版本与回滚。
 - 配置管理：AiModelConfig 统一加载与刷新配置，支持动态变更。
 
 章节来源
-- [AiModelVersioning.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelVersioning.java)
-- [AiModelConfig.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelConfig.java)
+- [AiModelVersioning.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelVersioning.java)
+- [AiModelConfig.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelConfig.java)
 
 ### API接口文档
 以下为模型与密钥、计费相关的核心接口概览（以路径与方法为主，参数与返回见对应VO类）：
@@ -526,12 +526,12 @@ ModelSvc --> Billing
   - GET /ai/model/billing/page：分页查询计费规则
 
 章节来源
-- [AiModelController.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiModelController.java#L1-L89)
-- [AiModelPageReqVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/vo/model/AiModelPageReqVO.java)
-- [AiModelSaveReqVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/vo/model/AiModelSaveReqVO.java)
-- [AiModelRespVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/vo/model/AiModelRespVO.java)
-- [AiApiKeyController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/AiApiKeyController.java)
-- [AiModelBillingController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/AiModelBillingController.java)
+- [AiModelController.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/AiModelController.java#L1-L89)
+- [AiModelPageReqVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/vo/model/AiModelPageReqVO.java)
+- [AiModelSaveReqVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/vo/model/AiModelSaveReqVO.java)
+- [AiModelRespVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/vo/model/AiModelRespVO.java)
+- [AiApiKeyController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/AiApiKeyController.java)
+- [AiModelBillingController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/AiModelBillingController.java)
 
 ## 依赖分析
 - 控制器依赖服务接口，服务实现依赖Mapper与工厂。
@@ -548,17 +548,17 @@ ServiceImpl --> Runtime["运行时能力"]
 ```
 
 图表来源
-- [AiModelController.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiModelController.java#L1-L89)
-- [AiModelService.java:1-144](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelService.java#L1-L144)
-- [AiModelServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelServiceImpl.java)
-- [AiModelMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/model/AiModelMapper.java)
-- [AiClientFactory.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/AiClientFactory.java)
+- [AiModelController.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/AiModelController.java#L1-L89)
+- [AiModelService.java:1-144](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelService.java#L1-L144)
+- [AiModelServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelServiceImpl.java)
+- [AiModelMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/model/AiModelMapper.java)
+- [AiClientFactory.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/AiClientFactory.java)
 
 章节来源
-- [AiModelController.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/model/AiModelController.java#L1-L89)
-- [AiModelService.java:1-144](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelService.java#L1-L144)
-- [AiModelServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/model/AiModelServiceImpl.java)
-- [AiModelMapper.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/mysql/model/AiModelMapper.java)
+- [AiModelController.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/model/AiModelController.java#L1-L89)
+- [AiModelService.java:1-144](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelService.java#L1-L144)
+- [AiModelServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/model/AiModelServiceImpl.java)
+- [AiModelMapper.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/mysql/model/AiModelMapper.java)
 
 ## 性能考虑
 - 并发与配额：通过并发控制与速率限制避免平台限流与抖动。
@@ -574,12 +574,12 @@ ServiceImpl --> Runtime["运行时能力"]
 - 降级开关：在高峰期启用 AiModelFallback，确保系统可用性。
 
 章节来源
-- [AiModelHealthCheck.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelHealthCheck.java)
-- [AiModelAudit.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelAudit.java)
-- [AiModelUsageAudit.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelUsageAudit.java)
-- [AiModelBilling.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelBilling.java)
-- [AiModelQuota.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelQuota.java)
-- [AiModelFallback.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/AiModelFallback.java)
+- [AiModelHealthCheck.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelHealthCheck.java)
+- [AiModelAudit.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelAudit.java)
+- [AiModelUsageAudit.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelUsageAudit.java)
+- [AiModelBilling.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelBilling.java)
+- [AiModelQuota.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelQuota.java)
+- [AiModelFallback.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/AiModelFallback.java)
 
 ## 结论
 该AI模型管理方案以清晰的分层架构与平台抽象实现了对多厂商模型的统一管理，配合完善的监控、缓存、负载均衡与降级策略，能够在复杂环境下保持高可用与高性能。通过密钥、访问控制、审计与计费的闭环管理，有效保障安全与成本可控。
@@ -593,8 +593,8 @@ ServiceImpl --> Runtime["运行时能力"]
   - 计费控制：通过 AiModelBillingController 配置配额与周期，结合 AiModelQuota 实时控制。
 
 章节来源
-- [AiPlatformEnum.java:1-73](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/model/AiPlatformEnum.java#L1-L73)
-- [AiModelTypeEnum.java:1-42](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/model/AiModelTypeEnum.java#L1-L42)
-- [AiModelDO.java:1-89](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/model/AiModelDO.java#L1-L89)
-- [AiApiKeyController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/AiApiKeyController.java)
-- [AiModelBillingController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/AiModelBillingController.java)
+- [AiPlatformEnum.java:1-73](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/model/AiPlatformEnum.java#L1-L73)
+- [AiModelTypeEnum.java:1-42](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/model/AiModelTypeEnum.java#L1-L42)
+- [AiModelDO.java:1-89](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/model/AiModelDO.java#L1-L89)
+- [AiApiKeyController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/AiApiKeyController.java)
+- [AiModelBillingController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/AiModelBillingController.java)

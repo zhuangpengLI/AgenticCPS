@@ -3,11 +3,11 @@ set -e
 
 DATE=$(date +%Y%m%d%H%M)
 # 基础路径
-BASE_PATH=/work/projects/yudao-server
+BASE_PATH=/work/projects/qiji-server
 # 编译后 jar 的地址。部署时，Jenkins 会上传 jar 包到该目录下
 SOURCE_PATH=$BASE_PATH/build
 # 服务名称。同时约定部署服务的 jar 包名字也为它。
-SERVER_NAME=yudao-server
+SERVER_NAME=qiji-server
 # 环境
 PROFILES_ACTIVE=development
 # 健康检查 URL

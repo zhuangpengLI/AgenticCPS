@@ -7,8 +7,8 @@
 - [Docker Compose 配置](file://script/docker/docker-compose.yml)
 - [Docker 环境变量](file://script/docker/docker.env)
 - [根 POM 配置](file://pom.xml)
-- [服务端 POM 配置](file://yudao-server/pom.xml)
-- [Dockerfile](file://yudao-server/Dockerfile)
+- [服务端 POM 配置](file://qiji-server/pom.xml)
+- [Dockerfile](file://qiji-server/Dockerfile)
 - [项目说明文档](file://README.md)
 </cite>
 
@@ -28,17 +28,17 @@
 本文件面向 AgenticCPS 系统，提供完整的 CI/CD 流水线文档，涵盖 Jenkins 流水线配置、自动化构建与部署流程、多环境管理策略、最佳实践以及故障回滚与应急处理流程。目标是帮助研发与运维团队理解并高效落地自动化交付。
 
 ## 项目结构
-AgenticCPS 基于多模块 Maven 工程，后端服务位于 yudao-server 模块，前端包含 Vue3 管理端与 uni-app 移动端。项目提供 Jenkinsfile 用于流水线编排，配合本地部署脚本与 Docker Compose 进行本地/测试环境验证；生产侧可结合容器化与 Kubernetes 集群进行部署。
+AgenticCPS 基于多模块 Maven 工程，后端服务位于 qiji-server 模块，前端包含 Vue3 管理端与 uni-app 移动端。项目提供 Jenkinsfile 用于流水线编排，配合本地部署脚本与 Docker Compose 进行本地/测试环境验证；生产侧可结合容器化与 Kubernetes 集群进行部署。
 
 ```mermaid
 graph TB
 subgraph "项目根目录"
 RootPOM["根 POM<br/>聚合模块与插件管理"]
-Modules["多模块结构<br/>yudao-server / yudao-module-*"]
+Modules["多模块结构<br/>qiji-server / qiji-module-*"]
 Scripts["脚本目录<br/>script/jenkins / script/shell / script/docker"]
 end
 subgraph "后端服务"
-ServerPOM["yudao-server POM<br/>打包与依赖聚合"]
+ServerPOM["qiji-server POM<br/>打包与依赖聚合"]
 Dockerfile["Dockerfile<br/>容器镜像构建"]
 end
 subgraph "CI/CD"
@@ -57,7 +57,7 @@ DockerCompose --> Env
 
 **图表来源**
 - [根 POM 配置:10-25](file://pom.xml#L10-L25)
-- [服务端 POM 配置:10-21](file://yudao-server/pom.xml#L10-L21)
+- [服务端 POM 配置:10-21](file://qiji-server/pom.xml#L10-L21)
 - [Jenkinsfile:29-59](file://script/jenkins/Jenkinsfile#L29-L59)
 - [部署脚本:1-161](file://script/shell/deploy.sh#L1-L161)
 - [Docker Compose 配置:1-85](file://script/docker/docker-compose.yml#L1-L85)
@@ -80,8 +80,8 @@ DockerCompose --> Env
 - [Docker Compose 配置:1-85](file://script/docker/docker-compose.yml#L1-L85)
 - [Docker 环境变量:1-26](file://script/docker/docker.env#L1-L26)
 - [根 POM 配置:31-45](file://pom.xml#L31-L45)
-- [服务端 POM 配置:117-135](file://yudao-server/pom.xml#L117-L135)
-- [Dockerfile:1-24](file://yudao-server/Dockerfile#L1-L24)
+- [服务端 POM 配置:117-135](file://qiji-server/pom.xml#L117-L135)
+- [Dockerfile:1-24](file://qiji-server/Dockerfile#L1-L24)
 
 ## 架构总览
 下图展示了从代码检出到部署的端到端流程，以及本地验证与制品产出的关系。
@@ -152,7 +152,7 @@ Deploy --> End(["结束"])
 **章节来源**
 - [Jenkinsfile:30-47](file://script/jenkins/Jenkinsfile#L30-L47)
 - [根 POM 配置:59-142](file://pom.xml#L59-L142)
-- [服务端 POM 配置:117-135](file://yudao-server/pom.xml#L117-L135)
+- [服务端 POM 配置:117-135](file://qiji-server/pom.xml#L117-L135)
 
 ### 自动化部署流程
 - 产物准备：将部署脚本与 JAR 复制到目标部署目录。
@@ -213,14 +213,14 @@ H --> L["完成"]
 - [部署脚本:29-158](file://script/shell/deploy.sh#L29-L158)
 
 ## 依赖关系分析
-- Maven 聚合：根 POM 聚合 yudao-server 与其他模块，统一版本与插件配置。
-- 服务端打包：yudao-server 使用 spring-boot-maven-plugin 生成可执行 JAR。
+- Maven 聚合：根 POM 聚合 qiji-server 与其他模块，统一版本与插件配置。
+- 服务端打包：qiji-server 使用 spring-boot-maven-plugin 生成可执行 JAR。
 - 容器化：Dockerfile 基于 Eclipse Temurin 21 JRE，设置时区、JVM 参数与暴露端口。
 - 本地编排：docker-compose 将后端服务与数据库、缓存组合，支持环境变量注入。
 
 ```mermaid
 graph LR
-RootPOM["根 POM"] --> ServerPOM["yudao-server POM"]
+RootPOM["根 POM"] --> ServerPOM["qiji-server POM"]
 ServerPOM --> Plugin["spring-boot-maven-plugin"]
 Plugin --> Jar["可执行 JAR"]
 Jar --> Dockerfile["Dockerfile"]
@@ -231,13 +231,13 @@ Compose --> Services["后端/数据库/缓存"]
 
 **图表来源**
 - [根 POM 配置:10-25](file://pom.xml#L10-L25)
-- [服务端 POM 配置:117-135](file://yudao-server/pom.xml#L117-L135)
-- [Dockerfile:1-24](file://yudao-server/Dockerfile#L1-L24)
+- [服务端 POM 配置:117-135](file://qiji-server/pom.xml#L117-L135)
+- [Dockerfile:1-24](file://qiji-server/Dockerfile#L1-L24)
 - [Docker Compose 配置:29-56](file://script/docker/docker-compose.yml#L29-L56)
 
 **章节来源**
 - [根 POM 配置:10-25](file://pom.xml#L10-L25)
-- [服务端 POM 配置:117-135](file://yudao-server/pom.xml#L117-L135)
+- [服务端 POM 配置:117-135](file://qiji-server/pom.xml#L117-L135)
 - [Docker Compose 配置:1-85](file://script/docker/docker-compose.yml#L1-L85)
 
 ## 性能考虑
@@ -279,4 +279,4 @@ Compose --> Services["后端/数据库/缓存"]
 **章节来源**
 - [Jenkinsfile:10-27](file://script/jenkins/Jenkinsfile#L10-L27)
 - [部署脚本:12-14](file://script/shell/deploy.sh#L12-L14)
-- [Dockerfile:13-20](file://yudao-server/Dockerfile#L13-L20)
+- [Dockerfile:13-20](file://qiji-server/Dockerfile#L13-L20)

@@ -2,18 +2,18 @@
 
 <cite>
 **本文引用的文件**
-- [CpsMcpAutoConfiguration.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java)
-- [CpsMcpService.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java)
-- [CpsMcpServer.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java)
-- [CpsMcpTool.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/tool/CpsMcpTool.java)
-- [CpsMcpResource.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMcpResource.java)
-- [CpsMcpPrompt.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsMcpPrompt.java)
-- [CpsPlatformResource.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsPlatformResource.java)
-- [CpsMemberProfileResource.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMemberProfileResource.java)
-- [CpsComparePrompt.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsComparePrompt.java)
-- [CpsFindBestDealPrompt.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsFindBestDealPrompt.java)
-- [SecurityConfiguration.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/security/config/SecurityConfiguration.java)
-- [CpsMcpController.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsMcpController.java)
+- [CpsMcpAutoConfiguration.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java)
+- [CpsMcpService.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java)
+- [CpsMcpServer.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java)
+- [CpsMcpTool.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/tool/CpsMcpTool.java)
+- [CpsMcpResource.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMcpResource.java)
+- [CpsMcpPrompt.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsMcpPrompt.java)
+- [CpsPlatformResource.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsPlatformResource.java)
+- [CpsMemberProfileResource.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMemberProfileResource.java)
+- [CpsComparePrompt.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsComparePrompt.java)
+- [CpsFindBestDealPrompt.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsFindBestDealPrompt.java)
+- [SecurityConfiguration.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/security/config/SecurityConfiguration.java)
+- [CpsMcpController.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsMcpController.java)
 </cite>
 
 ## 目录
@@ -39,7 +39,7 @@
 - 在AgenticCPS系统中通过MCP协议实现AI Agent的智能服务集成方案
 
 ## 项目结构
-MCP接口层位于“yudao-module-cps”模块的“biz”子模块中，采用分层与职责分离的设计：
+MCP接口层位于“qiji-module-cps”模块的“biz”子模块中，采用分层与职责分离的设计：
 - mcp：MCP核心抽象与自动装配
 - mcp/server：MCP Server生命周期与能力声明
 - mcp/tool：MCP工具接口
@@ -81,20 +81,20 @@ K --> A
 ```
 
 图表来源
-- [CpsMcpAutoConfiguration.java:1-38](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L1-L38)
-- [CpsMcpServer.java:1-184](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L1-L184)
-- [CpsMcpTool.java:1-63](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/tool/CpsMcpTool.java#L1-L63)
-- [CpsMcpResource.java:1-52](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMcpResource.java#L1-L52)
-- [CpsMcpPrompt.java:1-53](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsMcpPrompt.java#L1-L53)
-- [CpsPlatformResource.java:1-78](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsPlatformResource.java#L1-L78)
-- [CpsMemberProfileResource.java:1-108](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMemberProfileResource.java#L1-L108)
-- [CpsComparePrompt.java:1-68](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsComparePrompt.java#L1-L68)
-- [CpsFindBestDealPrompt.java:1-60](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsFindBestDealPrompt.java#L1-L60)
-- [CpsMcpController.java:30-59](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsMcpController.java#L30-L59)
+- [CpsMcpAutoConfiguration.java:1-38](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L1-L38)
+- [CpsMcpServer.java:1-184](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L1-L184)
+- [CpsMcpTool.java:1-63](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/tool/CpsMcpTool.java#L1-L63)
+- [CpsMcpResource.java:1-52](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMcpResource.java#L1-L52)
+- [CpsMcpPrompt.java:1-53](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsMcpPrompt.java#L1-L53)
+- [CpsPlatformResource.java:1-78](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsPlatformResource.java#L1-L78)
+- [CpsMemberProfileResource.java:1-108](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMemberProfileResource.java#L1-L108)
+- [CpsComparePrompt.java:1-68](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsComparePrompt.java#L1-L68)
+- [CpsFindBestDealPrompt.java:1-60](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsFindBestDealPrompt.java#L1-L60)
+- [CpsMcpController.java:30-59](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsMcpController.java#L30-L59)
 
 章节来源
-- [CpsMcpAutoConfiguration.java:1-38](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L1-L38)
-- [CpsMcpServer.java:1-184](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L1-L184)
+- [CpsMcpAutoConfiguration.java:1-38](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L1-L38)
+- [CpsMcpServer.java:1-184](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L1-L184)
 
 ## 核心组件
 - 自动装配与工具回调
@@ -107,12 +107,12 @@ K --> A
   - 定义资源与提示词的通用接口，并提供平台资源、会员画像资源以及跨平台比价、找最优商品等提示词实现。
 
 章节来源
-- [CpsMcpAutoConfiguration.java:1-38](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L1-L38)
-- [CpsMcpService.java:1-295](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L1-L295)
-- [CpsMcpServer.java:1-184](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L1-L184)
-- [CpsMcpTool.java:1-63](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/tool/CpsMcpTool.java#L1-L63)
-- [CpsMcpResource.java:1-52](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMcpResource.java#L1-L52)
-- [CpsMcpPrompt.java:1-53](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsMcpPrompt.java#L1-L53)
+- [CpsMcpAutoConfiguration.java:1-38](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L1-L38)
+- [CpsMcpService.java:1-295](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L1-L295)
+- [CpsMcpServer.java:1-184](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L1-L184)
+- [CpsMcpTool.java:1-63](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/tool/CpsMcpTool.java#L1-L63)
+- [CpsMcpResource.java:1-52](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMcpResource.java#L1-L52)
+- [CpsMcpPrompt.java:1-53](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsMcpPrompt.java#L1-L53)
 
 ## 架构总览
 MCP接口层基于Spring AI MCP Server实现，结合AgenticCPS业务能力，形成“工具+资源+提示词”的统一服务面，对外提供HTTP流式与SSE两种接入方式。
@@ -130,8 +130,8 @@ Server --> Prompts["提示词模板<br/>比价/找最优"]
 ```
 
 图表来源
-- [CpsMcpAutoConfiguration.java:10-21](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L10-L21)
-- [SecurityConfiguration.java:25-42](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/security/config/SecurityConfiguration.java#L25-L42)
+- [CpsMcpAutoConfiguration.java:10-21](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L10-L21)
+- [SecurityConfiguration.java:25-42](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/security/config/SecurityConfiguration.java#L25-L42)
 
 ## 详细组件分析
 
@@ -157,12 +157,12 @@ Server-->>Agent : 返回响应
 ```
 
 图表来源
-- [CpsMcpAutoConfiguration.java:22-37](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L22-L37)
-- [SecurityConfiguration.java:25-42](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/security/config/SecurityConfiguration.java#L25-L42)
+- [CpsMcpAutoConfiguration.java:22-37](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L22-L37)
+- [SecurityConfiguration.java:25-42](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/security/config/SecurityConfiguration.java#L25-L42)
 
 章节来源
-- [CpsMcpAutoConfiguration.java:1-38](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L1-L38)
-- [SecurityConfiguration.java:1-42](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/security/config/SecurityConfiguration.java#L1-L42)
+- [CpsMcpAutoConfiguration.java:1-38](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L1-L38)
+- [SecurityConfiguration.java:1-42](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/security/config/SecurityConfiguration.java#L1-L42)
 
 ### MCP工具函数实现机制
 - 工具注册
@@ -187,14 +187,14 @@ ReturnErr --> Done
 ```
 
 图表来源
-- [CpsMcpService.java:50-104](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L50-L104)
-- [CpsMcpService.java:106-161](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L106-L161)
-- [CpsMcpService.java:163-193](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L163-L193)
-- [CpsMcpService.java:195-238](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L195-L238)
-- [CpsMcpService.java:240-277](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L240-L277)
+- [CpsMcpService.java:50-104](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L50-L104)
+- [CpsMcpService.java:106-161](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L106-L161)
+- [CpsMcpService.java:163-193](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L163-L193)
+- [CpsMcpService.java:195-238](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L195-L238)
+- [CpsMcpService.java:240-277](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L240-L277)
 
 章节来源
-- [CpsMcpService.java:1-295](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L1-L295)
+- [CpsMcpService.java:1-295](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L1-L295)
 
 ### MCP资源管理
 - 资源接口
@@ -232,14 +232,14 @@ CpsMemberProfileResource ..|> CpsMcpResource
 ```
 
 图表来源
-- [CpsMcpResource.java:1-52](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMcpResource.java#L1-L52)
-- [CpsPlatformResource.java:1-78](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsPlatformResource.java#L1-L78)
-- [CpsMemberProfileResource.java:1-108](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMemberProfileResource.java#L1-L108)
+- [CpsMcpResource.java:1-52](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMcpResource.java#L1-L52)
+- [CpsPlatformResource.java:1-78](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsPlatformResource.java#L1-L78)
+- [CpsMemberProfileResource.java:1-108](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMemberProfileResource.java#L1-L108)
 
 章节来源
-- [CpsMcpResource.java:1-52](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMcpResource.java#L1-L52)
-- [CpsPlatformResource.java:1-78](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsPlatformResource.java#L1-L78)
-- [CpsMemberProfileResource.java:1-108](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMemberProfileResource.java#L1-L108)
+- [CpsMcpResource.java:1-52](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMcpResource.java#L1-L52)
+- [CpsPlatformResource.java:1-78](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsPlatformResource.java#L1-L78)
+- [CpsMemberProfileResource.java:1-108](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMemberProfileResource.java#L1-L108)
 
 ### MCP提示词工程
 - 提示词接口
@@ -274,14 +274,14 @@ CpsFindBestDealPrompt ..|> CpsMcpPrompt
 ```
 
 图表来源
-- [CpsMcpPrompt.java:1-53](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsMcpPrompt.java#L1-L53)
-- [CpsComparePrompt.java:1-68](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsComparePrompt.java#L1-L68)
-- [CpsFindBestDealPrompt.java:1-60](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsFindBestDealPrompt.java#L1-L60)
+- [CpsMcpPrompt.java:1-53](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsMcpPrompt.java#L1-L53)
+- [CpsComparePrompt.java:1-68](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsComparePrompt.java#L1-L68)
+- [CpsFindBestDealPrompt.java:1-60](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsFindBestDealPrompt.java#L1-L60)
 
 章节来源
-- [CpsMcpPrompt.java:1-53](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsMcpPrompt.java#L1-L53)
-- [CpsComparePrompt.java:1-68](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsComparePrompt.java#L1-L68)
-- [CpsFindBestDealPrompt.java:1-60](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsFindBestDealPrompt.java#L1-L60)
+- [CpsMcpPrompt.java:1-53](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsMcpPrompt.java#L1-L53)
+- [CpsComparePrompt.java:1-68](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsComparePrompt.java#L1-L68)
+- [CpsFindBestDealPrompt.java:1-60](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsFindBestDealPrompt.java#L1-L60)
 
 ### MCP Server生命周期与能力声明
 - 生命周期
@@ -311,11 +311,11 @@ Server->>Prompts : destroy()
 ```
 
 图表来源
-- [CpsMcpServer.java:35-82](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L35-L82)
-- [CpsMcpServer.java:150-175](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L150-L175)
+- [CpsMcpServer.java:35-82](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L35-L82)
+- [CpsMcpServer.java:150-175](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L150-L175)
 
 章节来源
-- [CpsMcpServer.java:1-184](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L1-L184)
+- [CpsMcpServer.java:1-184](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L1-L184)
 
 ## 依赖分析
 - 组件耦合
@@ -339,16 +339,16 @@ Prompts --> Best["CpsFindBestDealPrompt"]
 ```
 
 图表来源
-- [CpsMcpAutoConfiguration.java:32-35](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L32-L35)
-- [CpsMcpServer.java:18-33](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L18-L33)
-- [CpsPlatformResource.java:23-26](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsPlatformResource.java#L23-L26)
-- [CpsMemberProfileResource.java:20-23](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMemberProfileResource.java#L20-L23)
-- [CpsComparePrompt.java:14-15](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsComparePrompt.java#L14-L15)
-- [CpsFindBestDealPrompt.java:14-15](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsFindBestDealPrompt.java#L14-L15)
+- [CpsMcpAutoConfiguration.java:32-35](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L32-L35)
+- [CpsMcpServer.java:18-33](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L18-L33)
+- [CpsPlatformResource.java:23-26](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsPlatformResource.java#L23-L26)
+- [CpsMemberProfileResource.java:20-23](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMemberProfileResource.java#L20-L23)
+- [CpsComparePrompt.java:14-15](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsComparePrompt.java#L14-L15)
+- [CpsFindBestDealPrompt.java:14-15](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/prompt/CpsFindBestDealPrompt.java#L14-L15)
 
 章节来源
-- [CpsMcpAutoConfiguration.java:1-38](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L1-L38)
-- [CpsMcpServer.java:1-184](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L1-L184)
+- [CpsMcpAutoConfiguration.java:1-38](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpAutoConfiguration.java#L1-L38)
+- [CpsMcpServer.java:1-184](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/server/CpsMcpServer.java#L1-L184)
 
 ## 性能考虑
 - 工具执行
@@ -371,11 +371,11 @@ Prompts --> Best["CpsFindBestDealPrompt"]
   - 管理端提供API Key的增删改查接口，确保Agent侧正确配置与轮换。
 
 章节来源
-- [CpsMcpService.java:100-104](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L100-L104)
-- [CpsPlatformResource.java:64-67](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsPlatformResource.java#L64-L67)
-- [CpsMemberProfileResource.java:72-75](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMemberProfileResource.java#L72-L75)
-- [SecurityConfiguration.java:25-42](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/security/config/SecurityConfiguration.java#L25-L42)
-- [CpsMcpController.java:30-59](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsMcpController.java#L30-L59)
+- [CpsMcpService.java:100-104](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/CpsMcpService.java#L100-L104)
+- [CpsPlatformResource.java:64-67](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsPlatformResource.java#L64-L67)
+- [CpsMemberProfileResource.java:72-75](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/mcp/resource/CpsMemberProfileResource.java#L72-L75)
+- [SecurityConfiguration.java:25-42](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/security/config/SecurityConfiguration.java#L25-L42)
+- [CpsMcpController.java:30-59](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsMcpController.java#L30-L59)
 
 ## 结论
 本MCP接口层以Spring AI MCP Server为基础，结合CpsMcpService的@Tool能力、资源与提示词的统一抽象，实现了面向AI Agent的CPS智能服务能力。通过清晰的生命周期管理、能力声明与安全放行策略，既满足Agent的工具调用与资源访问需求，又保障了系统的可维护性与扩展性。建议在生产环境中配合API Key管理、访问审计与监控告警，进一步完善安全与可观测性。

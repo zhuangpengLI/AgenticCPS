@@ -2,20 +2,20 @@
 
 <cite>
 **本文档引用的文件**
-- [AbstractCpsPlatformClient.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java)
-- [CpsPlatformClient.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java)
-- [CpsPlatformClientFactory.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java)
-- [CpsPlatformClientFactoryImpl.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java)
-- [CpsAutoConfiguration.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsAutoConfiguration.java)
-- [TaobaoCpsPlatformClient.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java)
-- [JingdongCpsPlatformClient.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java)
-- [PinduoduoCpsPlatformClient.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java)
-- [CpsApiSignUtil.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/util/CpsApiSignUtil.java)
-- [CpsProperties.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsProperties.java)
-- [DouyinCpsPlatformClient.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/DouyinCpsPlatformClient.java)
-- [CpsPlatformDO.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/dataobject/CpsPlatformDO.java)
-- [CpsPlatformService.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformService.java)
-- [CpsPlatformServiceImpl.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformServiceImpl.java)
+- [AbstractCpsPlatformClient.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java)
+- [CpsPlatformClient.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java)
+- [CpsPlatformClientFactory.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java)
+- [CpsPlatformClientFactoryImpl.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java)
+- [CpsAutoConfiguration.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsAutoConfiguration.java)
+- [TaobaoCpsPlatformClient.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java)
+- [JingdongCpsPlatformClient.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java)
+- [PinduoduoCpsPlatformClient.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java)
+- [CpsApiSignUtil.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/util/CpsApiSignUtil.java)
+- [CpsProperties.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsProperties.java)
+- [DouyinCpsPlatformClient.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/DouyinCpsPlatformClient.java)
+- [CpsPlatformDO.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/dataobject/CpsPlatformDO.java)
+- [CpsPlatformService.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformService.java)
+- [CpsPlatformServiceImpl.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformServiceImpl.java)
 </cite>
 
 ## 目录
@@ -40,7 +40,7 @@
 - 新平台接入流程、调试方法与性能优化策略
 
 ## 项目结构
-CPS模块位于 yudao-module-cps/yudao-module-cps-biz 下，采用“接口 + 抽象基类 + 多平台适配器 + 工厂 + 自动装配”的分层组织方式：
+CPS模块位于 qiji-module-cps/qiji-module-cps-biz 下，采用“接口 + 抽象基类 + 多平台适配器 + 工厂 + 自动装配”的分层组织方式：
 - client：统一接口与各平台适配器实现
 - service：业务服务与客户端工厂
 - config：自动装配与线程池配置
@@ -79,20 +79,20 @@ ABS --> PROP
 ```
 
 图表来源
-- [CpsAutoConfiguration.java:1-55](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsAutoConfiguration.java#L1-L55)
-- [CpsPlatformClientFactoryImpl.java:1-43](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L1-L43)
-- [AbstractCpsPlatformClient.java:1-144](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L1-L144)
-- [CpsPlatformClient.java:1-67](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java#L1-L67)
-- [TaobaoCpsPlatformClient.java:1-468](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java#L1-L468)
-- [JingdongCpsPlatformClient.java:1-503](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java#L1-L503)
-- [PinduoduoCpsPlatformClient.java:1-469](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java#L1-L469)
-- [CpsApiSignUtil.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/util/CpsApiSignUtil.java)
-- [CpsProperties.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsProperties.java)
-- [CpsPlatformService.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformService.java)
+- [CpsAutoConfiguration.java:1-55](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsAutoConfiguration.java#L1-L55)
+- [CpsPlatformClientFactoryImpl.java:1-43](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L1-L43)
+- [AbstractCpsPlatformClient.java:1-144](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L1-L144)
+- [CpsPlatformClient.java:1-67](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java#L1-L67)
+- [TaobaoCpsPlatformClient.java:1-468](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java#L1-L468)
+- [JingdongCpsPlatformClient.java:1-503](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java#L1-L503)
+- [PinduoduoCpsPlatformClient.java:1-469](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java#L1-L469)
+- [CpsApiSignUtil.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/util/CpsApiSignUtil.java)
+- [CpsProperties.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsProperties.java)
+- [CpsPlatformService.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformService.java)
 
 章节来源
-- [CpsAutoConfiguration.java:1-55](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsAutoConfiguration.java#L1-L55)
-- [CpsPlatformClientFactoryImpl.java:1-43](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L1-L43)
+- [CpsAutoConfiguration.java:1-55](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsAutoConfiguration.java#L1-L55)
+- [CpsPlatformClientFactoryImpl.java:1-43](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L1-L43)
 
 ## 核心组件
 - 统一接口 CpsPlatformClient：定义平台统一能力，包括关键词搜索、详情查询、内容解析、推广链接生成、订单增量查询与连通性测试。
@@ -102,11 +102,11 @@ ABS --> PROP
 - 自动装配 CpsAutoConfiguration：提供专用RestTemplate与搜索线程池，统一超时与并发策略。
 
 章节来源
-- [CpsPlatformClient.java:1-67](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java#L1-L67)
-- [AbstractCpsPlatformClient.java:1-144](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L1-L144)
-- [CpsPlatformClientFactory.java:1-19](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java#L1-L19)
-- [CpsPlatformClientFactoryImpl.java:1-43](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L1-L43)
-- [CpsAutoConfiguration.java:1-55](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsAutoConfiguration.java#L1-L55)
+- [CpsPlatformClient.java:1-67](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java#L1-L67)
+- [AbstractCpsPlatformClient.java:1-144](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L1-L144)
+- [CpsPlatformClientFactory.java:1-19](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java#L1-L19)
+- [CpsPlatformClientFactoryImpl.java:1-43](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L1-L43)
+- [CpsAutoConfiguration.java:1-55](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsAutoConfiguration.java#L1-L55)
 
 ## 架构总览
 下图展示CPS平台接入的整体架构：客户端工厂根据平台编码选择对应适配器；适配器通过抽象基类统一发起HTTP请求；签名工具负责不同平台的签名算法；配置属性提供平台密钥与默认参数；平台服务负责读取数据库中的平台配置。
@@ -164,16 +164,16 @@ PinduoduoCpsPlatformClient --> CpsApiSignUtil
 ```
 
 图表来源
-- [CpsPlatformClient.java:1-67](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java#L1-L67)
-- [AbstractCpsPlatformClient.java:1-144](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L1-L144)
-- [CpsPlatformClientFactory.java:1-19](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java#L1-L19)
-- [CpsPlatformClientFactoryImpl.java:1-43](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L1-L43)
-- [TaobaoCpsPlatformClient.java:1-468](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java#L1-L468)
-- [JingdongCpsPlatformClient.java:1-503](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java#L1-L503)
-- [PinduoduoCpsPlatformClient.java:1-469](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java#L1-L469)
-- [CpsApiSignUtil.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/util/CpsApiSignUtil.java)
-- [CpsProperties.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsProperties.java)
-- [CpsPlatformService.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformService.java)
+- [CpsPlatformClient.java:1-67](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java#L1-L67)
+- [AbstractCpsPlatformClient.java:1-144](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L1-L144)
+- [CpsPlatformClientFactory.java:1-19](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java#L1-L19)
+- [CpsPlatformClientFactoryImpl.java:1-43](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L1-L43)
+- [TaobaoCpsPlatformClient.java:1-468](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java#L1-L468)
+- [JingdongCpsPlatformClient.java:1-503](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java#L1-L503)
+- [PinduoduoCpsPlatformClient.java:1-469](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java#L1-L469)
+- [CpsApiSignUtil.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/util/CpsApiSignUtil.java)
+- [CpsProperties.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsProperties.java)
+- [CpsPlatformService.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformService.java)
 
 ## 详细组件分析
 
@@ -209,12 +209,12 @@ end
 ```
 
 图表来源
-- [CpsPlatformClientFactoryImpl.java:27-40](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L27-L40)
-- [CpsPlatformClientFactory.java:8-18](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java#L8-L18)
+- [CpsPlatformClientFactoryImpl.java:27-40](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L27-L40)
+- [CpsPlatformClientFactory.java:8-18](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java#L8-L18)
 
 章节来源
-- [CpsPlatformClientFactory.java:1-19](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java#L1-L19)
-- [CpsPlatformClientFactoryImpl.java:1-43](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L1-L43)
+- [CpsPlatformClientFactory.java:1-19](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java#L1-L19)
+- [CpsPlatformClientFactoryImpl.java:1-43](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L1-L43)
 
 ### 抽象适配器：AbstractCpsPlatformClient
 - 统一封装
@@ -228,7 +228,7 @@ end
   - 为各平台适配器提供一致的基础设施
 
 章节来源
-- [AbstractCpsPlatformClient.java:1-144](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L1-L144)
+- [AbstractCpsPlatformClient.java:1-144](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L1-L144)
 
 ### 平台适配器：淘宝、京东、拼多多、抖音
 - 淘宝（TaobaoCpsPlatformClient）
@@ -262,15 +262,15 @@ Return --> End(["结束"])
 ```
 
 图表来源
-- [TaobaoCpsPlatformClient.java:32-95](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java#L32-L95)
-- [JingdongCpsPlatformClient.java:32-100](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java#L32-L100)
-- [PinduoduoCpsPlatformClient.java:30-93](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java#L30-L93)
+- [TaobaoCpsPlatformClient.java:32-95](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java#L32-L95)
+- [JingdongCpsPlatformClient.java:32-100](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java#L32-L100)
+- [PinduoduoCpsPlatformClient.java:30-93](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java#L30-L93)
 
 章节来源
-- [TaobaoCpsPlatformClient.java:1-468](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java#L1-L468)
-- [JingdongCpsPlatformClient.java:1-503](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java#L1-L503)
-- [PinduoduoCpsPlatformClient.java:1-469](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java#L1-L469)
-- [DouyinCpsPlatformClient.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/DouyinCpsPlatformClient.java)
+- [TaobaoCpsPlatformClient.java:1-468](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java#L1-L468)
+- [JingdongCpsPlatformClient.java:1-503](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java#L1-L503)
+- [PinduoduoCpsPlatformClient.java:1-469](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java#L1-L469)
+- [DouyinCpsPlatformClient.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/DouyinCpsPlatformClient.java)
 
 ### API签名验证机制
 - 淘宝：signTaobao（基于TOP协议的MD5签名）
@@ -279,7 +279,7 @@ Return --> End(["结束"])
 - 签名参数通常包含：method/app_key/timestamp/format/v/sign_method/param_json（京东）或type/client_id/timestamp/data_type（拼多多），以及业务参数与平台密钥
 
 章节来源
-- [CpsApiSignUtil.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/util/CpsApiSignUtil.java)
+- [CpsApiSignUtil.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/util/CpsApiSignUtil.java)
 
 ### 请求参数封装与响应数据解析
 - 参数封装
@@ -292,10 +292,10 @@ Return --> End(["结束"])
   - 字段映射：价格、佣金、销量、状态、时间等统一到CpsGoodsDetail/CpsOrderDTO/CpsParsedContent
 
 章节来源
-- [AbstractCpsPlatformClient.java:54-141](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L54-L141)
-- [TaobaoCpsPlatformClient.java:70-95](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java#L70-L95)
-- [JingdongCpsPlatformClient.java:70-100](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java#L70-L100)
-- [PinduoduoCpsPlatformClient.java:68-93](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java#L68-L93)
+- [AbstractCpsPlatformClient.java:54-141](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L54-L141)
+- [TaobaoCpsPlatformClient.java:70-95](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java#L70-L95)
+- [JingdongCpsPlatformClient.java:70-100](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java#L70-L100)
+- [PinduoduoCpsPlatformClient.java:68-93](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java#L68-L93)
 
 ### 平台配置管理与API密钥管理
 - 配置属性 CpsProperties：包含各平台的AppKey/AppSecret/ClientId/ClientSecret、默认广告位ID/PID、API地址等
@@ -303,11 +303,11 @@ Return --> End(["结束"])
 - 配置读取：getConfig在抽象适配器中统一调用，确保各平台共享同一配置来源
 
 章节来源
-- [CpsProperties.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsProperties.java)
-- [CpsPlatformDO.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/dataobject/CpsPlatformDO.java)
-- [CpsPlatformService.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformService.java)
-- [CpsPlatformServiceImpl.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformServiceImpl.java)
-- [AbstractCpsPlatformClient.java:43-45](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L43-L45)
+- [CpsProperties.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsProperties.java)
+- [CpsPlatformDO.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/dataobject/CpsPlatformDO.java)
+- [CpsPlatformService.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformService.java)
+- [CpsPlatformServiceImpl.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformServiceImpl.java)
+- [AbstractCpsPlatformClient.java:43-45](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L43-L45)
 
 ### 请求限流控制
 - RestTemplate超时：连接10秒、读写30秒，减少慢请求阻塞
@@ -318,7 +318,7 @@ Return --> End(["结束"])
   - 监控告警：对429/5xx与超时进行告警
 
 章节来源
-- [CpsAutoConfiguration.java:24-52](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsAutoConfiguration.java#L24-L52)
+- [CpsAutoConfiguration.java:24-52](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsAutoConfiguration.java#L24-L52)
 
 ## 依赖关系分析
 - 组件耦合
@@ -344,13 +344,13 @@ Abs --> Svc["CpsPlatformService"]
 ```
 
 图表来源
-- [CpsPlatformClientFactoryImpl.java:24-40](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L24-L40)
-- [AbstractCpsPlatformClient.java:26-38](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L26-L38)
-- [CpsPlatformClient.java:11-66](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java#L11-L66)
+- [CpsPlatformClientFactoryImpl.java:24-40](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L24-L40)
+- [AbstractCpsPlatformClient.java:26-38](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L26-L38)
+- [CpsPlatformClient.java:11-66](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java#L11-L66)
 
 章节来源
-- [CpsPlatformClientFactoryImpl.java:1-43](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L1-L43)
-- [AbstractCpsPlatformClient.java:1-144](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L1-L144)
+- [CpsPlatformClientFactoryImpl.java:1-43](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L1-L43)
+- [AbstractCpsPlatformClient.java:1-144](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L1-L144)
 
 ## 性能考虑
 - 线程池并行搜索：利用cpsSearchExecutor提升多平台聚合查询吞吐
@@ -372,10 +372,10 @@ Abs --> Svc["CpsPlatformService"]
   - 对429/5xx与超时进行告警与熔断
 
 章节来源
-- [TaobaoCpsPlatformClient.java:278-301](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java#L278-L301)
-- [JingdongCpsPlatformClient.java:273-290](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java#L273-L290)
-- [PinduoduoCpsPlatformClient.java:258-279](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java#L258-L279)
-- [AbstractCpsPlatformClient.java:54-96](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L54-L96)
+- [TaobaoCpsPlatformClient.java:278-301](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/TaobaoCpsPlatformClient.java#L278-L301)
+- [JingdongCpsPlatformClient.java:273-290](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/JingdongCpsPlatformClient.java#L273-L290)
+- [PinduoduoCpsPlatformClient.java:258-279](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/PinduoduoCpsPlatformClient.java#L258-L279)
+- [AbstractCpsPlatformClient.java:54-96](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L54-L96)
 
 ## 结论
 本CPS平台接入方案通过“统一接口 + 抽象适配器 + 工厂 + 自动装配”的架构，实现了对淘宝、京东、拼多多、抖音等多平台的快速适配与扩展。工厂模式确保了平台扩展的零侵入式，适配器模式屏蔽了各平台API差异，签名工具与配置管理保障了安全性与可维护性。配合线程池与超时策略，整体具备良好的性能与稳定性。后续接入新平台仅需实现统一接口并完成参数封装与解析映射即可。
@@ -404,9 +404,9 @@ Abs --> Svc["CpsPlatformService"]
   - 调用testConnection验证连通性
 
 章节来源
-- [CpsPlatformClient.java:11-66](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java#L11-L66)
-- [AbstractCpsPlatformClient.java:26-141](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L26-L141)
-- [CpsPlatformClientFactoryImpl.java:27-40](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L27-L40)
-- [CpsApiSignUtil.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/util/CpsApiSignUtil.java)
-- [CpsProperties.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsProperties.java)
-- [CpsPlatformDO.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/dataobject/CpsPlatformDO.java)
+- [CpsPlatformClient.java:11-66](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java#L11-L66)
+- [AbstractCpsPlatformClient.java:26-141](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/AbstractCpsPlatformClient.java#L26-L141)
+- [CpsPlatformClientFactoryImpl.java:27-40](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java#L27-L40)
+- [CpsApiSignUtil.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/util/CpsApiSignUtil.java)
+- [CpsProperties.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsProperties.java)
+- [CpsPlatformDO.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/dataobject/CpsPlatformDO.java)

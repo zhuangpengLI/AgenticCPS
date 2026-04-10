@@ -2,13 +2,13 @@
 
 <cite>
 **本文引用的文件**
-- [AiChatConversationService.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatConversationService.java)
-- [AiChatConversationServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatConversationServiceImpl.java)
-- [AiChatMessageService.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageService.java)
-- [AiChatMessageServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageServiceImpl.java)
-- [AiChatConversationController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatConversationController.java)
-- [AiChatMessageController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatMessageController.java)
-- [pom.xml](file://yudao-module-ai/pom.xml)
+- [AiChatConversationService.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatConversationService.java)
+- [AiChatConversationServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatConversationServiceImpl.java)
+- [AiChatMessageService.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageService.java)
+- [AiChatMessageServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageServiceImpl.java)
+- [AiChatConversationController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/chat/AiChatConversationController.java)
+- [AiChatMessageController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/chat/AiChatMessageController.java)
+- [pom.xml](file://qiji-module-ai/pom.xml)
 </cite>
 
 ## 目录
@@ -27,7 +27,7 @@
 本文件面向“AI聊天服务”功能，围绕对话管理、消息处理、会话生命周期、角色与权限、性能优化以及RESTful接口进行全面技术说明。读者可据此理解系统如何创建对话、发送消息、查询历史、管理上下文与附件、整合知识库与联网搜索、以及如何通过流式接口提升交互体验。
 
 ## 项目结构
-AI聊天服务位于 yudao-module-ai 模块中，采用典型的分层架构：
+AI聊天服务位于 qiji-module-ai 模块中，采用典型的分层架构：
 - 控制器层：对外暴露 REST 接口，负责参数接收、鉴权与结果封装
 - 服务层：实现业务逻辑，包括对话与消息的增删改查、上下文构建、工具回调、知识库与联网搜索集成
 - 数据访问层：基于 MyBatis 的 Mapper 进行数据库操作
@@ -65,16 +65,16 @@ S2 --> V4
 ```
 
 图表来源
-- [AiChatConversationController.java:32-119](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatConversationController.java#L32-L119)
-- [AiChatMessageController.java:42-158](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatMessageController.java#L42-L158)
-- [AiChatConversationServiceImpl.java:34-174](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatConversationServiceImpl.java#L34-L174)
-- [AiChatMessageServiceImpl.java:74-571](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageServiceImpl.java#L74-L571)
+- [AiChatConversationController.java:32-119](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/chat/AiChatConversationController.java#L32-L119)
+- [AiChatMessageController.java:42-158](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/chat/AiChatMessageController.java#L42-L158)
+- [AiChatConversationServiceImpl.java:34-174](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatConversationServiceImpl.java#L34-L174)
+- [AiChatMessageServiceImpl.java:74-571](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageServiceImpl.java#L74-L571)
 
 章节来源
-- [AiChatConversationController.java:32-119](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatConversationController.java#L32-L119)
-- [AiChatMessageController.java:42-158](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatMessageController.java#L42-L158)
-- [AiChatConversationServiceImpl.java:34-174](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatConversationServiceImpl.java#L34-L174)
-- [AiChatMessageServiceImpl.java:74-571](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageServiceImpl.java#L74-L571)
+- [AiChatConversationController.java:32-119](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/chat/AiChatConversationController.java#L32-L119)
+- [AiChatMessageController.java:42-158](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/chat/AiChatMessageController.java#L42-L158)
+- [AiChatConversationServiceImpl.java:34-174](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatConversationServiceImpl.java#L34-L174)
+- [AiChatMessageServiceImpl.java:74-571](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageServiceImpl.java#L74-L571)
 
 ## 核心组件
 - 对话服务：负责创建、更新、查询、删除对话，支持置顶时间维护与默认模型校验
@@ -82,8 +82,8 @@ S2 --> V4
 - 控制器：提供 REST 接口，完成鉴权、参数校验与结果封装
 
 章节来源
-- [AiChatConversationService.java:12-91](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatConversationService.java#L12-L91)
-- [AiChatMessageService.java:15-88](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageService.java#L15-L88)
+- [AiChatConversationService.java:12-91](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatConversationService.java#L12-L91)
+- [AiChatMessageService.java:15-88](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageService.java#L15-L88)
 
 ## 架构总览
 系统通过控制器接收请求，调用服务层完成业务处理，服务层再与模型、向量存储、Web 搜索、MCP 工具等外部能力协作，最终持久化到数据库。
@@ -117,9 +117,9 @@ Ctrl-->>Client : 结果
 ```
 
 图表来源
-- [AiChatMessageController.java:59-69](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatMessageController.java#L59-L69)
-- [AiChatMessageServiceImpl.java:140-303](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageServiceImpl.java#L140-L303)
-- [AiChatConversationServiceImpl.java:54-109](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatConversationServiceImpl.java#L54-L109)
+- [AiChatMessageController.java:59-69](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/chat/AiChatMessageController.java#L59-L69)
+- [AiChatMessageServiceImpl.java:140-303](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageServiceImpl.java#L140-L303)
+- [AiChatConversationServiceImpl.java:54-109](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatConversationServiceImpl.java#L54-L109)
 
 ## 详细组件分析
 
@@ -163,12 +163,12 @@ AiChatConversationService <|.. AiChatConversationServiceImpl
 ```
 
 图表来源
-- [AiChatConversationService.java:12-91](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatConversationService.java#L12-L91)
-- [AiChatConversationServiceImpl.java:34-174](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatConversationServiceImpl.java#L34-L174)
+- [AiChatConversationService.java:12-91](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatConversationService.java#L12-L91)
+- [AiChatConversationServiceImpl.java:34-174](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatConversationServiceImpl.java#L34-L174)
 
 章节来源
-- [AiChatConversationService.java:12-91](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatConversationService.java#L12-L91)
-- [AiChatConversationServiceImpl.java:54-171](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatConversationServiceImpl.java#L54-L171)
+- [AiChatConversationService.java:12-91](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatConversationService.java#L12-L91)
+- [AiChatConversationServiceImpl.java:54-171](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatConversationServiceImpl.java#L54-L171)
 
 ### 消息处理组件
 - 功能要点
@@ -194,11 +194,11 @@ UpdateMsg --> Return(["返回结果"])
 ```
 
 图表来源
-- [AiChatMessageServiceImpl.java:140-194](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageServiceImpl.java#L140-L194)
+- [AiChatMessageServiceImpl.java:140-194](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageServiceImpl.java#L140-L194)
 
 章节来源
-- [AiChatMessageService.java:15-88](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageService.java#L15-L88)
-- [AiChatMessageServiceImpl.java:140-571](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageServiceImpl.java#L140-L571)
+- [AiChatMessageService.java:15-88](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageService.java#L15-L88)
+- [AiChatMessageServiceImpl.java:140-571](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageServiceImpl.java#L140-L571)
 
 ### 角色与权限管理
 - 角色维度
@@ -210,14 +210,14 @@ UpdateMsg --> Return(["返回结果"])
   - 管理员接口需要相应权限
 
 章节来源
-- [AiChatMessageServiceImpl.java:305-323](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageServiceImpl.java#L305-L323)
-- [AiChatMessageServiceImpl.java:390-425](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageServiceImpl.java#L390-L425)
-- [AiChatConversationController.java:91-116](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatConversationController.java#L91-L116)
-- [AiChatMessageController.java:130-155](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatMessageController.java#L130-L155)
+- [AiChatMessageServiceImpl.java:305-323](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageServiceImpl.java#L305-L323)
+- [AiChatMessageServiceImpl.java:390-425](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageServiceImpl.java#L390-L425)
+- [AiChatConversationController.java:91-116](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/chat/AiChatConversationController.java#L91-L116)
+- [AiChatMessageController.java:130-155](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/chat/AiChatMessageController.java#L130-L155)
 
 ## 依赖关系分析
 - 模块依赖
-  - yudao-module-ai 依赖 yudao-module-system 与 yudao-module-infra 提供安全、多租户、作业、Redis、MyBatis 等基础能力
+  - qiji-module-ai 依赖 qiji-module-system 与 qiji-module-infra 提供安全、多租户、作业、Redis、MyBatis 等基础能力
   - Spring AI Starter 集成多种平台模型（OpenAI、Azure、Anthropic、DeepSeek、Ollama、Stability AI、Zhipu、Minimax）
   - 向量存储支持 Qdrant、Redis、Milvus
   - MCP 支持服务端与客户端，用于工具扩展
@@ -227,8 +227,8 @@ UpdateMsg --> Return(["返回结果"])
 
 ```mermaid
 graph LR
-POM["yudao-module-ai/pom.xml"] --> SYS["yudao-module-system"]
-POM --> INFRA["yudao-module-infra"]
+POM["qiji-module-ai/pom.xml"] --> SYS["qiji-module-system"]
+POM --> INFRA["qiji-module-infra"]
 POM --> SPRING_AI["Spring AI Models"]
 POM --> VEC["Vector Store(Qdrant/Redis/Milvus)"]
 POM --> MCP["MCP(Server/Client)"]
@@ -241,10 +241,10 @@ SVC2 --> EXT2["MCP Clients(可选)"]
 ```
 
 图表来源
-- [pom.xml:28-261](file://yudao-module-ai/pom.xml#L28-L261)
+- [pom.xml:28-261](file://qiji-module-ai/pom.xml#L28-L261)
 
 章节来源
-- [pom.xml:28-261](file://yudao-module-ai/pom.xml#L28-L261)
+- [pom.xml:28-261](file://qiji-module-ai/pom.xml#L28-L261)
 
 ## 性能考虑
 - 消息缓存与上下文裁剪
@@ -259,9 +259,9 @@ SVC2 --> EXT2["MCP Clients(可选)"]
   - Web 搜索与 MCP 客户端按配置可关闭，避免不必要的调用开销
 
 章节来源
-- [AiChatMessageServiceImpl.java:437-465](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageServiceImpl.java#L437-L465)
-- [AiChatMessageServiceImpl.java:196-303](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageServiceImpl.java#L196-L303)
-- [AiChatMessageServiceImpl.java:467-501](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageServiceImpl.java#L467-L501)
+- [AiChatMessageServiceImpl.java:437-465](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageServiceImpl.java#L437-L465)
+- [AiChatMessageServiceImpl.java:196-303](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageServiceImpl.java#L196-L303)
+- [AiChatMessageServiceImpl.java:467-501](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageServiceImpl.java#L467-L501)
 
 ## 故障排查指南
 - 对话不存在或越权
@@ -278,9 +278,9 @@ SVC2 --> EXT2["MCP Clients(可选)"]
   - 排查：确认角色是否配置知识库ID、Web 搜索开关是否开启
 
 章节来源
-- [AiChatConversationServiceImpl.java:143-149](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatConversationServiceImpl.java#L143-L149)
-- [AiChatMessageServiceImpl.java:271-302](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageServiceImpl.java#L271-L302)
-- [AiChatMessageServiceImpl.java:305-323](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/chat/AiChatMessageServiceImpl.java#L305-L323)
+- [AiChatConversationServiceImpl.java:143-149](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatConversationServiceImpl.java#L143-L149)
+- [AiChatMessageServiceImpl.java:271-302](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageServiceImpl.java#L271-L302)
+- [AiChatMessageServiceImpl.java:305-323](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/chat/AiChatMessageServiceImpl.java#L305-L323)
 
 ## 结论
 AI聊天服务通过清晰的分层设计与可插拔的外部能力，实现了从对话创建、消息发送、历史查询到上下文与附件管理的完整闭环。结合流式响应、上下文裁剪与可选工具/搜索能力，系统在易用性与性能上取得良好平衡。建议在生产环境中合理配置模型参数、上下文长度与可选能力开关，以获得更优的用户体验与资源利用率。
@@ -344,5 +344,5 @@ AI聊天服务通过清晰的分层设计与可插拔的外部能力，实现了
     - 返回：消息分页（含角色名）
 
 章节来源
-- [AiChatConversationController.java:43-116](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatConversationController.java#L43-L116)
-- [AiChatMessageController.java:59-155](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/chat/AiChatMessageController.java#L59-L155)
+- [AiChatConversationController.java:43-116](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/chat/AiChatConversationController.java#L43-L116)
+- [AiChatMessageController.java:59-155](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/chat/AiChatMessageController.java#L59-L155)

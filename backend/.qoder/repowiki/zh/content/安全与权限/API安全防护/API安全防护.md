@@ -2,20 +2,20 @@
 
 <cite>
 **本文引用的文件**
-- [TokenAuthenticationFilter.java](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/filter/TokenAuthenticationFilter.java)
-- [YudaoWebSecurityConfigurerAdapter.java](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java)
-- [YudaoSecurityAutoConfiguration.java](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoSecurityAutoConfiguration.java)
-- [AccessDeniedHandlerImpl.java](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/handler/AccessDeniedHandlerImpl.java)
-- [AuthenticationEntryPointImpl.java](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/handler/AuthenticationEntryPointImpl.java)
-- [ApiSignatureAspect.java](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/aop/ApiSignatureAspect.java)
-- [ApiSignature.java](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/annotation/ApiSignature.java)
-- [ApiSignatureRedisDAO.java](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/redis/ApiSignatureRedisDAO.java)
-- [YudaoApiSignatureAutoConfiguration.java](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/config/YudaoApiSignatureAutoConfiguration.java)
-- [RateLimiterRedisDAO.java](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java)
-- [RateLimiter.java](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/core/annotation/RateLimiter.java)
-- [YudaoRateLimiterConfiguration.java](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/config/YudaoRateLimiterConfiguration.java)
-- [SecurityConfiguration.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/security/config/SecurityConfiguration.java)
-- [ApiAccessLogFilter.java](file://yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/apilog/core/filter/ApiAccessLogFilter.java)
+- [TokenAuthenticationFilter.java](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/filter/TokenAuthenticationFilter.java)
+- [QijiWebSecurityConfigurerAdapter.java](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/config/QijiWebSecurityConfigurerAdapter.java)
+- [QijiSecurityAutoConfiguration.java](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/config/QijiSecurityAutoConfiguration.java)
+- [AccessDeniedHandlerImpl.java](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/handler/AccessDeniedHandlerImpl.java)
+- [AuthenticationEntryPointImpl.java](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/handler/AuthenticationEntryPointImpl.java)
+- [ApiSignatureAspect.java](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/aop/ApiSignatureAspect.java)
+- [ApiSignature.java](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/annotation/ApiSignature.java)
+- [ApiSignatureRedisDAO.java](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/redis/ApiSignatureRedisDAO.java)
+- [QijiApiSignatureAutoConfiguration.java](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/config/QijiApiSignatureAutoConfiguration.java)
+- [RateLimiterRedisDAO.java](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java)
+- [RateLimiter.java](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/core/annotation/RateLimiter.java)
+- [QijiRateLimiterConfiguration.java](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/config/QijiRateLimiterConfiguration.java)
+- [SecurityConfiguration.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/security/config/SecurityConfiguration.java)
+- [ApiAccessLogFilter.java](file://qiji-framework/qiji-spring-boot-starter-web/src/main/java/com.qiji.cps/framework/apilog/core/filter/ApiAccessLogFilter.java)
 </cite>
 
 ## 目录
@@ -51,8 +51,8 @@
 ```mermaid
 graph TB
 subgraph "安全框架"
-SEC_AUTO["YudaoSecurityAutoConfiguration<br/>自动装配与Bean注册"]
-SEC_ADAPTER["YudaoWebSecurityConfigurerAdapter<br/>安全过滤链与URL授权"]
+SEC_AUTO["QijiSecurityAutoConfiguration<br/>自动装配与Bean注册"]
+SEC_ADAPTER["QijiWebSecurityConfigurerAdapter<br/>安全过滤链与URL授权"]
 TOK_FIL["TokenAuthenticationFilter<br/>统一Token拦截"]
 AUTH_EP["AuthenticationEntryPointImpl<br/>未认证处理"]
 DENY_HDL["AccessDeniedHandlerImpl<br/>权限不足处理"]
@@ -61,11 +61,11 @@ subgraph "签名防护"
 SIG_ANN["ApiSignature<br/>签名注解"]
 SIG_AOP["ApiSignatureAspect<br/>签名AOP校验"]
 SIG_REDIS["ApiSignatureRedisDAO<br/>签名Redis存储"]
-SIG_AUTO["YudaoApiSignatureAutoConfiguration<br/>签名自动装配"]
+SIG_AUTO["QijiApiSignatureAutoConfiguration<br/>签名自动装配"]
 end
 subgraph "限流防护"
 RL_ANN["RateLimiter<br/>限流注解"]
-RL_CFG["YudaoRateLimiterConfiguration<br/>限流Key解析器"]
+RL_CFG["QijiRateLimiterConfiguration<br/>限流Key解析器"]
 RL_REDIS["RateLimiterRedisDAO<br/>限流Redis存储"]
 end
 subgraph "扩展配置"
@@ -88,33 +88,33 @@ SIG_AOP --> ACCESS_LOG
 ```
 
 **图表来源**
-- [YudaoSecurityAutoConfiguration.java:32-95](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoSecurityAutoConfiguration.java#L32-L95)
-- [YudaoWebSecurityConfigurerAdapter.java:46-222](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L46-L222)
-- [TokenAuthenticationFilter.java:1-120](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/filter/TokenAuthenticationFilter.java#L1-L120)
-- [AuthenticationEntryPointImpl.java:1-35](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/handler/AuthenticationEntryPointImpl.java#L1-L35)
-- [AccessDeniedHandlerImpl.java:1-41](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/handler/AccessDeniedHandlerImpl.java#L1-L41)
-- [YudaoApiSignatureAutoConfiguration.java:1-29](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/config/YudaoApiSignatureAutoConfiguration.java#L1-L29)
-- [ApiSignatureAspect.java:1-174](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/aop/ApiSignatureAspect.java#L1-L174)
-- [ApiSignatureRedisDAO.java:1-58](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/redis/ApiSignatureRedisDAO.java#L1-L58)
-- [YudaoRateLimiterConfiguration.java:31-55](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/config/YudaoRateLimiterConfiguration.java#L31-L55)
-- [RateLimiterRedisDAO.java:43-66](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
-- [SecurityConfiguration.java:1-42](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/security/config/SecurityConfiguration.java#L1-L42)
-- [ApiAccessLogFilter.java:1-120](file://yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/apilog/core/filter/ApiAccessLogFilter.java#L1-L120)
+- [QijiSecurityAutoConfiguration.java:32-95](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/config/QijiSecurityAutoConfiguration.java#L32-L95)
+- [QijiWebSecurityConfigurerAdapter.java:46-222](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/config/QijiWebSecurityConfigurerAdapter.java#L46-L222)
+- [TokenAuthenticationFilter.java:1-120](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/filter/TokenAuthenticationFilter.java#L1-L120)
+- [AuthenticationEntryPointImpl.java:1-35](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/handler/AuthenticationEntryPointImpl.java#L1-L35)
+- [AccessDeniedHandlerImpl.java:1-41](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/handler/AccessDeniedHandlerImpl.java#L1-L41)
+- [QijiApiSignatureAutoConfiguration.java:1-29](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/config/QijiApiSignatureAutoConfiguration.java#L1-L29)
+- [ApiSignatureAspect.java:1-174](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/aop/ApiSignatureAspect.java#L1-L174)
+- [ApiSignatureRedisDAO.java:1-58](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/redis/ApiSignatureRedisDAO.java#L1-L58)
+- [QijiRateLimiterConfiguration.java:31-55](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/config/QijiRateLimiterConfiguration.java#L31-L55)
+- [RateLimiterRedisDAO.java:43-66](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
+- [SecurityConfiguration.java:1-42](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/security/config/SecurityConfiguration.java#L1-L42)
+- [ApiAccessLogFilter.java:1-120](file://qiji-framework/qiji-spring-boot-starter-web/src/main/java/com.qiji.cps/framework/apilog/core/filter/ApiAccessLogFilter.java#L1-L120)
 
 **章节来源**
-- [YudaoSecurityAutoConfiguration.java:32-95](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoSecurityAutoConfiguration.java#L32-L95)
-- [YudaoWebSecurityConfigurerAdapter.java:46-222](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L46-L222)
-- [TokenAuthenticationFilter.java:1-120](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/filter/TokenAuthenticationFilter.java#L1-L120)
-- [ApiSignatureAspect.java:1-174](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/aop/ApiSignatureAspect.java#L1-L174)
-- [ApiSignatureRedisDAO.java:1-58](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/redis/ApiSignatureRedisDAO.java#L1-L58)
-- [RateLimiterRedisDAO.java:43-66](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
-- [YudaoRateLimiterConfiguration.java:31-55](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/config/YudaoRateLimiterConfiguration.java#L31-L55)
-- [SecurityConfiguration.java:1-42](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/security/config/SecurityConfiguration.java#L1-L42)
-- [ApiAccessLogFilter.java:1-120](file://yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/apilog/core/filter/ApiAccessLogFilter.java#L1-L120)
+- [QijiSecurityAutoConfiguration.java:32-95](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/config/QijiSecurityAutoConfiguration.java#L32-L95)
+- [QijiWebSecurityConfigurerAdapter.java:46-222](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/config/QijiWebSecurityConfigurerAdapter.java#L46-L222)
+- [TokenAuthenticationFilter.java:1-120](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/filter/TokenAuthenticationFilter.java#L1-L120)
+- [ApiSignatureAspect.java:1-174](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/aop/ApiSignatureAspect.java#L1-L174)
+- [ApiSignatureRedisDAO.java:1-58](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/redis/ApiSignatureRedisDAO.java#L1-L58)
+- [RateLimiterRedisDAO.java:43-66](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
+- [QijiRateLimiterConfiguration.java:31-55](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/config/QijiRateLimiterConfiguration.java#L31-L55)
+- [SecurityConfiguration.java:1-42](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/security/config/SecurityConfiguration.java#L1-L42)
+- [ApiAccessLogFilter.java:1-120](file://qiji-framework/qiji-spring-boot-starter-web/src/main/java/com.qiji.cps/framework/apilog/core/filter/ApiAccessLogFilter.java#L1-L120)
 
 ## 核心组件
 - TokenAuthenticationFilter：统一拦截API请求，提取并校验Token，构建登录用户上下文
-- YudaoWebSecurityConfigurerAdapter：配置过滤链、URL授权规则、异常处理、CORS/CSRF/Session策略
+- QijiWebSecurityConfigurerAdapter：配置过滤链、URL授权规则、异常处理、CORS/CSRF/Session策略
 - AccessDeniedHandlerImpl：权限不足返回403
 - AuthenticationEntryPointImpl：未认证返回401
 - ApiSignatureAspect：基于注解的签名验证，含时间戳校验与防重放
@@ -122,13 +122,13 @@ SIG_AOP --> ACCESS_LOG
 - ApiAccessLogFilter：记录API访问日志，脱敏敏感字段
 
 **章节来源**
-- [TokenAuthenticationFilter.java:1-120](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/filter/TokenAuthenticationFilter.java#L1-L120)
-- [YudaoWebSecurityConfigurerAdapter.java:92-153](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L92-L153)
-- [AccessDeniedHandlerImpl.java:1-41](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/handler/AccessDeniedHandlerImpl.java#L1-L41)
-- [AuthenticationEntryPointImpl.java:1-35](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/handler/AuthenticationEntryPointImpl.java#L1-L35)
-- [ApiSignatureAspect.java:1-174](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/aop/ApiSignatureAspect.java#L1-L174)
-- [RateLimiter.java:34-62](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/core/annotation/RateLimiter.java#L34-L62)
-- [ApiAccessLogFilter.java:1-120](file://yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/apilog/core/filter/ApiAccessLogFilter.java#L1-L120)
+- [TokenAuthenticationFilter.java:1-120](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/filter/TokenAuthenticationFilter.java#L1-L120)
+- [QijiWebSecurityConfigurerAdapter.java:92-153](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/config/QijiWebSecurityConfigurerAdapter.java#L92-L153)
+- [AccessDeniedHandlerImpl.java:1-41](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/handler/AccessDeniedHandlerImpl.java#L1-L41)
+- [AuthenticationEntryPointImpl.java:1-35](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/handler/AuthenticationEntryPointImpl.java#L1-L35)
+- [ApiSignatureAspect.java:1-174](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/aop/ApiSignatureAspect.java#L1-L174)
+- [RateLimiter.java:34-62](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/core/annotation/RateLimiter.java#L34-L62)
+- [ApiAccessLogFilter.java:1-120](file://qiji-framework/qiji-spring-boot-starter-web/src/main/java/com.qiji.cps/framework/apilog/core/filter/ApiAccessLogFilter.java#L1-L120)
 
 ## 架构总览
 下图展示API请求从进入网关到业务处理的完整安全链路，包括认证、鉴权、签名、限流与日志。
@@ -136,7 +136,7 @@ SIG_AOP --> ACCESS_LOG
 ```mermaid
 sequenceDiagram
 participant C as "客户端"
-participant SEC as "YudaoWebSecurityConfigurerAdapter"
+participant SEC as "QijiWebSecurityConfigurerAdapter"
 participant TOK as "TokenAuthenticationFilter"
 participant OA as "OAuth2TokenCommonApi"
 participant AOP as "ApiSignatureAspect"
@@ -157,11 +157,11 @@ SEC->>LOG : "记录访问日志"
 ```
 
 **图表来源**
-- [YudaoWebSecurityConfigurerAdapter.java:110-153](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L110-L153)
-- [TokenAuthenticationFilter.java:40-93](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/filter/TokenAuthenticationFilter.java#L40-L93)
-- [ApiSignatureAspect.java:40-80](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/aop/ApiSignatureAspect.java#L40-L80)
-- [RateLimiterRedisDAO.java:43-66](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
-- [ApiAccessLogFilter.java:50-62](file://yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/apilog/core/filter/ApiAccessLogFilter.java#L50-L62)
+- [QijiWebSecurityConfigurerAdapter.java:110-153](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/config/QijiWebSecurityConfigurerAdapter.java#L110-L153)
+- [TokenAuthenticationFilter.java:40-93](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/filter/TokenAuthenticationFilter.java#L40-L93)
+- [ApiSignatureAspect.java:40-80](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/aop/ApiSignatureAspect.java#L40-L80)
+- [RateLimiterRedisDAO.java:43-66](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
+- [ApiAccessLogFilter.java:50-62](file://qiji-framework/qiji-spring-boot-starter-web/src/main/java/com.qiji.cps/framework/apilog/core/filter/ApiAccessLogFilter.java#L50-L62)
 
 ## 详细组件分析
 
@@ -192,18 +192,18 @@ Next --> End
 ```
 
 **图表来源**
-- [TokenAuthenticationFilter.java:40-93](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/filter/TokenAuthenticationFilter.java#L40-L93)
+- [TokenAuthenticationFilter.java:40-93](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/filter/TokenAuthenticationFilter.java#L40-L93)
 
 **章节来源**
-- [TokenAuthenticationFilter.java:1-120](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/filter/TokenAuthenticationFilter.java#L1-L120)
-- [YudaoWebSecurityConfigurerAdapter.java:150-151](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L150-L151)
+- [TokenAuthenticationFilter.java:1-120](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/filter/TokenAuthenticationFilter.java#L1-L120)
+- [QijiWebSecurityConfigurerAdapter.java:150-151](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/config/QijiWebSecurityConfigurerAdapter.java#L150-L151)
 
 ### AccessDeniedHandlerImpl：权限不足处理
 - 当已认证但无权限访问资源时触发
 - 返回统一错误码与JSON响应，便于前端处理
 
 **章节来源**
-- [AccessDeniedHandlerImpl.java:1-41](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/handler/AccessDeniedHandlerImpl.java#L1-L41)
+- [AccessDeniedHandlerImpl.java:1-41](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/handler/AccessDeniedHandlerImpl.java#L1-L41)
 
 ### API签名验证机制
 - 注解与AOP：
@@ -235,14 +235,14 @@ Used --> |否| OK["校验通过"]
 ```
 
 **图表来源**
-- [ApiSignatureAspect.java:54-80](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/aop/ApiSignatureAspect.java#L54-L80)
-- [ApiSignatureRedisDAO.java:18-57](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/redis/ApiSignatureRedisDAO.java#L18-L57)
+- [ApiSignatureAspect.java:54-80](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/aop/ApiSignatureAspect.java#L54-L80)
+- [ApiSignatureRedisDAO.java:18-57](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/redis/ApiSignatureRedisDAO.java#L18-L57)
 
 **章节来源**
-- [ApiSignature.java:1-59](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/annotation/ApiSignature.java#L1-L59)
-- [ApiSignatureAspect.java:1-174](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/aop/ApiSignatureAspect.java#L1-L174)
-- [ApiSignatureRedisDAO.java:1-58](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/redis/ApiSignatureRedisDAO.java#L1-L58)
-- [YudaoApiSignatureAutoConfiguration.java:1-29](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/config/YudaoApiSignatureAutoConfiguration.java#L1-L29)
+- [ApiSignature.java:1-59](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/annotation/ApiSignature.java#L1-L59)
+- [ApiSignatureAspect.java:1-174](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/aop/ApiSignatureAspect.java#L1-L174)
+- [ApiSignatureRedisDAO.java:1-58](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/redis/ApiSignatureRedisDAO.java#L1-L58)
+- [QijiApiSignatureAutoConfiguration.java:1-29](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/config/QijiApiSignatureAutoConfiguration.java#L1-L29)
 
 ### 请求频率限制
 - 注解驱动：RateLimiter声明限流次数、Key解析器与提示信息
@@ -259,7 +259,7 @@ class RateLimiter {
 +keyResolver : Class
 +keyArg : String
 }
-class YudaoRateLimiterConfiguration {
+class QijiRateLimiterConfiguration {
 +defaultRateLimiterKeyResolver()
 +userRateLimiterKeyResolver()
 +clientIpRateLimiterKeyResolver()
@@ -270,19 +270,19 @@ class RateLimiterRedisDAO {
 +getRateLimiter(key)
 +tryAcquire(timeout)
 }
-RateLimiter <.. YudaoRateLimiterConfiguration : "使用Key解析器"
-YudaoRateLimiterConfiguration --> RateLimiterRedisDAO : "装配"
+RateLimiter <.. QijiRateLimiterConfiguration : "使用Key解析器"
+QijiRateLimiterConfiguration --> RateLimiterRedisDAO : "装配"
 ```
 
 **图表来源**
-- [RateLimiter.java:34-62](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/core/annotation/RateLimiter.java#L34-L62)
-- [YudaoRateLimiterConfiguration.java:31-55](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/config/YudaoRateLimiterConfiguration.java#L31-L55)
-- [RateLimiterRedisDAO.java:43-66](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
+- [RateLimiter.java:34-62](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/core/annotation/RateLimiter.java#L34-L62)
+- [QijiRateLimiterConfiguration.java:31-55](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/config/QijiRateLimiterConfiguration.java#L31-L55)
+- [RateLimiterRedisDAO.java:43-66](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
 
 **章节来源**
-- [RateLimiter.java:34-62](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/core/annotation/RateLimiter.java#L34-L62)
-- [YudaoRateLimiterConfiguration.java:31-55](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/config/YudaoRateLimiterConfiguration.java#L31-L55)
-- [RateLimiterRedisDAO.java:43-66](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
+- [RateLimiter.java:34-62](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/core/annotation/RateLimiter.java#L34-L62)
+- [QijiRateLimiterConfiguration.java:31-55](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/config/QijiRateLimiterConfiguration.java#L31-L55)
+- [RateLimiterRedisDAO.java:43-66](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
 
 ### IP白名单与黑名单
 - 通过Spring Security的hasIpAddress规则实现
@@ -290,7 +290,7 @@ YudaoRateLimiterConfiguration --> RateLimiterRedisDAO : "装配"
 - 建议结合网关或反向代理层做入口级黑白名单
 
 **章节来源**
-- [YudaoWebSecurityConfigurerAdapter.java:103-104](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L103-L104)
+- [QijiWebSecurityConfigurerAdapter.java:103-104](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/config/QijiWebSecurityConfigurerAdapter.java#L103-L104)
 
 ### 安全配置最佳实践
 - HTTPS强制：生产环境必须启用TLS，禁止明文传输
@@ -300,7 +300,7 @@ YudaoRateLimiterConfiguration --> RateLimiterRedisDAO : "装配"
 - 安全响应头：建议设置X-Content-Type-Options、X-Frame-Options、Strict-Transport-Security等（可在网关/反向代理层统一注入）
 
 **章节来源**
-- [YudaoWebSecurityConfigurerAdapter.java:113-119](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L113-L119)
+- [QijiWebSecurityConfigurerAdapter.java:113-119](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/config/QijiWebSecurityConfigurerAdapter.java#L113-L119)
 
 ### 安全监控与异常处理
 - 统一异常处理：Token过滤器捕获异常并返回JSON
@@ -308,8 +308,8 @@ YudaoRateLimiterConfiguration --> RateLimiterRedisDAO : "装配"
 - 建议：接入链路追踪与审计日志，对401/403高频事件进行告警
 
 **章节来源**
-- [TokenAuthenticationFilter.java:60-64](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/filter/TokenAuthenticationFilter.java#L60-L64)
-- [ApiAccessLogFilter.java:50-62](file://yudao-framework/yudao-spring-boot-starter-web/src/main/java/cn/iocoder/yudao/framework/apilog/core/filter/ApiAccessLogFilter.java#L50-L62)
+- [TokenAuthenticationFilter.java:60-64](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/filter/TokenAuthenticationFilter.java#L60-L64)
+- [ApiAccessLogFilter.java:50-62](file://qiji-framework/qiji-spring-boot-starter-web/src/main/java/com.qiji.cps/framework/apilog/core/filter/ApiAccessLogFilter.java#L50-L62)
 
 ## 依赖分析
 - 安全框架依赖：
@@ -323,28 +323,28 @@ YudaoRateLimiterConfiguration --> RateLimiterRedisDAO : "装配"
 ```mermaid
 graph LR
 TOK["TokenAuthenticationFilter"] --> OA["OAuth2TokenCommonApi"]
-ADAPTER["YudaoWebSecurityConfigurerAdapter"] --> TOK
+ADAPTER["QijiWebSecurityConfigurerAdapter"] --> TOK
 ADAPTER --> AUTH["AuthenticationEntryPointImpl"]
 ADAPTER --> DENY["AccessDeniedHandlerImpl"]
 SIG_AOP["ApiSignatureAspect"] --> SIG_REDIS["ApiSignatureRedisDAO"]
-RL_CFG["YudaoRateLimiterConfiguration"] --> RL_REDIS["RateLimiterRedisDAO"]
+RL_CFG["QijiRateLimiterConfiguration"] --> RL_REDIS["RateLimiterRedisDAO"]
 ```
 
 **图表来源**
-- [TokenAuthenticationFilter.java:34-38](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/filter/TokenAuthenticationFilter.java#L34-L38)
-- [YudaoWebSecurityConfigurerAdapter.java:56-70](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L56-L70)
-- [ApiSignatureAspect.java:38-38](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/aop/ApiSignatureAspect.java#L38-L38)
-- [ApiSignatureRedisDAO.java:13-16](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/redis/ApiSignatureRedisDAO.java#L13-L16)
-- [YudaoRateLimiterConfiguration.java:31-55](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/config/YudaoRateLimiterConfiguration.java#L31-L55)
-- [RateLimiterRedisDAO.java:43-66](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
+- [TokenAuthenticationFilter.java:34-38](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/filter/TokenAuthenticationFilter.java#L34-L38)
+- [QijiWebSecurityConfigurerAdapter.java:56-70](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/config/QijiWebSecurityConfigurerAdapter.java#L56-L70)
+- [ApiSignatureAspect.java:38-38](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/aop/ApiSignatureAspect.java#L38-L38)
+- [ApiSignatureRedisDAO.java:13-16](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/redis/ApiSignatureRedisDAO.java#L13-L16)
+- [QijiRateLimiterConfiguration.java:31-55](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/config/QijiRateLimiterConfiguration.java#L31-L55)
+- [RateLimiterRedisDAO.java:43-66](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
 
 **章节来源**
-- [TokenAuthenticationFilter.java:1-120](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/filter/TokenAuthenticationFilter.java#L1-L120)
-- [YudaoWebSecurityConfigurerAdapter.java:46-222](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/config/YudaoWebSecurityConfigurerAdapter.java#L46-L222)
-- [ApiSignatureAspect.java:1-174](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/aop/ApiSignatureAspect.java#L1-L174)
-- [ApiSignatureRedisDAO.java:1-58](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/redis/ApiSignatureRedisDAO.java#L1-L58)
-- [YudaoRateLimiterConfiguration.java:31-55](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/config/YudaoRateLimiterConfiguration.java#L31-L55)
-- [RateLimiterRedisDAO.java:43-66](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
+- [TokenAuthenticationFilter.java:1-120](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/filter/TokenAuthenticationFilter.java#L1-L120)
+- [QijiWebSecurityConfigurerAdapter.java:46-222](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/config/QijiWebSecurityConfigurerAdapter.java#L46-L222)
+- [ApiSignatureAspect.java:1-174](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/aop/ApiSignatureAspect.java#L1-L174)
+- [ApiSignatureRedisDAO.java:1-58](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/redis/ApiSignatureRedisDAO.java#L1-L58)
+- [QijiRateLimiterConfiguration.java:31-55](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/config/QijiRateLimiterConfiguration.java#L31-L55)
+- [RateLimiterRedisDAO.java:43-66](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
 
 ## 性能考量
 - Token校验：建议在网关层或前置缓存层复用Token校验结果，减少重复调用
@@ -370,10 +370,10 @@ RL_CFG["YudaoRateLimiterConfiguration"] --> RL_REDIS["RateLimiterRedisDAO"]
   - 检查Redis连接与限流配置
 
 **章节来源**
-- [TokenAuthenticationFilter.java:60-64](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/filter/TokenAuthenticationFilter.java#L60-L64)
-- [AccessDeniedHandlerImpl.java:32-39](file://yudao-framework/yudao-spring-boot-starter-security/src/main/java/cn/iocoder/yudao/framework/security/core/handler/AccessDeniedHandlerImpl.java#L32-L39)
-- [ApiSignatureAspect.java:94-123](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/signature/core/aop/ApiSignatureAspect.java#L94-L123)
-- [RateLimiterRedisDAO.java:43-66](file://yudao-framework/yudao-spring-boot-starter-protection/src/main/java/cn/iocoder/yudao/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
+- [TokenAuthenticationFilter.java:60-64](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/filter/TokenAuthenticationFilter.java#L60-L64)
+- [AccessDeniedHandlerImpl.java:32-39](file://qiji-framework/qiji-spring-boot-starter-security/src/main/java/com.qiji.cps/framework/security/core/handler/AccessDeniedHandlerImpl.java#L32-L39)
+- [ApiSignatureAspect.java:94-123](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/signature/core/aop/ApiSignatureAspect.java#L94-L123)
+- [RateLimiterRedisDAO.java:43-66](file://qiji-framework/qiji-spring-boot-starter-protection/src/main/java/com.qiji.cps/framework/ratelimiter/core/redis/RateLimiterRedisDAO.java#L43-L66)
 
 ## 结论
 AgenticCPS通过“认证+鉴权+签名+限流+日志”的多层防护体系，实现了API接口的全链路安全。TokenAuthenticationFilter负责统一认证，AccessDeniedHandlerImpl与Web安全适配器共同完成权限控制；ApiSignatureAspect提供强健的签名与防重放能力；RateLimiter为高并发场景提供弹性限流；配合完善的日志与异常处理，形成闭环的安全运营能力。
@@ -388,4 +388,4 @@ AgenticCPS通过“认证+鉴权+签名+限流+日志”的多层防护体系，
   - 建立401/403与重复请求的监控告警
 
 **章节来源**
-- [SecurityConfiguration.java:25-40](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/security/config/SecurityConfiguration.java#L25-L40)
+- [SecurityConfiguration.java:25-40](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/security/config/SecurityConfiguration.java#L25-L40)

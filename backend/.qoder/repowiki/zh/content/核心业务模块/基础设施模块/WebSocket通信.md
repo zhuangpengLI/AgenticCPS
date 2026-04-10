@@ -2,19 +2,19 @@
 
 <cite>
 **本文引用的文件**
-- [WebSocketSessionManager.java](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionManager.java)
-- [WebSocketSessionManagerImpl.java](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionManagerImpl.java)
-- [WebSocketSessionHandlerDecorator.java](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionHandlerDecorator.java)
-- [YudaoWebSocketAutoConfiguration.java](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/config/YudaoWebSocketAutoConfiguration.java)
-- [JsonWebSocketMessageHandler.java](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/handler/JsonWebSocketMessageHandler.java)
-- [JsonWebSocketMessage.java](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/message/JsonWebSocketMessage.java)
-- [WebSocketMessageListener.java](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/listener/WebSocketMessageListener.java)
-- [WebSocketProperties.java](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/config/WebSocketProperties.java)
-- [LoginUserHandshakeInterceptor.java](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/security/LoginUserHandshakeInterceptor.java)
-- [WebSocketAuthorizeRequestsCustomizer.java](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/security/WebSocketAuthorizeRequestsCustomizer.java)
-- [AbstractWebSocketMessageSender.java](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/sender/AbstractWebSocketMessageSender.java)
-- [WebSocketFrameworkUtils.java](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/util/WebSocketFrameworkUtils.java)
-- [org.springframework.boot.autoconfigure.AutoConfiguration.imports](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports)
+- [WebSocketSessionManager.java](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionManager.java)
+- [WebSocketSessionManagerImpl.java](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionManagerImpl.java)
+- [WebSocketSessionHandlerDecorator.java](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionHandlerDecorator.java)
+- [QijiWebSocketAutoConfiguration.java](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/config/QijiWebSocketAutoConfiguration.java)
+- [JsonWebSocketMessageHandler.java](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/handler/JsonWebSocketMessageHandler.java)
+- [JsonWebSocketMessage.java](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/message/JsonWebSocketMessage.java)
+- [WebSocketMessageListener.java](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/listener/WebSocketMessageListener.java)
+- [WebSocketProperties.java](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/config/WebSocketProperties.java)
+- [LoginUserHandshakeInterceptor.java](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/security/LoginUserHandshakeInterceptor.java)
+- [WebSocketAuthorizeRequestsCustomizer.java](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/security/WebSocketAuthorizeRequestsCustomizer.java)
+- [AbstractWebSocketMessageSender.java](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/sender/AbstractWebSocketMessageSender.java)
+- [WebSocketFrameworkUtils.java](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/util/WebSocketFrameworkUtils.java)
+- [org.springframework.boot.autoconfigure.AutoConfiguration.imports](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports)
 </cite>
 
 ## 目录
@@ -33,7 +33,7 @@
 本技术文档围绕 WebSocket 实时通信能力进行系统化梳理，覆盖连接建立、消息传输、会话管理、消息监听与分发、安全控制、消息发送器（本地/多消息中间件）、以及配置项等内容。目标是帮助开发者快速理解并高效实现点对点、广播、群组等消息推送场景，并在多租户、并发、异常处理等方面具备工程化落地能力。
 
 ## 项目结构
-WebSocket 能力位于 yudao-spring-boot-starter-websocket 模块中，采用“自动装配 + 分层职责”的组织方式：
+WebSocket 能力位于 qiji-spring-boot-starter-websocket 模块中，采用“自动装配 + 分层职责”的组织方式：
 - 配置层：自动装配与属性配置
 - 会话层：连接生命周期管理与并发封装
 - 消息层：消息解析、监听与分发
@@ -44,7 +44,7 @@ WebSocket 能力位于 yudao-spring-boot-starter-websocket 模块中，采用“
 ```mermaid
 graph TB
 subgraph "配置层"
-A[YudaoWebSocketAutoConfiguration]
+A[QijiWebSocketAutoConfiguration]
 B[WebSocketProperties]
 end
 subgraph "会话层"
@@ -79,21 +79,21 @@ D --> L
 ```
 
 图表来源
-- [YudaoWebSocketAutoConfiguration.java:1-183](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/config/YudaoWebSocketAutoConfiguration.java#L1-L183)
-- [WebSocketSessionManager.java:1-53](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionManager.java#L1-L53)
-- [WebSocketSessionManagerImpl.java:1-126](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionManagerImpl.java#L1-L126)
-- [WebSocketSessionHandlerDecorator.java:1-50](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionHandlerDecorator.java#L1-L50)
-- [JsonWebSocketMessageHandler.java:1-84](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L1-L84)
-- [JsonWebSocketMessage.java:1-30](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/message/JsonWebSocketMessage.java#L1-L30)
-- [WebSocketMessageListener.java:1-32](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/listener/WebSocketMessageListener.java#L1-L32)
-- [LoginUserHandshakeInterceptor.java:1-43](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/security/LoginUserHandshakeInterceptor.java#L1-L43)
-- [WebSocketAuthorizeRequestsCustomizer.java:1-25](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/security/WebSocketAuthorizeRequestsCustomizer.java#L1-L25)
-- [AbstractWebSocketMessageSender.java:1-107](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L1-L107)
-- [WebSocketFrameworkUtils.java:1-68](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/util/WebSocketFrameworkUtils.java#L1-L68)
+- [QijiWebSocketAutoConfiguration.java:1-183](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/config/QijiWebSocketAutoConfiguration.java#L1-L183)
+- [WebSocketSessionManager.java:1-53](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionManager.java#L1-L53)
+- [WebSocketSessionManagerImpl.java:1-126](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionManagerImpl.java#L1-L126)
+- [WebSocketSessionHandlerDecorator.java:1-50](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionHandlerDecorator.java#L1-L50)
+- [JsonWebSocketMessageHandler.java:1-84](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L1-L84)
+- [JsonWebSocketMessage.java:1-30](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/message/JsonWebSocketMessage.java#L1-L30)
+- [WebSocketMessageListener.java:1-32](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/listener/WebSocketMessageListener.java#L1-L32)
+- [LoginUserHandshakeInterceptor.java:1-43](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/security/LoginUserHandshakeInterceptor.java#L1-L43)
+- [WebSocketAuthorizeRequestsCustomizer.java:1-25](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/security/WebSocketAuthorizeRequestsCustomizer.java#L1-L25)
+- [AbstractWebSocketMessageSender.java:1-107](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L1-L107)
+- [WebSocketFrameworkUtils.java:1-68](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/util/WebSocketFrameworkUtils.java#L1-L68)
 
 章节来源
-- [YudaoWebSocketAutoConfiguration.java:1-183](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/config/YudaoWebSocketAutoConfiguration.java#L1-L183)
-- [org.springframework.boot.autoconfigure.AutoConfiguration.imports:1-1](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports#L1-L1)
+- [QijiWebSocketAutoConfiguration.java:1-183](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/config/QijiWebSocketAutoConfiguration.java#L1-L183)
+- [org.springframework.boot.autoconfigure.AutoConfiguration.imports:1-1](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports#L1-L1)
 
 ## 核心组件
 - 会话管理器接口与实现：负责会话的注册、注销、按用户维度查询与租户隔离
@@ -106,16 +106,16 @@ D --> L
 - 工具类：会话属性中存取登录用户、获取用户与租户标识
 
 章节来源
-- [WebSocketSessionManager.java:1-53](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionManager.java#L1-L53)
-- [WebSocketSessionManagerImpl.java:1-126](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionManagerImpl.java#L1-L126)
-- [WebSocketSessionHandlerDecorator.java:1-50](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionHandlerDecorator.java#L1-L50)
-- [JsonWebSocketMessageHandler.java:1-84](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L1-L84)
-- [JsonWebSocketMessage.java:1-30](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/message/JsonWebSocketMessage.java#L1-L30)
-- [WebSocketMessageListener.java:1-32](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/listener/WebSocketMessageListener.java#L1-L32)
-- [LoginUserHandshakeInterceptor.java:1-43](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/security/LoginUserHandshakeInterceptor.java#L1-L43)
-- [WebSocketAuthorizeRequestsCustomizer.java:1-25](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/security/WebSocketAuthorizeRequestsCustomizer.java#L1-L25)
-- [AbstractWebSocketMessageSender.java:1-107](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L1-L107)
-- [WebSocketFrameworkUtils.java:1-68](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/util/WebSocketFrameworkUtils.java#L1-L68)
+- [WebSocketSessionManager.java:1-53](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionManager.java#L1-L53)
+- [WebSocketSessionManagerImpl.java:1-126](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionManagerImpl.java#L1-L126)
+- [WebSocketSessionHandlerDecorator.java:1-50](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionHandlerDecorator.java#L1-L50)
+- [JsonWebSocketMessageHandler.java:1-84](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L1-L84)
+- [JsonWebSocketMessage.java:1-30](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/message/JsonWebSocketMessage.java#L1-L30)
+- [WebSocketMessageListener.java:1-32](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/listener/WebSocketMessageListener.java#L1-L32)
+- [LoginUserHandshakeInterceptor.java:1-43](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/security/LoginUserHandshakeInterceptor.java#L1-L43)
+- [WebSocketAuthorizeRequestsCustomizer.java:1-25](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/security/WebSocketAuthorizeRequestsCustomizer.java#L1-L25)
+- [AbstractWebSocketMessageSender.java:1-107](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L1-L107)
+- [WebSocketFrameworkUtils.java:1-68](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/util/WebSocketFrameworkUtils.java#L1-L68)
 
 ## 架构总览
 WebSocket 在服务端的运行链路如下：
@@ -147,10 +147,10 @@ Handler-->>Client : "发送消息"
 ```
 
 图表来源
-- [YudaoWebSocketAutoConfiguration.java:49-78](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/config/YudaoWebSocketAutoConfiguration.java#L49-L78)
-- [WebSocketSessionHandlerDecorator.java:36-47](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionHandlerDecorator.java#L36-L47)
-- [JsonWebSocketMessageHandler.java:44-81](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L44-L81)
-- [AbstractWebSocketMessageSender.java:53-74](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L53-L74)
+- [QijiWebSocketAutoConfiguration.java:49-78](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/config/QijiWebSocketAutoConfiguration.java#L49-L78)
+- [WebSocketSessionHandlerDecorator.java:36-47](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionHandlerDecorator.java#L36-L47)
+- [JsonWebSocketMessageHandler.java:44-81](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L44-L81)
+- [AbstractWebSocketMessageSender.java:53-74](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L53-L74)
 
 ## 详细组件分析
 
@@ -188,14 +188,14 @@ WebSocketSessionHandlerDecorator --> WebSocketSessionManagerImpl : "使用"
 ```
 
 图表来源
-- [WebSocketSessionManager.java:12-53](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionManager.java#L12-L53)
-- [WebSocketSessionManagerImpl.java:22-126](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionManagerImpl.java#L22-L126)
-- [WebSocketSessionHandlerDecorator.java:17-47](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionHandlerDecorator.java#L17-L47)
+- [WebSocketSessionManager.java:12-53](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionManager.java#L12-L53)
+- [WebSocketSessionManagerImpl.java:22-126](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionManagerImpl.java#L22-L126)
+- [WebSocketSessionHandlerDecorator.java:17-47](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionHandlerDecorator.java#L17-L47)
 
 章节来源
-- [WebSocketSessionManager.java:12-53](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionManager.java#L12-L53)
-- [WebSocketSessionManagerImpl.java:41-123](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionManagerImpl.java#L41-L123)
-- [WebSocketSessionHandlerDecorator.java:36-47](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/session/WebSocketSessionHandlerDecorator.java#L36-L47)
+- [WebSocketSessionManager.java:12-53](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionManager.java#L12-L53)
+- [WebSocketSessionManagerImpl.java:41-123](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionManagerImpl.java#L41-L123)
+- [WebSocketSessionHandlerDecorator.java:36-47](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/session/WebSocketSessionHandlerDecorator.java#L36-L47)
 
 ### 消息解析与监听分发
 - JSON 帧结构：type 字段用于路由，content 为具体消息体
@@ -222,14 +222,14 @@ Invoke --> End(["结束"])
 ```
 
 图表来源
-- [JsonWebSocketMessageHandler.java:44-81](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L44-L81)
-- [JsonWebSocketMessage.java:14-29](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/message/JsonWebSocketMessage.java#L14-L29)
-- [WebSocketMessageListener.java:13-31](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/listener/WebSocketMessageListener.java#L13-L31)
+- [JsonWebSocketMessageHandler.java:44-81](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L44-L81)
+- [JsonWebSocketMessage.java:14-29](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/message/JsonWebSocketMessage.java#L14-L29)
+- [WebSocketMessageListener.java:13-31](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/listener/WebSocketMessageListener.java#L13-L31)
 
 章节来源
-- [JsonWebSocketMessageHandler.java:44-81](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L44-L81)
-- [JsonWebSocketMessage.java:14-29](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/message/JsonWebSocketMessage.java#L14-L29)
-- [WebSocketMessageListener.java:13-31](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/listener/WebSocketMessageListener.java#L13-L31)
+- [JsonWebSocketMessageHandler.java:44-81](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L44-L81)
+- [JsonWebSocketMessage.java:14-29](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/message/JsonWebSocketMessage.java#L14-L29)
+- [WebSocketMessageListener.java:13-31](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/listener/WebSocketMessageListener.java#L13-L31)
 
 ### 安全控制与权限
 - 握手拦截：从全局安全上下文中获取登录用户，注入到 WebSocket 会话属性
@@ -250,14 +250,14 @@ Interceptor-->>Client : "握手完成"
 ```
 
 图表来源
-- [LoginUserHandshakeInterceptor.java:26-34](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/security/LoginUserHandshakeInterceptor.java#L26-L34)
-- [WebSocketAuthorizeRequestsCustomizer.java:20-22](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/security/WebSocketAuthorizeRequestsCustomizer.java#L20-L22)
-- [WebSocketFrameworkUtils.java:23-34](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/util/WebSocketFrameworkUtils.java#L23-L34)
+- [LoginUserHandshakeInterceptor.java:26-34](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/security/LoginUserHandshakeInterceptor.java#L26-L34)
+- [WebSocketAuthorizeRequestsCustomizer.java:20-22](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/security/WebSocketAuthorizeRequestsCustomizer.java#L20-L22)
+- [WebSocketFrameworkUtils.java:23-34](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/util/WebSocketFrameworkUtils.java#L23-L34)
 
 章节来源
-- [LoginUserHandshakeInterceptor.java:26-34](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/security/LoginUserHandshakeInterceptor.java#L26-L34)
-- [WebSocketAuthorizeRequestsCustomizer.java:20-22](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/security/WebSocketAuthorizeRequestsCustomizer.java#L20-L22)
-- [WebSocketFrameworkUtils.java:23-34](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/util/WebSocketFrameworkUtils.java#L23-L34)
+- [LoginUserHandshakeInterceptor.java:26-34](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/security/LoginUserHandshakeInterceptor.java#L26-L34)
+- [WebSocketAuthorizeRequestsCustomizer.java:20-22](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/security/WebSocketAuthorizeRequestsCustomizer.java#L20-L22)
+- [WebSocketFrameworkUtils.java:23-34](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/util/WebSocketFrameworkUtils.java#L23-L34)
 
 ### 消息发送器与推送模式
 - 统一抽象：支持按会话 ID、用户类型、用户 ID 三种维度推送
@@ -285,10 +285,10 @@ ForEach --> Done(["结束"])
 ```
 
 图表来源
-- [AbstractWebSocketMessageSender.java:53-104](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L53-L104)
+- [AbstractWebSocketMessageSender.java:53-104](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L53-L104)
 
 章节来源
-- [AbstractWebSocketMessageSender.java:53-104](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L53-L104)
+- [AbstractWebSocketMessageSender.java:53-104](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L53-L104)
 
 ### 自动装配与配置
 - 自动装配：注册 WebSocket 路径、握手拦截器、消息处理器、会话管理器、发送器 Bean
@@ -296,8 +296,8 @@ ForEach --> Done(["结束"])
 - 多发送器条件装配：根据 senderType 选择本地或消息中间件发送器
 
 章节来源
-- [YudaoWebSocketAutoConfiguration.java:49-183](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/config/YudaoWebSocketAutoConfiguration.java#L49-L183)
-- [WebSocketProperties.java:18-34](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/config/WebSocketProperties.java#L18-L34)
+- [QijiWebSocketAutoConfiguration.java:49-183](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/config/QijiWebSocketAutoConfiguration.java#L49-L183)
+- [WebSocketProperties.java:18-34](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/config/WebSocketProperties.java#L18-L34)
 
 ## 依赖分析
 - 组件内聚与耦合
@@ -310,7 +310,7 @@ ForEach --> Done(["结束"])
 
 ```mermaid
 graph LR
-A[YudaoWebSocketAutoConfiguration] --> B[WebSocketSessionHandlerDecorator]
+A[QijiWebSocketAutoConfiguration] --> B[WebSocketSessionHandlerDecorator]
 A --> C[JsonWebSocketMessageHandler]
 A --> D[WebSocketSessionManagerImpl]
 A --> E[LoginUserHandshakeInterceptor]
@@ -320,12 +320,12 @@ H[AbstractWebSocketMessageSender] --> D
 ```
 
 图表来源
-- [YudaoWebSocketAutoConfiguration.java:49-183](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/config/YudaoWebSocketAutoConfiguration.java#L49-L183)
-- [JsonWebSocketMessageHandler.java:38-42](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L38-L42)
-- [AbstractWebSocketMessageSender.java:27](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L27)
+- [QijiWebSocketAutoConfiguration.java:49-183](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/config/QijiWebSocketAutoConfiguration.java#L49-L183)
+- [JsonWebSocketMessageHandler.java:38-42](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L38-L42)
+- [AbstractWebSocketMessageSender.java:27](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L27)
 
 章节来源
-- [YudaoWebSocketAutoConfiguration.java:49-183](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/config/YudaoWebSocketAutoConfiguration.java#L49-L183)
+- [QijiWebSocketAutoConfiguration.java:49-183](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/config/QijiWebSocketAutoConfiguration.java#L49-L183)
 
 ## 性能考虑
 - 会话并发装饰：限制单次发送耗时与缓冲区大小，避免阻塞
@@ -348,9 +348,9 @@ H[AbstractWebSocketMessageSender] --> D
   - 确认当前线程租户上下文与会话用户租户一致
 
 章节来源
-- [LoginUserHandshakeInterceptor.java:26-34](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/security/LoginUserHandshakeInterceptor.java#L26-L34)
-- [YudaoWebSocketAutoConfiguration.java:52-59](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/config/YudaoWebSocketAutoConfiguration.java#L52-L59)
-- [AbstractWebSocketMessageSender.java:86-103](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L86-L103)
+- [LoginUserHandshakeInterceptor.java:26-34](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/security/LoginUserHandshakeInterceptor.java#L26-L34)
+- [QijiWebSocketAutoConfiguration.java:52-59](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/config/QijiWebSocketAutoConfiguration.java#L52-L59)
+- [AbstractWebSocketMessageSender.java:86-103](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L86-L103)
 
 ## 结论
 该 WebSocket 实现以自动装配为核心，结合会话管理、消息监听与分发、安全拦截与鉴权、以及多发送器抽象，形成一套可扩展、可配置、可落地的实时通信方案。通过租户隔离、并发装饰与日志监控，满足生产环境对稳定性与性能的要求。
@@ -358,11 +358,11 @@ H[AbstractWebSocketMessageSender] --> D
 ## 附录
 
 ### 配置项说明
-- 连接路径：yudao.websocket.path，默认“/ws”
-- 发送器类型：yudao.websocket.sender-type，默认“local”，可选“redis”、“rocketmq”、“kafka”、“rabbitmq”
+- 连接路径：qiji.websocket.path，默认“/ws”
+- 发送器类型：qiji.websocket.sender-type，默认“local”，可选“redis”、“rocketmq”、“kafka”、“rabbitmq”
 
 章节来源
-- [WebSocketProperties.java:20-34](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/config/WebSocketProperties.java#L20-L34)
+- [WebSocketProperties.java:20-34](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/config/WebSocketProperties.java#L20-L34)
 
 ### 使用示例（步骤说明）
 - 客户端
@@ -374,6 +374,6 @@ H[AbstractWebSocketMessageSender] --> D
   - 使用发送器按需推送：按会话 ID、按用户类型、按用户 ID
 
 章节来源
-- [JsonWebSocketMessageHandler.java:44-81](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L44-L81)
-- [WebSocketMessageListener.java:13-31](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/listener/WebSocketMessageListener.java#L13-L31)
-- [AbstractWebSocketMessageSender.java:53-74](file://yudao-framework/yudao-spring-boot-starter-websocket/src/main/java/cn/iocoder/yudao/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L53-L74)
+- [JsonWebSocketMessageHandler.java:44-81](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/handler/JsonWebSocketMessageHandler.java#L44-L81)
+- [WebSocketMessageListener.java:13-31](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/listener/WebSocketMessageListener.java#L13-L31)
+- [AbstractWebSocketMessageSender.java:53-74](file://qiji-framework/qiji-spring-boot-starter-websocket/src/main/java/com.qiji.cps/framework/websocket/core/sender/AbstractWebSocketMessageSender.java#L53-L74)

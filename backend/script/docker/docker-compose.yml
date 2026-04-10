@@ -1,10 +1,10 @@
 version: "3.4"
 
-name: yudao-system
+name: qiji-system
 
 services:
   mysql:
-    container_name: yudao-mysql
+    container_name: qiji-mysql
     image: mysql:8
     restart: unless-stopped
     tty: true
@@ -18,7 +18,7 @@ services:
       - ./sql/mysql/ruoyi-vue-pro.sql:/docker-entrypoint-initdb.d/ruoyi-vue-pro.sql:ro
 
   redis:
-    container_name: yudao-redis
+    container_name: qiji-redis
     image: redis:6-alpine
     restart: unless-stopped
     ports:
@@ -27,10 +27,10 @@ services:
       - redis:/data
 
   server:
-    container_name: yudao-server
+    container_name: qiji-server
     build:
-      context: ./yudao-server/
-    image: yudao-server
+      context: ./qiji-server/
+    image: qiji-server
     restart: unless-stopped
     ports:
       - "48080:48080"
@@ -44,33 +44,33 @@ services:
           -Djava.security.egd=file:/dev/./urandom
         }
       ARGS:
-        --spring.datasource.dynamic.datasource.master.url=${MASTER_DATASOURCE_URL:-jdbc:mysql://yudao-mysql:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true}
+        --spring.datasource.dynamic.datasource.master.url=${MASTER_DATASOURCE_URL:-jdbc:mysql://qiji-mysql:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true}
         --spring.datasource.dynamic.datasource.master.username=${MASTER_DATASOURCE_USERNAME:-root}
         --spring.datasource.dynamic.datasource.master.password=${MASTER_DATASOURCE_PASSWORD:-123456}
-        --spring.datasource.dynamic.datasource.slave.url=${SLAVE_DATASOURCE_URL:-jdbc:mysql://yudao-mysql:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true}
+        --spring.datasource.dynamic.datasource.slave.url=${SLAVE_DATASOURCE_URL:-jdbc:mysql://qiji-mysql:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true}
         --spring.datasource.dynamic.datasource.slave.username=${SLAVE_DATASOURCE_USERNAME:-root}
         --spring.datasource.dynamic.datasource.slave.password=${SLAVE_DATASOURCE_PASSWORD:-123456}
-        --spring.data.redis.host=${REDIS_HOST:-yudao-redis}
+        --spring.data.redis.host=${REDIS_HOST:-qiji-redis}
     depends_on:
       - mysql
       - redis
 
   admin:
-    container_name: yudao-admin
+    container_name: qiji-admin
     build:
-      context: ./yudao-ui-admin
+      context: ./qiji-ui-admin
       args:
         NODE_ENV:
           ENV=${NODE_ENV:-production}
           PUBLIC_PATH=${PUBLIC_PATH:-/}
-          VUE_APP_TITLE=${VUE_APP_TITLE:-芋道管理系统}
+          VUE_APP_TITLE=${VUE_APP_TITLE:-AgenticCPS管理系统}
           VUE_APP_BASE_API=${VUE_APP_BASE_API:-/prod-api}
           VUE_APP_APP_NAME=${VUE_APP_APP_NAME:-/}
           VUE_APP_TENANT_ENABLE=${VUE_APP_TENANT_ENABLE:-true}
           VUE_APP_CAPTCHA_ENABLE=${VUE_APP_CAPTCHA_ENABLE:-true}
           VUE_APP_DOC_ENABLE=${VUE_APP_DOC_ENABLE:-true}
           VUE_APP_BAIDU_CODE=${VUE_APP_BAIDU_CODE:-fadc1bd5db1a1d6f581df60a1807f8ab}
-    image: yudao-admin
+    image: qiji-admin
     restart: unless-stopped
     ports:
       - "8080:80"

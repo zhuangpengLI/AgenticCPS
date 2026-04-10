@@ -2,16 +2,16 @@
 
 <cite>
 **本文引用的文件**
-- [AiImageController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/image/AiImageController.java)
-- [AiImageService.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageService.java)
-- [AiImageServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java)
-- [AiImageDO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/image/AiImageDO.java)
-- [AiImageStatusEnum.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/image/AiImageStatusEnum.java)
-- [AiPlatformEnum.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/model/AiPlatformEnum.java)
-- [MidjourneyApi.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java)
-- [AiMidjourneySyncJob.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/image/AiMidjourneySyncJob.java)
-- [AiUtils.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/AiUtils.java)
-- [FileTypeUtils.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/FileTypeUtils.java)
+- [AiImageController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/image/AiImageController.java)
+- [AiImageService.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageService.java)
+- [AiImageServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java)
+- [AiImageDO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/image/AiImageDO.java)
+- [AiImageStatusEnum.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/image/AiImageStatusEnum.java)
+- [AiPlatformEnum.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/model/AiPlatformEnum.java)
+- [MidjourneyApi.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java)
+- [AiMidjourneySyncJob.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/image/AiMidjourneySyncJob.java)
+- [AiUtils.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/AiUtils.java)
+- [FileTypeUtils.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/FileTypeUtils.java)
 </cite>
 
 ## 目录
@@ -30,7 +30,7 @@
 本文件面向AI图像生成功能，系统性梳理从接口到实现、从参数配置到任务管理、从质量控制到存储管理的完整方案。重点覆盖与多家AI图像平台的对接能力（OpenAI、Stability AI、通义、文心一言、智谱、硅基流动、Midjourney等），以及Midjourney专属的异步任务推进、回调与二次操作流程。同时提供API接口说明、参数配置清单、最佳实践与排障建议，帮助开发者快速集成与稳定运行。
 
 ## 项目结构
-AI图像生成功能位于 yudao-module-ai 模块中，采用典型的分层架构：
+AI图像生成功能位于 qiji-module-ai 模块中，采用典型的分层架构：
 - 控制器层：对外暴露REST接口，负责参数校验与权限控制
 - 服务层：封装业务逻辑，协调模型与文件服务
 - 数据访问层：持久化图像任务与状态
@@ -70,18 +70,18 @@ S2 --> U2
 ```
 
 图表来源
-- [AiImageController.java:30-139](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/image/AiImageController.java#L30-L139)
-- [AiImageService.java:13-126](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageService.java#L13-L126)
-- [AiImageServiceImpl.java:54-376](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L54-L376)
-- [AiImageDO.java:22-128](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/image/AiImageDO.java#L22-L128)
-- [MidjourneyApi.java:24-352](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java#L24-L352)
-- [AiMidjourneySyncJob.java:9-29](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/image/AiMidjourneySyncJob.java#L9-L29)
-- [AiUtils.java:26-134](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/AiUtils.java#L26-L134)
-- [FileTypeUtils.java:7-38](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/FileTypeUtils.java#L7-L38)
+- [AiImageController.java:30-139](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/image/AiImageController.java#L30-L139)
+- [AiImageService.java:13-126](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageService.java#L13-L126)
+- [AiImageServiceImpl.java:54-376](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L54-L376)
+- [AiImageDO.java:22-128](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/image/AiImageDO.java#L22-L128)
+- [MidjourneyApi.java:24-352](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java#L24-L352)
+- [AiMidjourneySyncJob.java:9-29](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/image/AiMidjourneySyncJob.java#L9-L29)
+- [AiUtils.java:26-134](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/AiUtils.java#L26-L134)
+- [FileTypeUtils.java:7-38](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/FileTypeUtils.java#L7-L38)
 
 章节来源
-- [AiImageController.java:30-139](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/image/AiImageController.java#L30-L139)
-- [AiImageServiceImpl.java:54-376](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L54-L376)
+- [AiImageController.java:30-139](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/image/AiImageController.java#L30-L139)
+- [AiImageServiceImpl.java:54-376](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L54-L376)
 
 ## 核心组件
 - 控制器：提供“生成图片”“分页查询”“Midjourney专属接口”“管理员管理接口”等REST端点
@@ -93,15 +93,15 @@ S2 --> U2
 - 工具类：通用AI选项构建、文件类型判断
 
 章节来源
-- [AiImageService.java:13-126](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageService.java#L13-L126)
-- [AiImageServiceImpl.java:54-376](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L54-L376)
-- [AiImageDO.java:22-128](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/image/AiImageDO.java#L22-L128)
-- [AiPlatformEnum.java:9-73](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/model/AiPlatformEnum.java#L9-L73)
-- [AiImageStatusEnum.java:6-38](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/image/AiImageStatusEnum.java#L6-L38)
-- [MidjourneyApi.java:24-352](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java#L24-L352)
-- [AiMidjourneySyncJob.java:9-29](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/image/AiMidjourneySyncJob.java#L9-L29)
-- [AiUtils.java:26-134](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/AiUtils.java#L26-L134)
-- [FileTypeUtils.java:7-38](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/FileTypeUtils.java#L7-L38)
+- [AiImageService.java:13-126](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageService.java#L13-L126)
+- [AiImageServiceImpl.java:54-376](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L54-L376)
+- [AiImageDO.java:22-128](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/image/AiImageDO.java#L22-L128)
+- [AiPlatformEnum.java:9-73](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/model/AiPlatformEnum.java#L9-L73)
+- [AiImageStatusEnum.java:6-38](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/image/AiImageStatusEnum.java#L6-L38)
+- [MidjourneyApi.java:24-352](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java#L24-L352)
+- [AiMidjourneySyncJob.java:9-29](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/image/AiMidjourneySyncJob.java#L9-L29)
+- [AiUtils.java:26-134](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/AiUtils.java#L26-L134)
+- [FileTypeUtils.java:7-38](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/FileTypeUtils.java#L7-L38)
 
 ## 架构总览
 整体流程：前端提交生成请求 → 控制器校验 → 服务层保存任务并异步调用对应平台 → 平台返回结果或Midjourney回调 → 服务层上传文件并更新状态 → 前端轮询或接收回调。
@@ -136,9 +136,9 @@ SVC-->>CTRL : "状态更新完成"
 ```
 
 图表来源
-- [AiImageController.java:73-110](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/image/AiImageController.java#L73-L110)
-- [AiImageServiceImpl.java:95-138](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L95-L138)
-- [MidjourneyApi.java:67-98](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java#L67-L98)
+- [AiImageController.java:73-110](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/image/AiImageController.java#L73-L110)
+- [AiImageServiceImpl.java:95-138](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L95-L138)
+- [MidjourneyApi.java:67-98](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java#L67-L98)
 
 ## 详细组件分析
 
@@ -151,7 +151,7 @@ SVC-->>CTRL : "状态更新完成"
 - 管理员接口：分页查询、更新公开状态、删除任务
 
 章节来源
-- [AiImageController.java:39-139](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/image/AiImageController.java#L39-L139)
+- [AiImageController.java:39-139](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/image/AiImageController.java#L39-L139)
 
 ### 2) 服务实现与任务管理
 - 通用生成流程：
@@ -176,14 +176,14 @@ Update --> End
 ```
 
 图表来源
-- [AiImageServiceImpl.java:95-138](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L95-L138)
+- [AiImageServiceImpl.java:95-138](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L95-L138)
 
 章节来源
-- [AiImageServiceImpl.java:95-138](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L95-L138)
-- [AiImageServiceImpl.java:225-259](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L225-L259)
-- [AiImageServiceImpl.java:261-286](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L261-L286)
-- [AiImageServiceImpl.java:288-330](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L288-L330)
-- [AiImageServiceImpl.java:332-364](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L332-L364)
+- [AiImageServiceImpl.java:95-138](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L95-L138)
+- [AiImageServiceImpl.java:225-259](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L225-L259)
+- [AiImageServiceImpl.java:261-286](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L261-L286)
+- [AiImageServiceImpl.java:288-330](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L288-L330)
+- [AiImageServiceImpl.java:332-364](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L332-L364)
 
 ### 3) 平台参数配置与适配
 - OpenAI：支持宽高、风格、响应格式
@@ -195,8 +195,8 @@ Update --> End
 - Midjourney：通过MJ代理提交，支持尺寸、版本、参考图等
 
 章节来源
-- [AiImageServiceImpl.java:140-181](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L140-L181)
-- [AiPlatformEnum.java:9-73](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/model/AiPlatformEnum.java#L9-L73)
+- [AiImageServiceImpl.java:140-181](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L140-L181)
+- [AiPlatformEnum.java:9-73](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/model/AiPlatformEnum.java#L9-L73)
 
 ### 4) Midjourney集成与状态同步
 - 提交流程：构造ImagineRequest（含state、notifyHook、base64Array），提交后保存taskId与options
@@ -225,16 +225,16 @@ SVC->>SVC : "批量更新状态"
 ```
 
 图表来源
-- [AiImageController.java:89-110](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/image/AiImageController.java#L89-L110)
-- [AiImageServiceImpl.java:225-259](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L225-L259)
-- [AiImageServiceImpl.java:288-330](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L288-L330)
-- [AiMidjourneySyncJob.java:21-26](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/image/AiMidjourneySyncJob.java#L21-L26)
-- [MidjourneyApi.java:67-98](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java#L67-L98)
+- [AiImageController.java:89-110](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/image/AiImageController.java#L89-L110)
+- [AiImageServiceImpl.java:225-259](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L225-L259)
+- [AiImageServiceImpl.java:288-330](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L288-L330)
+- [AiMidjourneySyncJob.java:21-26](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/image/AiMidjourneySyncJob.java#L21-L26)
+- [MidjourneyApi.java:67-98](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java#L67-L98)
 
 章节来源
-- [AiImageServiceImpl.java:225-364](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L225-L364)
-- [MidjourneyApi.java:24-352](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java#L24-L352)
-- [AiMidjourneySyncJob.java:9-29](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/image/AiMidjourneySyncJob.java#L9-L29)
+- [AiImageServiceImpl.java:225-364](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L225-L364)
+- [MidjourneyApi.java:24-352](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/midjourney/api/MidjourneyApi.java#L24-L352)
+- [AiMidjourneySyncJob.java:9-29](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/image/AiMidjourneySyncJob.java#L9-L29)
 
 ### 5) 数据模型与状态
 - AiImageDO：持久化任务ID、用户ID、提示词、平台/模型、宽高、状态、完成时间、错误信息、图片URL、公开状态、options、buttons、taskId
@@ -279,14 +279,14 @@ AiImageDO --> AiPlatformEnum : "使用"
 ```
 
 图表来源
-- [AiImageDO.java:22-128](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/image/AiImageDO.java#L22-L128)
-- [AiImageStatusEnum.java:6-38](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/image/AiImageStatusEnum.java#L6-L38)
-- [AiPlatformEnum.java:9-73](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/model/AiPlatformEnum.java#L9-L73)
+- [AiImageDO.java:22-128](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/image/AiImageDO.java#L22-L128)
+- [AiImageStatusEnum.java:6-38](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/image/AiImageStatusEnum.java#L6-L38)
+- [AiPlatformEnum.java:9-73](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/model/AiPlatformEnum.java#L9-L73)
 
 章节来源
-- [AiImageDO.java:22-128](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/image/AiImageDO.java#L22-L128)
-- [AiImageStatusEnum.java:6-38](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/image/AiImageStatusEnum.java#L6-L38)
-- [AiPlatformEnum.java:9-73](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/model/AiPlatformEnum.java#L9-L73)
+- [AiImageDO.java:22-128](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/image/AiImageDO.java#L22-L128)
+- [AiImageStatusEnum.java:6-38](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/image/AiImageStatusEnum.java#L6-L38)
+- [AiPlatformEnum.java:9-73](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/model/AiPlatformEnum.java#L9-L73)
 
 ### 6) 质量控制与合规
 - 文件类型判断：通过Tika识别mineType，判断是否为图片类型，辅助内容审核前置过滤
@@ -294,9 +294,9 @@ AiImageDO --> AiPlatformEnum : "使用"
 - Midjourney回调：通过failReason回传失败原因，便于定位问题
 
 章节来源
-- [FileTypeUtils.java:7-38](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/FileTypeUtils.java#L7-L38)
-- [AiImageServiceImpl.java:132-137](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L132-L137)
-- [AiImageServiceImpl.java:319-324](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L319-L324)
+- [FileTypeUtils.java:7-38](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/FileTypeUtils.java#L7-L38)
+- [AiImageServiceImpl.java:132-137](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L132-L137)
+- [AiImageServiceImpl.java:319-324](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L319-L324)
 
 ### 7) 存储与访问控制
 - 文件上传：统一通过FileApi.createFile上传二进制或URL，返回文件路径
@@ -304,9 +304,9 @@ AiImageDO --> AiPlatformEnum : "使用"
 - 公开状态：支持将任务设置为公开，供公共分页查询
 
 章节来源
-- [AiImageServiceImpl.java:123-127](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L123-L127)
-- [AiImageController.java:53-71](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/image/AiImageController.java#L53-L71)
-- [AiImageController.java:114-128](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/image/AiImageController.java#L114-L128)
+- [AiImageServiceImpl.java:123-127](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L123-L127)
+- [AiImageController.java:53-71](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/image/AiImageController.java#L53-L71)
+- [AiImageController.java:114-128](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/image/AiImageController.java#L114-L128)
 
 ### 8) API接口文档
 - 通用生成
@@ -335,7 +335,7 @@ AiImageDO --> AiPlatformEnum : "使用"
   - 删除任务：DELETE /ai/image/delete?id={id}
 
 章节来源
-- [AiImageController.java:73-139](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/image/AiImageController.java#L73-L139)
+- [AiImageController.java:73-139](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/image/AiImageController.java#L73-L139)
 
 ## 依赖关系分析
 - 控制器依赖服务接口，服务实现依赖模型服务、文件服务与Midjourney API
@@ -355,13 +355,13 @@ IMPL --> ENUM2["AiImageStatusEnum"]
 ```
 
 图表来源
-- [AiImageController.java:36-37](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/image/AiImageController.java#L36-L37)
-- [AiImageServiceImpl.java:63-70](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L63-L70)
-- [AiMidjourneySyncJob.java:18-19](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/image/AiMidjourneySyncJob.java#L18-L19)
+- [AiImageController.java:36-37](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/image/AiImageController.java#L36-L37)
+- [AiImageServiceImpl.java:63-70](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L63-L70)
+- [AiMidjourneySyncJob.java:18-19](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/image/AiMidjourneySyncJob.java#L18-L19)
 
 章节来源
-- [AiImageServiceImpl.java:63-70](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L63-L70)
-- [AiMidjourneySyncJob.java:9-29](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/image/AiMidjourneySyncJob.java#L9-L29)
+- [AiImageServiceImpl.java:63-70](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L63-L70)
+- [AiMidjourneySyncJob.java:9-29](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/image/AiMidjourneySyncJob.java#L9-L29)
 
 ## 性能考量
 - 异步生成：通过@Async避免阻塞主线程，提升吞吐
@@ -370,8 +370,8 @@ IMPL --> ENUM2["AiImageStatusEnum"]
 - 文件上传：优先Base64二进制，失败回退URL下载，保证成功率
 
 章节来源
-- [AiImageServiceImpl.java:111-138](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L111-L138)
-- [AiImageServiceImpl.java:261-286](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L261-L286)
+- [AiImageServiceImpl.java:111-138](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L111-L138)
+- [AiImageServiceImpl.java:261-286](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L261-L286)
 
 ## 故障排查指南
 - 生成失败
@@ -386,9 +386,9 @@ IMPL --> ENUM2["AiImageStatusEnum"]
   - “我的”记录删除需校验用户ID；管理员接口需具备相应权限
 
 章节来源
-- [AiImageServiceImpl.java:132-137](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L132-L137)
-- [AiImageServiceImpl.java:250-253](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L250-L253)
-- [AiImageController.java:58-61](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/image/AiImageController.java#L58-L61)
+- [AiImageServiceImpl.java:132-137](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L132-L137)
+- [AiImageServiceImpl.java:250-253](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L250-L253)
+- [AiImageController.java:58-61](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/image/AiImageController.java#L58-L61)
 
 ## 结论
 该AI图像生成功能以清晰的分层设计与平台适配为核心，既支持通用平台（OpenAI、Stability AI、通义、文心、智谱、硅基流动），也深度集成Midjourney的异步任务与回调机制。通过异步生成、定时同步、状态枚举与文件服务统一封装，实现了高可用的任务管理与稳定的图像产出。配合权限控制与质量控制手段，可满足生产环境的集成与运维需求。
@@ -400,7 +400,7 @@ IMPL --> ENUM2["AiImageStatusEnum"]
   - 对于失败任务，结合failReason与errorMessage进行重试或人工干预
   - 合理设置宽高与平台特定参数，平衡质量与成本
 - 参考实现路径
-  - 通用参数构建：[AiImageServiceImpl.java:140-181](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L140-L181)
-  - Midjourney回调处理：[AiImageServiceImpl.java:288-330](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/image/AiImageServiceImpl.java#L288-L330)
-  - 定时同步任务：[AiMidjourneySyncJob.java:21-26](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/image/AiMidjourneySyncJob.java#L21-L26)
-  - 文件类型判断：[FileTypeUtils.java:23-35](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/util/FileTypeUtils.java#L23-L35)
+  - 通用参数构建：[AiImageServiceImpl.java:140-181](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L140-L181)
+  - Midjourney回调处理：[AiImageServiceImpl.java:288-330](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/image/AiImageServiceImpl.java#L288-L330)
+  - 定时同步任务：[AiMidjourneySyncJob.java:21-26](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/image/AiMidjourneySyncJob.java#L21-L26)
+  - 文件类型判断：[FileTypeUtils.java:23-35](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/util/FileTypeUtils.java#L23-L35)

@@ -3,11 +3,11 @@
 <cite>
 **本文引用的文件**
 - [CPS系统PRD文档.md](file://docs/CPS系统PRD文档.md)
-- [CpsPlatformController.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsPlatformController.java)
-- [CpsOrderController.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java)
-- [CpsWithdrawController.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsWithdrawController.java)
-- [CpsAdzoneController.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java)
-- [CpsRebateConfigController.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsRebateConfigController.java)
+- [CpsPlatformController.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsPlatformController.java)
+- [CpsOrderController.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java)
+- [CpsWithdrawController.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsWithdrawController.java)
+- [CpsAdzoneController.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java)
+- [CpsRebateConfigController.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsRebateConfigController.java)
 </cite>
 
 ## 目录
@@ -26,9 +26,9 @@
 本文件为 AgenticCPS 系统的完整 API 接口文档，覆盖会员端与管理端两大类接口，并重点说明 CPS 模块的核心能力：商品搜索、多平台比价、推广链接生成、订单管理、返利查询、提现申请等；同时收录 MCP AI 接口规范（基于 MCP 协议的 Tools 与 Resources），并提供认证授权、权限控制、限流策略、版本管理与迁移指引、测试与调试方法等工程实践建议。
 
 ## 项目结构
-- 系统采用模块化分层架构，CPS 模块位于 yudao-module-cps，包含业务实现、数据访问、枚举、配置与控制器等。
-- 管理端接口集中在 yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin 下，使用统一前缀 /admin-api/cps/*。
-- 会员端接口位于 yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app 下（目录存在，具体文件未在本次检索中展开）。
+- 系统采用模块化分层架构，CPS 模块位于 qiji-module-cps，包含业务实现、数据访问、枚举、配置与控制器等。
+- 管理端接口集中在 qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin 下，使用统一前缀 /admin-api/cps/*。
+- 会员端接口位于 qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app 下（目录存在，具体文件未在本次检索中展开）。
 
 ```mermaid
 graph TB
@@ -57,11 +57,11 @@ B --> D
   - 商品搜索、多平台比价、推广链接生成、订单查询、返利明细、提现申请等（目录存在，具体接口定义未在本次检索中展开）
 
 **章节来源**
-- [CpsPlatformController.java: 22-81:22-81](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsPlatformController.java#L22-L81)
-- [CpsAdzoneController.java: 22-73:22-73](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L73)
-- [CpsOrderController.java: 21-57:21-57](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L21-L57)
-- [CpsWithdrawController.java: 22-57:22-57](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsWithdrawController.java#L22-L57)
-- [CpsRebateConfigController.java: 22-73:22-73](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsRebateConfigController.java#L22-L73)
+- [CpsPlatformController.java: 22-81:22-81](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsPlatformController.java#L22-L81)
+- [CpsAdzoneController.java: 22-73:22-73](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L73)
+- [CpsOrderController.java: 21-57:21-57](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L21-L57)
+- [CpsWithdrawController.java: 22-57:22-57](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsWithdrawController.java#L22-L57)
+- [CpsRebateConfigController.java: 22-73:22-73](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsRebateConfigController.java#L22-L73)
 
 ## 架构总览
 - 控制器层负责接收请求、鉴权与参数校验，调用服务层完成业务逻辑。
@@ -85,7 +85,7 @@ Ctrl-->>Admin : {code : 200, data : true}
 ```
 
 **图表来源**
-- [CpsOrderController.java: 47-54:47-54](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L47-L54)
+- [CpsOrderController.java: 47-54:47-54](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L47-L54)
 
 ## 详细组件分析
 
@@ -194,11 +194,11 @@ Ctrl-->>Admin : {code : 200, data : true}
   - 说明：以上为 PRD 中的功能与权限矩阵，具体工具与资源的参数与返回格式以 MCP 协议为准
 
 **章节来源**
-- [CpsPlatformController.java: 31-78:31-78](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsPlatformController.java#L31-L78)
-- [CpsAdzoneController.java: 31-70:31-70](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L31-L70)
-- [CpsOrderController.java: 30-54:30-54](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L30-L54)
-- [CpsWithdrawController.java: 31-54:31-54](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsWithdrawController.java#L31-L54)
-- [CpsRebateConfigController.java: 31-70:31-70](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsRebateConfigController.java#L31-L70)
+- [CpsPlatformController.java: 31-78:31-78](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsPlatformController.java#L31-L78)
+- [CpsAdzoneController.java: 31-70:31-70](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L31-L70)
+- [CpsOrderController.java: 30-54:30-54](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L30-L54)
+- [CpsWithdrawController.java: 31-54:31-54](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsWithdrawController.java#L31-L54)
+- [CpsRebateConfigController.java: 31-70:31-70](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsRebateConfigController.java#L31-L70)
 - [CPS系统PRD文档.md: 267-353:267-353](file://docs/CPS系统PRD文档.md#L267-L353)
 
 ### 接口调用示例（示意）
@@ -209,7 +209,7 @@ Ctrl-->>Admin : {code : 200, data : true}
   - Python/Node.js 客户端发送 GET 请求至 /admin-api/cps/order/page，携带分页参数
 
 **章节来源**
-- [CpsOrderController.java: 47-54:47-54](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L47-L54)
+- [CpsOrderController.java: 47-54:47-54](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L47-L54)
 
 ### 认证机制、权限控制与限流
 - 认证机制
@@ -221,7 +221,7 @@ Ctrl-->>Admin : {code : 200, data : true}
   - 建议在网关或应用层对高频接口实施限流与熔断
 
 **章节来源**
-- [CpsPlatformController.java: 33-34:33-34](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsPlatformController.java#L33-L34)
+- [CpsPlatformController.java: 33-34:33-34](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsPlatformController.java#L33-L34)
 - [CPS系统PRD文档.md: 694-716:694-716](file://docs/CPS系统PRD文档.md#L694-L716)
 
 ### 接口版本管理、兼容性与迁移
@@ -260,14 +260,14 @@ Svc --> Client["平台客户端"]
 ```
 
 **图表来源**
-- [CpsOrderController.java: 21-57:21-57](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L21-L57)
+- [CpsOrderController.java: 21-57:21-57](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L21-L57)
 
 **章节来源**
-- [CpsPlatformController.java: 22-81:22-81](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsPlatformController.java#L22-L81)
-- [CpsAdzoneController.java: 22-73:22-73](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L73)
-- [CpsOrderController.java: 21-57:21-57](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L21-L57)
-- [CpsWithdrawController.java: 22-57:22-57](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsWithdrawController.java#L22-L57)
-- [CpsRebateConfigController.java: 22-73:22-73](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsRebateConfigController.java#L22-L73)
+- [CpsPlatformController.java: 22-81:22-81](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsPlatformController.java#L22-L81)
+- [CpsAdzoneController.java: 22-73:22-73](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L73)
+- [CpsOrderController.java: 21-57:21-57](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L21-L57)
+- [CpsWithdrawController.java: 22-57:22-57](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsWithdrawController.java#L22-L57)
+- [CpsRebateConfigController.java: 22-73:22-73](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsRebateConfigController.java#L22-L73)
 
 ## 性能考虑
 - 并发查询多平台商品与订单时，建议引入超时控制与熔断保护
@@ -288,9 +288,9 @@ Svc --> Client["平台客户端"]
   - 查看访问日志中的响应状态与耗时，定位工具调用问题
 
 **章节来源**
-- [CpsPlatformController.java: 72-78:72-78](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsPlatformController.java#L72-L78)
-- [CpsOrderController.java: 47-54:47-54](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L47-L54)
-- [CpsWithdrawController.java: 48-54:48-54](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsWithdrawController.java#L48-L54)
+- [CpsPlatformController.java: 72-78:72-78](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsPlatformController.java#L72-L78)
+- [CpsOrderController.java: 47-54:47-54](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsOrderController.java#L47-L54)
+- [CpsWithdrawController.java: 48-54:48-54](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsWithdrawController.java#L48-L54)
 - [CPS系统PRD文档.md: 735-757:735-757](file://docs/CPS系统PRD文档.md#L735-L757)
 
 ## 结论

@@ -223,12 +223,12 @@ AgenticCPS 的低代码能力体现在系统的每个层面：
 ### 技术架构总览
 
 ```
-yudao-module-cps/
-├── yudao-module-cps-api/          # API 定义层
+qiji-module-cps/
+├── qiji-module-cps-api/          # API 定义层
 │   ├── enums/                     # 枚举（平台编码、订单状态…）
 │   └── api/                       # 远程服务接口
 │
-└── yudao-module-cps-biz/          # 业务实现层
+└── qiji-module-cps-biz/          # 业务实现层
     ├── controller/admin/          # 管理后台接口（15 个）
     ├── controller/app/            # 会员端接口（13 个）
     ├── service/                   # 业务服务（7 大服务模块）
@@ -264,18 +264,18 @@ yudao-module-cps/
 
 | 项目 | 说明 |
 |------|------|
-| `yudao-dependencies` | Maven 依赖版本管理 |
-| `yudao-framework` | Java 框架扩展（安全、缓存、权限、多租户…） |
-| `yudao-server` | 主服务端（所有模块的容器） |
-| `yudao-module-system` | 系统管理模块 |
-| `yudao-module-member` | 会员中心模块 |
-| `yudao-module-infra` | 基础设施模块 |
-| `yudao-module-pay` | 支付系统模块 |
-| `yudao-module-mall` | 商城系统模块 |
-| `yudao-module-ai` | AI 大模型模块 |
-| `yudao-module-mp` | 微信公众号模块 |
-| `yudao-module-report` | 报表与大屏模块 |
-| `yudao-module-cps` | **CPS 联盟返利系统模块** |
+| `qiji-dependencies` | Maven 依赖版本管理 |
+| `qiji-framework` | Java 框架扩展（安全、缓存、权限、多租户…） |
+| `qiji-server` | 主服务端（所有模块的容器） |
+| `qiji-module-system` | 系统管理模块 |
+| `qiji-module-member` | 会员中心模块 |
+| `qiji-module-infra` | 基础设施模块 |
+| `qiji-module-pay` | 支付系统模块 |
+| `qiji-module-mall` | 商城系统模块 |
+| `qiji-module-ai` | AI 大模型模块 |
+| `qiji-module-mp` | 微信公众号模块 |
+| `qiji-module-report` | 报表与大屏模块 |
+| `qiji-module-cps` | **CPS 联盟返利系统模块** |
 
 ### 核心框架
 
@@ -320,7 +320,7 @@ git clone https://github.com/YunaiV/ruoyi-vue-pro.git
 
 # 3. 启动后端
 mvn clean compile
-# 运行 YudaoServerApplication 主类
+# 运行 QijiServerApplication 主类
 ```
 
 ### 性能指标

@@ -78,7 +78,7 @@ services:
         environment:
             TZ: Asia/Shanghai
             ACCEPT_EULA: "Y"
-            SA_PASSWORD: "Yudao@2024"
+            SA_PASSWORD: "Qiji@2024"
         ports:
             - "1433:1433"
         volumes:
@@ -124,7 +124,7 @@ services:
         restart: unless-stopped
         environment:
             GS_USERNAME: root
-            GS_PASSWORD: Yudao@2024
+            GS_PASSWORD: Qiji@2024
             LD_LIBRARY_PATH: /usr/local/opengauss/lib:/usr/lib
         ports:
             - "5432:5432"

@@ -2,17 +2,17 @@
 
 <cite>
 **本文引用的文件**   
-- [SunoApi.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/suno/api/SunoApi.java)
-- [AiMusicServiceImpl.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/music/AiMusicServiceImpl.java)
-- [AiMusicController.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/AiMusicController.java)
-- [AiSunoGenerateReqVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/vo/AiSunoGenerateReqVO.java)
-- [AiMusicRespVO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/vo/AiMusicRespVO.java)
-- [AiMusicDO.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/music/AiMusicDO.java)
-- [AiMusicGenerateModeEnum.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicGenerateModeEnum.java)
-- [AiMusicStatusEnum.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicStatusEnum.java)
-- [AiSunoSyncJob.java](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/music/AiSunoSyncJob.java)
+- [SunoApi.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/suno/api/SunoApi.java)
+- [AiMusicServiceImpl.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/music/AiMusicServiceImpl.java)
+- [AiMusicController.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/AiMusicController.java)
+- [AiSunoGenerateReqVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/vo/AiSunoGenerateReqVO.java)
+- [AiMusicRespVO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/vo/AiMusicRespVO.java)
+- [AiMusicDO.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/music/AiMusicDO.java)
+- [AiMusicGenerateModeEnum.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicGenerateModeEnum.java)
+- [AiMusicStatusEnum.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicStatusEnum.java)
+- [AiSunoSyncJob.java](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/music/AiSunoSyncJob.java)
 - [ai_music表结构.sql](file://sql/module/ai-2025-08-29.sql)
-- [SunoApiTests.java](file://yudao-module-ai/src/test/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/music/SunoApiTests.java)
+- [SunoApiTests.java](file://qiji-module-ai/src/test/java/com.qiji.cps/module/ai/framework/ai/core/model/music/SunoApiTests.java)
 </cite>
 
 ## 目录
@@ -68,22 +68,22 @@ S1 --> E1
 ```
 
 图表来源
-- [AiMusicController.java:23-99](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
-- [AiMusicServiceImpl.java:34-219](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/music/AiMusicServiceImpl.java#L34-L219)
-- [SunoApi.java:20-201](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L20-L201)
-- [AiMusicDO.java:16-120](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
-- [AiMusicStatusEnum.java:9-40](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicStatusEnum.java#L9-L40)
-- [AiMusicGenerateModeEnum.java:9-38](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicGenerateModeEnum.java#L9-L38)
-- [AiSunoSyncJob.java:10-29](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/music/AiSunoSyncJob.java#L10-L29)
+- [AiMusicController.java:23-99](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
+- [AiMusicServiceImpl.java:34-219](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/music/AiMusicServiceImpl.java#L34-L219)
+- [SunoApi.java:20-201](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L20-L201)
+- [AiMusicDO.java:16-120](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
+- [AiMusicStatusEnum.java:9-40](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicStatusEnum.java#L9-L40)
+- [AiMusicGenerateModeEnum.java:9-38](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicGenerateModeEnum.java#L9-L38)
+- [AiSunoSyncJob.java:10-29](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/music/AiSunoSyncJob.java#L10-L29)
 
 章节来源
-- [AiMusicController.java:23-99](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
-- [AiMusicServiceImpl.java:34-219](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/music/AiMusicServiceImpl.java#L34-L219)
-- [SunoApi.java:20-201](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L20-L201)
-- [AiMusicDO.java:16-120](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
-- [AiMusicStatusEnum.java:9-40](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicStatusEnum.java#L9-L40)
-- [AiMusicGenerateModeEnum.java:9-38](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicGenerateModeEnum.java#L9-L38)
-- [AiSunoSyncJob.java:10-29](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/music/AiSunoSyncJob.java#L10-L29)
+- [AiMusicController.java:23-99](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
+- [AiMusicServiceImpl.java:34-219](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/music/AiMusicServiceImpl.java#L34-L219)
+- [SunoApi.java:20-201](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L20-L201)
+- [AiMusicDO.java:16-120](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
+- [AiMusicStatusEnum.java:9-40](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicStatusEnum.java#L9-L40)
+- [AiMusicGenerateModeEnum.java:9-38](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicGenerateModeEnum.java#L9-L38)
+- [AiSunoSyncJob.java:10-29](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/music/AiSunoSyncJob.java#L10-L29)
 
 ## 核心组件
 - SunoApi：封装Suno代理的HTTP接口，包括普通生成、歌词生成、歌词生成、批量查询与配额查询
@@ -94,15 +94,15 @@ S1 --> E1
 - AiSunoSyncJob：定时任务，周期性同步Suno任务状态
 
 章节来源
-- [SunoApi.java:20-201](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L20-L201)
-- [AiMusicServiceImpl.java:34-219](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/music/AiMusicServiceImpl.java#L34-L219)
-- [AiMusicController.java:23-99](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
-- [AiMusicDO.java:16-120](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
-- [AiMusicRespVO.java:9-70](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/vo/AiMusicRespVO.java#L9-L70)
-- [AiSunoGenerateReqVO.java:11-57](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/vo/AiSunoGenerateReqVO.java#L11-L57)
-- [AiMusicStatusEnum.java:9-40](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicStatusEnum.java#L9-L40)
-- [AiMusicGenerateModeEnum.java:9-38](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicGenerateModeEnum.java#L9-L38)
-- [AiSunoSyncJob.java:10-29](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/music/AiSunoSyncJob.java#L10-L29)
+- [SunoApi.java:20-201](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L20-L201)
+- [AiMusicServiceImpl.java:34-219](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/music/AiMusicServiceImpl.java#L34-L219)
+- [AiMusicController.java:23-99](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
+- [AiMusicDO.java:16-120](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
+- [AiMusicRespVO.java:9-70](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/vo/AiMusicRespVO.java#L9-L70)
+- [AiSunoGenerateReqVO.java:11-57](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/vo/AiSunoGenerateReqVO.java#L11-L57)
+- [AiMusicStatusEnum.java:9-40](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicStatusEnum.java#L9-L40)
+- [AiMusicGenerateModeEnum.java:9-38](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicGenerateModeEnum.java#L9-L38)
+- [AiSunoSyncJob.java:10-29](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/music/AiSunoSyncJob.java#L10-L29)
 
 ## 架构总览
 系统采用“控制器-服务-数据访问-外部API”的分层架构，结合定时任务实现异步状态同步。生成流程分为描述模式与歌词模式两类；状态流转由Suno代理返回的状态驱动，业务层将其映射为内部状态枚举。
@@ -140,10 +140,10 @@ end
 ```
 
 图表来源
-- [AiMusicController.java:38-42](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/AiMusicController.java#L38-L42)
-- [AiMusicServiceImpl.java:52-105](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/music/AiMusicServiceImpl.java#L52-L105)
-- [SunoApi.java:49-101](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L49-L101)
-- [AiMusicDO.java:16-120](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
+- [AiMusicController.java:38-42](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/AiMusicController.java#L38-L42)
+- [AiMusicServiceImpl.java:52-105](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/music/AiMusicServiceImpl.java#L52-L105)
+- [SunoApi.java:49-101](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L49-L101)
+- [AiMusicDO.java:16-120](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
 
 ## 详细组件分析
 
@@ -199,10 +199,10 @@ SunoApi --> MusicData : "响应"
 ```
 
 图表来源
-- [SunoApi.java:20-201](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L20-L201)
+- [SunoApi.java:20-201](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L20-L201)
 
 章节来源
-- [SunoApi.java:20-201](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L20-L201)
+- [SunoApi.java:20-201](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L20-L201)
 
 ### AiMusicServiceImpl 组件
 - 功能职责
@@ -234,11 +234,11 @@ Replace --> End
 ```
 
 图表来源
-- [AiMusicServiceImpl.java:52-105](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/music/AiMusicServiceImpl.java#L52-L105)
-- [SunoApi.java:81-92](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L81-L92)
+- [AiMusicServiceImpl.java:52-105](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/music/AiMusicServiceImpl.java#L52-L105)
+- [SunoApi.java:81-92](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L81-L92)
 
 章节来源
-- [AiMusicServiceImpl.java:34-219](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/music/AiMusicServiceImpl.java#L34-L219)
+- [AiMusicServiceImpl.java:34-219](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/music/AiMusicServiceImpl.java#L34-L219)
 
 ### AiMusicController 组件
 - 功能职责
@@ -250,9 +250,9 @@ Replace --> End
   - 权限注解保护管理接口
 
 章节来源
-- [AiMusicController.java:23-99](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
-- [AiSunoGenerateReqVO.java:11-57](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/vo/AiSunoGenerateReqVO.java#L11-L57)
-- [AiMusicRespVO.java:9-70](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/vo/AiMusicRespVO.java#L9-L70)
+- [AiMusicController.java:23-99](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
+- [AiSunoGenerateReqVO.java:11-57](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/vo/AiSunoGenerateReqVO.java#L11-L57)
+- [AiMusicRespVO.java:9-70](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/vo/AiMusicRespVO.java#L9-L70)
 
 ### 数据模型与参数
 - AiMusicDO：持久化音乐任务的字段，包括标题、歌词、图片/音频/视频URL、状态、生成模式、描述词、平台、模型、标签、时长、公开状态、任务ID、错误信息等
@@ -260,19 +260,19 @@ Replace --> End
 - AiMusicStatusEnum/AiMusicGenerateModeEnum：状态与生成模式枚举，保证一致性
 
 章节来源
-- [AiMusicDO.java:16-120](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
-- [AiMusicRespVO.java:9-70](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/vo/AiMusicRespVO.java#L9-L70)
-- [AiSunoGenerateReqVO.java:11-57](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/vo/AiSunoGenerateReqVO.java#L11-L57)
-- [AiMusicStatusEnum.java:9-40](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicStatusEnum.java#L9-L40)
-- [AiMusicGenerateModeEnum.java:9-38](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicGenerateModeEnum.java#L9-L38)
+- [AiMusicDO.java:16-120](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
+- [AiMusicRespVO.java:9-70](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/vo/AiMusicRespVO.java#L9-L70)
+- [AiSunoGenerateReqVO.java:11-57](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/vo/AiSunoGenerateReqVO.java#L11-L57)
+- [AiMusicStatusEnum.java:9-40](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicStatusEnum.java#L9-L40)
+- [AiMusicGenerateModeEnum.java:9-38](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicGenerateModeEnum.java#L9-L38)
 
 ### 定时任务同步
 - AiSunoSyncJob：执行字符串参数，调用AiMusicService.syncMusic()，统计同步数量并记录日志
 - 同步逻辑：查询进行中任务，分批调用批量查询接口，更新状态与文件URL
 
 章节来源
-- [AiSunoSyncJob.java:10-29](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/music/AiSunoSyncJob.java#L10-L29)
-- [AiMusicServiceImpl.java:82-105](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/music/AiMusicServiceImpl.java#L82-L105)
+- [AiSunoSyncJob.java:10-29](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/music/AiSunoSyncJob.java#L10-L29)
+- [AiMusicServiceImpl.java:82-105](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/music/AiMusicServiceImpl.java#L82-L105)
 
 ## 依赖关系分析
 - 控制器依赖服务层
@@ -291,13 +291,13 @@ J["AiSunoSyncJob"] --> S
 ```
 
 图表来源
-- [AiMusicController.java:23-99](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
-- [AiMusicServiceImpl.java:34-219](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/music/AiMusicServiceImpl.java#L34-L219)
-- [SunoApi.java:20-201](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L20-L201)
-- [AiMusicDO.java:16-120](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
-- [AiMusicStatusEnum.java:9-40](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicStatusEnum.java#L9-L40)
-- [AiMusicGenerateModeEnum.java:9-38](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicGenerateModeEnum.java#L9-L38)
-- [AiSunoSyncJob.java:10-29](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/job/music/AiSunoSyncJob.java#L10-L29)
+- [AiMusicController.java:23-99](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
+- [AiMusicServiceImpl.java:34-219](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/music/AiMusicServiceImpl.java#L34-L219)
+- [SunoApi.java:20-201](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L20-L201)
+- [AiMusicDO.java:16-120](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
+- [AiMusicStatusEnum.java:9-40](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicStatusEnum.java#L9-L40)
+- [AiMusicGenerateModeEnum.java:9-38](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicGenerateModeEnum.java#L9-L38)
+- [AiSunoSyncJob.java:10-29](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/job/music/AiSunoSyncJob.java#L10-L29)
 
 ## 性能考量
 - 批量分片：同步阶段按固定大小分批处理，避免URL过长导致的请求失败
@@ -312,8 +312,8 @@ J["AiSunoSyncJob"] --> S
 - 权限问题：确认接口权限与登录用户ID绑定逻辑
 
 章节来源
-- [SunoApi.java:34-40](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L34-L40)
-- [AiMusicServiceImpl.java:191-202](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/music/AiMusicServiceImpl.java#L191-L202)
+- [SunoApi.java:34-40](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/framework/ai/core/model/suno/api/SunoApi.java#L34-L40)
+- [AiMusicServiceImpl.java:191-202](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/music/AiMusicServiceImpl.java#L191-L202)
 
 ## 结论
 该AI音乐生成功能以清晰的分层架构实现了与Suno代理的对接，覆盖了任务提交、状态同步、文件存储与权限控制等关键环节。通过枚举与VO统一参数与状态，配合定时任务保障任务进度的准确性，满足在CPS系统中嵌入音乐生成功能的需求。
@@ -371,9 +371,9 @@ J["AiSunoSyncJob"] --> S
   - 权限：ai:music:delete
 
 章节来源
-- [AiMusicController.java:23-99](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
-- [AiSunoGenerateReqVO.java:11-57](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/vo/AiSunoGenerateReqVO.java#L11-L57)
-- [AiMusicRespVO.java:9-70](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/vo/AiMusicRespVO.java#L9-L70)
+- [AiMusicController.java:23-99](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
+- [AiSunoGenerateReqVO.java:11-57](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/vo/AiSunoGenerateReqVO.java#L11-L57)
+- [AiMusicRespVO.java:9-70](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/vo/AiMusicRespVO.java#L9-L70)
 
 ### 参数配置说明
 - 生成模式
@@ -390,9 +390,9 @@ J["AiSunoSyncJob"] --> S
   - 生命周期：提交任务 → 状态轮询 → 完成后文件下载 → 更新数据库
 
 章节来源
-- [AiMusicGenerateModeEnum.java:9-38](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicGenerateModeEnum.java#L9-L38)
-- [AiMusicStatusEnum.java:9-40](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/enums/music/AiMusicStatusEnum.java#L9-L40)
-- [AiMusicServiceImpl.java:52-105](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/music/AiMusicServiceImpl.java#L52-L105)
+- [AiMusicGenerateModeEnum.java:9-38](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicGenerateModeEnum.java#L9-L38)
+- [AiMusicStatusEnum.java:9-40](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/enums/music/AiMusicStatusEnum.java#L9-L40)
+- [AiMusicServiceImpl.java:52-105](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/music/AiMusicServiceImpl.java#L52-L105)
 
 ### 数据模型与存储
 - 表结构要点
@@ -404,8 +404,8 @@ J["AiSunoSyncJob"] --> S
 
 章节来源
 - [ai_music表结构.sql:367-385](file://sql/module/ai-2025-08-29.sql#L367-L385)
-- [AiMusicDO.java:16-120](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
-- [AiMusicServiceImpl.java:166-202](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/music/AiMusicServiceImpl.java#L166-L202)
+- [AiMusicDO.java:16-120](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/dal/dataobject/music/AiMusicDO.java#L16-L120)
+- [AiMusicServiceImpl.java:166-202](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/music/AiMusicServiceImpl.java#L166-L202)
 
 ### 集成示例与最佳实践
 - 在CPS系统中嵌入音乐生成功能
@@ -418,6 +418,6 @@ J["AiSunoSyncJob"] --> S
   - 对于大批次任务，利用分批查询与批量更新降低压力
 
 章节来源
-- [AiMusicController.java:23-99](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
-- [AiMusicServiceImpl.java:82-105](file://yudao-module-ai/src/main/java/cn/iocoder/yudao/module/ai/service/music/AiMusicServiceImpl.java#L82-L105)
-- [SunoApiTests.java:10-84](file://yudao-module-ai/src/test/java/cn/iocoder/yudao/module/ai/framework/ai/core/model/music/SunoApiTests.java#L10-L84)
+- [AiMusicController.java:23-99](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/controller/admin/music/AiMusicController.java#L23-L99)
+- [AiMusicServiceImpl.java:82-105](file://qiji-module-ai/src/main/java/com.qiji.cps/module/ai/service/music/AiMusicServiceImpl.java#L82-L105)
+- [SunoApiTests.java:10-84](file://qiji-module-ai/src/test/java/com.qiji.cps/module/ai/framework/ai/core/model/music/SunoApiTests.java#L10-L84)

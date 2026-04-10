@@ -2,24 +2,24 @@
 
 <cite>
 **本文引用的文件**
-- [CpsAdzoneController.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java)
-- [AppCpsGoodsController.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java)
-- [CpsOrderService.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderService.java)
-- [CpsOrderServiceImpl.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java)
-- [CpsOrderMapper.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java)
-- [CpsOrderDO.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/dataobject/CpsOrderDO.java)
-- [CommonResult.java](file://yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/pojo/CommonResult.java)
-- [CpsPlatformClient.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java)
-- [CpsPlatformClientFactory.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java)
-- [CpsPlatformClientFactoryImpl.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java)
-- [CpsOrderSyncConfig.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsOrderSyncConfig.java)
-- [CpsAdzoneService.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsAdzoneService.java)
-- [CpsAdzoneServiceImpl.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsAdzoneServiceImpl.java)
-- [CpsOrderAttributionService.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/order/CpsOrderAttributionService.java)
-- [ErrorCodeConstants.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/enums/ErrorCodeConstants.java)
-- [YudaoServerApplication.java](file://yudao-server/src/main/java/cn/iocoder/yudao/server/YudaoServerApplication.java)
-- [application.yaml](file://yudao-server/src/main/resources/application.yaml)
-- [Swagger 文档说明.md](file://yudao-framework/yudao-spring-boot-starter-web/src/main/resources/Swagger 文档说明.md)
+- [CpsAdzoneController.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java)
+- [AppCpsGoodsController.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java)
+- [CpsOrderService.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderService.java)
+- [CpsOrderServiceImpl.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java)
+- [CpsOrderMapper.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java)
+- [CpsOrderDO.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/dataobject/CpsOrderDO.java)
+- [CommonResult.java](file://qiji-framework/qiji-common/src/main/java/com.qiji.cps/framework/common/pojo/CommonResult.java)
+- [CpsPlatformClient.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java)
+- [CpsPlatformClientFactory.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java)
+- [CpsPlatformClientFactoryImpl.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java)
+- [CpsOrderSyncConfig.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsOrderSyncConfig.java)
+- [CpsAdzoneService.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsAdzoneService.java)
+- [CpsAdzoneServiceImpl.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsAdzoneServiceImpl.java)
+- [CpsOrderAttributionService.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/order/CpsOrderAttributionService.java)
+- [ErrorCodeConstants.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/enums/ErrorCodeConstants.java)
+- [QijiServerApplication.java](file://qiji-server/src/main/java/com.qiji.cps/server/QijiServerApplication.java)
+- [application.yaml](file://qiji-server/src/main/resources/application.yaml)
+- [Swagger 文档说明.md](file://qiji-framework/qiji-spring-boot-starter-web/src/main/resources/Swagger 文档说明.md)
 </cite>
 
 ## 目录
@@ -38,7 +38,7 @@
 本文件面向AgenticCPS系统的API接口扩展，系统采用前后端分离架构，后端基于Spring Boot与MyBatis-Plus，遵循“Controller-Service-DAO”三层架构。API层通过RESTful风格暴露接口，统一使用CommonResult作为响应体，结合权限注解与参数校验保障安全与正确性。本文将系统讲解API架构设计、新增接口流程、安全机制、参数校验、响应与错误处理、版本管理、性能优化、监控调试以及扩展示例。
 
 ## 项目结构
-AgenticCPS位于yudao-module-cps模块中，核心目录组织如下：
+AgenticCPS位于qiji-module-cps模块中，核心目录组织如下：
 - controller：按角色划分Admin与App两类控制器，分别对应管理后台与移动端接口
 - service：业务服务层，包含订单、推广位、平台对接等服务
 - dal：数据访问层，包含DO与Mapper
@@ -62,15 +62,15 @@ B --> E
 ```
 
 **图表来源**
-- [CpsAdzoneController.java:22-72](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L72)
-- [AppCpsGoodsController.java:24-116](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java#L24-L116)
-- [CpsOrderServiceImpl.java:27-235](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L27-L235)
-- [CpsOrderMapper.java:14-47](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L14-L47)
-- [CpsPlatformClient.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java)
+- [CpsAdzoneController.java:22-72](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L72)
+- [AppCpsGoodsController.java:24-116](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java#L24-L116)
+- [CpsOrderServiceImpl.java:27-235](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L27-L235)
+- [CpsOrderMapper.java:14-47](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L14-L47)
+- [CpsPlatformClient.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java)
 
 **章节来源**
-- [CpsAdzoneController.java:22-72](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L72)
-- [AppCpsGoodsController.java:24-116](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java#L24-L116)
+- [CpsAdzoneController.java:22-72](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L72)
+- [AppCpsGoodsController.java:24-116](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java#L24-L116)
 
 ## 核心组件
 - 统一响应体：CommonResult，提供success/error静态方法，约定返回结构
@@ -81,10 +81,10 @@ B --> E
 - 配置：订单同步窗口、分页大小、限流间隔等
 
 **章节来源**
-- [CommonResult.java:19-121](file://yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/pojo/CommonResult.java#L19-L121)
-- [CpsAdzoneController.java:22-72](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L72)
-- [CpsOrderServiceImpl.java:27-235](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L27-L235)
-- [CpsOrderMapper.java:14-47](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L14-L47)
+- [CommonResult.java:19-121](file://qiji-framework/qiji-common/src/main/java/com.qiji.cps/framework/common/pojo/CommonResult.java#L19-L121)
+- [CpsAdzoneController.java:22-72](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L72)
+- [CpsOrderServiceImpl.java:27-235](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L27-L235)
+- [CpsOrderMapper.java:14-47](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L14-L47)
 
 ## 架构总览
 AgenticCPS的API采用标准的MVC+分层架构，请求从Controller进入，经由Service处理业务，DAO访问数据库，必要时通过Client调用第三方平台接口。权限控制通过Spring Security注解实现，参数校验通过Jakarta Bean Validation注解完成。
@@ -107,9 +107,9 @@ Ctrl-->>Client : "CommonResult 响应"
 ```
 
 **图表来源**
-- [CpsAdzoneController.java:31-70](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L31-L70)
-- [CpsOrderServiceImpl.java:43-56](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L43-L56)
-- [CpsOrderMapper.java:16-23](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L16-L23)
+- [CpsAdzoneController.java:31-70](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L31-L70)
+- [CpsOrderServiceImpl.java:43-56](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L43-L56)
+- [CpsOrderMapper.java:16-23](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L16-L23)
 
 ## 详细组件分析
 
@@ -135,12 +135,12 @@ Ctrl-->>Admin : "CommonResult<Long>"
 ```
 
 **图表来源**
-- [CpsAdzoneController.java:31-36](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L31-L36)
-- [CpsAdzoneService.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsAdzoneService.java)
-- [CpsAdzoneServiceImpl.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsAdzoneServiceImpl.java)
+- [CpsAdzoneController.java:31-36](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L31-L36)
+- [CpsAdzoneService.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsAdzoneService.java)
+- [CpsAdzoneServiceImpl.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsAdzoneServiceImpl.java)
 
 **章节来源**
-- [CpsAdzoneController.java:22-72](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L72)
+- [CpsAdzoneController.java:22-72](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L72)
 
 ### 商品搜索与比价接口（App）
 - 路由前缀：/app-api/cps/goods
@@ -167,11 +167,11 @@ Ctrl-->>App : "CommonResult<List<VO>>"
 ```
 
 **图表来源**
-- [AppCpsGoodsController.java:34-63](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java#L34-L63)
-- [CpsPlatformClient.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java)
+- [AppCpsGoodsController.java:34-63](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java#L34-L63)
+- [CpsPlatformClient.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java)
 
 **章节来源**
-- [AppCpsGoodsController.java:24-116](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java#L24-L116)
+- [AppCpsGoodsController.java:24-116](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java#L24-L116)
 
 ### 订单同步与状态更新（Service）
 - 路由入口：/admin-api/cps/order（控制器未在已读文件中，但Service完整）
@@ -195,14 +195,14 @@ Loop --> |否| EndOK
 ```
 
 **图表来源**
-- [CpsOrderServiceImpl.java:58-147](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L58-L147)
-- [CpsOrderSyncConfig.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsOrderSyncConfig.java)
+- [CpsOrderServiceImpl.java:58-147](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L58-L147)
+- [CpsOrderSyncConfig.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/config/CpsOrderSyncConfig.java)
 
 **章节来源**
-- [CpsOrderService.java:10-22](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderService.java#L10-L22)
-- [CpsOrderServiceImpl.java:27-235](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L27-L235)
-- [CpsOrderMapper.java:14-47](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L14-L47)
-- [CpsOrderDO.java:22-79](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/dataobject/CpsOrderDO.java#L22-L79)
+- [CpsOrderService.java:10-22](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderService.java#L10-L22)
+- [CpsOrderServiceImpl.java:27-235](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L27-L235)
+- [CpsOrderMapper.java:14-47](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L14-L47)
+- [CpsOrderDO.java:22-79](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/dataobject/CpsOrderDO.java#L22-L79)
 
 ## 依赖分析
 - 控制器依赖服务接口；服务实现依赖Mapper与平台客户端工厂；Mapper依赖MyBatis-Plus基础能力
@@ -233,20 +233,20 @@ CpsOrderServiceImpl --> CommonResult : "返回"
 ```
 
 **图表来源**
-- [CpsAdzoneController.java:28-29](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L28-L29)
-- [CpsAdzoneService.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsAdzoneService.java)
-- [CpsAdzoneServiceImpl.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsAdzoneServiceImpl.java)
-- [CpsOrderService.java:10-22](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderService.java#L10-L22)
-- [CpsOrderServiceImpl.java:27-235](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L27-L235)
-- [CpsOrderMapper.java:14-47](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L14-L47)
-- [CpsOrderDO.java:22-79](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/dataobject/CpsOrderDO.java#L22-L79)
-- [CpsPlatformClientFactory.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java)
-- [CpsPlatformClient.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java)
-- [CommonResult.java:19-121](file://yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/pojo/CommonResult.java#L19-L121)
+- [CpsAdzoneController.java:28-29](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L28-L29)
+- [CpsAdzoneService.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsAdzoneService.java)
+- [CpsAdzoneServiceImpl.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsAdzoneServiceImpl.java)
+- [CpsOrderService.java:10-22](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderService.java#L10-L22)
+- [CpsOrderServiceImpl.java:27-235](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L27-L235)
+- [CpsOrderMapper.java:14-47](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L14-L47)
+- [CpsOrderDO.java:22-79](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/dataobject/CpsOrderDO.java#L22-L79)
+- [CpsPlatformClientFactory.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactory.java)
+- [CpsPlatformClient.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java)
+- [CommonResult.java:19-121](file://qiji-framework/qiji-common/src/main/java/com.qiji.cps/framework/common/pojo/CommonResult.java#L19-L121)
 
 **章节来源**
-- [CpsPlatformClientFactoryImpl.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java)
-- [CpsPlatformClient.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java)
+- [CpsPlatformClientFactoryImpl.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsPlatformClientFactoryImpl.java)
+- [CpsPlatformClient.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/CpsPlatformClient.java)
 
 ## 性能考虑
 - 分页与批量：订单同步采用分页拉取与批量入库，减少内存占用与网络压力
@@ -267,8 +267,8 @@ CpsOrderServiceImpl --> CommonResult : "返回"
   - 平台接口异常：查看平台客户端工厂与限流配置
 
 **章节来源**
-- [CpsOrderServiceImpl.java:143-146](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L143-L146)
-- [ErrorCodeConstants.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/enums/ErrorCodeConstants.java)
+- [CpsOrderServiceImpl.java:143-146](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L143-L146)
+- [ErrorCodeConstants.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/enums/ErrorCodeConstants.java)
 
 ## 结论
 AgenticCPS的API架构清晰、职责分明，通过统一响应体、权限注解与参数校验确保了接口的一致性与安全性。新增接口应严格遵循“Controller-Service-DAO”分层与命名规范，优先复用平台客户端与配置能力，确保性能与稳定性。
@@ -297,8 +297,8 @@ AgenticCPS的API架构清晰、职责分明，通过统一响应体、权限注�
   - 并发测试评估限流与分页策略
 
 **章节来源**
-- [Swagger 文档说明.md](file://yudao-framework/yudao-spring-boot-starter-web/src/main/resources/Swagger 文档说明.md)
-- [application.yaml](file://yudao-server/src/main/resources/application.yaml)
+- [Swagger 文档说明.md](file://qiji-framework/qiji-spring-boot-starter-web/src/main/resources/Swagger 文档说明.md)
+- [application.yaml](file://qiji-server/src/main/resources/application.yaml)
 
 ### 新增API接口步骤
 - 控制器层
@@ -317,10 +317,10 @@ AgenticCPS的API架构清晰、职责分明，通过统一响应体、权限注�
   - 使用ErrorCodeConstants定义错误码
 
 **章节来源**
-- [CpsAdzoneController.java:22-72](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L72)
-- [CpsOrderServiceImpl.java:27-235](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L27-L235)
-- [CpsOrderMapper.java:14-47](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L14-L47)
-- [CommonResult.java:19-121](file://yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/pojo/CommonResult.java#L19-L121)
+- [CpsAdzoneController.java:22-72](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L22-L72)
+- [CpsOrderServiceImpl.java:27-235](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L27-L235)
+- [CpsOrderMapper.java:14-47](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L14-L47)
+- [CommonResult.java:19-121](file://qiji-framework/qiji-common/src/main/java/com.qiji.cps/framework/common/pojo/CommonResult.java#L19-L121)
 
 ### 安全机制
 - 认证授权
@@ -331,8 +331,8 @@ AgenticCPS的API架构清晰、职责分明，通过统一响应体、权限注�
   - 对外部调用可结合签名工具（参考CpsApiSignUtil）
 
 **章节来源**
-- [CpsAdzoneController.java:33-40](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L33-L40)
-- [CpsApiSignUtil.java](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/client/util/CpsApiSignUtil.java)
+- [CpsAdzoneController.java:33-40](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L33-L40)
+- [CpsApiSignUtil.java](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/client/util/CpsApiSignUtil.java)
 
 ### 参数验证与数据校验
 - 输入参数验证：使用@Valid + VO对象，配合javax.validation注解
@@ -340,8 +340,8 @@ AgenticCPS的API架构清晰、职责分明，通过统一响应体、权限注�
 - 数据格式检查：通过枚举与常量约束取值范围
 
 **章节来源**
-- [AppCpsGoodsController.java:34-63](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java#L34-L63)
-- [CpsAdzoneController.java:34-42](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L34-L42)
+- [AppCpsGoodsController.java:34-63](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java#L34-L63)
+- [CpsAdzoneController.java:34-42](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/admin/CpsAdzoneController.java#L34-L42)
 
 ### 响应格式与错误处理
 - 统一响应格式：CommonResult，包含code、msg、data
@@ -349,8 +349,8 @@ AgenticCPS的API架构清晰、职责分明，通过统一响应体、权限注�
 - 异常处理：Service层抛出运行时异常，前端统一解析
 
 **章节来源**
-- [CommonResult.java:19-121](file://yudao-framework/yudao-common/src/main/java/cn/iocoder/yudao/framework/common/pojo/CommonResult.java#L19-L121)
-- [CpsOrderServiceImpl.java:143-146](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L143-L146)
+- [CommonResult.java:19-121](file://qiji-framework/qiji-common/src/main/java/com.qiji.cps/framework/common/pojo/CommonResult.java#L19-L121)
+- [CpsOrderServiceImpl.java:143-146](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L143-L146)
 
 ### 版本管理
 - 版本策略：通过URL前缀区分版本，如/admin-api/v1
@@ -365,8 +365,8 @@ AgenticCPS的API架构清晰、职责分明，通过统一响应体、权限注�
 - 监控端点：Actuator暴露健康检查与指标
 
 **章节来源**
-- [AppCpsGoodsController.java:37-84](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java#L37-L84)
-- [CpsOrderServiceImpl.java:61-141](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L61-L141)
+- [AppCpsGoodsController.java:37-84](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/controller/app/AppCpsGoodsController.java#L37-L84)
+- [CpsOrderServiceImpl.java:61-141](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L61-L141)
 
 ### 扩展示例：新增一个CPS统计报表接口
 - 目标：提供按日期维度的订单汇总统计
@@ -393,5 +393,5 @@ Ctrl-->>Admin : "CommonResult<List<StatVO>>"
 ```
 
 **图表来源**
-- [CpsOrderMapper.java:16-23](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L16-L23)
-- [CpsOrderServiceImpl.java:53-56](file://yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L53-L56)
+- [CpsOrderMapper.java:16-23](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/dal/mysql/CpsOrderMapper.java#L16-L23)
+- [CpsOrderServiceImpl.java:53-56](file://qiji-module-cps/qiji-module-cps-biz/src/main/java/cn/zhijian/cps/service/CpsOrderServiceImpl.java#L53-L56)

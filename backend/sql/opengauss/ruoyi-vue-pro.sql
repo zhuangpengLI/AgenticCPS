@@ -1,5 +1,5 @@
 /*
- Yudao Database Transfer Tool
+ Qiji Database Transfer Tool
 
  Source Server Type    : MySQL
 
@@ -474,15 +474,15 @@ COMMENT ON TABLE infra_file_config IS '文件配置表';
 -- ----------------------------
 -- @formatter:off
 BEGIN;
-INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (4, '数据库（示例）', 1, '我是数据库', '0', '{"@class":"cn.iocoder.yudao.module.infra.framework.file.core.client.db.DBFileClientConfig","domain":"http://127.0.0.1:48080"}', '1', '2022-03-15 23:56:24', '1', '2025-05-02 18:30:28', '0');
-INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (22, '七牛存储器（示例）', 20, '请换成你自己的密钥！！！', '1', '{"@class":"cn.iocoder.yudao.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"s3.cn-south-1.qiniucs.com","domain":"http://test.yudao.iocoder.cn","bucket":"ruoyi-vue-pro","accessKey":"3TvrJ70gl2Gt6IBe7_IZT1F6i_k0iMuRtyEv4EyS","accessSecret":"wd0tbVBYlp0S-ihA8Qg2hPLncoP83wyrIq24OZuY","enablePathStyleAccess":false}', '1', '2024-01-13 22:11:12', '1', '2025-05-02 18:30:28', '0');
-INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (24, '腾讯云存储（示例）', 20, '请换成你的密钥！！！', '0', '{"@class":"cn.iocoder.yudao.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"https://cos.ap-shanghai.myqcloud.com","domain":"http://tengxun-oss.iocoder.cn","bucket":"aoteman-1255880240","accessKey":"YOUR_TENCENT_SECRET_ID","accessSecret":"X"}', '1', '2024-11-09 16:03:22', '1', '2025-05-02 18:30:28', '0');
-INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (25, '阿里云存储（示例）', 20, '', '0', '{"@class":"cn.iocoder.yudao.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"oss-cn-beijing.aliyuncs.com","domain":"http://ali-oss.iocoder.cn","bucket":"yunai-aoteman","accessKey":"YOUR_ALIYUN_ACCESS_KEY_ID","accessSecret":"X","enablePathStyleAccess":false}', '1', '2024-11-09 16:47:08', '1', '2025-05-02 18:30:28', '0');
-INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (26, '火山云存储（示例）', 20, '', '0', '{"@class":"cn.iocoder.yudao.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"tos-s3-cn-beijing.volces.com","domain":null,"bucket":"yunai","accessKey":"YOUR_VOLCENGINE_ACCESS_KEY_ID","accessSecret":"X==","enablePathStyleAccess":false}', '1', '2024-11-09 16:56:42', '1', '2025-05-02 18:30:28', '0');
-INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (27, '华为云存储（示例）', 20, '', '0', '{"@class":"cn.iocoder.yudao.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"obs.cn-east-3.myhuaweicloud.com","domain":"","bucket":"yudao","accessKey":"PVDONDEIOTW88LF8DC4U","accessSecret":"X","enablePathStyleAccess":false}', '1', '2024-11-09 17:18:41', '1', '2025-05-02 18:30:28', '0');
-INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (28, 'MinIO 存储（示例）', 20, '', '0', '{"@class":"cn.iocoder.yudao.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"http://127.0.0.1:9000","domain":"http://127.0.0.1:9000/yudao","bucket":"yudao","accessKey":"admin","accessSecret":"password","enablePathStyleAccess":false}', '1', '2024-11-09 17:43:10', '1', '2025-05-02 18:30:28', '0');
-INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (29, '本地存储（示例）', 10, '仅适合 mac 或 windows', '0', '{"@class":"cn.iocoder.yudao.module.infra.framework.file.core.client.local.LocalFileClientConfig","basePath":"/Users/yunai/tmp/file","domain":"http://127.0.0.1:48080"}', '1', '2025-05-02 11:25:45', '1', '2025-05-02 18:30:28', '0');
-INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (30, 'SFTP 存储（示例）', 12, '', '0', '{"@class":"cn.iocoder.yudao.module.infra.framework.file.core.client.sftp.SftpFileClientConfig","basePath":"/upload","domain":"http://127.0.0.1:48080","host":"127.0.0.1","port":2222,"username":"foo","password":"pass"}', '1', '2025-05-02 16:34:10', '1', '2025-05-02 18:30:28', '0');
+INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (4, '数据库（示例）', 1, '我是数据库', '0', '{"@class":"com.qiji.cps.module.infra.framework.file.core.client.db.DBFileClientConfig","domain":"http://127.0.0.1:48080"}', '1', '2022-03-15 23:56:24', '1', '2025-05-02 18:30:28', '0');
+INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (22, '七牛存储器（示例）', 20, '请换成你自己的密钥！！！', '1', '{"@class":"com.qiji.cps.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"s3.cn-south-1.qiniucs.com","domain":"http://test.qiji.iocoder.cn","bucket":"ruoyi-vue-pro","accessKey":"3TvrJ70gl2Gt6IBe7_IZT1F6i_k0iMuRtyEv4EyS","accessSecret":"wd0tbVBYlp0S-ihA8Qg2hPLncoP83wyrIq24OZuY","enablePathStyleAccess":false}', '1', '2024-01-13 22:11:12', '1', '2025-05-02 18:30:28', '0');
+INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (24, '腾讯云存储（示例）', 20, '请换成你的密钥！！！', '0', '{"@class":"com.qiji.cps.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"https://cos.ap-shanghai.myqcloud.com","domain":"http://tengxun-oss.iocoder.cn","bucket":"aoteman-1255880240","accessKey":"YOUR_TENCENT_SECRET_ID","accessSecret":"X"}', '1', '2024-11-09 16:03:22', '1', '2025-05-02 18:30:28', '0');
+INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (25, '阿里云存储（示例）', 20, '', '0', '{"@class":"com.qiji.cps.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"oss-cn-beijing.aliyuncs.com","domain":"http://ali-oss.iocoder.cn","bucket":"yunai-aoteman","accessKey":"YOUR_ALIYUN_ACCESS_KEY_ID","accessSecret":"X","enablePathStyleAccess":false}', '1', '2024-11-09 16:47:08', '1', '2025-05-02 18:30:28', '0');
+INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (26, '火山云存储（示例）', 20, '', '0', '{"@class":"com.qiji.cps.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"tos-s3-cn-beijing.volces.com","domain":null,"bucket":"yunai","accessKey":"YOUR_VOLCENGINE_ACCESS_KEY_ID","accessSecret":"X==","enablePathStyleAccess":false}', '1', '2024-11-09 16:56:42', '1', '2025-05-02 18:30:28', '0');
+INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (27, '华为云存储（示例）', 20, '', '0', '{"@class":"com.qiji.cps.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"obs.cn-east-3.myhuaweicloud.com","domain":"","bucket":"qiji","accessKey":"PVDONDEIOTW88LF8DC4U","accessSecret":"X","enablePathStyleAccess":false}', '1', '2024-11-09 17:18:41', '1', '2025-05-02 18:30:28', '0');
+INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (28, 'MinIO 存储（示例）', 20, '', '0', '{"@class":"com.qiji.cps.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"http://127.0.0.1:9000","domain":"http://127.0.0.1:9000/qiji","bucket":"qiji","accessKey":"admin","accessSecret":"password","enablePathStyleAccess":false}', '1', '2024-11-09 17:43:10', '1', '2025-05-02 18:30:28', '0');
+INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (29, '本地存储（示例）', 10, '仅适合 mac 或 windows', '0', '{"@class":"com.qiji.cps.module.infra.framework.file.core.client.local.LocalFileClientConfig","basePath":"/Users/yunai/tmp/file","domain":"http://127.0.0.1:48080"}', '1', '2025-05-02 11:25:45', '1', '2025-05-02 18:30:28', '0');
+INSERT INTO infra_file_config (id, name, storage, remark, master, config, creator, create_time, updater, update_time, deleted) VALUES (30, 'SFTP 存储（示例）', 12, '', '0', '{"@class":"com.qiji.cps.module.infra.framework.file.core.client.sftp.SftpFileClientConfig","basePath":"/upload","domain":"http://127.0.0.1:48080","host":"127.0.0.1","port":2222,"username":"foo","password":"pass"}', '1', '2025-05-02 16:34:10', '1', '2025-05-02 18:30:28', '0');
 COMMIT;
 -- @formatter:on
 
@@ -2750,7 +2750,7 @@ COMMENT ON TABLE system_notice IS '通知公告表';
 -- @formatter:off
 BEGIN;
 INSERT INTO system_notice (id, title, content, type, status, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (1, '芋道的公众', '<p>新版本内容133</p>', 1, 0, 'admin', '2021-01-05 17:03:48', '1', '2022-05-04 21:00:20', '0', 1);
-INSERT INTO system_notice (id, title, content, type, status, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (2, '维护通知：2018-07-01 系统凌晨维护', '<p><img src="http://test.yudao.iocoder.cn/b7cb3cf49b4b3258bf7309a09dd2f4e5.jpg" alt="" data-href="">11112222<img src="http://test.yudao.iocoder.cn/fe44fc7bdb82ca421184b2eebbaee9e2148d4a1827479a4eb4521e11d2a062ba.png" alt="image" data-href="http://test.yudao.iocoder.cn/fe44fc7bdb82ca421184b2eebbaee9e2148d4a1827479a4eb4521e11d2a062ba.png">3333</p>', 2, 1, 'admin', '2021-01-05 17:03:48', '1', '2025-04-18 23:56:40', '0', 1);
+INSERT INTO system_notice (id, title, content, type, status, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (2, '维护通知：2018-07-01 系统凌晨维护', '<p><img src="http://test.qiji.iocoder.cn/b7cb3cf49b4b3258bf7309a09dd2f4e5.jpg" alt="" data-href="">11112222<img src="http://test.qiji.iocoder.cn/fe44fc7bdb82ca421184b2eebbaee9e2148d4a1827479a4eb4521e11d2a062ba.png" alt="image" data-href="http://test.qiji.iocoder.cn/fe44fc7bdb82ca421184b2eebbaee9e2148d4a1827479a4eb4521e11d2a062ba.png">3333</p>', 2, 1, 'admin', '2021-01-05 17:03:48', '1', '2025-04-18 23:56:40', '0', 1);
 INSERT INTO system_notice (id, title, content, type, status, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (4, '我是测试标题', '<p>哈哈哈哈123</p>', 1, 0, '110', '2022-02-22 01:01:25', '110', '2022-02-22 01:01:46', '0', 121);
 COMMIT;
 -- @formatter:on
@@ -3025,10 +3025,10 @@ COMMENT ON TABLE system_oauth2_client IS 'OAuth2 客户端表';
 -- ----------------------------
 -- @formatter:off
 BEGIN;
-INSERT INTO system_oauth2_client (id, client_id, secret, name, logo, description, status, access_token_validity_seconds, refresh_token_validity_seconds, redirect_uris, authorized_grant_types, scopes, auto_approve_scopes, authorities, resource_ids, additional_information, creator, create_time, updater, update_time, deleted) VALUES (1, 'default', 'admin123', '芋道源码', 'http://test.yudao.iocoder.cn/20250502/sort2_1746189740718.png', '我是描述', 0, 1800, 2592000, '["https://www.iocoder.cn","https://doc.iocoder.cn"]', '["password","authorization_code","implicit","refresh_token"]', '["user.read","user.write"]', '[]', '["user.read","user.write"]', '[]', '{}', '1', '2022-05-11 21:47:12', '1', '2025-05-02 20:42:22', '0');
-INSERT INTO system_oauth2_client (id, client_id, secret, name, logo, description, status, access_token_validity_seconds, refresh_token_validity_seconds, redirect_uris, authorized_grant_types, scopes, auto_approve_scopes, authorities, resource_ids, additional_information, creator, create_time, updater, update_time, deleted) VALUES (40, 'test', 'test2', 'biubiu', 'http://test.yudao.iocoder.cn/xx/20250502/ed07110a37464b5299f8bd7c67ad65c7_1746187077009.jpg', '啦啦啦啦', 0, 1800, 43200, '["https://www.iocoder.cn"]', '["password","authorization_code","implicit"]', '["user_info","projects"]', '["user_info"]', '[]', '[]', '{}', '1', '2022-05-12 00:28:20', '1', '2025-05-02 19:58:08', '0');
-INSERT INTO system_oauth2_client (id, client_id, secret, name, logo, description, status, access_token_validity_seconds, refresh_token_validity_seconds, redirect_uris, authorized_grant_types, scopes, auto_approve_scopes, authorities, resource_ids, additional_information, creator, create_time, updater, update_time, deleted) VALUES (41, 'yudao-sso-demo-by-code', 'test', '基于授权码模式，如何实现 SSO 单点登录？', 'http://test.yudao.iocoder.cn/it/20250502/sign_1746181948685.png', NULL, 0, 1800, 43200, '["http://127.0.0.1:18080"]', '["authorization_code","refresh_token"]', '["user.read","user.write"]', '[]', '[]', '[]', NULL, '1', '2022-09-29 13:28:31', '1', '2025-05-02 18:32:30', '0');
-INSERT INTO system_oauth2_client (id, client_id, secret, name, logo, description, status, access_token_validity_seconds, refresh_token_validity_seconds, redirect_uris, authorized_grant_types, scopes, auto_approve_scopes, authorities, resource_ids, additional_information, creator, create_time, updater, update_time, deleted) VALUES (42, 'yudao-sso-demo-by-password', 'test', '基于密码模式，如何实现 SSO 单点登录？', 'http://test.yudao.iocoder.cn/604bdc695e13b3b22745be704d1f2aa8ee05c5f26f9fead6d1ca49005afbc857.jpeg', NULL, 0, 1800, 43200, '["http://127.0.0.1:18080"]', '["password","refresh_token"]', '["user.read","user.write"]', '[]', '[]', '[]', NULL, '1', '2022-10-04 17:40:16', '1', '2025-05-04 16:00:46', '0');
+INSERT INTO system_oauth2_client (id, client_id, secret, name, logo, description, status, access_token_validity_seconds, refresh_token_validity_seconds, redirect_uris, authorized_grant_types, scopes, auto_approve_scopes, authorities, resource_ids, additional_information, creator, create_time, updater, update_time, deleted) VALUES (1, 'default', 'admin123', '芋道源码', 'http://test.qiji.iocoder.cn/20250502/sort2_1746189740718.png', '我是描述', 0, 1800, 2592000, '["https://www.iocoder.cn","https://doc.iocoder.cn"]', '["password","authorization_code","implicit","refresh_token"]', '["user.read","user.write"]', '[]', '["user.read","user.write"]', '[]', '{}', '1', '2022-05-11 21:47:12', '1', '2025-05-02 20:42:22', '0');
+INSERT INTO system_oauth2_client (id, client_id, secret, name, logo, description, status, access_token_validity_seconds, refresh_token_validity_seconds, redirect_uris, authorized_grant_types, scopes, auto_approve_scopes, authorities, resource_ids, additional_information, creator, create_time, updater, update_time, deleted) VALUES (40, 'test', 'test2', 'biubiu', 'http://test.qiji.iocoder.cn/xx/20250502/ed07110a37464b5299f8bd7c67ad65c7_1746187077009.jpg', '啦啦啦啦', 0, 1800, 43200, '["https://www.iocoder.cn"]', '["password","authorization_code","implicit"]', '["user_info","projects"]', '["user_info"]', '[]', '[]', '{}', '1', '2022-05-12 00:28:20', '1', '2025-05-02 19:58:08', '0');
+INSERT INTO system_oauth2_client (id, client_id, secret, name, logo, description, status, access_token_validity_seconds, refresh_token_validity_seconds, redirect_uris, authorized_grant_types, scopes, auto_approve_scopes, authorities, resource_ids, additional_information, creator, create_time, updater, update_time, deleted) VALUES (41, 'qiji-sso-demo-by-code', 'test', '基于授权码模式，如何实现 SSO 单点登录？', 'http://test.qiji.iocoder.cn/it/20250502/sign_1746181948685.png', NULL, 0, 1800, 43200, '["http://127.0.0.1:18080"]', '["authorization_code","refresh_token"]', '["user.read","user.write"]', '[]', '[]', '[]', NULL, '1', '2022-09-29 13:28:31', '1', '2025-05-02 18:32:30', '0');
+INSERT INTO system_oauth2_client (id, client_id, secret, name, logo, description, status, access_token_validity_seconds, refresh_token_validity_seconds, redirect_uris, authorized_grant_types, scopes, auto_approve_scopes, authorities, resource_ids, additional_information, creator, create_time, updater, update_time, deleted) VALUES (42, 'qiji-sso-demo-by-password', 'test', '基于密码模式，如何实现 SSO 单点登录？', 'http://test.qiji.iocoder.cn/604bdc695e13b3b22745be704d1f2aa8ee05c5f26f9fead6d1ca49005afbc857.jpeg', NULL, 0, 1800, 43200, '["http://127.0.0.1:18080"]', '["password","refresh_token"]', '["user.read","user.write"]', '[]', '[]', '[]', NULL, '1', '2022-10-04 17:40:16', '1', '2025-05-04 16:00:46', '0');
 COMMIT;
 -- @formatter:on
 
@@ -4874,8 +4874,8 @@ COMMENT ON TABLE system_users IS '用户信息表';
 -- ----------------------------
 -- @formatter:off
 BEGIN;
-INSERT INTO system_users (id, username, password, nickname, remark, dept_id, post_ids, email, mobile, sex, avatar, status, login_ip, login_date, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (1, 'admin', '$2a$04$KljJDa/LK7QfDm0lF5OhuePhlPfjRH3tB2Wu351Uidz.oQGJXevPi', '芋道源码', '管理员', 103, '[1,2]', '11aoteman@126.com', '18818260277', 2, 'http://test.yudao.iocoder.cn/test/20250502/avatar_1746154660449.png', 0, '0:0:0:0:0:0:0:1', '2025-05-10 18:03:15', 'admin', '2021-01-05 17:03:47', NULL, '2025-05-10 18:03:15', '0', 1);
-INSERT INTO system_users (id, username, password, nickname, remark, dept_id, post_ids, email, mobile, sex, avatar, status, login_ip, login_date, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (100, 'yudao', '$2a$04$h.aaPKgO.odHepnk5PCsWeEwKdojFWdTItxGKfx1r0e1CSeBzsTJ6', '芋道', '不要吓我', 104, '[1]', 'yudao@iocoder.cn', '15601691300', 1, NULL, 0, '0:0:0:0:0:0:0:1', '2025-04-08 09:36:40', '', '2021-01-07 09:07:17', NULL, '2025-04-21 14:23:08', '0', 1);
+INSERT INTO system_users (id, username, password, nickname, remark, dept_id, post_ids, email, mobile, sex, avatar, status, login_ip, login_date, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (1, 'admin', '$2a$04$KljJDa/LK7QfDm0lF5OhuePhlPfjRH3tB2Wu351Uidz.oQGJXevPi', '芋道源码', '管理员', 103, '[1,2]', '11aoteman@126.com', '18818260277', 2, 'http://test.qiji.iocoder.cn/test/20250502/avatar_1746154660449.png', 0, '0:0:0:0:0:0:0:1', '2025-05-10 18:03:15', 'admin', '2021-01-05 17:03:47', NULL, '2025-05-10 18:03:15', '0', 1);
+INSERT INTO system_users (id, username, password, nickname, remark, dept_id, post_ids, email, mobile, sex, avatar, status, login_ip, login_date, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (100, 'qiji', '$2a$04$h.aaPKgO.odHepnk5PCsWeEwKdojFWdTItxGKfx1r0e1CSeBzsTJ6', '芋道', '不要吓我', 104, '[1]', 'qiji@iocoder.cn', '15601691300', 1, NULL, 0, '0:0:0:0:0:0:0:1', '2025-04-08 09:36:40', '', '2021-01-07 09:07:17', NULL, '2025-04-21 14:23:08', '0', 1);
 INSERT INTO system_users (id, username, password, nickname, remark, dept_id, post_ids, email, mobile, sex, avatar, status, login_ip, login_date, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (103, 'yuanma', '$2a$04$fUBSmjKCPYAUmnMzOb6qE.eZCGPhHi1JmAKclODbfS/O7fHOl2bH6', '源码', NULL, 106, NULL, 'yuanma@iocoder.cn', '15601701300', 0, NULL, 0, '0:0:0:0:0:0:0:1', '2024-08-11 17:48:12', '', '2021-01-13 23:50:35', NULL, '2025-04-21 14:23:08', '0', 1);
 INSERT INTO system_users (id, username, password, nickname, remark, dept_id, post_ids, email, mobile, sex, avatar, status, login_ip, login_date, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (104, 'test', '$2a$04$BrwaYn303hjA/6TnXqdGoOLhyHOAA0bVrAFu6.1dJKycqKUnIoRz2', '测试号', NULL, 107, '[1,2]', '111@qq.com', '15601691200', 1, NULL, 0, '0:0:0:0:0:0:0:1', '2025-03-28 20:01:16', '', '2021-01-21 02:13:53', NULL, '2025-04-21 14:23:08', '0', 1);
 INSERT INTO system_users (id, username, password, nickname, remark, dept_id, post_ids, email, mobile, sex, avatar, status, login_ip, login_date, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (107, 'admin107', '$2a$10$dYOOBKMO93v/.ReCqzyFg.o67Tqk.bbc2bhrpyBGkIw9aypCtr2pm', '芋艿', NULL, NULL, NULL, '', '15601691300', 0, NULL, 0, '', NULL, '1', '2022-02-20 22:59:33', '1', '2025-04-21 14:23:08', '0', 118);
@@ -4900,10 +4900,10 @@ CREATE SEQUENCE system_users_seq
     START 142;
 
 -- ----------------------------
--- Table structure for yudao_demo01_contact
+-- Table structure for qiji_demo01_contact
 -- ----------------------------
-DROP TABLE IF EXISTS yudao_demo01_contact;
-CREATE TABLE yudao_demo01_contact
+DROP TABLE IF EXISTS qiji_demo01_contact;
+CREATE TABLE qiji_demo01_contact
 (
     id          int8         NOT NULL,
     name        varchar(100) NULL     DEFAULT '',
@@ -4919,41 +4919,41 @@ CREATE TABLE yudao_demo01_contact
     tenant_id   int8         NOT NULL DEFAULT 0
 );
 
-ALTER TABLE yudao_demo01_contact
-    ADD CONSTRAINT pk_yudao_demo01_contact PRIMARY KEY (id);
+ALTER TABLE qiji_demo01_contact
+    ADD CONSTRAINT pk_qiji_demo01_contact PRIMARY KEY (id);
 
-COMMENT ON COLUMN yudao_demo01_contact.id IS '编号';
-COMMENT ON COLUMN yudao_demo01_contact.name IS '名字';
-COMMENT ON COLUMN yudao_demo01_contact.sex IS '性别';
-COMMENT ON COLUMN yudao_demo01_contact.birthday IS '出生年';
-COMMENT ON COLUMN yudao_demo01_contact.description IS '简介';
-COMMENT ON COLUMN yudao_demo01_contact.avatar IS '头像';
-COMMENT ON COLUMN yudao_demo01_contact.creator IS '创建者';
-COMMENT ON COLUMN yudao_demo01_contact.create_time IS '创建时间';
-COMMENT ON COLUMN yudao_demo01_contact.updater IS '更新者';
-COMMENT ON COLUMN yudao_demo01_contact.update_time IS '更新时间';
-COMMENT ON COLUMN yudao_demo01_contact.deleted IS '是否删除';
-COMMENT ON COLUMN yudao_demo01_contact.tenant_id IS '租户编号';
-COMMENT ON TABLE yudao_demo01_contact IS '示例联系人表';
+COMMENT ON COLUMN qiji_demo01_contact.id IS '编号';
+COMMENT ON COLUMN qiji_demo01_contact.name IS '名字';
+COMMENT ON COLUMN qiji_demo01_contact.sex IS '性别';
+COMMENT ON COLUMN qiji_demo01_contact.birthday IS '出生年';
+COMMENT ON COLUMN qiji_demo01_contact.description IS '简介';
+COMMENT ON COLUMN qiji_demo01_contact.avatar IS '头像';
+COMMENT ON COLUMN qiji_demo01_contact.creator IS '创建者';
+COMMENT ON COLUMN qiji_demo01_contact.create_time IS '创建时间';
+COMMENT ON COLUMN qiji_demo01_contact.updater IS '更新者';
+COMMENT ON COLUMN qiji_demo01_contact.update_time IS '更新时间';
+COMMENT ON COLUMN qiji_demo01_contact.deleted IS '是否删除';
+COMMENT ON COLUMN qiji_demo01_contact.tenant_id IS '租户编号';
+COMMENT ON TABLE qiji_demo01_contact IS '示例联系人表';
 
 -- ----------------------------
--- Records of yudao_demo01_contact
+-- Records of qiji_demo01_contact
 -- ----------------------------
 -- @formatter:off
 BEGIN;
-INSERT INTO yudao_demo01_contact (id, name, sex, birthday, description, avatar, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (1, '土豆', 2, '2023-11-07 00:00:00', '<p>天蚕土豆！呀</p>', 'http://127.0.0.1:48080/admin-api/infra/file/4/get/46f8fa1a37db3f3960d8910ff2fe3962ab3b2db87cf2f8ccb4dc8145b8bdf237.jpeg', '1', '2023-11-15 23:34:30', '1', '2023-11-15 23:47:39', '0', 1);
+INSERT INTO qiji_demo01_contact (id, name, sex, birthday, description, avatar, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (1, '土豆', 2, '2023-11-07 00:00:00', '<p>天蚕土豆！呀</p>', 'http://127.0.0.1:48080/admin-api/infra/file/4/get/46f8fa1a37db3f3960d8910ff2fe3962ab3b2db87cf2f8ccb4dc8145b8bdf237.jpeg', '1', '2023-11-15 23:34:30', '1', '2023-11-15 23:47:39', '0', 1);
 COMMIT;
 -- @formatter:on
 
-DROP SEQUENCE IF EXISTS yudao_demo01_contact_seq;
-CREATE SEQUENCE yudao_demo01_contact_seq
+DROP SEQUENCE IF EXISTS qiji_demo01_contact_seq;
+CREATE SEQUENCE qiji_demo01_contact_seq
     START 2;
 
 -- ----------------------------
--- Table structure for yudao_demo02_category
+-- Table structure for qiji_demo02_category
 -- ----------------------------
-DROP TABLE IF EXISTS yudao_demo02_category;
-CREATE TABLE yudao_demo02_category
+DROP TABLE IF EXISTS qiji_demo02_category;
+CREATE TABLE qiji_demo02_category
 (
     id          int8         NOT NULL,
     name        varchar(100) NULL     DEFAULT '',
@@ -4966,43 +4966,43 @@ CREATE TABLE yudao_demo02_category
     tenant_id   int8         NOT NULL DEFAULT 0
 );
 
-ALTER TABLE yudao_demo02_category
-    ADD CONSTRAINT pk_yudao_demo02_category PRIMARY KEY (id);
+ALTER TABLE qiji_demo02_category
+    ADD CONSTRAINT pk_qiji_demo02_category PRIMARY KEY (id);
 
-COMMENT ON COLUMN yudao_demo02_category.id IS '编号';
-COMMENT ON COLUMN yudao_demo02_category.name IS '名字';
-COMMENT ON COLUMN yudao_demo02_category.parent_id IS '父级编号';
-COMMENT ON COLUMN yudao_demo02_category.creator IS '创建者';
-COMMENT ON COLUMN yudao_demo02_category.create_time IS '创建时间';
-COMMENT ON COLUMN yudao_demo02_category.updater IS '更新者';
-COMMENT ON COLUMN yudao_demo02_category.update_time IS '更新时间';
-COMMENT ON COLUMN yudao_demo02_category.deleted IS '是否删除';
-COMMENT ON COLUMN yudao_demo02_category.tenant_id IS '租户编号';
-COMMENT ON TABLE yudao_demo02_category IS '示例分类表';
+COMMENT ON COLUMN qiji_demo02_category.id IS '编号';
+COMMENT ON COLUMN qiji_demo02_category.name IS '名字';
+COMMENT ON COLUMN qiji_demo02_category.parent_id IS '父级编号';
+COMMENT ON COLUMN qiji_demo02_category.creator IS '创建者';
+COMMENT ON COLUMN qiji_demo02_category.create_time IS '创建时间';
+COMMENT ON COLUMN qiji_demo02_category.updater IS '更新者';
+COMMENT ON COLUMN qiji_demo02_category.update_time IS '更新时间';
+COMMENT ON COLUMN qiji_demo02_category.deleted IS '是否删除';
+COMMENT ON COLUMN qiji_demo02_category.tenant_id IS '租户编号';
+COMMENT ON TABLE qiji_demo02_category IS '示例分类表';
 
 -- ----------------------------
--- Records of yudao_demo02_category
+-- Records of qiji_demo02_category
 -- ----------------------------
 -- @formatter:off
 BEGIN;
-INSERT INTO yudao_demo02_category (id, name, parent_id, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (1, '土豆', 0, '1', '2023-11-15 23:34:30', '1', '2023-11-16 20:24:23', '0', 1);
-INSERT INTO yudao_demo02_category (id, name, parent_id, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (2, '番茄', 0, '1', '2023-11-16 20:24:00', '1', '2023-11-16 20:24:15', '0', 1);
-INSERT INTO yudao_demo02_category (id, name, parent_id, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (3, '怪怪', 0, '1', '2023-11-16 20:24:32', '1', '2023-11-16 20:24:32', '0', 1);
-INSERT INTO yudao_demo02_category (id, name, parent_id, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (4, '小番茄', 2, '1', '2023-11-16 20:24:39', '1', '2023-11-16 20:24:39', '0', 1);
-INSERT INTO yudao_demo02_category (id, name, parent_id, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (5, '大番茄', 2, '1', '2023-11-16 20:24:46', '1', '2023-11-16 20:24:46', '0', 1);
-INSERT INTO yudao_demo02_category (id, name, parent_id, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (6, '11', 3, '1', '2023-11-24 19:29:34', '1', '2023-11-24 19:29:34', '0', 1);
+INSERT INTO qiji_demo02_category (id, name, parent_id, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (1, '土豆', 0, '1', '2023-11-15 23:34:30', '1', '2023-11-16 20:24:23', '0', 1);
+INSERT INTO qiji_demo02_category (id, name, parent_id, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (2, '番茄', 0, '1', '2023-11-16 20:24:00', '1', '2023-11-16 20:24:15', '0', 1);
+INSERT INTO qiji_demo02_category (id, name, parent_id, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (3, '怪怪', 0, '1', '2023-11-16 20:24:32', '1', '2023-11-16 20:24:32', '0', 1);
+INSERT INTO qiji_demo02_category (id, name, parent_id, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (4, '小番茄', 2, '1', '2023-11-16 20:24:39', '1', '2023-11-16 20:24:39', '0', 1);
+INSERT INTO qiji_demo02_category (id, name, parent_id, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (5, '大番茄', 2, '1', '2023-11-16 20:24:46', '1', '2023-11-16 20:24:46', '0', 1);
+INSERT INTO qiji_demo02_category (id, name, parent_id, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (6, '11', 3, '1', '2023-11-24 19:29:34', '1', '2023-11-24 19:29:34', '0', 1);
 COMMIT;
 -- @formatter:on
 
-DROP SEQUENCE IF EXISTS yudao_demo02_category_seq;
-CREATE SEQUENCE yudao_demo02_category_seq
+DROP SEQUENCE IF EXISTS qiji_demo02_category_seq;
+CREATE SEQUENCE qiji_demo02_category_seq
     START 7;
 
 -- ----------------------------
--- Table structure for yudao_demo03_course
+-- Table structure for qiji_demo03_course
 -- ----------------------------
-DROP TABLE IF EXISTS yudao_demo03_course;
-CREATE TABLE yudao_demo03_course
+DROP TABLE IF EXISTS qiji_demo03_course;
+CREATE TABLE qiji_demo03_course
 (
     id          int8         NOT NULL,
     student_id  int8         NOT NULL,
@@ -5016,55 +5016,55 @@ CREATE TABLE yudao_demo03_course
     tenant_id   int8         NOT NULL DEFAULT 0
 );
 
-ALTER TABLE yudao_demo03_course
-    ADD CONSTRAINT pk_yudao_demo03_course PRIMARY KEY (id);
+ALTER TABLE qiji_demo03_course
+    ADD CONSTRAINT pk_qiji_demo03_course PRIMARY KEY (id);
 
-COMMENT ON COLUMN yudao_demo03_course.id IS '编号';
-COMMENT ON COLUMN yudao_demo03_course.student_id IS '学生编号';
-COMMENT ON COLUMN yudao_demo03_course.name IS '名字';
-COMMENT ON COLUMN yudao_demo03_course.score IS '分数';
-COMMENT ON COLUMN yudao_demo03_course.creator IS '创建者';
-COMMENT ON COLUMN yudao_demo03_course.create_time IS '创建时间';
-COMMENT ON COLUMN yudao_demo03_course.updater IS '更新者';
-COMMENT ON COLUMN yudao_demo03_course.update_time IS '更新时间';
-COMMENT ON COLUMN yudao_demo03_course.deleted IS '是否删除';
-COMMENT ON COLUMN yudao_demo03_course.tenant_id IS '租户编号';
-COMMENT ON TABLE yudao_demo03_course IS '学生课程表';
+COMMENT ON COLUMN qiji_demo03_course.id IS '编号';
+COMMENT ON COLUMN qiji_demo03_course.student_id IS '学生编号';
+COMMENT ON COLUMN qiji_demo03_course.name IS '名字';
+COMMENT ON COLUMN qiji_demo03_course.score IS '分数';
+COMMENT ON COLUMN qiji_demo03_course.creator IS '创建者';
+COMMENT ON COLUMN qiji_demo03_course.create_time IS '创建时间';
+COMMENT ON COLUMN qiji_demo03_course.updater IS '更新者';
+COMMENT ON COLUMN qiji_demo03_course.update_time IS '更新时间';
+COMMENT ON COLUMN qiji_demo03_course.deleted IS '是否删除';
+COMMENT ON COLUMN qiji_demo03_course.tenant_id IS '租户编号';
+COMMENT ON TABLE qiji_demo03_course IS '学生课程表';
 
 -- ----------------------------
--- Records of yudao_demo03_course
+-- Records of qiji_demo03_course
 -- ----------------------------
 -- @formatter:off
 BEGIN;
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (2, 2, '语文', 66, '1', '2023-11-16 23:21:49', '1', '2024-09-17 10:55:30', '1', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (3, 2, '数学', 22, '1', '2023-11-16 23:21:49', '1', '2024-09-17 10:55:30', '1', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (6, 5, '体育', 23, '1', '2023-11-16 23:22:46', '1', '2023-11-16 15:44:40', '1', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (7, 5, '计算机', 11, '1', '2023-11-16 23:22:46', '1', '2023-11-16 15:44:40', '1', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (8, 5, '体育', 23, '1', '2023-11-16 23:22:46', '1', '2023-11-16 15:47:09', '1', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (9, 5, '计算机', 11, '1', '2023-11-16 23:22:46', '1', '2023-11-16 15:47:09', '1', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (10, 5, '体育', 23, '1', '2023-11-16 23:22:46', '1', '2024-09-17 10:55:28', '1', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (11, 5, '计算机', 11, '1', '2023-11-16 23:22:46', '1', '2024-09-17 10:55:28', '1', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (12, 2, '电脑', 33, '1', '2023-11-17 00:20:42', '1', '2023-11-16 16:20:45', '1', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (13, 9, '滑雪', 12, '1', '2023-11-17 13:13:20', '1', '2024-09-17 10:55:26', '1', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (14, 9, '滑雪', 12, '1', '2023-11-17 13:13:20', '1', '2024-09-17 10:55:49', '1', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (15, 5, '体育', 23, '1', '2023-11-16 23:22:46', '1', '2024-09-17 18:55:29', '0', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (16, 5, '计算机', 11, '1', '2023-11-16 23:22:46', '1', '2024-09-17 18:55:29', '0', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (17, 2, '语文', 66, '1', '2023-11-16 23:21:49', '1', '2024-09-17 18:55:31', '0', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (18, 2, '数学', 22, '1', '2023-11-16 23:21:49', '1', '2024-09-17 18:55:31', '0', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (19, 9, '滑雪', 12, '1', '2023-11-17 13:13:20', '1', '2025-04-19 02:49:03', '1', 1);
-INSERT INTO yudao_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (20, 9, '滑雪', 12, '1', '2023-11-17 13:13:20', '1', '2025-04-19 10:49:04', '0', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (2, 2, '语文', 66, '1', '2023-11-16 23:21:49', '1', '2024-09-17 10:55:30', '1', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (3, 2, '数学', 22, '1', '2023-11-16 23:21:49', '1', '2024-09-17 10:55:30', '1', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (6, 5, '体育', 23, '1', '2023-11-16 23:22:46', '1', '2023-11-16 15:44:40', '1', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (7, 5, '计算机', 11, '1', '2023-11-16 23:22:46', '1', '2023-11-16 15:44:40', '1', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (8, 5, '体育', 23, '1', '2023-11-16 23:22:46', '1', '2023-11-16 15:47:09', '1', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (9, 5, '计算机', 11, '1', '2023-11-16 23:22:46', '1', '2023-11-16 15:47:09', '1', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (10, 5, '体育', 23, '1', '2023-11-16 23:22:46', '1', '2024-09-17 10:55:28', '1', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (11, 5, '计算机', 11, '1', '2023-11-16 23:22:46', '1', '2024-09-17 10:55:28', '1', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (12, 2, '电脑', 33, '1', '2023-11-17 00:20:42', '1', '2023-11-16 16:20:45', '1', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (13, 9, '滑雪', 12, '1', '2023-11-17 13:13:20', '1', '2024-09-17 10:55:26', '1', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (14, 9, '滑雪', 12, '1', '2023-11-17 13:13:20', '1', '2024-09-17 10:55:49', '1', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (15, 5, '体育', 23, '1', '2023-11-16 23:22:46', '1', '2024-09-17 18:55:29', '0', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (16, 5, '计算机', 11, '1', '2023-11-16 23:22:46', '1', '2024-09-17 18:55:29', '0', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (17, 2, '语文', 66, '1', '2023-11-16 23:21:49', '1', '2024-09-17 18:55:31', '0', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (18, 2, '数学', 22, '1', '2023-11-16 23:21:49', '1', '2024-09-17 18:55:31', '0', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (19, 9, '滑雪', 12, '1', '2023-11-17 13:13:20', '1', '2025-04-19 02:49:03', '1', 1);
+INSERT INTO qiji_demo03_course (id, student_id, name, score, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (20, 9, '滑雪', 12, '1', '2023-11-17 13:13:20', '1', '2025-04-19 10:49:04', '0', 1);
 COMMIT;
 -- @formatter:on
 
-DROP SEQUENCE IF EXISTS yudao_demo03_course_seq;
-CREATE SEQUENCE yudao_demo03_course_seq
+DROP SEQUENCE IF EXISTS qiji_demo03_course_seq;
+CREATE SEQUENCE qiji_demo03_course_seq
     START 21;
 
 -- ----------------------------
--- Table structure for yudao_demo03_grade
+-- Table structure for qiji_demo03_grade
 -- ----------------------------
-DROP TABLE IF EXISTS yudao_demo03_grade;
-CREATE TABLE yudao_demo03_grade
+DROP TABLE IF EXISTS qiji_demo03_grade;
+CREATE TABLE qiji_demo03_grade
 (
     id          int8         NOT NULL,
     student_id  int8         NOT NULL,
@@ -5078,41 +5078,41 @@ CREATE TABLE yudao_demo03_grade
     tenant_id   int8         NOT NULL DEFAULT 0
 );
 
-ALTER TABLE yudao_demo03_grade
-    ADD CONSTRAINT pk_yudao_demo03_grade PRIMARY KEY (id);
+ALTER TABLE qiji_demo03_grade
+    ADD CONSTRAINT pk_qiji_demo03_grade PRIMARY KEY (id);
 
-COMMENT ON COLUMN yudao_demo03_grade.id IS '编号';
-COMMENT ON COLUMN yudao_demo03_grade.student_id IS '学生编号';
-COMMENT ON COLUMN yudao_demo03_grade.name IS '名字';
-COMMENT ON COLUMN yudao_demo03_grade.teacher IS '班主任';
-COMMENT ON COLUMN yudao_demo03_grade.creator IS '创建者';
-COMMENT ON COLUMN yudao_demo03_grade.create_time IS '创建时间';
-COMMENT ON COLUMN yudao_demo03_grade.updater IS '更新者';
-COMMENT ON COLUMN yudao_demo03_grade.update_time IS '更新时间';
-COMMENT ON COLUMN yudao_demo03_grade.deleted IS '是否删除';
-COMMENT ON COLUMN yudao_demo03_grade.tenant_id IS '租户编号';
-COMMENT ON TABLE yudao_demo03_grade IS '学生班级表';
+COMMENT ON COLUMN qiji_demo03_grade.id IS '编号';
+COMMENT ON COLUMN qiji_demo03_grade.student_id IS '学生编号';
+COMMENT ON COLUMN qiji_demo03_grade.name IS '名字';
+COMMENT ON COLUMN qiji_demo03_grade.teacher IS '班主任';
+COMMENT ON COLUMN qiji_demo03_grade.creator IS '创建者';
+COMMENT ON COLUMN qiji_demo03_grade.create_time IS '创建时间';
+COMMENT ON COLUMN qiji_demo03_grade.updater IS '更新者';
+COMMENT ON COLUMN qiji_demo03_grade.update_time IS '更新时间';
+COMMENT ON COLUMN qiji_demo03_grade.deleted IS '是否删除';
+COMMENT ON COLUMN qiji_demo03_grade.tenant_id IS '租户编号';
+COMMENT ON TABLE qiji_demo03_grade IS '学生班级表';
 
 -- ----------------------------
--- Records of yudao_demo03_grade
+-- Records of qiji_demo03_grade
 -- ----------------------------
 -- @formatter:off
 BEGIN;
-INSERT INTO yudao_demo03_grade (id, student_id, name, teacher, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (7, 2, '三年 2 班', '周杰伦', '1', '2023-11-16 23:21:49', '1', '2024-09-17 18:55:31', '0', 1);
-INSERT INTO yudao_demo03_grade (id, student_id, name, teacher, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (8, 5, '华为', '遥遥领先', '1', '2023-11-16 23:22:46', '1', '2024-09-17 18:55:29', '0', 1);
-INSERT INTO yudao_demo03_grade (id, student_id, name, teacher, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (9, 9, '小图', '小娃111', '1', '2023-11-17 13:10:23', '1', '2025-04-19 10:49:04', '0', 1);
+INSERT INTO qiji_demo03_grade (id, student_id, name, teacher, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (7, 2, '三年 2 班', '周杰伦', '1', '2023-11-16 23:21:49', '1', '2024-09-17 18:55:31', '0', 1);
+INSERT INTO qiji_demo03_grade (id, student_id, name, teacher, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (8, 5, '华为', '遥遥领先', '1', '2023-11-16 23:22:46', '1', '2024-09-17 18:55:29', '0', 1);
+INSERT INTO qiji_demo03_grade (id, student_id, name, teacher, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (9, 9, '小图', '小娃111', '1', '2023-11-17 13:10:23', '1', '2025-04-19 10:49:04', '0', 1);
 COMMIT;
 -- @formatter:on
 
-DROP SEQUENCE IF EXISTS yudao_demo03_grade_seq;
-CREATE SEQUENCE yudao_demo03_grade_seq
+DROP SEQUENCE IF EXISTS qiji_demo03_grade_seq;
+CREATE SEQUENCE qiji_demo03_grade_seq
     START 10;
 
 -- ----------------------------
--- Table structure for yudao_demo03_student
+-- Table structure for qiji_demo03_student
 -- ----------------------------
-DROP TABLE IF EXISTS yudao_demo03_student;
-CREATE TABLE yudao_demo03_student
+DROP TABLE IF EXISTS qiji_demo03_student;
+CREATE TABLE qiji_demo03_student
 (
     id          int8         NOT NULL,
     name        varchar(100) NULL     DEFAULT '',
@@ -5127,34 +5127,34 @@ CREATE TABLE yudao_demo03_student
     tenant_id   int8         NOT NULL DEFAULT 0
 );
 
-ALTER TABLE yudao_demo03_student
-    ADD CONSTRAINT pk_yudao_demo03_student PRIMARY KEY (id);
+ALTER TABLE qiji_demo03_student
+    ADD CONSTRAINT pk_qiji_demo03_student PRIMARY KEY (id);
 
-COMMENT ON COLUMN yudao_demo03_student.id IS '编号';
-COMMENT ON COLUMN yudao_demo03_student.name IS '名字';
-COMMENT ON COLUMN yudao_demo03_student.sex IS '性别';
-COMMENT ON COLUMN yudao_demo03_student.birthday IS '出生日期';
-COMMENT ON COLUMN yudao_demo03_student.description IS '简介';
-COMMENT ON COLUMN yudao_demo03_student.creator IS '创建者';
-COMMENT ON COLUMN yudao_demo03_student.create_time IS '创建时间';
-COMMENT ON COLUMN yudao_demo03_student.updater IS '更新者';
-COMMENT ON COLUMN yudao_demo03_student.update_time IS '更新时间';
-COMMENT ON COLUMN yudao_demo03_student.deleted IS '是否删除';
-COMMENT ON COLUMN yudao_demo03_student.tenant_id IS '租户编号';
-COMMENT ON TABLE yudao_demo03_student IS '学生表';
+COMMENT ON COLUMN qiji_demo03_student.id IS '编号';
+COMMENT ON COLUMN qiji_demo03_student.name IS '名字';
+COMMENT ON COLUMN qiji_demo03_student.sex IS '性别';
+COMMENT ON COLUMN qiji_demo03_student.birthday IS '出生日期';
+COMMENT ON COLUMN qiji_demo03_student.description IS '简介';
+COMMENT ON COLUMN qiji_demo03_student.creator IS '创建者';
+COMMENT ON COLUMN qiji_demo03_student.create_time IS '创建时间';
+COMMENT ON COLUMN qiji_demo03_student.updater IS '更新者';
+COMMENT ON COLUMN qiji_demo03_student.update_time IS '更新时间';
+COMMENT ON COLUMN qiji_demo03_student.deleted IS '是否删除';
+COMMENT ON COLUMN qiji_demo03_student.tenant_id IS '租户编号';
+COMMENT ON TABLE qiji_demo03_student IS '学生表';
 
 -- ----------------------------
--- Records of yudao_demo03_student
+-- Records of qiji_demo03_student
 -- ----------------------------
 -- @formatter:off
 BEGIN;
-INSERT INTO yudao_demo03_student (id, name, sex, birthday, description, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (2, '小白', 1, '2023-11-16 00:00:00', '<p>厉害</p>', '1', '2023-11-16 23:21:49', '1', '2024-09-17 18:55:31', '0', 1);
-INSERT INTO yudao_demo03_student (id, name, sex, birthday, description, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (5, '大黑', 2, '2023-11-13 00:00:00', '<p>你在教我做事?</p>', '1', '2023-11-16 23:22:46', '1', '2024-09-17 18:55:29', '0', 1);
-INSERT INTO yudao_demo03_student (id, name, sex, birthday, description, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (9, '小花', 1, '2023-11-07 00:00:00', '<p>哈哈哈</p>', '1', '2023-11-17 00:04:47', '1', '2025-04-19 10:49:04', '0', 1);
+INSERT INTO qiji_demo03_student (id, name, sex, birthday, description, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (2, '小白', 1, '2023-11-16 00:00:00', '<p>厉害</p>', '1', '2023-11-16 23:21:49', '1', '2024-09-17 18:55:31', '0', 1);
+INSERT INTO qiji_demo03_student (id, name, sex, birthday, description, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (5, '大黑', 2, '2023-11-13 00:00:00', '<p>你在教我做事?</p>', '1', '2023-11-16 23:22:46', '1', '2024-09-17 18:55:29', '0', 1);
+INSERT INTO qiji_demo03_student (id, name, sex, birthday, description, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (9, '小花', 1, '2023-11-07 00:00:00', '<p>哈哈哈</p>', '1', '2023-11-17 00:04:47', '1', '2025-04-19 10:49:04', '0', 1);
 COMMIT;
 -- @formatter:on
 
-DROP SEQUENCE IF EXISTS yudao_demo03_student_seq;
-CREATE SEQUENCE yudao_demo03_student_seq
+DROP SEQUENCE IF EXISTS qiji_demo03_student_seq;
+CREATE SEQUENCE qiji_demo03_student_seq
     START 10;
 

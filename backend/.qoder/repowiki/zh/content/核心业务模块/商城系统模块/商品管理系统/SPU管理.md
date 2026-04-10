@@ -2,24 +2,24 @@
 
 <cite>
 **本文引用的文件**
-- [ProductSpuDO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/spu/ProductSpuDO.java)
-- [ProductSkuDO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java)
-- [ProductSpuStatusEnum.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/enums/spu/ProductSpuStatusEnum.java)
-- [ProductSpuService.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/spu/ProductSpuService.java)
-- [ProductSpuController.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java)
-- [ProductSpuSaveReqVO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuSaveReqVO.java)
-- [ProductSpuRespVO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuRespVO.java)
-- [ProductSpuPageReqVO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuPageReqVO.java)
-- [ProductSpuUpdateStatusReqVO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuUpdateStatusReqVO.java)
-- [ProductSpuSimpleRespVO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuSimpleRespVO.java)
-- [ProductSkuSaveReqVO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSkuSaveReqVO.java)
-- [ProductSkuRespVO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSkuRespVO.java)
-- [ProductSpuApiImpl.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/spu/ProductSpuApiImpl.java)
-- [ProductSkuApi.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/sku/ProductSkuApi.java)
-- [ProductSkuMapper.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/sku/ProductSkuMapper.java)
-- [ProductSpuConvert.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/convert/spu/ProductSpuConvert.java)
-- [AppProductSpuPageReqVO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/app/spu/vo/AppProductSpuPageReqVO.java)
-- [CombinationProductBaseVO.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/combination/vo/product/CombinationProductBaseVO.java)
+- [ProductSpuDO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/spu/ProductSpuDO.java)
+- [ProductSkuDO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java)
+- [ProductSpuStatusEnum.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/enums/spu/ProductSpuStatusEnum.java)
+- [ProductSpuService.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/spu/ProductSpuService.java)
+- [ProductSpuController.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java)
+- [ProductSpuSaveReqVO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuSaveReqVO.java)
+- [ProductSpuRespVO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuRespVO.java)
+- [ProductSpuPageReqVO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuPageReqVO.java)
+- [ProductSpuUpdateStatusReqVO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuUpdateStatusReqVO.java)
+- [ProductSpuSimpleRespVO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuSimpleRespVO.java)
+- [ProductSkuSaveReqVO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSkuSaveReqVO.java)
+- [ProductSkuRespVO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSkuRespVO.java)
+- [ProductSpuApiImpl.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/spu/ProductSpuApiImpl.java)
+- [ProductSkuApi.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/sku/ProductSkuApi.java)
+- [ProductSkuMapper.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/sku/ProductSkuMapper.java)
+- [ProductSpuConvert.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/convert/spu/ProductSpuConvert.java)
+- [AppProductSpuPageReqVO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/app/spu/vo/AppProductSpuPageReqVO.java)
+- [CombinationProductBaseVO.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/combination/vo/product/CombinationProductBaseVO.java)
 - [ruoyi-vue-pro-mall-2025-05-12.sql](file://sql/module/ruoyi-vue-pro-mall-2025-05-12.sql)
 </cite>
 
@@ -74,25 +74,25 @@ L --> H
 ```
 
 图表来源
-- [ProductSpuController.java:35-141](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L35-L141)
-- [ProductSpuService.java:22-156](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/spu/ProductSpuService.java#L22-L156)
-- [ProductSpuDO.java:31-172](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/spu/ProductSpuDO.java#L31-L172)
-- [ProductSkuDO.java:21-135](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java#L21-L135)
-- [ProductSpuStatusEnum.java:14-49](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/enums/spu/ProductSpuStatusEnum.java#L14-L49)
-- [ProductSpuSaveReqVO.java:11-97](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuSaveReqVO.java#L11-L97)
-- [ProductSpuRespVO.java:15-127](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuRespVO.java#L15-L127)
-- [ProductSpuPageReqVO.java:14-59](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuPageReqVO.java#L14-L59)
-- [ProductSpuUpdateStatusReqVO.java:10-23](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuUpdateStatusReqVO.java#L10-L23)
-- [ProductSpuConvert.java:19-43](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/convert/spu/ProductSpuConvert.java#L19-L43)
-- [ProductSkuApi.java:10-61](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/sku/ProductSkuApi.java#L10-L61)
-- [ProductSkuMapper.java:14-34](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/sku/ProductSkuMapper.java#L14-L34)
-- [ProductSpuApiImpl.java:14-45](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/spu/ProductSpuApiImpl.java#L14-L45)
-- [AppProductSpuPageReqVO.java:14-51](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/app/spu/vo/AppProductSpuPageReqVO.java#L14-L51)
-- [CombinationProductBaseVO.java:12-27](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/combination/vo/product/CombinationProductBaseVO.java#L12-L27)
+- [ProductSpuController.java:35-141](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L35-L141)
+- [ProductSpuService.java:22-156](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/spu/ProductSpuService.java#L22-L156)
+- [ProductSpuDO.java:31-172](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/spu/ProductSpuDO.java#L31-L172)
+- [ProductSkuDO.java:21-135](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java#L21-L135)
+- [ProductSpuStatusEnum.java:14-49](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/enums/spu/ProductSpuStatusEnum.java#L14-L49)
+- [ProductSpuSaveReqVO.java:11-97](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuSaveReqVO.java#L11-L97)
+- [ProductSpuRespVO.java:15-127](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuRespVO.java#L15-L127)
+- [ProductSpuPageReqVO.java:14-59](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuPageReqVO.java#L14-L59)
+- [ProductSpuUpdateStatusReqVO.java:10-23](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuUpdateStatusReqVO.java#L10-L23)
+- [ProductSpuConvert.java:19-43](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/convert/spu/ProductSpuConvert.java#L19-L43)
+- [ProductSkuApi.java:10-61](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/sku/ProductSkuApi.java#L10-L61)
+- [ProductSkuMapper.java:14-34](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/sku/ProductSkuMapper.java#L14-L34)
+- [ProductSpuApiImpl.java:14-45](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/spu/ProductSpuApiImpl.java#L14-L45)
+- [AppProductSpuPageReqVO.java:14-51](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/app/spu/vo/AppProductSpuPageReqVO.java#L14-L51)
+- [CombinationProductBaseVO.java:12-27](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/combination/vo/product/CombinationProductBaseVO.java#L12-L27)
 
 章节来源
-- [ProductSpuController.java:35-141](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L35-L141)
-- [ProductSpuService.java:22-156](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/spu/ProductSpuService.java#L22-L156)
+- [ProductSpuController.java:35-141](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L35-L141)
+- [ProductSpuService.java:22-156](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/spu/ProductSpuService.java#L22-L156)
 
 ## 核心组件
 - 控制器层：提供SPU的创建、更新、删除、上下架、详情查询、分页、导出等REST接口。
@@ -103,11 +103,11 @@ L --> H
 - 枚举层：SPU状态枚举，定义上架、下架、回收站等状态。
 
 章节来源
-- [ProductSpuController.java:35-141](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L35-L141)
-- [ProductSpuService.java:22-156](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/spu/ProductSpuService.java#L22-L156)
-- [ProductSpuDO.java:31-172](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/spu/ProductSpuDO.java#L31-L172)
-- [ProductSkuDO.java:21-135](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java#L21-L135)
-- [ProductSpuStatusEnum.java:14-49](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/enums/spu/ProductSpuStatusEnum.java#L14-L49)
+- [ProductSpuController.java:35-141](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L35-L141)
+- [ProductSpuService.java:22-156](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/spu/ProductSpuService.java#L22-L156)
+- [ProductSpuDO.java:31-172](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/spu/ProductSpuDO.java#L31-L172)
+- [ProductSkuDO.java:21-135](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java#L21-L135)
+- [ProductSpuStatusEnum.java:14-49](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/enums/spu/ProductSpuStatusEnum.java#L14-L49)
 
 ## 架构总览
 SPU管理采用典型的分层架构，控制器负责HTTP接入与权限校验，服务层编排业务规则，DAO层负责数据持久化，VO/DTO与Convert承担数据传输与转换职责。SPU与SKU之间通过SPU主键建立一对多关联，SPU聚合SKU的价格、库存等汇总信息。
@@ -125,13 +125,13 @@ Ext["ProductSpuApiImpl / AppProductSpuPageReqVO / Promotion Integration"] --> Sv
 ```
 
 图表来源
-- [ProductSpuController.java:35-141](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L35-L141)
-- [ProductSpuService.java:22-156](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/spu/ProductSpuService.java#L22-L156)
-- [ProductSpuConvert.java:19-43](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/convert/spu/ProductSpuConvert.java#L19-L43)
-- [ProductSkuApi.java:10-61](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/sku/ProductSkuApi.java#L10-L61)
-- [ProductSkuMapper.java:14-34](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/sku/ProductSkuMapper.java#L14-L34)
-- [ProductSpuApiImpl.java:14-45](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/spu/ProductSpuApiImpl.java#L14-L45)
-- [AppProductSpuPageReqVO.java:14-51](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/app/spu/vo/AppProductSpuPageReqVO.java#L14-L51)
+- [ProductSpuController.java:35-141](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L35-L141)
+- [ProductSpuService.java:22-156](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/spu/ProductSpuService.java#L22-L156)
+- [ProductSpuConvert.java:19-43](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/convert/spu/ProductSpuConvert.java#L19-L43)
+- [ProductSkuApi.java:10-61](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/sku/ProductSkuApi.java#L10-L61)
+- [ProductSkuMapper.java:14-34](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/sku/ProductSkuMapper.java#L14-L34)
+- [ProductSpuApiImpl.java:14-45](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/spu/ProductSpuApiImpl.java#L14-L45)
+- [AppProductSpuPageReqVO.java:14-51](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/app/spu/vo/AppProductSpuPageReqVO.java#L14-L51)
 
 ## 详细组件分析
 
@@ -195,13 +195,13 @@ PRODUCT_SPU ||--o{ PRODUCT_SKU : "一对多"
 ```
 
 图表来源
-- [ProductSpuDO.java:31-172](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/spu/ProductSpuDO.java#L31-L172)
-- [ProductSkuDO.java:21-135](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java#L21-L135)
+- [ProductSpuDO.java:31-172](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/spu/ProductSpuDO.java#L31-L172)
+- [ProductSkuDO.java:21-135](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java#L21-L135)
 - [ruoyi-vue-pro-mall-2025-05-12.sql:275-293](file://sql/module/ruoyi-vue-pro-mall-2025-05-12.sql#L275-L293)
 
 章节来源
-- [ProductSpuDO.java:31-172](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/spu/ProductSpuDO.java#L31-L172)
-- [ProductSkuDO.java:21-135](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java#L21-L135)
+- [ProductSpuDO.java:31-172](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/spu/ProductSpuDO.java#L31-L172)
+- [ProductSkuDO.java:21-135](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java#L21-L135)
 - [ruoyi-vue-pro-mall-2025-05-12.sql:275-293](file://sql/module/ruoyi-vue-pro-mall-2025-05-12.sql#L275-L293)
 
 ### SPU与SKU的关联与规格组合
@@ -236,12 +236,12 @@ ProductSkuDO --> Property : "包含"
 ```
 
 图表来源
-- [ProductSpuDO.java:31-172](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/spu/ProductSpuDO.java#L31-L172)
-- [ProductSkuDO.java:21-135](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java#L21-L135)
+- [ProductSpuDO.java:31-172](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/spu/ProductSpuDO.java#L31-L172)
+- [ProductSkuDO.java:21-135](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java#L21-L135)
 
 章节来源
-- [ProductSpuDO.java:31-172](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/spu/ProductSpuDO.java#L31-L172)
-- [ProductSkuDO.java:21-135](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java#L21-L135)
+- [ProductSpuDO.java:31-172](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/spu/ProductSpuDO.java#L31-L172)
+- [ProductSkuDO.java:21-135](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java#L21-L135)
 
 ### SPU状态管理机制
 - 状态枚举：回收站、下架、上架三种状态，支持判断是否处于上架状态。
@@ -257,12 +257,12 @@ stateDiagram-v2
 ```
 
 图表来源
-- [ProductSpuStatusEnum.java:14-49](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/enums/spu/ProductSpuStatusEnum.java#L14-L49)
-- [ProductSpuUpdateStatusReqVO.java:10-23](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuUpdateStatusReqVO.java#L10-L23)
+- [ProductSpuStatusEnum.java:14-49](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/enums/spu/ProductSpuStatusEnum.java#L14-L49)
+- [ProductSpuUpdateStatusReqVO.java:10-23](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuUpdateStatusReqVO.java#L10-L23)
 
 章节来源
-- [ProductSpuStatusEnum.java:14-49](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/enums/spu/ProductSpuStatusEnum.java#L14-L49)
-- [ProductSpuController.java:61-67](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L61-L67)
+- [ProductSpuStatusEnum.java:14-49](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/enums/spu/ProductSpuStatusEnum.java#L14-L49)
+- [ProductSpuController.java:61-67](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L61-L67)
 
 ### SPU业务流程（创建/编辑/删除/上下架/审核）
 - 创建：控制器接收新增请求，服务层创建SPU并生成SKU（若为多规格），返回SPU编号。
@@ -287,13 +287,13 @@ Ctrl-->>Admin : "成功"
 ```
 
 图表来源
-- [ProductSpuController.java:46-76](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L46-L76)
-- [ProductSpuService.java:24-44](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/spu/ProductSpuService.java#L24-L44)
-- [ProductSpuUpdateStatusReqVO.java:10-23](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuUpdateStatusReqVO.java#L10-L23)
+- [ProductSpuController.java:46-76](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L46-L76)
+- [ProductSpuService.java:24-44](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/spu/ProductSpuService.java#L24-L44)
+- [ProductSpuUpdateStatusReqVO.java:10-23](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuUpdateStatusReqVO.java#L10-L23)
 
 章节来源
-- [ProductSpuController.java:46-76](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L46-L76)
-- [ProductSpuService.java:24-44](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/spu/ProductSpuService.java#L24-L44)
+- [ProductSpuController.java:46-76](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L46-L76)
+- [ProductSpuService.java:24-44](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/spu/ProductSpuService.java#L24-L44)
 
 ### SPU搜索与筛选
 - 后台分页：支持按名称、分类、创建时间范围、Tab类型（出售中/仓库中/售罄/警戒库存/回收站）筛选。
@@ -313,14 +313,14 @@ Export --> |否| Return["返回分页结果"]
 ```
 
 图表来源
-- [ProductSpuPageReqVO.java:14-59](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuPageReqVO.java#L14-L59)
-- [AppProductSpuPageReqVO.java:14-51](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/app/spu/vo/AppProductSpuPageReqVO.java#L14-L51)
-- [ProductSpuController.java:112-138](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L112-L138)
+- [ProductSpuPageReqVO.java:14-59](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuPageReqVO.java#L14-L59)
+- [AppProductSpuPageReqVO.java:14-51](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/app/spu/vo/AppProductSpuPageReqVO.java#L14-L51)
+- [ProductSpuController.java:112-138](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L112-L138)
 
 章节来源
-- [ProductSpuPageReqVO.java:14-59](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuPageReqVO.java#L14-L59)
-- [AppProductSpuPageReqVO.java:14-51](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/app/spu/vo/AppProductSpuPageReqVO.java#L14-L51)
-- [ProductSpuController.java:112-138](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L112-L138)
+- [ProductSpuPageReqVO.java:14-59](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuPageReqVO.java#L14-L59)
+- [AppProductSpuPageReqVO.java:14-51](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/app/spu/vo/AppProductSpuPageReqVO.java#L14-L51)
+- [ProductSpuController.java:112-138](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L112-L138)
 
 ### SPU批量操作
 - 批量上下架：通过状态更新接口对多个SPU批量执行状态变更。
@@ -328,8 +328,8 @@ Export --> |否| Return["返回分页结果"]
 - 批量复制：可在服务层扩展批量复制逻辑（基于现有创建流程），注意SKU组合与属性一致性校验。
 
 章节来源
-- [ProductSpuController.java:127-138](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L127-L138)
-- [ProductSpuUpdateStatusReqVO.java:10-23](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuUpdateStatusReqVO.java#L10-L23)
+- [ProductSpuController.java:127-138](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L127-L138)
+- [ProductSpuUpdateStatusReqVO.java:10-23](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuUpdateStatusReqVO.java#L10-L23)
 
 ### SPU与SKU的交互与转换
 - 控制器在获取SPU详情时，同时查询对应SKU列表，并通过Convert将DO转为VO。
@@ -351,22 +351,22 @@ Ctrl-->>Ctrl : "返回响应"
 ```
 
 图表来源
-- [ProductSpuController.java:78-91](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L78-L91)
-- [ProductSpuConvert.java:29-40](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/convert/spu/ProductSpuConvert.java#L29-L40)
-- [ProductSkuMapper.java:27-33](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/sku/ProductSkuMapper.java#L27-L33)
+- [ProductSpuController.java:78-91](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L78-L91)
+- [ProductSpuConvert.java:29-40](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/convert/spu/ProductSpuConvert.java#L29-L40)
+- [ProductSkuMapper.java:27-33](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/sku/ProductSkuMapper.java#L27-L33)
 
 章节来源
-- [ProductSpuController.java:78-91](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L78-L91)
-- [ProductSpuConvert.java:29-40](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/convert/spu/ProductSpuConvert.java#L29-L40)
-- [ProductSkuMapper.java:27-33](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/sku/ProductSkuMapper.java#L27-L33)
+- [ProductSpuController.java:78-91](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L78-L91)
+- [ProductSpuConvert.java:29-40](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/convert/spu/ProductSpuConvert.java#L29-L40)
+- [ProductSkuMapper.java:27-33](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/sku/ProductSkuMapper.java#L27-L33)
 
 ### 与其他模块的集成
 - 促销模块：拼团活动绑定SPU与SKU，确保活动价格与库存联动。
 - 对外API：SPU对外API实现提供批量查询与校验能力，供其他模块复用。
 
 章节来源
-- [CombinationProductBaseVO.java:12-27](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/controller/admin/combination/vo/product/CombinationProductBaseVO.java#L12-L27)
-- [ProductSpuApiImpl.java:14-45](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/spu/ProductSpuApiImpl.java#L14-L45)
+- [CombinationProductBaseVO.java:12-27](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/controller/admin/combination/vo/product/CombinationProductBaseVO.java#L12-L27)
+- [ProductSpuApiImpl.java:14-45](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/spu/ProductSpuApiImpl.java#L14-L45)
 
 ## 依赖分析
 - 控制器依赖服务层接口，服务层依赖DO与API/Mapper，控制器与服务层通过VO/DTO解耦。
@@ -385,16 +385,16 @@ Ext["ProductSpuApiImpl / Promotion"] --> Svc
 ```
 
 图表来源
-- [ProductSpuController.java:35-141](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L35-L141)
-- [ProductSpuService.java:22-156](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/spu/ProductSpuService.java#L22-L156)
-- [ProductSpuConvert.java:19-43](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/convert/spu/ProductSpuConvert.java#L19-L43)
-- [ProductSkuApi.java:10-61](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/sku/ProductSkuApi.java#L10-L61)
-- [ProductSkuMapper.java:14-34](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/sku/ProductSkuMapper.java#L14-L34)
-- [ProductSpuApiImpl.java:14-45](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/spu/ProductSpuApiImpl.java#L14-L45)
+- [ProductSpuController.java:35-141](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L35-L141)
+- [ProductSpuService.java:22-156](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/spu/ProductSpuService.java#L22-L156)
+- [ProductSpuConvert.java:19-43](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/convert/spu/ProductSpuConvert.java#L19-L43)
+- [ProductSkuApi.java:10-61](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/sku/ProductSkuApi.java#L10-L61)
+- [ProductSkuMapper.java:14-34](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/sku/ProductSkuMapper.java#L14-L34)
+- [ProductSpuApiImpl.java:14-45](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/spu/ProductSpuApiImpl.java#L14-L45)
 
 章节来源
-- [ProductSpuController.java:35-141](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L35-L141)
-- [ProductSpuService.java:22-156](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/spu/ProductSpuService.java#L22-L156)
+- [ProductSpuController.java:35-141](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L35-L141)
+- [ProductSpuService.java:22-156](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/spu/ProductSpuService.java#L22-L156)
 
 ## 性能考虑
 - 分页与导出
@@ -411,8 +411,8 @@ Ext["ProductSpuApiImpl / Promotion"] --> Svc
   - 浏览量更新使用异步方法，降低写路径延迟。
 
 章节来源
-- [ProductSpuController.java:127-138](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L127-L138)
-- [ProductSpuService.java:147-153](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/spu/ProductSpuService.java#L147-L153)
+- [ProductSpuController.java:127-138](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L127-L138)
+- [ProductSpuService.java:147-153](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/spu/ProductSpuService.java#L147-L153)
 
 ## 故障排查指南
 - 常见问题
@@ -428,9 +428,9 @@ Ext["ProductSpuApiImpl / Promotion"] --> Svc
   - 对高频接口增加埋点与告警，监控耗时与错误率。
 
 章节来源
-- [ProductSpuUpdateStatusReqVO.java:10-23](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/vo/ProductSpuUpdateStatusReqVO.java#L10-L23)
-- [ProductSpuController.java:127-138](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L127-L138)
-- [ProductSpuConvert.java:29-40](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/convert/spu/ProductSpuConvert.java#L29-L40)
+- [ProductSpuUpdateStatusReqVO.java:10-23](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/vo/ProductSpuUpdateStatusReqVO.java#L10-L23)
+- [ProductSpuController.java:127-138](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L127-L138)
+- [ProductSpuConvert.java:29-40](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/convert/spu/ProductSpuConvert.java#L29-L40)
 
 ## 结论
 SPU管理在本项目中实现了清晰的分层设计与完善的领域建模，通过SPU与SKU的协同，支撑了多规格商品的统一管理与灵活售卖。结合状态管理、搜索筛选、批量操作与对外API，能够满足后台运营与前台展示的多样化需求。建议在高并发与大数据场景下进一步完善索引、缓存与异步化策略，持续提升系统性能与稳定性。

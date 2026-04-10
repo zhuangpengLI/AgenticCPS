@@ -2,15 +2,15 @@
 
 <cite>
 **本文引用的文件**
-- [ProductSkuDO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java)
-- [ProductSkuService.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/sku/ProductSkuService.java)
-- [ProductSkuServiceImpl.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/sku/ProductSkuServiceImpl.java)
-- [ProductSkuMapper.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/sku/ProductSkuMapper.java)
-- [ProductSkuApi.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/stock/ProductSkuApi.java)
-- [ProductSkuRespDTO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/stock/dto/ProductSkuRespDTO.java)
-- [ProductSkuUpdateStockReqDTO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/stock/dto/ProductSkuUpdateStockReqDTO.java)
-- [ProductSpuController.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java)
-- [ErrorCodeConstants.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/enums/ErrorCodeConstants.java)
+- [ProductSkuDO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java)
+- [ProductSkuService.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/sku/ProductSkuService.java)
+- [ProductSkuServiceImpl.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/sku/ProductSkuServiceImpl.java)
+- [ProductSkuMapper.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/sku/ProductSkuMapper.java)
+- [ProductSkuApi.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/stock/ProductSkuApi.java)
+- [ProductSkuRespDTO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/stock/dto/ProductSkuRespDTO.java)
+- [ProductSkuUpdateStockReqDTO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/stock/dto/ProductSkuUpdateStockReqDTO.java)
+- [ProductSpuController.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java)
+- [ErrorCodeConstants.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/enums/ErrorCodeConstants.java)
 </cite>
 
 ## 目录
@@ -55,26 +55,26 @@ SVC --> ERR
 ```
 
 图表来源
-- [ProductSkuApi.java:1-62](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/stock/ProductSkuApi.java#L1-L62)
-- [ProductSkuRespDTO.java:1-72](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/stock/dto/ProductSkuRespDTO.java#L1-L72)
-- [ProductSkuUpdateStockReqDTO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/stock/dto/ProductSkuUpdateStockReqDTO.java)
-- [ProductSkuService.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuService.java)
-- [ProductSkuServiceImpl.java:1-279](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L1-L279)
-- [ProductSkuMapper.java:1-73](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/stock/ProductSkuMapper.java#L1-L73)
-- [ProductSkuDO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/stock/ProductSkuDO.java)
-- [ProductSpuController.java:1-141](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L1-L141)
-- [ErrorCodeConstants.java:1-57](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/enums/ErrorCodeConstants.java#L1-L57)
+- [ProductSkuApi.java:1-62](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/stock/ProductSkuApi.java#L1-L62)
+- [ProductSkuRespDTO.java:1-72](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/stock/dto/ProductSkuRespDTO.java#L1-L72)
+- [ProductSkuUpdateStockReqDTO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/stock/dto/ProductSkuUpdateStockReqDTO.java)
+- [ProductSkuService.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuService.java)
+- [ProductSkuServiceImpl.java:1-279](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L1-L279)
+- [ProductSkuMapper.java:1-73](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/stock/ProductSkuMapper.java#L1-L73)
+- [ProductSkuDO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/stock/ProductSkuDO.java)
+- [ProductSpuController.java:1-141](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L1-L141)
+- [ErrorCodeConstants.java:1-57](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/enums/ErrorCodeConstants.java#L1-L57)
 
 章节来源
-- [ProductSkuDO.java:1-135](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java#L1-L135)
-- [ProductSkuService.java:1-123](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuService.java)
-- [ProductSkuServiceImpl.java:1-279](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L1-L279)
-- [ProductSkuMapper.java:1-73](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/stock/ProductSkuMapper.java#L1-L73)
-- [ProductSkuApi.java:1-62](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/stock/ProductSkuApi.java#L1-L62)
-- [ProductSkuRespDTO.java:1-72](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/stock/dto/ProductSkuRespDTO.java#L1-L72)
-- [ProductSkuUpdateStockReqDTO.java](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/stock/dto/ProductSkuUpdateStockReqDTO.java)
-- [ProductSpuController.java:1-141](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L1-L141)
-- [ErrorCodeConstants.java:1-57](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/enums/ErrorCodeConstants.java#L1-L57)
+- [ProductSkuDO.java:1-135](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java#L1-L135)
+- [ProductSkuService.java:1-123](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuService.java)
+- [ProductSkuServiceImpl.java:1-279](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L1-L279)
+- [ProductSkuMapper.java:1-73](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/stock/ProductSkuMapper.java#L1-L73)
+- [ProductSkuApi.java:1-62](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/stock/ProductSkuApi.java#L1-L62)
+- [ProductSkuRespDTO.java:1-72](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/stock/dto/ProductSkuRespDTO.java#L1-L72)
+- [ProductSkuUpdateStockReqDTO.java](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/stock/dto/ProductSkuUpdateStockReqDTO.java)
+- [ProductSpuController.java:1-141](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L1-L141)
+- [ErrorCodeConstants.java:1-57](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/enums/ErrorCodeConstants.java#L1-L57)
 
 ## 核心组件
 - SKU实体（DO）：承载SKU的全部业务字段，包括SPU关联、属性数组（JSON）、价格体系（销售价/市场价/成本价）、库存、图片、条码、重量/体积、分销佣金、销量统计等
@@ -84,11 +84,11 @@ SVC --> ERR
 - SPU控制器：在SPU详情页联动加载SKU列表，便于管理与展示
 
 章节来源
-- [ProductSkuDO.java:31-131](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java#L31-L131)
-- [ProductSkuService.java:15-122](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuService.java#L15-L122)
-- [ProductSkuMapper.java:27-70](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/stock/ProductSkuMapper.java#L27-L70)
-- [ProductSkuApi.java:18-61](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/stock/ProductSkuApi.java#L18-L61)
-- [ProductSpuController.java:88-91](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L88-L91)
+- [ProductSkuDO.java:31-131](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java#L31-L131)
+- [ProductSkuService.java:15-122](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuService.java#L15-L122)
+- [ProductSkuMapper.java:27-70](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/stock/ProductSkuMapper.java#L27-L70)
+- [ProductSkuApi.java:18-61](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/stock/ProductSkuApi.java#L18-L61)
+- [ProductSpuController.java:88-91](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L88-L91)
 
 ## 架构总览
 SKU管理采用经典的分层架构：API层负责对外暴露能力；Service层封装业务规则与事务；Mapper层负责SQL执行；DO层承载数据模型。SPU控制器在商品管理界面中联动展示SKU，便于运营人员维护规格与库存。
@@ -104,10 +104,10 @@ Service --> Err["错误码常量"]
 ```
 
 图表来源
-- [ProductSkuApi.java:18-61](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/stock/ProductSkuApi.java#L18-L61)
-- [ProductSkuServiceImpl.java:255-276](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L255-L276)
-- [ProductSkuMapper.java:45-70](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/stock/ProductSkuMapper.java#L45-L70)
-- [ErrorCodeConstants.java:41-46](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/enums/ErrorCodeConstants.java#L41-L46)
+- [ProductSkuApi.java:18-61](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/stock/ProductSkuApi.java#L18-L61)
+- [ProductSkuServiceImpl.java:255-276](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L255-L276)
+- [ProductSkuMapper.java:45-70](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/stock/ProductSkuMapper.java#L45-L70)
+- [ErrorCodeConstants.java:41-46](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/enums/ErrorCodeConstants.java#L41-L46)
 
 ## 详细组件分析
 
@@ -144,10 +144,10 @@ int sales_count
 ```
 
 图表来源
-- [ProductSkuDO.java:34-95](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java#L34-L95)
+- [ProductSkuDO.java:34-95](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java#L34-L95)
 
 章节来源
-- [ProductSkuDO.java:31-131](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java#L31-L131)
+- [ProductSkuDO.java:31-131](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java#L31-L131)
 
 ### SKU与SPU的关联关系
 - 一对多关系：一个SPU可包含多个SKU，每个SKU绑定到唯一的SPU
@@ -174,11 +174,11 @@ ProductSkuDO --> ProductSpuDO : "属于"
 ```
 
 图表来源
-- [ProductSkuDO.java:37-41](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java#L37-L41)
-- [ProductSpuController.java:88-91](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L88-L91)
+- [ProductSkuDO.java:37-41](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java#L37-L41)
+- [ProductSpuController.java:88-91](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L88-L91)
 
 章节来源
-- [ProductSpuController.java:88-91](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L88-L91)
+- [ProductSpuController.java:88-91](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L88-L91)
 
 ### 价格管理机制
 - 字段维度：销售价（price）、市场价（marketPrice）、成本价（costPrice），单位统一为“分”，便于精确计算与比较
@@ -186,8 +186,8 @@ ProductSkuDO --> ProductSpuDO : "属于"
 - 价格变更流程：通过SKU服务提供的批量更新能力，结合SPU控制器的页面交互，实现价格的统一调整
 
 章节来源
-- [ProductSkuDO.java:48-58](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/dataobject/sku/ProductSkuDO.java#L48-L58)
-- [ProductSkuRespDTO.java:31-41](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/stock/dto/ProductSkuRespDTO.java#L31-L41)
+- [ProductSkuDO.java:48-58](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/dataobject/sku/ProductSkuDO.java#L48-L58)
+- [ProductSkuRespDTO.java:31-41](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/stock/dto/ProductSkuRespDTO.java#L31-L41)
 
 ### 库存管理
 - 字段维度：stock（可用库存）、salesCount（销量）
@@ -220,13 +220,13 @@ API-->>Client : "成功"
 ```
 
 图表来源
-- [ProductSkuApi.java:55-59](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/api/stock/ProductSkuApi.java#L55-L59)
-- [ProductSkuServiceImpl.java:255-276](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L255-L276)
-- [ProductSkuMapper.java:45-70](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/stock/ProductSkuMapper.java#L45-L70)
+- [ProductSkuApi.java:55-59](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/api/stock/ProductSkuApi.java#L55-L59)
+- [ProductSkuServiceImpl.java:255-276](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L255-L276)
+- [ProductSkuMapper.java:45-70](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/stock/ProductSkuMapper.java#L45-L70)
 
 章节来源
-- [ProductSkuServiceImpl.java:255-276](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L255-L276)
-- [ProductSkuMapper.java:45-70](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/stock/ProductSkuMapper.java#L45-L70)
+- [ProductSkuServiceImpl.java:255-276](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L255-L276)
+- [ProductSkuMapper.java:45-70](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/stock/ProductSkuMapper.java#L45-L70)
 
 ### 规格组合与SKU生成
 - 规格校验流程：服务层对提交的SKU规格集合进行严格校验，包括属性项存在性、每SKU属性项数量一致性、SKU组合唯一性等
@@ -247,10 +247,10 @@ FillDefault --> End
 ```
 
 图表来源
-- [ProductSkuServiceImpl.java:87-143](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L87-L143)
+- [ProductSkuServiceImpl.java:87-143](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L87-L143)
 
 章节来源
-- [ProductSkuServiceImpl.java:87-143](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L87-L143)
+- [ProductSkuServiceImpl.java:87-143](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L87-L143)
 
 ### 批量操作能力
 - 批量创建：基于传入的SKU规格集合，直接批量插入
@@ -259,9 +259,9 @@ FillDefault --> End
 - 批量属性/属性值名称同步：当属性或属性值名称变更时，批量更新SKU冗余字段
 
 章节来源
-- [ProductSkuServiceImpl.java:146-149](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L146-L149)
-- [ProductSkuServiceImpl.java:220-253](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L220-L253)
-- [ProductSkuServiceImpl.java:170-216](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L170-L216)
+- [ProductSkuServiceImpl.java:146-149](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L146-L149)
+- [ProductSkuServiceImpl.java:220-253](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L220-L253)
+- [ProductSkuServiceImpl.java:170-216](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L170-L216)
 
 ### 与订单系统的集成
 - 下单时SKU选择：订单系统从SPU控制器或SKU API获取SKU列表，用户选择具体规格（SKU）
@@ -269,9 +269,9 @@ FillDefault --> End
 - 库存回滚：在订单取消或关闭时，应调用库存增加接口恢复库存（此流程在订单模块中实现）
 
 章节来源
-- [ProductSpuController.java:88-91](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L88-L91)
-- [ProductSkuServiceImpl.java:255-276](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L255-L276)
-- [ErrorCodeConstants.java:46](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/enums/ErrorCodeConstants.java#L46)
+- [ProductSpuController.java:88-91](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L88-L91)
+- [ProductSkuServiceImpl.java:255-276](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L255-L276)
+- [ErrorCodeConstants.java:46](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/enums/ErrorCodeConstants.java#L46)
 
 ## 依赖分析
 - 组件耦合
@@ -292,16 +292,16 @@ CTRL["SPU 控制器"] --> SVC
 ```
 
 图表来源
-- [ProductSkuServiceImpl.java:40-51](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L40-L51)
-- [ProductSkuMapper.java:14](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/stock/ProductSkuMapper.java#L14)
-- [ProductSpuController.java:42-44](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L42-L44)
-- [ErrorCodeConstants.java:41-46](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/enums/ErrorCodeConstants.java#L41-L46)
+- [ProductSkuServiceImpl.java:40-51](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L40-L51)
+- [ProductSkuMapper.java:14](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/stock/ProductSkuMapper.java#L14)
+- [ProductSpuController.java:42-44](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L42-L44)
+- [ErrorCodeConstants.java:41-46](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/enums/ErrorCodeConstants.java#L41-L46)
 
 章节来源
-- [ProductSkuServiceImpl.java:40-51](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L40-L51)
-- [ProductSkuMapper.java:14](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/dal/mysql/stock/ProductSkuMapper.java#L14)
-- [ProductSpuController.java:42-44](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/controller/admin/spu/ProductSpuController.java#L42-L44)
-- [ErrorCodeConstants.java:41-46](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/enums/ErrorCodeConstants.java#L41-L46)
+- [ProductSkuServiceImpl.java:40-51](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L40-L51)
+- [ProductSkuMapper.java:14](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/dal/mysql/stock/ProductSkuMapper.java#L14)
+- [ProductSpuController.java:42-44](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/controller/admin/spu/ProductSpuController.java#L42-L44)
+- [ErrorCodeConstants.java:41-46](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/enums/ErrorCodeConstants.java#L41-L46)
 
 ## 性能考虑
 - 批量操作
@@ -330,9 +330,9 @@ CTRL["SPU 控制器"] --> SVC
   - 检查属性/属性值名称是否已同步至SKU冗余字段
 
 章节来源
-- [ErrorCodeConstants.java:41-46](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/enums/ErrorCodeConstants.java#L41-L46)
-- [ProductSkuServiceImpl.java:87-143](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L87-L143)
-- [ProductSkuServiceImpl.java:255-276](file://yudao-module-mall/yudao-module-product/src/main/java/cn/iocoder/yudao/module/product/service/stock/ProductSkuServiceImpl.java#L255-L276)
+- [ErrorCodeConstants.java:41-46](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/enums/ErrorCodeConstants.java#L41-L46)
+- [ProductSkuServiceImpl.java:87-143](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L87-L143)
+- [ProductSkuServiceImpl.java:255-276](file://qiji-module-mall/qiji-module-product/src/main/java/com.qiji.cps/module/product/service/stock/ProductSkuServiceImpl.java#L255-L276)
 
 ## 结论
 本SKU管理方案以清晰的数据模型与严格的业务校验为基础，结合服务层的批量操作与事务保障，实现了从规格组合生成、价格与库存管理到与SPU/订单系统的顺畅衔接。通过冗余字段与批量同步机制，兼顾了查询效率与数据一致性。建议在生产环境中配合缓存与异步任务进一步优化高并发场景下的性能表现。

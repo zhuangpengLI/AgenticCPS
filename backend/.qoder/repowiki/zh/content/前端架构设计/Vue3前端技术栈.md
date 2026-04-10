@@ -2,9 +2,9 @@
 
 <cite>
 **本文引用的文件**
-- [README.md](file://yudao-ui/yudao-ui-admin-vue3/README.md)
+- [README.md](file://qiji-ui/qiji-ui-admin-vue3/README.md)
 - [pom.xml](file://pom.xml)
-- [api.ts.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
+- [api.ts.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
 </cite>
 
 ## 目录
@@ -28,21 +28,21 @@
 
 ```mermaid
 graph TB
-Root["根工程<br/>pom.xml"] --> Server["后端服务模块<br/>yudao-server"]
-Root --> Modules["业务模块集合<br/>yudao-module-*"]
-Root --> UI["前端UI模块<br/>yudao-ui-admin-vue3"]
+Root["根工程<br/>pom.xml"] --> Server["后端服务模块<br/>qiji-server"]
+Root --> Modules["业务模块集合<br/>qiji-module-*"]
+Root --> UI["前端UI模块<br/>qiji-ui-admin-vue3"]
 UI --> Templates["代码生成模板<br/>codegen/vue3_vben5_ele"]
 Templates --> API["API接口模板<br/>api.ts.vm"]
 ```
 
 图示来源
 - [pom.xml](file://pom.xml)
-- [README.md](file://yudao-ui/yudao-ui-admin-vue3/README.md)
-- [api.ts.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
+- [README.md](file://qiji-ui/qiji-ui-admin-vue3/README.md)
+- [api.ts.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
 
 章节来源
 - [pom.xml](file://pom.xml)
-- [README.md](file://yudao-ui/yudao-ui-admin-vue3/README.md)
+- [README.md](file://qiji-ui/qiji-ui-admin-vue3/README.md)
 
 ## 核心组件
 - 组件设计模式
@@ -74,7 +74,7 @@ Templates --> API["API接口模板<br/>api.ts.vm"]
   - 测试：单元测试与端到端测试覆盖关键流程，保障稳定性。
 
 章节来源
-- [api.ts.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
+- [api.ts.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
 
 ## 架构总览
 下图展示Vue3前端在AgenticCPS中的典型交互关系：页面组件通过API层发起HTTP请求，后端返回数据后渲染至Element Plus组件，全局状态与路由共同驱动页面流转。
@@ -90,7 +90,7 @@ Page --> Router["路由管理<br/>Vue Router"]
 ```
 
 图示来源
-- [api.ts.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
+- [api.ts.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
 
 ## 详细组件分析
 
@@ -121,10 +121,10 @@ Page->>Page : "渲染表格/分页"
 ```
 
 图示来源
-- [api.ts.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
+- [api.ts.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
 
 章节来源
-- [api.ts.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
+- [api.ts.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
 
 ### 组件通信与状态管理
 - Props/Emits
@@ -157,10 +157,10 @@ SaveAPI --> Refresh
 ```
 
 图示来源
-- [api.ts.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
+- [api.ts.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
 
 章节来源
-- [api.ts.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
+- [api.ts.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
 
 ### Element Plus组件封装与自定义
 - 常用封装
@@ -174,7 +174,7 @@ SaveAPI --> Refresh
   - 动态表单：根据配置动态生成表单项，减少重复代码。
 
 章节来源
-- [README.md](file://yudao-ui/yudao-ui-admin-vue3/README.md)
+- [README.md](file://qiji-ui/qiji-ui-admin-vue3/README.md)
 
 ## 依赖分析
 - 技术栈依赖
@@ -205,11 +205,11 @@ API --> Backend["后端服务"]
 
 图示来源
 - [pom.xml](file://pom.xml)
-- [api.ts.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
+- [api.ts.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
 
 章节来源
 - [pom.xml](file://pom.xml)
-- [api.ts.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
+- [api.ts.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
 
 ## 性能考虑
 - 代码分割
@@ -240,6 +240,6 @@ AgenticCPS系统基于Vue3与Element Plus构建了高复用、易维护的管理
 
 ## 附录
 - 参考路径
-  - 页面与API生成模板：[api.ts.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
-  - 项目说明：[README.md](file://yudao-ui/yudao-ui-admin-vue3/README.md)
+  - 页面与API生成模板：[api.ts.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_vben5_ele/schema/api/api.ts.vm)
+  - 项目说明：[README.md](file://qiji-ui/qiji-ui-admin-vue3/README.md)
   - 根工程配置：[pom.xml](file://pom.xml)

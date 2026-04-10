@@ -28,7 +28,7 @@ from simple_ddl_parser import DDLParser
 sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
 
 PREAMBLE = """/*
- Yudao Database Transfer Tool
+ Qiji Database Transfer Tool
 
  Source Server Type    : MySQL
 

@@ -1,7 +1,7 @@
 # Docker Build & Up
 
 目标: 快速部署体验系统，帮助了解系统之间的依赖关系。
-依赖：docker compose v2，删除`name: yudao-system`，降低`version`版本为`3.3`以下，支持`docker-compose`。
+依赖：docker compose v2，删除`name: qiji-system`，降低`version`版本为`3.3`以下，支持`docker-compose`。
 
 ## 功能文件列表
 
@@ -10,9 +10,9 @@
 ├── Docker-HOWTO.md                 
 ├── docker-compose.yml              
 ├── docker.env                      <-- 提供docker-compose环境变量配置
-├── yudao-server
+├── qiji-server
 │   └── Dockerfile
-└── yudao-ui-admin
+└── qiji-ui-admin
     ├── .dockerignore
     ├── Dockerfile
     └── nginx.conf                  <-- 提供基础配置，gzip压缩、api转发
@@ -22,10 +22,10 @@
 
 ```shell
 # 创建maven缓存volume
-docker volume create --name yudao-maven-repo
+docker volume create --name qiji-maven-repo
 
-docker run -it --rm --name yudao-maven \
-    -v yudao-maven-repo:/root/.m2 \
+docker run -it --rm --name qiji-maven \
+    -v qiji-maven-repo:/root/.m2 \
     -v $PWD:/usr/src/mymaven \
     -w /usr/src/mymaven \
     maven mvn clean install package '-Dmaven.test.skip=true'

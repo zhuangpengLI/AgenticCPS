@@ -3,13 +3,13 @@
 <cite>
 **本文引用的文件**
 - [README.md](file://README.md)
-- [yudao-ui-admin-uniapp/README.md](file://yudao-ui/yudao-ui-admin-uniapp/README.md)
-- [yudao-ui-mall-uniapp/README.md](file://yudao-ui/yudao-ui-mall-uniapp/README.md)
-- [CodegenEngine.java](file://yudao-module-infra/src/main/java/cn/iocoder/yudao/module/infra/service/codegen/inner/CodegenEngine.java)
-- [DiyTemplateDO.java](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java)
-- [index.vue.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/index.vue.vm)
-- [index.vue.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/detail/index.vue.vm)
-- [index.vue.vm](file://yudao-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/form/index.vue.vm)
+- [qiji-ui-admin-uniapp/README.md](file://qiji-ui/qiji-ui-admin-uniapp/README.md)
+- [qiji-ui-mall-uniapp/README.md](file://qiji-ui/qiji-ui-mall-uniapp/README.md)
+- [CodegenEngine.java](file://qiji-module-infra/src/main/java/com.qiji.cps/module/infra/service/codegen/inner/CodegenEngine.java)
+- [DiyTemplateDO.java](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java)
+- [index.vue.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/index.vue.vm)
+- [index.vue.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/detail/index.vue.vm)
+- [index.vue.vm](file://qiji-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/form/index.vue.vm)
 </cite>
 
 ## 目录
@@ -35,31 +35,31 @@
 ## 项目结构
 在当前仓库中，与 UniApp 相关的关键位置如下：
 - 顶层说明：项目 README 明确了移动端采用 uni-app 方案，支持 APP、小程序、H5 多端统一部署
-- UI 子模块：存在 yudao-ui-admin-uniapp 与 yudao-ui-mall-uniapp 两个前端工程入口说明
+- UI 子模块：存在 qiji-ui-admin-uniapp 与 qiji-ui-mall-uniapp 两个前端工程入口说明
 - 代码生成：infra 模块内包含针对 uni-app 的 Vue3 代码生成模板，用于自动生成页面、表单、详情等视图文件
 - 商城模板：promotion 模块中存在与 uni-app 导航属性相关的数据模型字段
 
 ```mermaid
 graph TB
-A["项目根目录"] --> B["yudao-ui 管理后台 uniapp"]
-A --> C["yudao-ui 商城 uniapp"]
-A --> D["yudao-module-infra 代码生成"]
-A --> E["yudao-module-mall 商城模板"]
+A["项目根目录"] --> B["qiji-ui 管理后台 uniapp"]
+A --> C["qiji-ui 商城 uniapp"]
+A --> D["qiji-module-infra 代码生成"]
+A --> E["qiji-module-mall 商城模板"]
 D --> F["Vue3 Admin UniApp 模板"]
 E --> G["DiyTemplateDO 属性字段<br/>包含 uni-app 导航 JSON"]
 ```
 
 **图表来源**
 - [README.md:1-50](file://README.md#L1-L50)
-- [yudao-ui-admin-uniapp/README.md:1-5](file://yudao-ui/yudao-ui-admin-uniapp/README.md#L1-L5)
-- [yudao-ui-mall-uniapp/README.md:1-9](file://yudao-ui/yudao-ui-mall-uniapp/README.md#L1-L9)
-- [CodegenEngine.java:143-150](file://yudao-module-infra/src/main/java/cn/iocoder/yudao/module/infra/service/codegen/inner/CodegenEngine.java#L143-L150)
-- [DiyTemplateDO.java:54-62](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
+- [qiji-ui-admin-uniapp/README.md:1-5](file://qiji-ui/qiji-ui-admin-uniapp/README.md#L1-L5)
+- [qiji-ui-mall-uniapp/README.md:1-9](file://qiji-ui/qiji-ui-mall-uniapp/README.md#L1-L9)
+- [CodegenEngine.java:143-150](file://qiji-module-infra/src/main/java/com.qiji.cps/module/infra/service/codegen/inner/CodegenEngine.java#L143-L150)
+- [DiyTemplateDO.java:54-62](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
 
 **章节来源**
 - [README.md:1-50](file://README.md#L1-L50)
-- [yudao-ui-admin-uniapp/README.md:1-5](file://yudao-ui/yudao-ui-admin-uniapp/README.md#L1-L5)
-- [yudao-ui-mall-uniapp/README.md:1-9](file://yudao-ui/yudao-ui-mall-uniapp/README.md#L1-L9)
+- [qiji-ui-admin-uniapp/README.md:1-5](file://qiji-ui/qiji-ui-admin-uniapp/README.md#L1-L5)
+- [qiji-ui-mall-uniapp/README.md:1-9](file://qiji-ui/qiji-ui-mall-uniapp/README.md#L1-L9)
 
 ## 核心组件
 - 代码生成引擎：负责根据模板生成 uni-app 页面文件，确保页面、表单、详情等视图的一致性与可维护性
@@ -68,8 +68,8 @@ E --> G["DiyTemplateDO 属性字段<br/>包含 uni-app 导航 JSON"]
 - 平台适配层：通过条件编译与平台 API 封装，屏蔽平台差异
 
 **章节来源**
-- [CodegenEngine.java:143-150](file://yudao-module-infra/src/main/java/cn/iocoder/yudao/module/infra/service/codegen/inner/CodegenEngine.java#L143-L150)
-- [DiyTemplateDO.java:54-62](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
+- [CodegenEngine.java:143-150](file://qiji-module-infra/src/main/java/com.qiji.cps/module/infra/service/codegen/inner/CodegenEngine.java#L143-L150)
+- [DiyTemplateDO.java:54-62](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
 
 ## 架构总览
 下图展示了从后端到前端的多端适配整体流程：后端服务提供接口，前端通过 uni-app 统一渲染，利用条件编译与平台 API 适配实现多端一致体验。
@@ -123,10 +123,10 @@ GenDetail --> End
 ```
 
 **图表来源**
-- [CodegenEngine.java:143-150](file://yudao-module-infra/src/main/java/cn/iocoder/yudao/module/infra/service/codegen/inner/CodegenEngine.java#L143-L150)
+- [CodegenEngine.java:143-150](file://qiji-module-infra/src/main/java/com.qiji.cps/module/infra/service/codegen/inner/CodegenEngine.java#L143-L150)
 
 **章节来源**
-- [CodegenEngine.java:143-150](file://yudao-module-infra/src/main/java/cn/iocoder/yudao/module/infra/service/codegen/inner/CodegenEngine.java#L143-L150)
+- [CodegenEngine.java:143-150](file://qiji-module-infra/src/main/java/com.qiji.cps/module/infra/service/codegen/inner/CodegenEngine.java#L143-L150)
 
 ### 页面模板与导航配置
 - 页面模板：index.vue.vm、form/index.vue.vm、detail/index.vue.vm 提供标准页面骨架，包含跳转、返回等通用逻辑
@@ -145,14 +145,14 @@ N-->>V : 返回导航项集合
 ```
 
 **图表来源**
-- [index.vue.vm:187-194](file://yudao-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/index.vue.vm#L187-L194)
-- [index.vue.vm:94-113](file://yudao-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/detail/index.vue.vm#L94-L113)
-- [index.vue.vm:211-211](file://yudao-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/form/index.vue.vm#L211-L211)
+- [index.vue.vm:187-194](file://qiji-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/index.vue.vm#L187-L194)
+- [index.vue.vm:94-113](file://qiji-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/detail/index.vue.vm#L94-L113)
+- [index.vue.vm:211-211](file://qiji-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/form/index.vue.vm#L211-L211)
 
 **章节来源**
-- [index.vue.vm:187-194](file://yudao-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/index.vue.vm#L187-L194)
-- [index.vue.vm:94-113](file://yudao-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/detail/index.vue.vm#L94-L113)
-- [index.vue.vm:211-211](file://yudao-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/form/index.vue.vm#L211-L211)
+- [index.vue.vm:187-194](file://qiji-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/index.vue.vm#L187-L194)
+- [index.vue.vm:94-113](file://qiji-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/detail/index.vue.vm#L94-L113)
+- [index.vue.vm:211-211](file://qiji-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/form/index.vue.vm#L211-L211)
 
 ### 商城模板数据模型（DiyTemplateDO）
 - 字段：包含 uni-app 底部导航属性（JSON 格式），用于描述页面的 tabbar 配置
@@ -171,10 +171,10 @@ class DiyTemplateDO {
 ```
 
 **图表来源**
-- [DiyTemplateDO.java:54-62](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
+- [DiyTemplateDO.java:54-62](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
 
 **章节来源**
-- [DiyTemplateDO.java:54-62](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
+- [DiyTemplateDO.java:54-62](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
 
 ## 依赖关系分析
 - 后端服务 → 前端模板：后端接口为前端提供数据，前端通过模板渲染页面
@@ -193,8 +193,8 @@ Templates --> Output["多端输出(APP/小程序/H5)"]
 [此图为概念性依赖示意，无需图表来源]
 
 **章节来源**
-- [CodegenEngine.java:143-150](file://yudao-module-infra/src/main/java/cn/iocoder/yudao/module/infra/service/codegen/inner/CodegenEngine.java#L143-L150)
-- [DiyTemplateDO.java:54-62](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
+- [CodegenEngine.java:143-150](file://qiji-module-infra/src/main/java/com.qiji.cps/module/infra/service/codegen/inner/CodegenEngine.java#L143-L150)
+- [DiyTemplateDO.java:54-62](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
 
 ## 性能考虑
 - 减少条件编译层级：尽量将平台差异收敛在统一的 API 封装层，避免在页面中分散判断
@@ -208,11 +208,11 @@ Templates --> Output["多端输出(APP/小程序/H5)"]
 ## 故障排查指南
 - 页面跳转异常
   - 检查模板中的跳转路径是否正确，确认 navigateBackPlus 的调用时机
-  - 参考路径：[index.vue.vm:187-194](file://yudao-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/index.vue.vm#L187-L194)，[detail/index.vue.vm:94-113](file://yudao-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/detail/index.vue.vm#L94-L113)
+  - 参考路径：[index.vue.vm:187-194](file://qiji-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/index.vue.vm#L187-L194)，[detail/index.vue.vm:94-113](file://qiji-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/detail/index.vue.vm#L94-L113)
 - 导航与 tabbar 不显示
   - 确认后端下发的导航 JSON 结构是否符合 uni-app 配置规范
   - 检查页面配置项是否正确读取 property 字段
-  - 参考模型：[DiyTemplateDO.java:54-62](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
+  - 参考模型：[DiyTemplateDO.java:54-62](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
 - 条件编译导致的功能缺失
   - 统一在 API 封装层处理平台差异，避免在页面中散落条件编译
   - 使用统一的环境变量或配置中心集中管理平台特性开关
@@ -222,9 +222,9 @@ Templates --> Output["多端输出(APP/小程序/H5)"]
   - 利用模拟器与真机联调，验证性能与交互一致性
 
 **章节来源**
-- [index.vue.vm:187-194](file://yudao-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/index.vue.vm#L187-L194)
-- [index.vue.vm:94-113](file://yudao-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/detail/index.vue.vm#L94-L113)
-- [DiyTemplateDO.java:54-62](file://yudao-module-mall/yudao-module-promotion/src/main/java/cn/iocoder/yudao/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
+- [index.vue.vm:187-194](file://qiji-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/index.vue.vm#L187-L194)
+- [index.vue.vm:94-113](file://qiji-module-infra/src/main/resources/codegen/vue3_admin_uniapp/views/detail/index.vue.vm#L94-L113)
+- [DiyTemplateDO.java:54-62](file://qiji-module-mall/qiji-module-promotion/src/main/java/com.qiji.cps/module/promotion/dal/dataobject/diy/DiyTemplateDO.java#L54-L62)
 
 ## 结论
 通过代码生成与模板化页面结构，AgenticCPS 在 UniApp 上实现了“一套代码、多端部署”。配合条件编译与平台 API 封装，能够有效屏蔽平台差异；结合后端下发的导航配置，前端可灵活适配不同平台的 UI 与交互。建议在后续迭代中持续完善 API 封装、优化资源加载与运行时性能，并建立完善的多端调试与回归流程，以保障用户体验与开发效率。
@@ -238,5 +238,5 @@ Templates --> Output["多端输出(APP/小程序/H5)"]
 
 **章节来源**
 - [README.md:1-50](file://README.md#L1-L50)
-- [yudao-ui-admin-uniapp/README.md:1-5](file://yudao-ui/yudao-ui-admin-uniapp/README.md#L1-L5)
-- [yudao-ui-mall-uniapp/README.md:1-9](file://yudao-ui/yudao-ui-mall-uniapp/README.md#L1-L9)
+- [qiji-ui-admin-uniapp/README.md:1-5](file://qiji-ui/qiji-ui-admin-uniapp/README.md#L1-L5)
+- [qiji-ui-mall-uniapp/README.md:1-9](file://qiji-ui/qiji-ui-mall-uniapp/README.md#L1-L9)
