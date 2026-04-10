@@ -5,7 +5,7 @@
 ### ║  模拟场景：用户复制商品链接 → 转链 → 下单 → 确认收货 → 返利入账      ║
 ### ║                                                                  ║
 ### ║  执行顺序：                                                        ║
-### ║  [STEP 0] 前置准备：获取令牌 + 查看初始账户余额                      ║
+### ║  [STEP 0] 前置准备：登录获取令牌（自动保存）+ 查看初始账户余额        ║
 ### ║  [STEP 1] 商品搜索：关键词搜索 / 全平台比价                         ║
 ### ║  [STEP 2] 商品详情：确认商品信息（返利比例、优惠券）                  ║
 ### ║  [STEP 3] 生成转链：生成带返利跟踪参数的推广链接                     ║
@@ -16,12 +16,15 @@
 ### ║  [STEP 8] 返利验证：查询返利记录确认返利状态                         ║
 ### ║  [STEP 9] 账户核对：查看最终返利账户余额变化                         ║
 ### ║                                                                  ║
-### ║  变量说明：                                                        ║
-### ║    {{baseUrl}}     = http://localhost:48080                      ║
-### ║    {{appToken}}    = 会员登录 Token（App 侧用户）                   ║
-### ║    {{token}}       = 管理员登录 Token（Admin 侧）                   ║
-### ║    {{appTenantId}} = App 侧租户 ID，默认 1                         ║
-### ║    {{adminTenantId}} = Admin 侧租户 ID，默认 1                     ║
+### ║  变量说明（http-client.env.json 中配置）：                          ║
+### ║    {{baseUrl}}       = http://localhost:48080（Admin API）        ║
+### ║    {{appApi}}        = http://localhost:48080（App API，同端口）   ║
+### ║    {{appTenantId}}   = App 侧租户 ID，默认 1                      ║
+### ║    {{adminTenantId}} = Admin 侧租户 ID，默认 1                    ║
+### ║                                                                  ║
+### ║  动态 Token（登录后自动写入，无需手动填写）：                         ║
+### ║    appToken    → STEP 0-1 登录后由响应脚本自动提取并保存            ║
+### ║    adminToken  → STEP 0-2 登录后由响应脚本自动提取并保存            ║
 ### ╚══════════════════════════════════════════════════════════════════╝
 ###
 
@@ -30,24 +33,37 @@
 # [STEP 0] 前置准备
 # ====================================================================
 
-### STEP 0-1：会员登录，获取 appToken
-### 说明：获取会员身份令牌，用于后续 App 侧接口调用
-### 验证点：code=0，data.accessToken 非空
-POST {{baseUrl}}/member/auth/login
+### STEP 0-1：会员登录，获取 appToken（自动保存到变量）
+### 说明：登录成功后，响应脚本自动将 accessToken 写入 client.global 变量 appToken
+###       后续所有 App 侧请求的 Authorization 头均使用 {{appToken}}，无需手动复制
+### 验证点：code=0，data.accessToken 非空；控制台输出 "appToken saved: ***"
+POST {{appApi}}/member/auth/login
 Content-Type: application/json
 tenant-id: {{appTenantId}}
 
 {
-  "type": 1,
-  "mobile": "15800001001",
-  "password": "member123456"
+  "mobile": "15601691323",
+  "password": "admin123"
 }
+
+> {%
+  client.test("会员登录成功", function() {
+    client.assert(response.status === 200, "HTTP 状态码应为 200");
+    client.assert(response.body.code === 0, "业务状态码应为 0，实际：" + response.body.code);
+    client.assert(response.body.data.accessToken, "accessToken 不能为空");
+  });
+  // 自动保存 appToken，后续请求直接使用 {{appToken}}
+  var accessToken = response.body.data.accessToken;
+  client.global.set("appToken", accessToken);
+  client.log("✅ appToken saved: " + accessToken.substring(0, 20) + "...");
+%}
 
 ###
 
-### STEP 0-2：管理员登录，获取 adminToken
-### 说明：获取管理员令牌，用于后续手动触发订单同步和后台查询
-### 验证点：code=0，data.accessToken 非空
+### STEP 0-2：管理员登录，获取 adminToken（自动保存到变量）
+### 说明：登录成功后，响应脚本自动将 accessToken 写入 client.global 变量 adminToken
+###       后续所有 Admin 侧请求的 Authorization 头均使用 {{adminToken}}，无需手动复制
+### 验证点：code=0，data.accessToken 非空；控制台输出 "adminToken saved: ***"
 POST {{baseUrl}}/system/auth/login
 Content-Type: application/json
 tenant-id: {{adminTenantId}}
@@ -57,12 +73,24 @@ tenant-id: {{adminTenantId}}
   "password": "admin123"
 }
 
+> {%
+  client.test("管理员登录成功", function() {
+    client.assert(response.status === 200, "HTTP 状态码应为 200");
+    client.assert(response.body.code === 0, "业务状态码应为 0，实际：" + response.body.code);
+    client.assert(response.body.data.accessToken, "accessToken 不能为空");
+  });
+  // 自动保存 adminToken，后续请求直接使用 {{adminToken}}
+  var accessToken = response.body.data.accessToken;
+  client.global.set("adminToken", accessToken);
+  client.log("✅ adminToken saved: " + accessToken.substring(0, 20) + "...");
+%}
+
 ###
 
 ### STEP 0-3：查看转链前会员返利账户初始余额（留作对比基准）
 ### 说明：记录初始余额，与 STEP 9 对比，验证返利入账金额是否正确
 ### 验证点：返回 availableBalance、frozenBalance、totalRebate 字段
-GET {{baseUrl}}/cps/rebate/account
+GET {{appApi}}/cps/rebate/account
 Authorization: Bearer {{appToken}}
 tenant-id: {{appTenantId}}
 
@@ -76,7 +104,7 @@ tenant-id: {{appTenantId}}
 ### STEP 1-1：关键词搜索商品（淘宝平台，含优惠券，佣金比例排序）
 ### 说明：用户在 App 搜索框输入关键词，筛选淘宝有券商品，按佣金比例排序
 ### 验证点：list 非空；每项包含 goodsId、title、actualPrice、commissionRate、estimateRebateAmount
-GET {{baseUrl}}/cps/goods/search?keyword=耐克运动鞋&platformCode=taobao&hasCoupon=1&sortType=4&pageNo=1&pageSize=20
+GET {{appApi}}/cps/goods/search?keyword=耐克运动鞋&platformCode=taobao&hasCoupon=1&sortType=4&pageNo=1&pageSize=20
 Authorization: Bearer {{appToken}}
 tenant-id: {{appTenantId}}
 
@@ -85,7 +113,7 @@ tenant-id: {{appTenantId}}
 ### STEP 1-2：全平台聚合搜索，比较各平台价格与返利
 ### 说明：不传 platformCode，系统聚合所有已启用平台结果，供用户挑选最优返利
 ### 验证点：list 中包含来自 taobao/jd/pdd 多平台商品；platformCode 字段各不相同
-GET {{baseUrl}}/cps/goods/search?keyword=耐克运动鞋&sortType=0&pageNo=1&pageSize=20
+GET {{appApi}}/cps/goods/search?keyword=耐克运动鞋&sortType=0&pageNo=1&pageSize=20
 Authorization: Bearer {{appToken}}
 tenant-id: {{appTenantId}}
 
@@ -94,7 +122,7 @@ tenant-id: {{appTenantId}}
 ### STEP 1-3：按价格区间缩小搜索范围（300-600元）
 ### 说明：用户设定价格范围，过滤超出预算的商品
 ### 验证点：actualPrice 均在 300~600 范围内
-GET {{baseUrl}}/cps/goods/search?keyword=耐克运动鞋&platformCode=taobao&priceLowerLimit=300&priceUpperLimit=600&pageNo=1&pageSize=20
+GET {{appApi}}/cps/goods/search?keyword=耐克运动鞋&platformCode=taobao&priceLowerLimit=300&priceUpperLimit=600&pageNo=1&pageSize=20
 Authorization: Bearer {{appToken}}
 tenant-id: {{appTenantId}}
 
@@ -110,7 +138,7 @@ tenant-id: {{appTenantId}}
 ### 注意：CPS 系统无独立"商品详情"接口，通过搜索单条结果或转链时返回 couponInfo/commissionRate
 ### 以下模拟搜索单件商品，等效商品详情预览
 ### 验证点：list[0] 包含完整商品信息；estimateRebateAmount > 0；couponPrice 不为 null
-GET {{baseUrl}}/cps/goods/search?keyword=耐克运动鞋 男款&platformCode=taobao&pageNo=1&pageSize=1
+GET {{appApi}}/cps/goods/search?keyword=耐克运动鞋 男款&platformCode=taobao&pageNo=1&pageSize=1
 Authorization: Bearer {{appToken}}
 tenant-id: {{appTenantId}}
 
@@ -128,7 +156,7 @@ tenant-id: {{appTenantId}}
 ###   - tpwd 非空（淘宝专有，用于分享的淘口令）
 ###   - actualPrice 与搜索页一致
 ###   - estimateRebateAmount = actualPrice × commissionRate × memberRebateRate
-POST {{baseUrl}}/cps/goods/link
+POST {{appApi}}/cps/goods/link
 Content-Type: application/json
 Authorization: Bearer {{appToken}}
 tenant-id: {{appTenantId}}
@@ -145,7 +173,7 @@ tenant-id: {{appTenantId}}
 ### STEP 3-2：拼多多商品转链（需传 goodsSign，使用默认推广位）
 ### 说明：拼多多商品使用 goodsSign 作为商品唯一标识进行转链
 ### 验证点：mobileUrl 非空；shortUrl 可空；estimateRebateAmount > 0
-POST {{baseUrl}}/cps/goods/link
+POST {{appApi}}/cps/goods/link
 Content-Type: application/json
 Authorization: Bearer {{appToken}}
 tenant-id: {{appTenantId}}
@@ -162,7 +190,7 @@ tenant-id: {{appTenantId}}
 ### STEP 3-3：京东商品转链（指定渠道推广位）
 ### 说明：测试指定推广位时，系统使用传入的 adzoneId 而非自动匹配
 ### 验证点：longUrl 中应包含指定 adzoneId 的 subUnionId 参数
-POST {{baseUrl}}/cps/goods/link
+POST {{appApi}}/cps/goods/link
 Content-Type: application/json
 Authorization: Bearer {{appToken}}
 tenant-id: {{appTenantId}}
@@ -185,7 +213,7 @@ tenant-id: {{appTenantId}}
 ### 说明：STEP 3 转链成功后，系统在 cps_transfer_record 表落库一条记录
 ### 验证点：list 包含刚才转链的商品记录；platformOrderId 为空（尚未下单）
 GET {{baseUrl}}/cps/transfer-record/page?pageNo=1&pageSize=10&memberId=1001&platformCode=taobao
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -193,7 +221,7 @@ tenant-id: {{adminTenantId}}
 ### STEP 4-2：查询转链记录-拼多多
 ### 说明：验证拼多多转链记录是否正确生成
 GET {{baseUrl}}/cps/transfer-record/page?pageNo=1&pageSize=10&memberId=1001&platformCode=pdd
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -213,21 +241,21 @@ tenant-id: {{adminTenantId}}
 ### 说明：相当于"通知系统：淘宝有新订单，请立刻去拉取"
 ### 验证点：code=0；data 返回同步结果描述，如"同步成功，拉取 N 条订单"
 POST {{baseUrl}}/cps/order/sync?platformCode=taobao&hours=2
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
 
 ### STEP 5-2：手动触发京东订单同步（拉取最近2小时订单）
 POST {{baseUrl}}/cps/order/sync?platformCode=jd&hours=2
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
 
 ### STEP 5-3：手动触发拼多多订单同步（拉取最近2小时订单）
 POST {{baseUrl}}/cps/order/sync?platformCode=pdd&hours=2
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -245,7 +273,7 @@ tenant-id: {{adminTenantId}}
 ###   - estimateRebate > 0
 ###   - adzone_id 与 STEP 3 中使用的推广位一致
 GET {{baseUrl}}/cps/order/page?pageNo=1&pageSize=10&memberId=1001
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -254,7 +282,7 @@ tenant-id: {{adminTenantId}}
 ### 说明：输入具体的平台订单号（从平台商家后台获取）来精确定位一条订单
 ### 验证点：list 恰好返回 1 条记录；字段完整
 GET {{baseUrl}}/cps/order/page?pageNo=1&pageSize=10&platformOrderId=TEST_TB_20260102_002
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -263,7 +291,7 @@ tenant-id: {{adminTenantId}}
 ### 说明：验证订单状态流转正确，paid 状态对应返利冻结状态 pending
 ### 验证点：orderStatus=paid；rebateFreezeStatus=pending
 GET {{baseUrl}}/cps/order/page?pageNo=1&pageSize=10&platformCode=taobao&orderStatus=paid
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -275,7 +303,7 @@ tenant-id: {{adminTenantId}}
 ###   - estimateRebate = commissionAmount × memberRebateRate
 ###   - adzoneId 与转链时使用的推广位一致
 GET {{baseUrl}}/cps/order/get?id=1
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -296,7 +324,7 @@ tenant-id: {{adminTenantId}}
 ### 说明：实际场景中用户确认收货后，平台订单状态更新为 received，重新同步可获取最新状态
 ### 验证点：同步成功，后续查询 orderStatus 变为 received
 POST {{baseUrl}}/cps/order/sync?platformCode=taobao&hours=720
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -305,7 +333,7 @@ tenant-id: {{adminTenantId}}
 ### 说明：确认订单状态已由 paid 更新为 received，返利冻结状态变为 frozen
 ### 验证点：orderStatus=received；rebateFreezeStatus=frozen
 GET {{baseUrl}}/cps/order/page?pageNo=1&pageSize=10&memberId=1001&orderStatus=received
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -314,7 +342,7 @@ tenant-id: {{adminTenantId}}
 ### 说明：订单进入 received 状态后，返利应产生冻结记录，等待解冻天数后到账
 ### 验证点：list 包含该订单的冻结记录；freezeStatus=frozen；expectedUnfreezeTime 有值
 GET {{baseUrl}}/cps/freeze/record/page?pageNo=1&pageSize=10&memberId=1001&freezeStatus=frozen
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -323,7 +351,7 @@ tenant-id: {{adminTenantId}}
 ### 说明：测试环境不想等 15 天，管理员手动触发解冻以快速验证到账逻辑
 ### 验证点：code=0；后续查询 frozenBalance 减少，availableBalance 增加
 PUT {{baseUrl}}/cps/freeze/record/manual-unfreeze?id=1
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -339,7 +367,7 @@ tenant-id: {{adminTenantId}}
 ###   - list 包含本次购物产生的返利记录
 ###   - rebateStatus 为 Rcptd（已到账）或 pending（冻结中）
 ###   - rebateAmount > 0
-GET {{baseUrl}}/cps/rebate/record/page?pageNo=1&pageSize=10
+GET {{appApi}}/cps/rebate/record/page?pageNo=1&pageSize=10
 Authorization: Bearer {{appToken}}
 tenant-id: {{appTenantId}}
 
@@ -349,7 +377,7 @@ tenant-id: {{appTenantId}}
 ### 说明：后台核查某会员完整返利流水，验证金额计算是否正确
 ### 验证点：rebateAmount = commissionAmount × memberRebateRate
 GET {{baseUrl}}/cps/rebate-record/page?pageNo=1&pageSize=10&memberId=1001
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -358,7 +386,7 @@ tenant-id: {{adminTenantId}}
 ### 说明：筛选返利状态为 Rcptd（已到账）的记录，确认解冻后状态更新正确
 ### 验证点：rebateStatus=Rcptd；createTime 在合理时间范围内
 GET {{baseUrl}}/cps/rebate-record/page?pageNo=1&pageSize=10&memberId=1001&rebateStatus=Rcptd
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -374,7 +402,7 @@ tenant-id: {{adminTenantId}}
 ###   - availableBalance = 初始值 + 本次返利金额（manual-unfreeze 后立即生效）
 ###   - totalRebate 累计增加
 ###   - frozenBalance 在 manual-unfreeze 后归零（若只有本次冻结记录）
-GET {{baseUrl}}/cps/rebate/account
+GET {{appApi}}/cps/rebate/account
 Authorization: Bearer {{appToken}}
 tenant-id: {{appTenantId}}
 
@@ -384,7 +412,7 @@ tenant-id: {{appTenantId}}
 ### 说明：验证本次订单是否影响了今日数据统计（orderCount、commissionAmount、rebateAmount）
 ### 验证点：dashboard 中今日数据非零
 GET {{baseUrl}}/cps/statistics/dashboard
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -392,7 +420,7 @@ tenant-id: {{adminTenantId}}
 ### STEP 9-3：平台趋势图表（确认今日数据纳入统计）
 ### 说明：查看最近7天趋势，验证今日数据点有值
 GET {{baseUrl}}/cps/statistics/trend?startDate=2026-04-03&endDate=2026-04-09&platformCode=total
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -404,15 +432,15 @@ tenant-id: {{adminTenantId}}
 
 ### STEP 10-1：商品搜索-关键词为空（应返回参数校验错误）
 ### 验证点：code != 0；msg 包含"搜索关键词不能为空"
-GET {{baseUrl}}/cps/goods/search?keyword=&platformCode=taobao&pageNo=1&pageSize=20
+GET {{appApi}}/cps/goods/search?keyword=&platformCode=taobao&pageNo=1&pageSize=20
 Authorization: Bearer {{appToken}}
 tenant-id: {{appTenantId}}
 
 ###
 
-### STEP 10-2：转链-商品ID为空（应返回参数校验错误）
-### 验证点：code != 0；msg 包含"商品ID不能为空"
-POST {{baseUrl}}/cps/goods/link
+### STEP 10-2：转链-商品ID和goodsSign均为空（应返回参数校验错误）
+### 验证点：code != 0；msg 包含"商品ID和goodsSign至少填写一个"
+POST {{appApi}}/cps/goods/link
 Content-Type: application/json
 Authorization: Bearer {{appToken}}
 tenant-id: {{appTenantId}}
@@ -429,7 +457,7 @@ tenant-id: {{appTenantId}}
 ### STEP 10-3：转链-未登录（应返回 401 未授权）
 ### 说明：不携带 Authorization 头，验证接口权限拦截是否生效
 ### 验证点：HTTP 401 或 code=401
-POST {{baseUrl}}/cps/goods/link
+POST {{appApi}}/cps/goods/link
 Content-Type: application/json
 tenant-id: {{appTenantId}}
 
@@ -447,7 +475,7 @@ tenant-id: {{appTenantId}}
 ### 前置条件：orderId=1 的订单对应返利已入账（rebateStatus=Rcptd）
 ### 验证点：code=0；对应返利记录新增一条 rebateType=reverse 的扣回记录；availableBalance 减少
 POST {{baseUrl}}/cps/rebate-record/reverse?orderId=1
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
@@ -455,14 +483,14 @@ tenant-id: {{adminTenantId}}
 ### STEP 10-5：退款后查询返利记录（验证扣回记录生成）
 ### 验证点：list 包含 rebateType=reverse、rebateStatus=Rcptd 的扣回记录
 GET {{baseUrl}}/cps/rebate-record/page?pageNo=1&pageSize=10&memberId=1001
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 tenant-id: {{adminTenantId}}
 
 ###
 
 ### STEP 10-6：退款后再次查看账户余额（验证余额已扣减）
 ### 验证点：availableBalance 比 STEP 9-1 的值减少了被扣回的返利金额
-GET {{baseUrl}}/cps/rebate/account
+GET {{appApi}}/cps/rebate/account
 Authorization: Bearer {{appToken}}
 tenant-id: {{appTenantId}}
 

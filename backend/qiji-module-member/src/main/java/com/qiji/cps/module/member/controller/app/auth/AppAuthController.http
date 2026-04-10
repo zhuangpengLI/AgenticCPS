@@ -4,7 +4,7 @@ Content-Type: application/json
 tenant-id: {{appTenantId}}
 
 {
-  "mobile": "15601691388",
+  "mobile": "15601691323",
   "password": "admin123"
 }
 
