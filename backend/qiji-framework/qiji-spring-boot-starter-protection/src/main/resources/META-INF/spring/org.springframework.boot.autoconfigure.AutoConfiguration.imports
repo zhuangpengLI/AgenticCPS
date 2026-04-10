@@ -1,0 +1,4 @@
+com.qiji.cps.framework.idempotent.config.QijiIdempotentConfiguration
+com.qiji.cps.framework.lock4j.config.QijiLock4jConfiguration
+com.qiji.cps.framework.ratelimiter.config.QijiRateLimiterConfiguration
+com.qiji.cps.framework.signature.config.QijiApiSignatureAutoConfiguration

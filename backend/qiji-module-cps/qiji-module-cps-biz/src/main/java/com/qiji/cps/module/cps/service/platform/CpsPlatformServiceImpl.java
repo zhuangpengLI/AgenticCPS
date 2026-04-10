@@ -1,0 +1,102 @@
+package com.qiji.cps.module.cps.service.platform;
+
+import com.qiji.cps.framework.common.enums.CommonStatusEnum;
+import com.qiji.cps.framework.common.pojo.PageResult;
+import com.qiji.cps.framework.common.util.object.BeanUtils;
+import com.qiji.cps.module.cps.config.CpsCacheConfig;
+import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformPageReqVO;
+import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformSaveReqVO;
+import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
+import com.qiji.cps.module.cps.dal.mysql.platform.CpsPlatformMapper;
+import jakarta.annotation.Resource;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
+
+import java.util.List;
+
+import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.*;
+
+/**
+ * CPS平台配置 Service 实现类
+ *
+ * @author CPS System
+ */
+@Service
+@Validated
+public class CpsPlatformServiceImpl implements CpsPlatformService {
+
+    @Resource
+    private CpsPlatformMapper platformMapper;
+
+    @Override
+    public Long createPlatform(CpsPlatformSaveReqVO createReqVO) {
+        // 校验平台编码唯一
+        validatePlatformCodeUnique(null, createReqVO.getPlatformCode());
+        // 插入
+        CpsPlatformDO platform = BeanUtils.toBean(createReqVO, CpsPlatformDO.class);
+        platformMapper.insert(platform);
+        return platform.getId();
+    }
+
+    @Override
+    @CacheEvict(cacheNames = CpsCacheConfig.CACHE_PLATFORM, key = "#updateReqVO.platformCode")
+    public void updatePlatform(CpsPlatformSaveReqVO updateReqVO) {
+        // 校验存在
+        validatePlatformExists(updateReqVO.getId());
+        // 校验平台编码唯一
+        validatePlatformCodeUnique(updateReqVO.getId(), updateReqVO.getPlatformCode());
+        // 更新
+        CpsPlatformDO updateObj = BeanUtils.toBean(updateReqVO, CpsPlatformDO.class);
+        platformMapper.updateById(updateObj);
+    }
+
+    @Override
+    public void deletePlatform(Long id) {
+        // 校验存在
+        validatePlatformExists(id);
+        // 删除
+        platformMapper.deleteById(id);
+    }
+
+    @Override
+    public CpsPlatformDO getPlatform(Long id) {
+        return platformMapper.selectById(id);
+    }
+
+    @Override
+    public PageResult<CpsPlatformDO> getPlatformPage(CpsPlatformPageReqVO pageReqVO) {
+        return platformMapper.selectPage(pageReqVO);
+    }
+
+    @Override
+    public List<CpsPlatformDO> getEnabledPlatformList() {
+        return platformMapper.selectListByStatus(CommonStatusEnum.ENABLE.getStatus());
+    }
+
+    @Override
+    @Cacheable(cacheNames = CpsCacheConfig.CACHE_PLATFORM, key = "#platformCode",
+            cacheManager = "cpsCacheManager")
+    public CpsPlatformDO getPlatformByCode(String platformCode) {
+        return platformMapper.selectByPlatformCode(platformCode);
+    }
+
+    private void validatePlatformExists(Long id) {
+        if (platformMapper.selectById(id) == null) {
+            throw exception(PLATFORM_NOT_EXISTS);
+        }
+    }
+
+    private void validatePlatformCodeUnique(Long id, String platformCode) {
+        CpsPlatformDO platform = platformMapper.selectByPlatformCode(platformCode);
+        if (platform == null) {
+            return;
+        }
+        if (id == null || !id.equals(platform.getId())) {
+            throw exception(PLATFORM_CODE_DUPLICATE, platformCode);
+        }
+    }
+
+}

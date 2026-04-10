@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>qiji</artifactId>
+        <groupId>com.qiji.cps</groupId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>qiji-module-cps</artifactId>
+    <packaging>pom</packaging>
+
+    <name>${project.artifactId}</name>
+
+    <description>
+        cps 模块，CPS联盟返利系统。
+        包含平台管理、推广位管理、订单同步、返利计算、提现管理、MCP AI接口等功能
+    </description>
+    <modules>
+        <module>qiji-module-cps-api</module>
+        <module>qiji-module-cps-biz</module>
+    </modules>
+
+</project>

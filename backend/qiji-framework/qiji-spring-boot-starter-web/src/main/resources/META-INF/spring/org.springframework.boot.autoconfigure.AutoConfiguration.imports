@@ -1,0 +1,7 @@
+com.qiji.cps.framework.apilog.config.QijiApiLogAutoConfiguration
+com.qiji.cps.framework.jackson.config.QijiJacksonAutoConfiguration
+com.qiji.cps.framework.swagger.config.QijiSwaggerAutoConfiguration
+com.qiji.cps.framework.web.config.QijiWebAutoConfiguration
+com.qiji.cps.framework.xss.config.QijiXssAutoConfiguration
+com.qiji.cps.framework.banner.config.QijiBannerAutoConfiguration
+com.qiji.cps.framework.encrypt.config.QijiApiEncryptAutoConfiguration

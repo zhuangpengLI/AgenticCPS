@@ -1,0 +1,2 @@
+com.qiji.cps.framework.quartz.config.QijiQuartzAutoConfiguration
+com.qiji.cps.framework.quartz.config.QijiAsyncAutoConfiguration

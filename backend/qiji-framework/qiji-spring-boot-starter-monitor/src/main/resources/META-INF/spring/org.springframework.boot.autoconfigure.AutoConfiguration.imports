@@ -1,0 +1,2 @@
+com.qiji.cps.framework.tracer.config.QijiTracerAutoConfiguration
+com.qiji.cps.framework.tracer.config.QijiMetricsAutoConfiguration

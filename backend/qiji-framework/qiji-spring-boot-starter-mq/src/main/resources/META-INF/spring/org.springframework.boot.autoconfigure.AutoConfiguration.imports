@@ -1,0 +1,3 @@
+com.qiji.cps.framework.mq.redis.config.QijiRedisMQProducerAutoConfiguration
+com.qiji.cps.framework.mq.redis.config.QijiRedisMQConsumerAutoConfiguration
+com.qiji.cps.framework.mq.rabbitmq.config.QijiRabbitMQAutoConfiguration

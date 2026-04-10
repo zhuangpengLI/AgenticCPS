@@ -1,0 +1,3 @@
+com.qiji.cps.framework.datasource.config.QijiDataSourceAutoConfiguration
+com.qiji.cps.framework.mybatis.config.QijiMybatisAutoConfiguration
+com.qiji.cps.framework.translate.config.QijiTranslateAutoConfiguration

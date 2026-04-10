@@ -1,0 +1,3 @@
+com.qiji.cps.framework.security.config.QijiSecurityAutoConfiguration
+com.qiji.cps.framework.security.config.QijiWebSecurityConfigurerAdapter
+com.qiji.cps.framework.operatelog.config.QijiOperateLogConfiguration

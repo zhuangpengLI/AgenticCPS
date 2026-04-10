@@ -1,0 +1,2 @@
+com.qiji.cps.framework.datapermission.config.QijiDataPermissionAutoConfiguration
+com.qiji.cps.framework.datapermission.config.QijiDeptDataPermissionAutoConfiguration

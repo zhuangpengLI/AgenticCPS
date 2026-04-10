@@ -1,0 +1,2 @@
+com.qiji.cps.framework.redis.config.QijiRedisAutoConfiguration
+com.qiji.cps.framework.redis.config.QijiCacheAutoConfiguration
