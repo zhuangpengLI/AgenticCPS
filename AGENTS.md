@@ -263,6 +263,87 @@ docker-compose logs -f server
 
 Docker port mappings: backend 48080 → 48080, MySQL 3306 → 3306, Redis 6379 → 6379, frontend 8080 → 80.
 
+## File Operation Rules (CRITICAL - Enforced)
+
+> **This rule has been violated 4 times, causing irreversible UTF-8 corruption in Chinese text files.**
+
+### NEVER use PowerShell to read/write files containing Chinese characters
+
+PowerShell `Get-Content` / `Set-Content` defaults to system encoding (ANSI/GBK on Windows), which **corrupts UTF-8 multi-byte sequences** for Chinese characters. This applies to ALL project files: `.sql`, `.java`, `.ts`, `.yaml`, `.json`, `.xml`, etc.
+
+### ALWAYS use Python for file operations
+
+```python
+# Read
+with open(file_path, encoding='utf-8') as f:
+    content = f.read()
+
+# Modify
+content = content.replace('old_value', 'new_value')
+
+# Write back (no BOM, preserve line endings)
+with open(file_path, 'w', encoding='utf-8', newline='') as f:
+    f.write(content)
+
+# Always verify after writing
+with open(file_path, 'rb') as f:
+    f.read().decode('utf-8')  # raises if encoding is broken
+print('OK: ' + file_path)
+```
+
+### Safe template for batch replacement across multiple files
+
+```python
+import subprocess
+
+replacements = [
+    ('SECRET_KEY_OLD', 'PLACEHOLDER_NEW'),
+    # add more pairs...
+]
+files = [
+    'backend/sql/mysql/ruoyi-vue-pro.sql',
+    'backend/sql/oracle/ruoyi-vue-pro.sql',
+    # add more files...
+]
+
+for path in files:
+    with open(path, encoding='utf-8') as f:
+        text = f.read()
+    for old, new in replacements:
+        text = text.replace(old, new)
+    with open(path, 'w', encoding='utf-8', newline='') as f:
+        f.write(text)
+    # Verify UTF-8 integrity
+    with open(path, 'rb') as f:
+        f.read().decode('utf-8')
+    print('OK: ' + path)
+```
+
+### When recovering from git history
+
+If files are already corrupted, recover from git and re-apply changes via Python:
+
+```python
+import subprocess
+
+# Replace CLEAN_COMMIT with the last known-good commit hash
+result = subprocess.run(
+    ['git', 'show', 'CLEAN_COMMIT:path/to/file.sql'],
+    capture_output=True
+)
+text = result.stdout.decode('utf-8')  # always decode as utf-8
+for old, new in replacements:
+    text = text.replace(old, new)
+with open('local/path/to/file.sql', 'w', encoding='utf-8', newline='') as f:
+    f.write(text)
+```
+
+### Also avoid: `git filter-repo --replace-text` on UTF-8 files
+
+`git filter-repo --replace-text` operates at the **byte level** and can corrupt UTF-8 multi-byte sequences when replacement strings overlap byte boundaries. Use Python-based file replacement + clean commit instead.
+
+---
+
 ## Important Notes
 
 - **Integer for money**: Never use Double/BigDecimal for monetary amounts — always use Integer (cents) to avoid floating-point errors
