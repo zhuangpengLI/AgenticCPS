@@ -1,0 +1,57 @@
+### 请求 /cps/platform/create 接口 => 成功
+POST {{baseUrl}}/cps/platform/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "platformCode": "taobao",
+  "platformName": "淘宝",
+  "appKey": "DTK_TB_APP_KEY",
+  "appSecret": "DTK_TB_APP_SECRET",
+  "apiBaseUrl": "https://openapi.dataoke.com/api",
+  "defaultAdzoneId": "mm_taobao_default_pid",
+  "activeVendorCode": "dataoke",
+  "supportedVendors": "dataoke,haodan",
+  "sort": 1,
+  "status": 1
+}
+
+### 请求 /cps/platform/update 接口 => 成功
+PUT {{baseUrl}}/cps/platform/update
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "id": 1,
+  "platformName": "淘宝联盟",
+  "activeVendorCode": "haodan",
+  "sort": 1,
+  "status": 1
+}
+
+### 请求 /cps/platform/delete 接口 => 成功
+DELETE {{baseUrl}}/cps/platform/delete?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/platform/get 接口 => 成功
+GET {{baseUrl}}/cps/platform/get?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/platform/page 接口 => 成功
+GET {{baseUrl}}/cps/platform/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/platform/page 接口 => 按平台编码筛选
+GET {{baseUrl}}/cps/platform/page?pageNo=1&pageSize=10&platformCode=taobao&status=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/platform/list-enabled 接口 => 成功
+GET {{baseUrl}}/cps/platform/list-enabled
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}

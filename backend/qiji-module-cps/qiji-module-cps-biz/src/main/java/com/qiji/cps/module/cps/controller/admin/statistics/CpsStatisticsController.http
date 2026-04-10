@@ -1,0 +1,29 @@
+### 请求 /cps/statistics/dashboard 接口 => 成功（运营数据看板）
+GET {{baseUrl}}/cps/statistics/dashboard
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/statistics/trend 接口 => 成功（全平台近30天趋势）
+GET {{baseUrl}}/cps/statistics/trend?startDate=2026-03-01&endDate=2026-03-31&platformCode=total
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/statistics/trend 接口 => 成功（淘宝近7天趋势）
+GET {{baseUrl}}/cps/statistics/trend?startDate=2026-04-01&endDate=2026-04-07&platformCode=taobao
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/statistics/trend 接口 => 成功（京东近30天趋势）
+GET {{baseUrl}}/cps/statistics/trend?startDate=2026-03-01&endDate=2026-03-31&platformCode=jd
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/statistics/platform-summary 接口 => 成功（平台占比统计-近30天）
+GET {{baseUrl}}/cps/statistics/platform-summary?startDate=2026-03-01&endDate=2026-03-31
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/statistics/platform-summary 接口 => 成功（平台占比统计-近7天）
+GET {{baseUrl}}/cps/statistics/platform-summary?startDate=2026-04-01&endDate=2026-04-07
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}

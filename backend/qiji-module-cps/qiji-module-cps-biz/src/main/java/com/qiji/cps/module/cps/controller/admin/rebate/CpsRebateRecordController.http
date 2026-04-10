@@ -1,0 +1,29 @@
+### 请求 /cps/rebate-record/page 接口 => 成功
+GET {{baseUrl}}/cps/rebate-record/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/rebate-record/page 接口 => 按会员筛选
+GET {{baseUrl}}/cps/rebate-record/page?pageNo=1&pageSize=10&memberId=1001
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/rebate-record/page 接口 => 按平台+状态筛选
+GET {{baseUrl}}/cps/rebate-record/page?pageNo=1&pageSize=10&platformCode=taobao&rebateStatus=pending
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/rebate-record/page 接口 => 按时间段筛选
+GET {{baseUrl}}/cps/rebate-record/page?pageNo=1&pageSize=10&createTime[0]=2026-01-01 00:00:00&createTime[1]=2026-12-31 23:59:59
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/rebate-record/get 接口 => 成功
+GET {{baseUrl}}/cps/rebate-record/get?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/rebate-record/reverse 接口 => 成功（触发退款回扣）
+POST {{baseUrl}}/cps/rebate-record/reverse?orderId=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}

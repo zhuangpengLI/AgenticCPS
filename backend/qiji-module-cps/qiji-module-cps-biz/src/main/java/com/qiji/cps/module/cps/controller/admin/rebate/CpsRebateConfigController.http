@@ -1,0 +1,86 @@
+### 请求 /cps/rebate-config/create 接口 => 成功（全局兜底配置）
+POST {{baseUrl}}/cps/rebate-config/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "memberLevelId": null,
+  "platformCode": null,
+  "rebateRate": 80.0000,
+  "maxRebateAmount": 0.00,
+  "minRebateAmount": 0.00,
+  "priority": 1,
+  "status": 1
+}
+
+### 请求 /cps/rebate-config/create 接口 => 成功（淘宝平台默认配置）
+POST {{baseUrl}}/cps/rebate-config/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "memberLevelId": null,
+  "platformCode": "taobao",
+  "rebateRate": 85.0000,
+  "maxRebateAmount": 0.00,
+  "minRebateAmount": 0.00,
+  "priority": 5,
+  "status": 1
+}
+
+### 请求 /cps/rebate-config/create 接口 => 成功（VIP等级+淘宝平台）
+POST {{baseUrl}}/cps/rebate-config/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "memberLevelId": 2,
+  "platformCode": "taobao",
+  "rebateRate": 90.0000,
+  "maxRebateAmount": 500.00,
+  "minRebateAmount": 0.00,
+  "priority": 10,
+  "status": 1
+}
+
+### 请求 /cps/rebate-config/update 接口 => 成功
+PUT {{baseUrl}}/cps/rebate-config/update
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "id": 1,
+  "rebateRate": 82.0000,
+  "maxRebateAmount": 200.00,
+  "priority": 1,
+  "status": 1
+}
+
+### 请求 /cps/rebate-config/delete 接口 => 成功
+DELETE {{baseUrl}}/cps/rebate-config/delete?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/rebate-config/get 接口 => 成功
+GET {{baseUrl}}/cps/rebate-config/get?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/rebate-config/page 接口 => 成功
+GET {{baseUrl}}/cps/rebate-config/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/rebate-config/page 接口 => 按平台筛选
+GET {{baseUrl}}/cps/rebate-config/page?pageNo=1&pageSize=10&platformCode=taobao&status=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/rebate-config/list-enabled 接口 => 成功
+GET {{baseUrl}}/cps/rebate-config/list-enabled
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}

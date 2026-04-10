@@ -1,0 +1,19 @@
+### 请求 /cps/rebate/account 接口 => 成功（获取我的返利账户）
+GET {{baseUrl}}/cps/rebate/account
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}
+
+### 请求 /cps/rebate/record/page 接口 => 成功（获取我的返利记录第1页）
+GET {{baseUrl}}/cps/rebate/record/page?pageNo=1&pageSize=10
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}
+
+### 请求 /cps/rebate/record/page 接口 => 成功（获取我的返利记录第2页）
+GET {{baseUrl}}/cps/rebate/record/page?pageNo=2&pageSize=10
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}
+
+### 请求 /cps/rebate/record/page 接口 => 成功（每页20条）
+GET {{baseUrl}}/cps/rebate/record/page?pageNo=1&pageSize=20
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}

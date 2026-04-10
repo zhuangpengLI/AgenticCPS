@@ -1,0 +1,81 @@
+### 请求 /cps/goods/search 接口 => 成功（淘宝关键词搜索）
+GET {{baseUrl}}/cps/goods/search?keyword=运动鞋&platformCode=taobao&pageNo=1&pageSize=20
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}
+
+### 请求 /cps/goods/search 接口 => 成功（京东关键词搜索）
+GET {{baseUrl}}/cps/goods/search?keyword=戴森吸尘器&platformCode=jd&pageNo=1&pageSize=20
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}
+
+### 请求 /cps/goods/search 接口 => 成功（拼多多搜索+价格区间）
+GET {{baseUrl}}/cps/goods/search?keyword=老干妈&platformCode=pdd&priceLowerLimit=10&priceUpperLimit=100&pageNo=1&pageSize=20
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}
+
+### 请求 /cps/goods/search 接口 => 成功（全平台聚合搜索-比价模式）
+GET {{baseUrl}}/cps/goods/search?keyword=iPhone手机壳&pageNo=1&pageSize=20
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}
+
+### 请求 /cps/goods/search 接口 => 成功（有优惠券筛选）
+GET {{baseUrl}}/cps/goods/search?keyword=零食&platformCode=taobao&hasCoupon=true&pageNo=1&pageSize=20
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}
+
+### 请求 /cps/goods/search 接口 => 成功（按销量排序）
+GET {{baseUrl}}/cps/goods/search?keyword=保温杯&platformCode=jd&sortType=2&pageNo=1&pageSize=20
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}
+
+### 请求 /cps/goods/link 接口 => 成功（淘宝商品转链）
+POST {{baseUrl}}/cps/goods/link
+Content-Type: application/json
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}
+
+{
+  "platformCode": "taobao",
+  "goodsId": "123456789",
+  "goodsSign": null,
+  "adzoneId": null
+}
+
+### 请求 /cps/goods/link 接口 => 成功（京东商品转链）
+POST {{baseUrl}}/cps/goods/link
+Content-Type: application/json
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}
+
+{
+  "platformCode": "jd",
+  "goodsId": "100012345678",
+  "goodsSign": null,
+  "adzoneId": null
+}
+
+### 请求 /cps/goods/link 接口 => 成功（拼多多商品转链）
+POST {{baseUrl}}/cps/goods/link
+Content-Type: application/json
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}
+
+{
+  "platformCode": "pdd",
+  "goodsId": null,
+  "goodsSign": "pdd_goods_sign_abc",
+  "adzoneId": null
+}
+
+### 请求 /cps/goods/link 接口 => 成功（指定推广位转链）
+POST {{baseUrl}}/cps/goods/link
+Content-Type: application/json
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenantId}}
+
+{
+  "platformCode": "taobao",
+  "goodsId": "987654321",
+  "goodsSign": null,
+  "adzoneId": "mm_taobao_member_1001"
+}

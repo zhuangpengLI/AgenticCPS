@@ -1,0 +1,59 @@
+### 请求 /cps/risk/rule/create 接口 => 成功（频率限制规则）
+POST {{baseUrl}}/cps/risk/rule/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "ruleType": "rate_limit",
+  "ruleName": "转链频率限制",
+  "ruleKey": "transfer_rate_per_member",
+  "ruleValue": "100",
+  "timeWindowSeconds": 3600,
+  "remark": "每会员每小时最多转链100次",
+  "status": 1
+}
+
+### 请求 /cps/risk/rule/create 接口 => 成功（黑名单规则）
+POST {{baseUrl}}/cps/risk/rule/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "ruleType": "blacklist",
+  "ruleName": "IP黑名单",
+  "ruleKey": "ip_blacklist",
+  "ruleValue": "192.168.1.100",
+  "remark": "异常IP封禁",
+  "status": 1
+}
+
+### 请求 /cps/risk/rule/update 接口 => 成功
+PUT {{baseUrl}}/cps/risk/rule/update
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "id": 1,
+  "ruleValue": "200",
+  "timeWindowSeconds": 3600,
+  "remark": "调整为每小时最多200次",
+  "status": 1
+}
+
+### 请求 /cps/risk/rule/delete 接口 => 成功
+DELETE {{baseUrl}}/cps/risk/rule/delete?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/risk/rule/page 接口 => 成功
+GET {{baseUrl}}/cps/risk/rule/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/risk/rule/page 接口 => 按规则类型筛选
+GET {{baseUrl}}/cps/risk/rule/page?pageNo=1&pageSize=10&ruleType=rate_limit&status=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}

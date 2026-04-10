@@ -1,0 +1,29 @@
+### 请求 /cps/withdraw/page 接口 => 成功
+GET {{baseUrl}}/cps/withdraw/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/withdraw/page 接口 => 按会员+状态筛选
+GET {{baseUrl}}/cps/withdraw/page?pageNo=1&pageSize=10&memberId=1001&status=pending
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/withdraw/page 接口 => 按时间段筛选
+GET {{baseUrl}}/cps/withdraw/page?pageNo=1&pageSize=10&createTime[0]=2026-01-01 00:00:00&createTime[1]=2026-12-31 23:59:59
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/withdraw/get 接口 => 成功
+GET {{baseUrl}}/cps/withdraw/get?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/withdraw/approve 接口 => 成功（审核通过）
+PUT {{baseUrl}}/cps/withdraw/approve?id=1&reviewNote=审核通过，转账已处理
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/withdraw/reject 接口 => 成功（驳回申请）
+PUT {{baseUrl}}/cps/withdraw/reject?id=2&reviewNote=账户信息有误，请重新提交
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}

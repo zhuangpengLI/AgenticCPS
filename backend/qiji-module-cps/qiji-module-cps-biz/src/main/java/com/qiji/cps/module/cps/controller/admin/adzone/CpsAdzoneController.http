@@ -1,0 +1,76 @@
+### 请求 /cps/adzone/create 接口 => 成功（淘宝默认推广位）
+POST {{baseUrl}}/cps/adzone/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "platformCode": "taobao",
+  "adzoneId": "mm_taobao_default_pid",
+  "adzoneName": "淘宝默认推广位",
+  "adzoneType": "general",
+  "relationId": null,
+  "relationType": null,
+  "isDefault": 1,
+  "status": 1
+}
+
+### 请求 /cps/adzone/create 接口 => 成功（会员专属推广位）
+POST {{baseUrl}}/cps/adzone/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "platformCode": "taobao",
+  "adzoneId": "mm_taobao_member_1001",
+  "adzoneName": "会员1001专属推广位",
+  "adzoneType": "member",
+  "relationType": "member",
+  "relationId": 1001,
+  "isDefault": 0,
+  "status": 1
+}
+
+### 请求 /cps/adzone/update 接口 => 成功
+PUT {{baseUrl}}/cps/adzone/update
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "id": 1,
+  "adzoneName": "淘宝默认推广位（更新）",
+  "isDefault": 1,
+  "status": 1
+}
+
+### 请求 /cps/adzone/delete 接口 => 成功
+DELETE {{baseUrl}}/cps/adzone/delete?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/adzone/get 接口 => 成功
+GET {{baseUrl}}/cps/adzone/get?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/adzone/page 接口 => 成功
+GET {{baseUrl}}/cps/adzone/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/adzone/page 接口 => 按平台+类型筛选
+GET {{baseUrl}}/cps/adzone/page?pageNo=1&pageSize=10&platformCode=taobao&adzoneType=general
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/adzone/list-by-platform 接口 => 成功（淘宝推广位列表）
+GET {{baseUrl}}/cps/adzone/list-by-platform?platformCode=taobao
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/adzone/list-by-platform 接口 => 成功（京东推广位列表）
+GET {{baseUrl}}/cps/adzone/list-by-platform?platformCode=jd
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}

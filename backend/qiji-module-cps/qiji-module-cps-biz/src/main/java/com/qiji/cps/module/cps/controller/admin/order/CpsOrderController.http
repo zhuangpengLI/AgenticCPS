@@ -1,0 +1,44 @@
+### 请求 /cps/order/page 接口 => 成功
+GET {{baseUrl}}/cps/order/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/order/page 接口 => 按平台筛选
+GET {{baseUrl}}/cps/order/page?pageNo=1&pageSize=10&platformCode=taobao
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/order/page 接口 => 按会员+订单状态筛选
+GET {{baseUrl}}/cps/order/page?pageNo=1&pageSize=10&memberId=1001&orderStatus=received
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/order/page 接口 => 按平台订单号搜索
+GET {{baseUrl}}/cps/order/page?pageNo=1&pageSize=10&platformOrderId=TEST_TB_20260102_002
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/order/page 接口 => 按时间段筛选
+GET {{baseUrl}}/cps/order/page?pageNo=1&pageSize=10&createTime[0]=2026-01-01 00:00:00&createTime[1]=2026-12-31 23:59:59
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/order/get 接口 => 成功
+GET {{baseUrl}}/cps/order/get?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/order/sync 接口 => 成功（手动同步淘宝最近2小时订单）
+POST {{baseUrl}}/cps/order/sync?platformCode=taobao&hours=2
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/order/sync 接口 => 成功（手动同步京东最近6小时订单）
+POST {{baseUrl}}/cps/order/sync?platformCode=jd&hours=6
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/order/sync 接口 => 成功（手动同步拼多多最近1小时订单）
+POST {{baseUrl}}/cps/order/sync?platformCode=pdd&hours=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}

@@ -1,0 +1,68 @@
+### 请求 /cps/freeze/config/create 接口 => 成功（全局冻结配置）
+POST {{baseUrl}}/cps/freeze/config/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "platformCode": null,
+  "unfreezeDays": 15,
+  "status": 1,
+  "remark": "全局默认配置-确认收货后15天解冻"
+}
+
+### 请求 /cps/freeze/config/create 接口 => 成功（京东专属冻结配置）
+POST {{baseUrl}}/cps/freeze/config/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "platformCode": "jd",
+  "unfreezeDays": 7,
+  "status": 1,
+  "remark": "京东-确认收货后7天解冻"
+}
+
+### 请求 /cps/freeze/config/update 接口 => 成功
+PUT {{baseUrl}}/cps/freeze/config/update
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "id": 1,
+  "unfreezeDays": 20,
+  "status": 1,
+  "remark": "修改为20天解冻"
+}
+
+### 请求 /cps/freeze/config/delete 接口 => 成功
+DELETE {{baseUrl}}/cps/freeze/config/delete?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/freeze/config/page 接口 => 成功
+GET {{baseUrl}}/cps/freeze/config/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/freeze/config/page 接口 => 按平台筛选
+GET {{baseUrl}}/cps/freeze/config/page?pageNo=1&pageSize=10&platformCode=taobao
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/freeze/record/page 接口 => 成功
+GET {{baseUrl}}/cps/freeze/record/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/freeze/record/page 接口 => 按会员+冻结状态筛选
+GET {{baseUrl}}/cps/freeze/record/page?pageNo=1&pageSize=10&memberId=1001&freezeStatus=frozen
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/freeze/record/manual-unfreeze 接口 => 成功（手动解冻）
+PUT {{baseUrl}}/cps/freeze/record/manual-unfreeze?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}

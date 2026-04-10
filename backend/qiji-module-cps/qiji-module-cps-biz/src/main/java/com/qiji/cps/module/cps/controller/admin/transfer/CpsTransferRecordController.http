@@ -1,0 +1,19 @@
+### 请求 /cps/transfer-record/page 接口 => 成功
+GET {{baseUrl}}/cps/transfer-record/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/transfer-record/page 接口 => 按会员+平台筛选
+GET {{baseUrl}}/cps/transfer-record/page?pageNo=1&pageSize=10&memberId=1001&platformCode=taobao
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/transfer-record/page 接口 => 按时间段筛选
+GET {{baseUrl}}/cps/transfer-record/page?pageNo=1&pageSize=10&createTime[0]=2026-01-01 00:00:00&createTime[1]=2026-12-31 23:59:59
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/transfer-record/page 接口 => 按商品关键词搜索
+GET {{baseUrl}}/cps/transfer-record/page?pageNo=1&pageSize=10&itemTitle=运动鞋
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}

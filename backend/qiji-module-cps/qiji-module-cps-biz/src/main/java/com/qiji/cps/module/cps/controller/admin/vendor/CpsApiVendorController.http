@@ -1,0 +1,81 @@
+### 请求 /cps/api-vendor/create 接口 => 成功（大淘客-淘宝）
+POST {{baseUrl}}/cps/api-vendor/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "vendorCode": "dataoke",
+  "vendorName": "大淘客",
+  "vendorType": "aggregator",
+  "platformCode": "taobao",
+  "appKey": "DTK_TB_APP_KEY",
+  "appSecret": "DTK_TB_SECRET",
+  "apiBaseUrl": "https://openapi.dataoke.com/api",
+  "authToken": null,
+  "defaultAdzoneId": "mm_dtk_taobao_pid",
+  "priority": 10,
+  "status": 1
+}
+
+### 请求 /cps/api-vendor/create 接口 => 成功（好单库-淘宝）
+POST {{baseUrl}}/cps/api-vendor/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "vendorCode": "haodan",
+  "vendorName": "好单库",
+  "vendorType": "aggregator",
+  "platformCode": "taobao",
+  "appKey": "HDK_TB_APP_KEY",
+  "appSecret": "HDK_TB_SECRET",
+  "apiBaseUrl": "https://v2.api.haodanku.com",
+  "defaultAdzoneId": "mm_hdk_taobao_pid",
+  "priority": 8,
+  "status": 1
+}
+
+### 请求 /cps/api-vendor/update 接口 => 成功
+PUT {{baseUrl}}/cps/api-vendor/update
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "id": 1,
+  "vendorName": "大淘客（更新）",
+  "priority": 10,
+  "status": 1
+}
+
+### 请求 /cps/api-vendor/delete 接口 => 成功
+DELETE {{baseUrl}}/cps/api-vendor/delete?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/api-vendor/get 接口 => 成功
+GET {{baseUrl}}/cps/api-vendor/get?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/api-vendor/page 接口 => 成功
+GET {{baseUrl}}/cps/api-vendor/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/api-vendor/page 接口 => 按平台筛选
+GET {{baseUrl}}/cps/api-vendor/page?pageNo=1&pageSize=10&platformCode=taobao&status=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/api-vendor/list-enabled 接口 => 成功
+GET {{baseUrl}}/cps/api-vendor/list-enabled
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+
+### 请求 /cps/api-vendor/list-by-platform 接口 => 成功（淘宝平台供应商）
+GET {{baseUrl}}/cps/api-vendor/list-by-platform?platformCode=taobao
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
