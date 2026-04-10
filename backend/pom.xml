@@ -26,7 +26,7 @@
 
     <name>${project.artifactId}</name>
     <description>芋道项目基础脚手架</description>
-    <url>https://github.com/YunaiV/ruoyi-vue-pro</url>
+    <url>https://gitee.com/zhuangpengli/AgenticCPS.git</url>
 
     <properties>
         <revision>2026.01-SNAPSHOT</revision>
