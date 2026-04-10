@@ -13,6 +13,12 @@
 - [CpsRiskRuleTypeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRiskRuleTypeEnum.java)
 - [CpsErrorCodeConstants.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java)
 - [CpsFreezeStatusEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsFreezeStatusEnum.java)
+- [CpsVendorCodeEnum.java](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsVendorCodeEnum.java)
+- [CpsVendorConfig.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/dto/CpsVendorConfig.java)
+- [CpsApiVendorClient.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java)
+- [CpsPlatformClient.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsPlatformClient.java)
+- [DtkTaobaoVendorClient.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/dataoke/DtkTaobaoVendorClient.java)
+- [TaobaoOfficialVendorClient.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/official/taobao/TaobaoOfficialVendorClient.java)
 - [CPS系统PRD文档.md](file://docs/CPS系统PRD文档.md)
 - [index.vue](file://frontend/mall-uniapp/pages/commission/index.vue)
 - [CpsOrderController.java](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/controller/admin/order/CpsOrderController.java)
@@ -22,11 +28,11 @@
 
 ## 更新摘要
 **所做更改**
-- 新增多平台适配器集成和MCP协议支持的业务描述
-- 补充完整的CPS管理功能模块说明，包括平台管理、推广位管理、订单管理、返利管理、提现管理、数据统计、风控管理、MCP服务管理等九个管理子模块
+- 新增多供应商、多平台架构的业务描述，支持同一电商平台对接多个API供应商
+- 新增供应商管理、配置管理、路由选择等新功能模块
 - 更新平台配置、推广位管理、订单处理、返利计算、提现结算、风险控制等核心业务流程
-- 增强系统架构图以反映新的技术特性
-- 新增管理后台功能模块的详细说明
+- 增强系统架构图以反映新的多供应商架构
+- 新增供应商客户端接口和具体实现的详细说明
 
 ## 目录
 1. [引言](#引言)
@@ -35,22 +41,24 @@
 4. [架构总览](#架构总览)
 5. [详细组件分析](#详细组件分析)
 6. [管理后台功能模块](#管理后台功能模块)
-7. [依赖关系分析](#依赖关系分析)
-8. [性能考量](#性能考量)
-9. [故障排查指南](#故障排查指南)
-10. [结论](#结论)
-11. [附录](#附录)
+7. [供应商架构设计](#供应商架构设计)
+8. [依赖关系分析](#依赖关系分析)
+9. [性能考量](#性能考量)
+10. [故障排查指南](#故障排查指南)
+11. [结论](#结论)
+12. [附录](#附录)
 
 ## 引言
 本文件面向CPS（Cost Per Sale）联盟营销业务，系统性阐述其核心概念、业务流程与价值主张，并结合仓库中的PRD与代码实现，给出系统架构、模块划分、技术选型、关键指标、收益分配与风控策略、以及可视化流程图与时序图。CPS模式通过聚合主流电商联盟平台能力，为消费者提供返利查询、跨平台比价与推广链接生成，为推广者提供佣金收益，为平台运营方提供可持续的佣金分成与数据洞察。
 
-**更新** 本版本反映了CPS业务模块现已包含完整的CPS管理功能，涵盖平台配置、推广位管理、订单处理、返利计算、提现结算、风险控制、数据统计、MCP服务管理等九个管理子模块，支持多平台适配器集成和MCP协议。
+**更新** 本版本反映了CPS业务模块现已扩展为多供应商、多平台架构，支持同一电商平台对接多个API供应商，包括大淘客、好单库等聚合平台和官方API两种供应商类型。新增了供应商管理、配置管理、路由选择等新功能模块，为系统的可扩展性和稳定性提供了更强的技术支撑。
 
 ## 项目结构
 该仓库采用前后端分离与多模块分层的工程组织方式：
 - 后端采用多模块划分，其中 yudao-module-cps 为核心业务模块，包含 API 枚举、业务服务与数据访问层；
 - 前端包含 H5/小程序/APP 的用户端页面与管理后台；
-- 文档目录包含完整的 PRD，覆盖业务流程、功能清单、数据看板与AI Agent集成规划。
+- 文档目录包含完整的 PRD，覆盖业务流程、功能清单、数据看板与AI Agent集成规划；
+- 新增供应商架构支持多供应商、多平台对接。
 
 ```mermaid
 graph TB
@@ -63,6 +71,10 @@ API["CPS API 模块<br/>yudao-module-cps-api"]
 BIZ["CPS 业务模块<br/>yudao-module-cps-biz"]
 FRAME["框架与基础设施<br/>yudao-framework/*"]
 end
+subgraph "供应商架构"
+AGGREGATOR["聚合平台供应商<br/>大淘客/好单库"]
+OFFICIAL["官方API供应商<br/>淘宝联盟官方API"]
+end
 subgraph "外部平台"
 TB["淘宝联盟"]
 JD["京东联盟"]
@@ -74,21 +86,30 @@ FE_Mall --> API
 FE_Admin --> API
 API --> BIZ
 BIZ --> FRAME
-BIZ --> TB
-BIZ --> JD
-BIZ --> PDD
-BIZ --> DY
+BIZ --> AGGREGATOR
+BIZ --> OFFICIAL
+AGGREGATOR --> TB
+AGGREGATOR --> JD
+AGGREGATOR --> PDD
+OFFICIAL --> TB
+OFFICIAL --> JD
+OFFICIAL --> PDD
 BIZ --> MCP
 ```
 
 **章节来源**
 - [yudao-module-cps/pom.xml: 17-20:17-20](file://backend/yudao-module-cps/pom.xml#L17-L20)
 - [CpsPlatformCodeEnum.java: 18-22:18-22](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java#L18-L22)
+- [CpsVendorCodeEnum.java: 18-25:18-25](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsVendorCodeEnum.java#L18-L25)
 
 ## 核心组件
 - 平台与推广位
   - 平台编码枚举涵盖淘宝、京东、拼多多、抖音等主流联盟平台，用于统一接入与配置。
   - 推广位类型枚举区分通用、渠道专属与用户专属，支撑精细化收益分配与风控。
+- 供应商架构
+  - 供应商编码枚举支持大淘客、好单库、喵有券、实惠猪等聚合平台和官方API类型。
+  - 供应商配置DTO封装了API Key、Secret、基础URL、授权令牌等配置信息。
+  - 供应商客户端接口定义了统一的商品搜索、转链、订单查询和连接测试能力。
 - 订单与返利
   - 订单状态枚举覆盖下单、付款、收货、结算、返利到账、退款、失效等关键节点。
   - 返利状态与类型枚举分别刻画"待结算/已到账/已扣回"与"返利入账/返利扣回/系统调整"的生命周期。
@@ -98,7 +119,7 @@ BIZ --> MCP
 - 错误码体系
   - 以段式编号规范定义平台配置、推广位、订单、返利、账户、提现、统计、MCP、转链、冻结、风控等模块的错误码，便于统一异常处理与排障。
 
-**更新** 新增MCP协议支持和更多平台适配器集成能力。
+**更新** 新增多供应商架构支持，包括供应商编码管理、配置管理、客户端接口设计等新组件。
 
 **章节来源**
 - [CpsPlatformCodeEnum.java: 1-45:1-45](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java#L1-L45)
@@ -110,9 +131,12 @@ BIZ --> MCP
 - [CpsRiskRuleTypeEnum.java: 1-39:1-39](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRiskRuleTypeEnum.java#L1-L39)
 - [CpsErrorCodeConstants.java: 1-65:1-65](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L1-L65)
 - [CpsFreezeStatusEnum.java: 1-41:1-41](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsFreezeStatusEnum.java#L1-L41)
+- [CpsVendorCodeEnum.java: 1-52:1-52](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsVendorCodeEnum.java#L1-L52)
+- [CpsVendorConfig.java: 1-66:1-66](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/dto/CpsVendorConfig.java#L1-L66)
+- [CpsApiVendorClient.java: 1-84:1-84](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java#L1-L84)
 
 ## 架构总览
-系统围绕"会员—平台—运营"三方协作展开，采用多平台API接入与统一订单同步机制，配合返利结算与提现流程，形成闭环。新增MCP协议适配器支持AI智能推荐和Agent集成。
+系统围绕"会员—平台—运营"三方协作展开，采用多平台API接入与统一订单同步机制，配合返利结算与提现流程，形成闭环。新增多供应商架构支持同一电商平台对接多个API供应商，包括聚合平台和官方API两种类型，同时配合MCP协议适配器支持AI智能推荐和Agent集成。
 
 ```mermaid
 graph TB
@@ -126,7 +150,12 @@ END
 subgraph "业务核心"
 SVC["CPS 业务服务<br/>订单/返利/提现/风控"]
 ENUM["枚举与错误码<br/>状态/类型/规则"]
+VENDOR["供应商客户端<br/>聚合平台/官方API"]
 MCP["MCP协议适配器<br/>AI智能推荐"]
+END
+subgraph "供应商架构"
+AGGREGATOR["聚合平台供应商<br/>大淘客/好单库"]
+OFFICIAL["官方API供应商<br/>淘宝联盟官方API"]
 END
 subgraph "平台对接"
 PTB["淘宝联盟"]
@@ -138,22 +167,29 @@ U --> |"搜索/比价/生成推广链接"| SVC
 OP --> |"配置/审核/统计"| SVC
 SUPER --> |"系统配置/风控"| SVC
 SVC --> ENUM
+SVC --> VENDOR
 SVC --> MCP
-SVC --> PTB
-SVC --> PJD
-SVC --> PPDD
-SVC --> PDY
+VENDOR --> AGGREGATOR
+VENDOR --> OFFICIAL
+AGGREGATOR --> PTB
+AGGREGATOR --> PJD
+AGGREGATOR --> PPDD
+OFFICIAL --> PTB
+OFFICIAL --> PJD
+OFFICIAL --> PPDD
 ```
 
-**更新** 新增MCP协议适配器和更多电商平台支持。
+**更新** 新增多供应商架构支持，包括聚合平台供应商和官方API供应商两大类，为系统提供了更强的扩展性和稳定性。
 
 **图表来源**
 - [yudao-module-cps/pom.xml: 17-20:17-20](file://backend/yudao-module-cps/pom.xml#L17-L20)
 - [CpsPlatformCodeEnum.java: 18-22:18-22](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java#L18-L22)
+- [CpsVendorCodeEnum.java: 18-25:18-25](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsVendorCodeEnum.java#L18-L25)
 
 **章节来源**
 - [yudao-module-cps/pom.xml: 17-20:17-20](file://backend/yudao-module-cps/pom.xml#L17-L20)
 - [CpsPlatformCodeEnum.java: 18-22:18-22](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsPlatformCodeEnum.java#L18-L22)
+- [CpsVendorCodeEnum.java: 18-25:18-25](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsVendorCodeEnum.java#L18-L25)
 
 ## 详细组件分析
 
@@ -192,19 +228,24 @@ IN["输入内容"] --> TYPE{"识别类型"}
 TYPE --> |URL| DETECT["识别平台/提取商品ID"]
 TYPE --> |口令| PARSE["解析口令获取商品信息"]
 TYPE --> |关键词| CONCUR["并发查询所有启用平台"]
-DETECT --> CALL["调用单平台API"]
-PARSE --> CALL
-CONCUR --> MERGE["聚合结果"]
-CALL --> MERGE
+DETECT --> VENDOR["选择最优供应商"]
+PARSE --> VENDOR
+CONCUR --> VENDOR
+VENDOR --> CALL["调用供应商API"]
+CALL --> MERGE["聚合结果"]
 MERGE --> SORT["按排序方式排序"]
 SORT --> OUT["返回统一格式商品列表"]
 ```
 
+**更新** 新增供应商选择逻辑，支持根据配置和策略选择最优供应商进行API调用。
+
 **图表来源**
 - [CPS系统PRD文档.md: 121-150:121-150](file://docs/CPS系统PRD文档.md#L121-L150)
+- [CpsApiVendorClient.java: 13-18:13-18](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java#L13-L18)
 
 **章节来源**
 - [CPS系统PRD文档.md: 121-150:121-150](file://docs/CPS系统PRD文档.md#L121-L150)
+- [CpsApiVendorClient.java: 13-18:13-18](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java#L13-L18)
 
 ### 推广链接生成流程
 - 选择商品后，确定平台与商品ID，获取会员推广位（PID），注入归因参数（不同平台参数不同），调用平台转链API，返回推广链接与口令，记录转链日志。
@@ -213,20 +254,25 @@ SORT --> OUT["返回统一格式商品列表"]
 sequenceDiagram
 participant U as "会员"
 participant SVC as "CPS服务"
-participant CLI as "平台客户端工厂"
+participant VENDOR as "供应商客户端"
 participant PLAT as "联盟平台"
 U->>SVC : "选择商品并请求生成推广链接"
-SVC->>CLI : "获取平台客户端"
-SVC->>PLAT : "调用转链API注入归因参数"
-PLAT-->>SVC : "返回推广链接/口令"
+SVC->>VENDOR : "获取供应商客户端"
+VENDOR->>PLAT : "调用转链API注入归因参数"
+PLAT-->>VENDOR : "返回推广链接/口令"
+VENDOR-->>SVC : "返回推广链接结果"
 SVC-->>U : "展示并记录转链日志"
 ```
 
+**更新** 新增供应商客户端参与转链流程，支持多供应商架构下的链接生成。
+
 **图表来源**
 - [CPS系统PRD文档.md: 152-181:152-181](file://docs/CPS系统PRD文档.md#L152-L181)
+- [CpsApiVendorClient.java: 58-64:58-64](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java#L58-L64)
 
 **章节来源**
 - [CPS系统PRD文档.md: 152-181:152-181](file://docs/CPS系统PRD文档.md#L152-L181)
+- [CpsApiVendorClient.java: 58-64:58-64](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java#L58-L64)
 
 ### 订单同步与结算流程
 - 定时任务每5分钟触发，遍历启用平台，增量查询订单；解析新订单进行归因匹配入库，更新已有订单状态；当订单变为"已结算"，触发返利结算流程（计算可分配佣金、查询返利比例、入账钱包、创建返利记录并通知会员）；若变为"已退款"，触发返利扣回流程（已入账则扣减余额，未入账则取消待结算记录）。
@@ -234,7 +280,8 @@ SVC-->>U : "展示并记录转链日志"
 ```mermaid
 flowchart TD
 TRIG["定时任务触发每5分钟"] --> LOOP["遍历启用平台"]
-LOOP --> QUERY["调用平台订单API增量"]
+LOOP --> VENDOR["选择供应商客户端"]
+VENDOR --> QUERY["调用供应商订单API增量"]
 QUERY --> PARSE["解析订单数据"]
 PARSE --> NEW{"新订单？"}
 NEW --> |是| MATCHNEW["解析归因参数→匹配会员→入库"]
@@ -250,11 +297,15 @@ REFUND --> |否| NEXT
 REBACK --> NEXT
 ```
 
+**更新** 新增供应商客户端参与订单查询流程，支持多供应商架构下的订单同步。
+
 **图表来源**
 - [CPS系统PRD文档.md: 183-223:183-223](file://docs/CPS系统PRD文档.md#L183-L223)
+- [CpsApiVendorClient.java: 67-73:67-73](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java#L67-L73)
 
 **章节来源**
 - [CPS系统PRD文档.md: 183-223:183-223](file://docs/CPS系统PRD文档.md#L183-L223)
+- [CpsApiVendorClient.java: 67-73:67-73](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java#L67-L73)
 - [CpsOrderStatusEnum.java: 18-25:18-25](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsOrderStatusEnum.java#L18-L25)
 - [CpsRebateStatusEnum.java: 18-21:18-21](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsRebateStatusEnum.java#L18-L21)
 
@@ -285,31 +336,69 @@ AUDIT --> |驳回| RETURN
 - [CPS系统PRD文档.md: 225-261:225-261](file://docs/CPS系统PRD文档.md#L225-L261)
 - [CpsWithdrawStatusEnum.java: 18-25:18-25](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsWithdrawStatusEnum.java#L18-L25)
 
-### 订单服务实现要点（代码级）
-- 订单查询与分页、按平台订单号唯一性约束、幂等保存/更新、状态映射与字段变更检测、退款标签触发状态变更、批量处理与异常容错、手动同步与日志记录。
-- 通过平台客户端工厂统一调度各平台API，确保扩展性与一致性。
+### 供应商客户端实现要点（代码级）
+- 供应商客户端接口定义了统一的API调用规范，支持商品搜索、转链、订单查询和连接测试功能。
+- 不同供应商类型（聚合平台 vs 官方API）有不同的实现策略和配置要求。
+- 通过供应商配置DTO传递运行时配置，实现配置与逻辑分离，便于测试和多租户支持。
 
 ```mermaid
 classDiagram
-class CpsOrderServiceImpl {
-+getOrder(id)
-+getOrderPage(pageReqVO)
-+getOrderByPlatformOrderId(platformOrderId)
-+saveOrUpdateOrder(orderDTO)
-+batchSaveOrUpdateOrders(orderDTOs)
-+manualSync(platformCode, hours)
+class CpsApiVendorClient {
++getVendorCode()
++getPlatformCode()
++getVendorType()
++searchGoods(request, config)
++generatePromotionLink(request, config)
++queryOrders(request, config)
++testConnection(config)
 }
-class CpsPlatformClientFactory {
-+getRequiredClient(platformCode)
+class CpsVendorConfig {
++vendorCode
++vendorType
++platformCode
++appKey
++appSecret
++apiBaseUrl
++authToken
++defaultAdzoneId
++extraConfig
 }
-CpsOrderServiceImpl --> CpsPlatformClientFactory : "获取平台客户端"
+class DtkTaobaoVendorClient {
++getPlatformCode()
++buildSearchParams()
++parseSearchResponse()
++buildPromotionLinkParams()
++parsePromotionLinkResponse()
++buildOrderQueryParams()
++parseOrderQueryResponse()
+}
+class TaobaoOfficialVendorClient {
++getPlatformCode()
++buildSearchParams()
++parseSearchResponse()
++buildPromotionLinkParams()
++parsePromotionLinkResponse()
++buildOrderQueryParams()
++parseOrderQueryResponse()
+}
+CpsApiVendorClient --> CpsVendorConfig : "使用配置"
+DtkTaobaoVendorClient ..|> CpsApiVendorClient
+TaobaoOfficialVendorClient ..|> CpsApiVendorClient
 ```
 
+**更新** 新增供应商客户端接口和具体实现类的代码级分析。
+
 **图表来源**
-- [CpsOrderServiceImpl.java: 35-197:35-197](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/service/order/CpsOrderServiceImpl.java#L35-L197)
+- [CpsApiVendorClient.java: 25-83:25-83](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java#L25-L83)
+- [CpsVendorConfig.java: 18-65:18-65](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/dto/CpsVendorConfig.java#L18-L65)
+- [DtkTaobaoVendorClient.java: 21-216:21-216](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/dataoke/DtkTaobaoVendorClient.java#L21-L216)
+- [TaobaoOfficialVendorClient.java: 25-126:25-126](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/official/taobao/TaobaoOfficialVendorClient.java#L25-L126)
 
 **章节来源**
-- [CpsOrderServiceImpl.java: 35-197:35-197](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/service/order/CpsOrderServiceImpl.java#L35-L197)
+- [CpsApiVendorClient.java: 25-83:25-83](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java#L25-L83)
+- [CpsVendorConfig.java: 18-65:18-65](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/dto/CpsVendorConfig.java#L18-L65)
+- [DtkTaobaoVendorClient.java: 21-216:21-216](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/dataoke/DtkTaobaoVendorClient.java#L21-L216)
+- [TaobaoOfficialVendorClient.java: 25-126:25-126](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/official/taobao/TaobaoOfficialVendorClient.java#L25-L126)
 
 ### 用户端界面概览（分销中心）
 - 页面包含分销信息、账户信息、菜单栏与分销记录模块，支持分享邀请与权限弹窗，体现CPS推广与收益展示的前端承载。
@@ -347,6 +436,24 @@ PAGE --> AUTH["权限弹窗"]
 
 **章节来源**
 - [CPS系统PRD文档.md: 553-585:553-585](file://docs/CPS系统PRD文档.md#L553-L585)
+
+### 供应商管理模块
+新增的供应商管理功能，支持多供应商架构下的供应商配置和管理：
+
+- **供应商配置管理**
+  - 供应商列表展示：供应商编码、名称、类型、状态、API调用次数
+  - 供应商编辑功能：编码、名称、类型、AppKey/Secret、API基础URL、默认推广位、状态、扩展配置
+  - 供应商类型分类：aggregator（聚合平台）和 official（官方API）两类
+  - 供应商状态控制：启用/禁用切换，连接测试功能验证配置正确性
+
+- **供应商对接特性**
+  - 支持大淘客、好单库、喵有券、实惠猪等聚合平台
+  - 支持淘宝联盟官方API等官方API供应商
+  - 动态扩展新供应商类型，无需修改核心代码
+
+**章节来源**
+- [CpsVendorCodeEnum.java: 18-25:18-25](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsVendorCodeEnum.java#L18-L25)
+- [CpsVendorConfig.java: 18-65:18-65](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/dto/CpsVendorConfig.java#L18-L65)
 
 ### 订单管理模块
 提供全面的订单监控与管理功能：
@@ -496,38 +603,136 @@ PAGE --> AUTH["权限弹窗"]
 **章节来源**
 - [CpsFreezeStatusEnum.java: 1-41:1-41](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsFreezeStatusEnum.java#L1-L41)
 
+## 供应商架构设计
+
+### 供应商架构总览
+系统采用多供应商架构，支持同一电商平台对接多个API供应商，包括聚合平台和官方API两大类型：
+
+```mermaid
+graph TB
+subgraph "供应商架构"
+VENDOR_CLIENT["CpsApiVendorClient<br/>供应商客户端接口"]
+VENDOR_CONFIG["CpsVendorConfig<br/>供应商配置DTO"]
+END
+subgraph "聚合平台供应商"
+DTK["DtkTaobaoVendorClient<br/>大淘客-淘宝"]
+HDK["HdkJdVendorClient<br/>好单库-京东"]
+MYQ["MiaoYouQuanVendorClient<br/>喵有券"]
+SZZ["ShiHuiZhuVendorClient<br/>实惠猪"]
+END
+subgraph "官方API供应商"
+OFFICIAL_TB["TaobaoOfficialVendorClient<br/>淘宝联盟官方API"]
+OFFICIAL_JD["JdOfficialVendorClient<br/>京东联盟官方API"]
+OFFICIAL_PDD["PddOfficialVendorClient<br/>拼多多官方API"]
+OFFICIAL_DY["DouyinOfficialVendorClient<br/>抖音联盟官方API"]
+END
+subgraph "平台客户端"
+PLATFORM_CLIENT["CpsPlatformClient<br/>平台客户端接口"]
+END
+VENDOR_CLIENT --> VENDOR_CONFIG
+DTK --> VENDOR_CLIENT
+HDK --> VENDOR_CLIENT
+MYQ --> VENDOR_CLIENT
+SZZ --> VENDOR_CLIENT
+OFFICIAL_TB --> VENDOR_CLIENT
+OFFICIAL_JD --> VENDOR_CLIENT
+OFFICIAL_PDD --> VENDOR_CLIENT
+OFFICIAL_DY --> VENDOR_CLIENT
+PLATFORM_CLIENT --> VENDOR_CLIENT
+```
+
+**更新** 新增完整的供应商架构设计，包括供应商客户端接口、配置管理、具体实现类等。
+
+**图表来源**
+- [CpsApiVendorClient.java: 25-83:25-83](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java#L25-L83)
+- [CpsVendorConfig.java: 18-65:18-65](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/dto/CpsVendorConfig.java#L18-L65)
+- [CpsPlatformClient.java: 14-54:14-54](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsPlatformClient.java#L14-L54)
+
+### 供应商类型与特点
+
+#### 聚合平台供应商
+- **特点**：通过第三方聚合平台API对接多个电商平台，提供统一的接口规范
+- **优势**：接口标准化程度高，支持多平台统一管理，开发成本低
+- **劣势**：可能存在接口限制和数据延迟问题
+- **示例**：大淘客、好单库、喵有券、实惠猪等
+
+#### 官方API供应商
+- **特点**：直接对接电商平台官方API，数据准确性和实时性更好
+- **优势**：数据质量高，功能完整，支持更多平台特性
+- **劣势**：需要处理不同的API签名和认证方式，开发复杂度较高
+- **示例**：淘宝联盟官方API、京东联盟官方API等
+
+**章节来源**
+- [CpsVendorCodeEnum.java: 18-25:18-25](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsVendorCodeEnum.java#L18-L25)
+- [DtkTaobaoVendorClient.java: 13-18:13-18](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/dataoke/DtkTaobaoVendorClient.java#L13-L18)
+- [TaobaoOfficialVendorClient.java: 13-22:13-22](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/official/taobao/TaobaoOfficialVendorClient.java#L13-L22)
+
+### 供应商配置管理
+供应商配置通过CpsVendorConfig DTO统一管理，包含以下关键配置项：
+
+- **基础配置**：供应商编码、类型、平台编码、API Key/Secret、基础URL
+- **认证配置**：授权令牌（OAuth2 token/unionId等）
+- **推广位配置**：默认推广位ID
+- **扩展配置**：供应商特有参数（JSON解析后的Map）
+
+**章节来源**
+- [CpsVendorConfig.java: 18-65:18-65](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/dto/CpsVendorConfig.java#L18-L65)
+
+### 供应商客户端接口设计
+CpsApiVendorClient接口定义了统一的供应商客户端规范：
+
+- **标识信息**：供应商编码、平台编码、供应商类型
+- **核心功能**：商品搜索、推广链接生成、订单查询、连接测试
+- **设计原则**：配置与逻辑分离，便于测试和多租户支持
+
+**章节来源**
+- [CpsApiVendorClient.java: 25-83:25-83](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java#L25-L83)
+
 ## 依赖关系分析
 - 枚举与错误码作为领域契约，贯穿业务服务与控制层，保证状态流转与异常处理的一致性。
 - 业务服务依赖平台客户端工厂，实现多平台接入的统一抽象。
+- 供应商客户端接口定义了统一的供应商接入规范，支持多供应商架构。
 - 前端页面与后端API通过标准接口交互，管理后台负责配置、审核与统计。
 
 ```mermaid
 graph LR
 ENUMS["枚举/错误码"] --> SVC["CPS业务服务"]
-SVC --> CLIENT["平台客户端工厂"]
-SVC --> API["对外API"]
+SVC --> PLATFORM_CLIENT["平台客户端接口"]
+SVC --> VENDOR_CLIENT["供应商客户端接口"]
+PLATFORM_CLIENT --> API["对外API"]
+VENDOR_CLIENT --> API
 API --> FE["前端页面"]
 OP["管理后台"] --> API
 ```
 
+**更新** 新增供应商客户端接口依赖关系，反映多供应商架构的设计。
+
 **图表来源**
 - [CpsErrorCodeConstants.java: 10-64:10-64](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L10-L64)
-- [CpsOrderServiceImpl.java: 42-49:42-49](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/service/order/CpsOrderServiceImpl.java#L42-L49)
+- [CpsPlatformClient.java: 14-54:14-54](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsPlatformClient.java#L14-L54)
+- [CpsApiVendorClient.java: 25-83:25-83](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java#L25-L83)
 
 **章节来源**
 - [CpsErrorCodeConstants.java: 10-64:10-64](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L10-L64)
-- [CpsOrderServiceImpl.java: 42-49:42-49](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/service/order/CpsOrderServiceImpl.java#L42-L49)
+- [CpsPlatformClient.java: 14-54:14-54](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsPlatformClient.java#L14-L54)
+- [CpsApiVendorClient.java: 25-83:25-83](file://backend/yudao-module-cps/yudao-module-cps-biz/src/main/java/cn/iocoder/yudao/module/cps/client/CpsApiVendorClient.java#L25-L83)
 
 ## 性能考量
 - 订单同步策略：每5分钟增量拉取，避免频繁全量扫描；批量处理与异常容错减少抖动。
 - 并发查询：多平台比价采用并发查询，提升用户体验；需注意平台限流与重试策略。
 - 缓存与索引：建议对热门关键词、商品ID与PID建立缓存与数据库索引，降低查询延迟。
 - 日志与监控：记录同步耗时、新增/更新/跳过数量，便于容量与性能评估。
+- 供应商负载均衡：支持多供应商架构下的负载均衡和故障转移，提升系统可用性。
+
+**更新** 新增供应商架构下的性能考量，包括负载均衡和故障转移策略。
 
 ## 故障排查指南
 - 平台配置异常
   - 现象：平台配置不存在、编码重复、平台禁用。
   - 排查：核对平台编码与状态，确认AppKey/Secret与API地址正确。
+- 供应商配置异常
+  - 现象：供应商配置不存在、供应商类型不匹配、API密钥错误。
+  - 排查：核对供应商编码与类型，确认AppKey/Secret与API基础URL正确。
 - 推广位异常
   - 现象：推广位不存在、默认推广位重复。
   - 排查：检查推广位类型与归属，确保唯一性与有效性。
@@ -543,6 +748,11 @@ OP["管理后台"] --> API
 - 风控异常
   - 现象：转链请求被风控拦截。
   - 排查：检查频率限制与黑名单配置，必要时临时放行与人工审核。
+- 供应商异常
+  - 现象：供应商API调用失败、响应超时、认证失败。
+  - 排查：检查供应商配置、网络连接、API限流状态，必要时切换到备用供应商。
+
+**更新** 新增供应商架构相关的故障排查指南。
 
 **章节来源**
 - [CpsErrorCodeConstants.java: 12-64:12-64](file://backend/yudao-module-cps/yudao-module-cps-api/src/main/java/cn/iocoder/yudao/module/cps/enums/CpsErrorCodeConstants.java#L12-L64)
@@ -551,7 +761,7 @@ OP["管理后台"] --> API
 ## 结论
 本CPS系统通过标准化的多平台接入、清晰的订单与返利状态机、完善的提现与风控机制，构建了从"搜索/比价/推广—订单同步—返利结算—提现到账"的完整闭环。配合管理后台的配置、审核与数据看板，既能满足运营效率，也能保障用户体验与平台收益的可持续增长。
 
-**更新** 新版本增强了多平台适配器集成能力和MCP协议支持，为未来的AI智能推荐和Agent集成奠定了基础。新增的九个管理子模块进一步完善了系统的管理能力，包括平台管理、推广位管理、订单管理、返利管理、提现管理、数据统计、风控管理、MCP服务管理等，形成了更加完整的CPS业务管理体系。
+**更新** 新版本通过引入多供应商、多平台架构，显著增强了系统的扩展性、稳定性和灵活性。新增的供应商管理、配置管理、路由选择等功能模块，为CPS业务的长期发展奠定了坚实的技术基础。系统现在能够支持同一电商平台对接多个API供应商，包括聚合平台和官方API，为业务发展提供了更多的选择和更好的性能保障。
 
 ## 附录
 - 关键指标建议
@@ -560,10 +770,13 @@ OP["管理后台"] --> API
   - 用户留存：次日留存率、7日留存率、30日留存率
   - 营收增长：月度佣金收入、平台净利润
   - 用户满意度：提现成功率、返利到账时效
+  - 供应商指标：供应商API调用成功率、响应时间、可用性
 - 商业模式解读
   - 平台通过佣金分成与广告位收益获益，CPS系统作为流量入口与转化通道，持续优化ROI与用户体验是关键。
+  - 多供应商架构降低了单一供应商依赖风险，提升了系统的整体稳定性。
 - 技术演进方向
   - 支持更多电商平台接入，包括抖音等新兴平台
   - 集成MCP协议实现AI智能推荐和Agent自动化
   - 优化多平台适配器架构，提升系统扩展性和维护性
   - 增强管理后台功能，提供更完善的业务管理能力
+  - 完善供应商架构，支持更多供应商类型和更灵活的路由策略

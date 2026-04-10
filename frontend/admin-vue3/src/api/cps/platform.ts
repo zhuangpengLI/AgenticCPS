@@ -14,6 +14,8 @@ export interface CpsPlatformVO {
   status: number
   extraConfig?: string
   remark?: string
+  activeVendorCode?: string
+  supportedVendors?: string
   createTime: Date
 }
 
@@ -33,6 +35,7 @@ export interface CpsPlatformSaveVO {
   status: number
   extraConfig?: string
   remark?: string
+  activeVendorCode?: string
 }
 
 // CPS 平台配置分页请求 VO

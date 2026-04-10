@@ -6,19 +6,39 @@
       :model="queryParams"
       ref="queryFormRef"
       :inline="true"
-      label-width="80px"
+      label-width="100px"
     >
-      <el-form-item label="平台名称" prop="platformName">
+      <el-form-item label="供应商名称" prop="vendorName">
         <el-input
-          v-model="queryParams.platformName"
-          placeholder="请输入平台名称"
+          v-model="queryParams.vendorName"
+          placeholder="请输入供应商名称"
           clearable
-          class="!w-200px"
+          class="!w-180px"
           @keyup.enter="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="供应商类型" prop="vendorType">
+        <el-select v-model="queryParams.vendorType" placeholder="全部类型" clearable class="!w-140px">
+          <el-option
+            v-for="item in VENDOR_TYPE_OPTIONS"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="所属平台" prop="platformCode">
+        <el-select v-model="queryParams.platformCode" placeholder="全部平台" clearable class="!w-160px">
+          <el-option
+            v-for="item in PLATFORM_CODE_OPTIONS"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-120px">
+        <el-select v-model="queryParams.status" placeholder="全部状态" clearable class="!w-120px">
           <el-option label="启用" :value="1" />
           <el-option label="禁用" :value="0" />
         </el-select>
@@ -30,8 +50,8 @@
         <el-button @click="resetQuery">
           <Icon icon="ep:refresh" class="mr-5px" /> 重置
         </el-button>
-        <el-button type="primary" @click="openForm()" v-hasPermi="['cps:platform:create']">
-          <Icon icon="ep:plus" class="mr-5px" /> 新增平台
+        <el-button type="primary" @click="openForm()" v-hasPermi="['cps:api-vendor:create']">
+          <Icon icon="ep:plus" class="mr-5px" /> 新增供应商
         </el-button>
       </el-form-item>
     </el-form>
@@ -41,40 +61,30 @@
   <ContentWrap>
     <el-table v-loading="loading" :data="list" stripe>
       <el-table-column label="ID" align="center" prop="id" width="70" />
-      <el-table-column label="平台" align="center" width="140">
+      <el-table-column label="供应商编码" align="center" prop="vendorCode" width="120" />
+      <el-table-column label="供应商名称" align="center" prop="vendorName" width="120" />
+      <el-table-column label="供应商类型" align="center" width="110">
         <template #default="scope">
-          <div class="flex items-center gap-2 justify-center">
-            <el-avatar
-              v-if="scope.row.platformLogo"
-              :src="scope.row.platformLogo"
-              :size="28"
-              shape="square"
-            />
-            <span>{{ scope.row.platformName }}</span>
-          </div>
+          <el-tag :type="scope.row.vendorType === 'aggregator' ? 'primary' : 'success'" size="small">
+            {{ vendorTypeLabel(scope.row.vendorType) }}
+          </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="平台编码" align="center" prop="platformCode" width="120" />
-      <el-table-column label="AppKey" align="center" width="160">
+      <el-table-column label="所属平台" align="center" width="120">
+        <template #default="scope">
+          <el-tag type="info" size="small">
+            {{ platformLabel(scope.row.platformCode) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="AppKey" align="center" width="140">
         <template #default="scope">
           <span class="text-gray-500">{{ maskSecret(scope.row.appKey) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="默认推广位" align="center" prop="defaultAdzoneId" min-width="160" show-overflow-tooltip />
-      <el-table-column label="服务费率" align="center" width="90">
-        <template #default="scope">
-          {{ scope.row.platformServiceRate != null ? scope.row.platformServiceRate + '%' : '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column label="排序" align="center" prop="sort" width="70" />
-      <el-table-column label="激活供应商" align="center" width="120">
-        <template #default="scope">
-          <el-tag v-if="scope.row.activeVendorCode" type="success" size="small">
-            {{ vendorLabel(scope.row.activeVendorCode) }}
-          </el-tag>
-          <span v-else class="text-gray-400">未设置</span>
-        </template>
-      </el-table-column>
+      <el-table-column label="API基础地址" align="center" prop="apiBaseUrl" min-width="200" show-overflow-tooltip />
+      <el-table-column label="推广位ID" align="center" prop="defaultAdzoneId" min-width="140" show-overflow-tooltip />
+      <el-table-column label="优先级" align="center" prop="priority" width="80" />
       <el-table-column label="状态" align="center" prop="status" width="90">
         <template #default="scope">
           <el-switch
@@ -82,7 +92,7 @@
             :active-value="1"
             :inactive-value="0"
             @change="handleStatusChange(scope.row)"
-            v-hasPermi="['cps:platform:update']"
+            v-hasPermi="['cps:api-vendor:update']"
           />
         </template>
       </el-table-column>
@@ -95,7 +105,7 @@
             link
             type="primary"
             @click="openForm(scope.row)"
-            v-hasPermi="['cps:platform:update']"
+            v-hasPermi="['cps:api-vendor:update']"
           >
             编辑
           </el-button>
@@ -103,7 +113,7 @@
             link
             type="danger"
             @click="handleDelete(scope.row.id)"
-            v-hasPermi="['cps:platform:delete']"
+            v-hasPermi="['cps:api-vendor:delete']"
           >
             删除
           </el-button>
@@ -121,30 +131,58 @@
   <!-- 新增/编辑弹窗 -->
   <el-dialog
     v-model="dialogVisible"
-    :title="formData.id ? '编辑平台配置' : '新增平台配置'"
-    width="600px"
+    :title="formData.id ? '编辑供应商配置' : '新增供应商配置'"
+    width="650px"
     :close-on-click-modal="false"
     destroy-on-close
   >
     <el-form ref="formRef" :model="formData" :rules="formRules" label-width="120px">
       <el-row :gutter="16">
         <el-col :span="12">
-          <el-form-item label="平台编码" prop="platformCode">
-            <el-input
-              v-model="formData.platformCode"
-              placeholder="如: taobao"
+          <el-form-item label="供应商编码" prop="vendorCode">
+            <el-select
+              v-model="formData.vendorCode"
+              placeholder="请选择供应商"
               :disabled="!!formData.id"
-            />
+              class="w-full"
+              @change="handleVendorCodeChange"
+            >
+              <el-option
+                v-for="item in filteredVendorOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="平台名称" prop="platformName">
-            <el-input v-model="formData.platformName" placeholder="如: 淘宝联盟" />
+          <el-form-item label="供应商名称" prop="vendorName">
+            <el-input v-model="formData.vendorName" placeholder="如: 大淘客" />
           </el-form-item>
         </el-col>
-        <el-col :span="24">
-          <el-form-item label="平台Logo URL" prop="platformLogo">
-            <el-input v-model="formData.platformLogo" placeholder="请输入Logo图片地址（可选）" />
+        <el-col :span="12">
+          <el-form-item label="供应商类型" prop="vendorType">
+            <el-select v-model="formData.vendorType" placeholder="请选择类型" class="w-full" disabled>
+              <el-option
+                v-for="item in VENDOR_TYPE_OPTIONS"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="所属平台" prop="platformCode">
+            <el-select v-model="formData.platformCode" placeholder="请选择平台" class="w-full">
+              <el-option
+                v-for="item in PLATFORM_CODE_OPTIONS"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -163,8 +201,8 @@
           </el-form-item>
         </el-col>
         <el-col :span="24">
-          <el-form-item label="API 基础地址" prop="apiBaseUrl">
-            <el-input v-model="formData.apiBaseUrl" placeholder="留空使用默认地址（可选）" />
+          <el-form-item label="API基础地址" prop="apiBaseUrl">
+            <el-input v-model="formData.apiBaseUrl" placeholder="如: https://openapi.dataoke.com/api" />
           </el-form-item>
         </el-col>
         <el-col :span="24">
@@ -179,25 +217,12 @@
         </el-col>
         <el-col :span="24">
           <el-form-item label="默认推广位ID" prop="defaultAdzoneId">
-            <el-input v-model="formData.defaultAdzoneId" placeholder="请输入默认推广位ID" />
+            <el-input v-model="formData.defaultAdzoneId" placeholder="如: mm_xxx_xxx_xxx（可选）" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="服务费率(%)" prop="platformServiceRate">
-            <el-input-number
-              v-model="formData.platformServiceRate"
-              :min="0"
-              :max="100"
-              :precision="2"
-              :step="0.1"
-              placeholder="如: 6.00"
-              class="w-full"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="排序" prop="sort">
-            <el-input-number v-model="formData.sort" :min="0" :max="9999" class="w-full" />
+          <el-form-item label="优先级" prop="priority">
+            <el-input-number v-model="formData.priority" :min="0" :max="9999" class="w-full" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -206,23 +231,6 @@
               <el-radio :label="1">启用</el-radio>
               <el-radio :label="0">禁用</el-radio>
             </el-radio-group>
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="激活供应商" prop="activeVendorCode">
-            <el-select
-              v-model="formData.activeVendorCode"
-              placeholder="请选择供应商"
-              clearable
-              class="w-full"
-            >
-              <el-option
-                v-for="item in VENDOR_CODE_OPTIONS"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              />
-            </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="24">
@@ -255,15 +263,22 @@
 </template>
 
 <script setup lang="ts">
-import { CpsPlatformApi, type CpsPlatformVO, type CpsPlatformSaveVO, type CpsPlatformPageReqVO } from '@/api/cps/platform'
-import { VENDOR_CODE_OPTIONS } from '@/api/cps/apiVendor'
+import {
+  CpsApiVendorApi,
+  VENDOR_TYPE_OPTIONS,
+  VENDOR_CODE_OPTIONS,
+  PLATFORM_CODE_OPTIONS,
+  type CpsApiVendorVO,
+  type CpsApiVendorSaveVO,
+  type CpsApiVendorPageReqVO
+} from '@/api/cps/apiVendor'
 import { formatDate } from '@/utils/formatTime'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-defineOptions({ name: 'CpsPlatform' })
+defineOptions({ name: 'CpsApiVendor' })
 
 const loading = ref(false)
-const list = ref<CpsPlatformVO[]>([])
+const list = ref<CpsApiVendorVO[]>([])
 const total = ref(0)
 const dialogVisible = ref(false)
 const formLoading = ref(false)
@@ -271,47 +286,71 @@ const formLoading = ref(false)
 const queryFormRef = ref()
 const formRef = ref()
 
-const queryParams = reactive<CpsPlatformPageReqVO>({
+const queryParams = reactive<CpsApiVendorPageReqVO>({
   pageNo: 1,
   pageSize: 10,
-  platformName: undefined,
+  vendorCode: undefined,
+  vendorName: undefined,
+  vendorType: undefined,
+  platformCode: undefined,
   status: undefined
 })
 
-const defaultFormData = (): CpsPlatformSaveVO => ({
+const defaultFormData = (): CpsApiVendorSaveVO => ({
   id: undefined,
+  vendorCode: '',
+  vendorName: '',
+  vendorType: '',
   platformCode: '',
-  platformName: '',
-  platformLogo: undefined,
   appKey: '',
   appSecret: '',
-  apiBaseUrl: undefined,
+  apiBaseUrl: '',
   authToken: undefined,
-  defaultAdzoneId: '',
-  platformServiceRate: undefined,
-  sort: 0,
-  status: 1,
+  defaultAdzoneId: undefined,
   extraConfig: undefined,
-  remark: undefined,
-  activeVendorCode: undefined
+  priority: 0,
+  status: 1,
+  remark: undefined
 })
 
-const formData = reactive<CpsPlatformSaveVO>(defaultFormData())
+const formData = reactive<CpsApiVendorSaveVO>(defaultFormData())
 
 const formRules = computed(() => ({
-  platformCode: [{ required: true, message: '平台编码不能为空', trigger: 'blur' }],
-  platformName: [{ required: true, message: '平台名称不能为空', trigger: 'blur' }],
+  vendorCode: [{ required: true, message: '供应商编码不能为空', trigger: 'change' }],
+  vendorName: [{ required: true, message: '供应商名称不能为空', trigger: 'blur' }],
+  vendorType: [{ required: true, message: '供应商类型不能为空', trigger: 'change' }],
+  platformCode: [{ required: true, message: '所属平台不能为空', trigger: 'change' }],
   appKey: [{ required: true, message: 'AppKey 不能为空', trigger: 'blur' }],
   appSecret: formData.id
     ? []
     : [{ required: true, message: 'AppSecret 不能为空', trigger: 'blur' }],
-  defaultAdzoneId: [{ required: true, message: '默认推广位ID不能为空', trigger: 'blur' }],
+  apiBaseUrl: [{ required: true, message: 'API基础地址不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
 }))
 
-/** 供应商名称文本 */
-const vendorLabel = (code?: string) => {
-  return VENDOR_CODE_OPTIONS.find((item) => item.value === code)?.label ?? code ?? '-'
+/** 根据供应商类型过滤供应商编码选项 */
+const filteredVendorOptions = computed(() => {
+  if (!formData.vendorType) return VENDOR_CODE_OPTIONS
+  return VENDOR_CODE_OPTIONS.filter((item) => item.type === formData.vendorType)
+})
+
+/** 供应商编码变更时自动填充名称和类型 */
+const handleVendorCodeChange = (code: string) => {
+  const vendor = VENDOR_CODE_OPTIONS.find((item) => item.value === code)
+  if (vendor) {
+    formData.vendorName = vendor.label
+    formData.vendorType = vendor.type
+  }
+}
+
+/** 供应商类型文本 */
+const vendorTypeLabel = (type?: string) => {
+  return VENDOR_TYPE_OPTIONS.find((item) => item.value === type)?.label ?? type ?? '-'
+}
+
+/** 平台名称文本 */
+const platformLabel = (code?: string) => {
+  return PLATFORM_CODE_OPTIONS.find((item) => item.value === code)?.label ?? code ?? '-'
 }
 
 /** 脱敏显示密钥 */
@@ -321,11 +360,12 @@ const maskSecret = (val?: string) => {
   return val.substring(0, 4) + '****' + val.substring(val.length - 4)
 }
 
-/** 查询列表 */
+// ===== 列表操作 =====
+
 const getList = async () => {
   loading.value = true
   try {
-    const data = await CpsPlatformApi.getPlatformPage(queryParams)
+    const data = await CpsApiVendorApi.getVendorPage(queryParams)
     list.value = data.list
     total.value = data.total
   } finally {
@@ -343,40 +383,40 @@ const resetQuery = () => {
   handleQuery()
 }
 
-/** 打开新增/编辑弹窗 */
-const openForm = (row?: CpsPlatformVO) => {
+// ===== 表单操作 =====
+
+const openForm = (row?: CpsApiVendorVO) => {
   Object.assign(formData, defaultFormData())
   if (row) {
     Object.assign(formData, {
       id: row.id,
+      vendorCode: row.vendorCode,
+      vendorName: row.vendorName,
+      vendorType: row.vendorType,
       platformCode: row.platformCode,
-      platformName: row.platformName,
-      platformLogo: row.platformLogo,
       appKey: row.appKey,
       appSecret: '', // 编辑时不回显 Secret
       apiBaseUrl: row.apiBaseUrl,
+      authToken: row.authToken,
       defaultAdzoneId: row.defaultAdzoneId,
-      platformServiceRate: row.platformServiceRate,
-      sort: row.sort,
-      status: row.status,
       extraConfig: row.extraConfig,
-      remark: row.remark,
-      activeVendorCode: row.activeVendorCode
+      priority: row.priority,
+      status: row.status,
+      remark: row.remark
     })
   }
   dialogVisible.value = true
 }
 
-/** 提交表单 */
 const handleSubmit = async () => {
   await formRef.value?.validate()
   formLoading.value = true
   try {
     if (formData.id) {
-      await CpsPlatformApi.updatePlatform(formData)
+      await CpsApiVendorApi.updateVendor(formData)
       ElMessage.success('更新成功')
     } else {
-      await CpsPlatformApi.createPlatform(formData)
+      await CpsApiVendorApi.createVendor(formData)
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
@@ -387,19 +427,21 @@ const handleSubmit = async () => {
 }
 
 /** 状态快速切换 */
-const handleStatusChange = async (row: CpsPlatformVO) => {
+const handleStatusChange = async (row: CpsApiVendorVO) => {
   const text = row.status === 1 ? '启用' : '禁用'
   try {
-    await CpsPlatformApi.updatePlatform({
+    await CpsApiVendorApi.updateVendor({
       id: row.id,
+      vendorCode: row.vendorCode,
+      vendorName: row.vendorName,
+      vendorType: row.vendorType,
       platformCode: row.platformCode,
-      platformName: row.platformName,
       appKey: row.appKey ?? '',
       appSecret: '',
-      defaultAdzoneId: row.defaultAdzoneId ?? '',
+      apiBaseUrl: row.apiBaseUrl ?? '',
       status: row.status
     })
-    ElMessage.success(`已${text}平台：${row.platformName}`)
+    ElMessage.success(`已${text}供应商：${row.vendorName}`)
   } catch {
     // 还原状态
     row.status = row.status === 1 ? 0 : 1
@@ -408,8 +450,8 @@ const handleStatusChange = async (row: CpsPlatformVO) => {
 
 /** 删除 */
 const handleDelete = async (id: number) => {
-  await ElMessageBox.confirm('确定删除该平台配置吗？删除后不可恢复！', '警告', { type: 'warning' })
-  await CpsPlatformApi.deletePlatform(id)
+  await ElMessageBox.confirm('确定删除该供应商配置吗？删除后不可恢复！', '警告', { type: 'warning' })
+  await CpsApiVendorApi.deleteVendor(id)
   ElMessage.success('删除成功')
   getList()
 }
