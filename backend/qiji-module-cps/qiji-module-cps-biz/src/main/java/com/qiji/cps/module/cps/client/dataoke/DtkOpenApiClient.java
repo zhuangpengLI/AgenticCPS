@@ -1,7 +1,6 @@
 package com.qiji.cps.module.cps.client.dataoke;
 
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
-import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import cn.hutool.crypto.digest.DigestUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -16,10 +15,9 @@ import java.util.*;
  *
  * <p>大淘客 API 签名规则：MD5(appKey=xxx&timer=xxx&nonce=xxx + appSecret)</p>
  *
- * <p>支持三种构造方式：
+ * <p>支持两种构造方式：
  * <ul>
  *   <li>通过 {@link CpsVendorConfig} 构建（推荐，新架构）</li>
- *   <li>通过 {@link CpsPlatformDO} 构建（兼容旧架构）</li>
  *   <li>通过 appKey/appSecret 直接构建</li>
  * </ul>
  * </p>
@@ -43,16 +41,6 @@ public class DtkOpenApiClient {
         this.appKey = config.getAppKey();
         this.appSecret = config.getAppSecret();
         this.baseUrl = config.getApiBaseUrl() != null ? config.getApiBaseUrl() : DEFAULT_BASE_URL;
-        this.objectMapper = new ObjectMapper();
-    }
-
-    /**
-     * 通过平台配置构建（兼容旧架构）
-     */
-    public DtkOpenApiClient(CpsPlatformDO platform) {
-        this.appKey = platform.getAppKey();
-        this.appSecret = platform.getAppSecret();
-        this.baseUrl = platform.getApiBaseUrl() != null ? platform.getApiBaseUrl() : DEFAULT_BASE_URL;
         this.objectMapper = new ObjectMapper();
     }
 

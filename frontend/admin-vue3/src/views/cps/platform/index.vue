@@ -55,11 +55,6 @@
         </template>
       </el-table-column>
       <el-table-column label="平台编码" align="center" prop="platformCode" width="120" />
-      <el-table-column label="AppKey" align="center" width="160">
-        <template #default="scope">
-          <span class="text-gray-500">{{ maskSecret(scope.row.appKey) }}</span>
-        </template>
-      </el-table-column>
       <el-table-column label="默认推广位" align="center" prop="defaultAdzoneId" min-width="160" show-overflow-tooltip />
       <el-table-column label="服务费率" align="center" width="90">
         <template #default="scope">
@@ -147,39 +142,9 @@
             <el-input v-model="formData.platformLogo" placeholder="请输入Logo图片地址（可选）" />
           </el-form-item>
         </el-col>
-        <el-col :span="12">
-          <el-form-item label="AppKey" prop="appKey">
-            <el-input v-model="formData.appKey" placeholder="请输入 AppKey" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="AppSecret" prop="appSecret">
-            <el-input
-              v-model="formData.appSecret"
-              type="password"
-              show-password
-              :placeholder="formData.id ? '留空表示不修改' : '请输入 AppSecret'"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="24">
-          <el-form-item label="API 基础地址" prop="apiBaseUrl">
-            <el-input v-model="formData.apiBaseUrl" placeholder="留空使用默认地址（可选）" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="24">
-          <el-form-item label="授权令牌" prop="authToken">
-            <el-input
-              v-model="formData.authToken"
-              type="password"
-              show-password
-              placeholder="请输入授权令牌（可选）"
-            />
-          </el-form-item>
-        </el-col>
         <el-col :span="24">
           <el-form-item label="默认推广位ID" prop="defaultAdzoneId">
-            <el-input v-model="formData.defaultAdzoneId" placeholder="请输入默认推广位ID" />
+            <el-input v-model="formData.defaultAdzoneId" placeholder="请输入默认推广位ID（可选）" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -283,11 +248,7 @@ const defaultFormData = (): CpsPlatformSaveVO => ({
   platformCode: '',
   platformName: '',
   platformLogo: undefined,
-  appKey: '',
-  appSecret: '',
-  apiBaseUrl: undefined,
-  authToken: undefined,
-  defaultAdzoneId: '',
+  defaultAdzoneId: undefined,
   platformServiceRate: undefined,
   sort: 0,
   status: 1,
@@ -301,24 +262,12 @@ const formData = reactive<CpsPlatformSaveVO>(defaultFormData())
 const formRules = computed(() => ({
   platformCode: [{ required: true, message: '平台编码不能为空', trigger: 'blur' }],
   platformName: [{ required: true, message: '平台名称不能为空', trigger: 'blur' }],
-  appKey: [{ required: true, message: 'AppKey 不能为空', trigger: 'blur' }],
-  appSecret: formData.id
-    ? []
-    : [{ required: true, message: 'AppSecret 不能为空', trigger: 'blur' }],
-  defaultAdzoneId: [{ required: true, message: '默认推广位ID不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
 }))
 
 /** 供应商名称文本 */
 const vendorLabel = (code?: string) => {
   return VENDOR_CODE_OPTIONS.find((item) => item.value === code)?.label ?? code ?? '-'
-}
-
-/** 脱敏显示密钥 */
-const maskSecret = (val?: string) => {
-  if (!val) return '-'
-  if (val.length <= 8) return '****'
-  return val.substring(0, 4) + '****' + val.substring(val.length - 4)
 }
 
 /** 查询列表 */
@@ -352,9 +301,6 @@ const openForm = (row?: CpsPlatformVO) => {
       platformCode: row.platformCode,
       platformName: row.platformName,
       platformLogo: row.platformLogo,
-      appKey: row.appKey,
-      appSecret: '', // 编辑时不回显 Secret
-      apiBaseUrl: row.apiBaseUrl,
       defaultAdzoneId: row.defaultAdzoneId,
       platformServiceRate: row.platformServiceRate,
       sort: row.sort,
@@ -394,9 +340,7 @@ const handleStatusChange = async (row: CpsPlatformVO) => {
       id: row.id,
       platformCode: row.platformCode,
       platformName: row.platformName,
-      appKey: row.appKey ?? '',
-      appSecret: '',
-      defaultAdzoneId: row.defaultAdzoneId ?? '',
+      defaultAdzoneId: row.defaultAdzoneId,
       status: row.status
     })
     ElMessage.success(`已${text}平台：${row.platformName}`)

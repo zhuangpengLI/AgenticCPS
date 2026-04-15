@@ -42,23 +42,7 @@ public class CpsPlatformDO extends TenantBaseDO {
      */
     private String platformLogo;
     /**
-     * AppKey
-     */
-    private String appKey;
-    /**
-     * AppSecret（加密存储）
-     */
-    private String appSecret;
-    /**
-     * API基础URL
-     */
-    private String apiBaseUrl;
-    /**
-     * 授权令牌
-     */
-    private String authToken;
-    /**
-     * 默认推广位ID
+     * 默认推广位ID（全局兜底，具体凭证由 cps_api_vendor 管理）
      */
     private String defaultAdzoneId;
     /**

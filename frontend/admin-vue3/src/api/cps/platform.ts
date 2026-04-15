@@ -25,11 +25,7 @@ export interface CpsPlatformSaveVO {
   platformCode: string
   platformName: string
   platformLogo?: string
-  appKey: string
-  appSecret: string
-  apiBaseUrl?: string
-  authToken?: string
-  defaultAdzoneId: string
+  defaultAdzoneId?: string
   platformServiceRate?: number
   sort?: number
   status: number

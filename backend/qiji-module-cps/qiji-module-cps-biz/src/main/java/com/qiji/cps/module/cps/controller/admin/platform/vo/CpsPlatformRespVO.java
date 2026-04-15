@@ -22,12 +22,6 @@ public class CpsPlatformRespVO {
     @Schema(description = "平台Logo图片URL")
     private String platformLogo;
 
-    @Schema(description = "AppKey")
-    private String appKey;
-
-    @Schema(description = "API基础URL")
-    private String apiBaseUrl;
-
     @Schema(description = "默认推广位ID")
     private String defaultAdzoneId;
 

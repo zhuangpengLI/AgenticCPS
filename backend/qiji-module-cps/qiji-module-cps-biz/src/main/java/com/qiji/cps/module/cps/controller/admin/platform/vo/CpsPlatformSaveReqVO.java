@@ -25,22 +25,7 @@ public class CpsPlatformSaveReqVO {
     @Schema(description = "平台Logo图片URL", example = "https://xxx.com/logo.png")
     private String platformLogo;
 
-    @Schema(description = "AppKey", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank(message = "AppKey不能为空")
-    private String appKey;
-
-    @Schema(description = "AppSecret", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank(message = "AppSecret不能为空")
-    private String appSecret;
-
-    @Schema(description = "API基础URL")
-    private String apiBaseUrl;
-
-    @Schema(description = "授权令牌")
-    private String authToken;
-
-    @Schema(description = "默认推广位ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank(message = "默认推广位ID不能为空")
+    @Schema(description = "默认推广位ID")
     private String defaultAdzoneId;
 
     @Schema(description = "平台服务费率（百分比）", example = "0.06")
