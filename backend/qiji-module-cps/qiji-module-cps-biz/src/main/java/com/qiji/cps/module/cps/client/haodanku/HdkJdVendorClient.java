@@ -27,7 +27,17 @@ public class HdkJdVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getSearchApiPath() {
-        return "/jd/item_search";
+        // 好单库京东搜索接口：/jd_goods_search (GET, v2)，返回 code=200
+        // 已验证：http://v2.api.haodanku.com/jd_goods_search 可正常返回京东商品数据
+        return "/jd_goods_search";
+    }
+
+    /**
+     * 好单库京东搜索接口返回 code=200（而非通用的 code=1）
+     */
+    @Override
+    protected boolean isSuccessResponse(com.fasterxml.jackson.databind.JsonNode root) {
+        return root != null && root.path("code").asInt(-1) == 200;
     }
 
     @Override
@@ -36,33 +46,47 @@ public class HdkJdVendorClient extends AbstractHdkVendorClient {
         params.put("keyword", request.getKeyword());
         params.put("page", request.getPageNo());
         params.put("pagesize", request.getPageSize());
+        // /jd_goods_search 支持价格筛选
         if (request.getPriceLowerLimit() != null) {
-            params.put("min_price", request.getPriceLowerLimit());
+            params.put("price_from", request.getPriceLowerLimit());
         }
         if (request.getPriceUpperLimit() != null) {
-            params.put("max_price", request.getPriceUpperLimit());
+            params.put("price_to", request.getPriceUpperLimit());
         }
         return params;
     }
 
     @Override
     protected CpsGoodsSearchResult parseSearchResponse(JsonNode response, CpsGoodsSearchRequest request) {
+        // /jd_goods_search 实际返回字段（已通过API测试验证）：
+        //   itemid/skuid → goodsId
+        //   goodsname    → title
+        //   itempic      → mainPic
+        //   itemprice    → originalPrice
+        //   itemendprice → actualPrice
+        //   commissionshare (0.01 = 1%) → commissionRate (需×100)
+        //   shopname     → shopName
+        //   itemsale     → monthSales
         JsonNode data = response.path("data");
         List<CpsGoodsItem> goodsList = new ArrayList<>();
         if (data.isArray()) {
             for (JsonNode item : data) {
-                BigDecimal price = parseDecimal(item, "price");
-                BigDecimal finalPrice = parseDecimal(item, "final_price");
+                BigDecimal price = parseDecimal(item, "itemprice");
+                BigDecimal endPrice = parseDecimal(item, "itemendprice");
+                // commissionshare 字段值为小数（如 0.01 = 1%），需转换为百分比
+                BigDecimal commissionShare = parseDecimal(item, "commissionshare");
+                BigDecimal commissionRate = commissionShare != null
+                        ? commissionShare.multiply(BigDecimal.valueOf(100)) : null;
                 goodsList.add(CpsGoodsItem.builder()
-                        .goodsId(item.path("sku_id").asText(null))
+                        .goodsId(item.path("itemid").asText(null))
                         .platformCode(getPlatformCode())
-                        .title(item.path("goods_name").asText(null))
-                        .mainPic(item.path("pic_url").asText(null))
+                        .title(item.path("goodsname").asText(null))
+                        .mainPic(item.path("itempic").asText(null))
                         .originalPrice(price)
-                        .actualPrice(finalPrice != null ? finalPrice : price)
-                        .commissionRate(parseDecimal(item, "commission_rate"))
-                        .shopName(item.path("shop_name").asText(null))
-                        .itemLink(item.path("item_link").asText(null))
+                        .actualPrice(endPrice != null ? endPrice : price)
+                        .commissionRate(commissionRate)
+                        .shopName(item.path("shopname").asText(null))
+                        .monthSales(item.path("itemsale").asLong(0))
                         .build());
             }
         }
@@ -77,7 +101,8 @@ public class HdkJdVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getPromotionLinkApiPath() {
-        return "/jd/get_item_link";
+        // TODO 待验证：好单库京东转链接口路径
+        return "/jd/ratesurl";
     }
 
     @Override
@@ -138,7 +163,7 @@ public class HdkJdVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getTestConnectionApiPath() {
-        return "/jd/item_search";
+        return "/jd_goods_search";
     }
 
     @Override

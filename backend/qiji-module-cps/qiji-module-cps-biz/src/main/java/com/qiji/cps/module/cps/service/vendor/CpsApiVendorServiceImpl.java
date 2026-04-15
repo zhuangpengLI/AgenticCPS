@@ -60,8 +60,11 @@ public class CpsApiVendorServiceImpl implements CpsApiVendorService {
         validateVendorExists(updateReqVO.getId());
         // 校验供应商+平台组合唯一
         validateVendorPlatformUnique(updateReqVO.getId(), updateReqVO.getVendorCode(), updateReqVO.getPlatformCode());
-        // 更新
+        // 更新（appSecret 为空时保留原字段不覆盖）
         CpsApiVendorDO updateObj = BeanUtils.toBean(updateReqVO, CpsApiVendorDO.class);
+        if (updateReqVO.getAppSecret() == null || updateReqVO.getAppSecret().isBlank()) {
+            updateObj.setAppSecret(null); // MyBatis Plus updateById 默认跳过 null 字段
+        }
         vendorMapper.updateById(updateObj);
     }
 

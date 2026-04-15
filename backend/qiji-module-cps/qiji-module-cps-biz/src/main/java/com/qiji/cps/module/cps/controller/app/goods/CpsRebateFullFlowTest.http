@@ -42,8 +42,8 @@ Content-Type: application/json
 tenant-id: {{appTenantId}}
 
 {
-  "mobile": "15601691323",
-  "password": "admin123"
+  "mobile": "15601691310",
+  "password": "12345678"
 }
 
 > {%

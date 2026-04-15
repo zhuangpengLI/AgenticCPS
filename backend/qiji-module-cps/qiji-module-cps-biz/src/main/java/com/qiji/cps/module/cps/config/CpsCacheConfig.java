@@ -1,14 +1,14 @@
 package com.qiji.cps.module.cps.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qiji.cps.framework.redis.config.QijiRedisAutoConfiguration;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.RedisSerializer;
 
 import java.time.Duration;
 
@@ -38,11 +38,11 @@ public class CpsCacheConfig {
     public static final String CACHE_RISK_RATE_RULE = "cps:riskRateRule";
 
     @Bean("cpsCacheManager")
-    public CacheManager cpsCacheManager(RedisConnectionFactory factory, ObjectMapper objectMapper) {
-        // 使用 Jackson 序列化，支持泛型和多态
-        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+    public CacheManager cpsCacheManager(RedisConnectionFactory factory) {
+        // 使用框架统一的 Redis JSON 序列化器（含 @class 类型信息，支持正确反序列化）
+        RedisSerializer<?> serializer = QijiRedisAutoConfiguration.buildRedisSerializer();
         RedisSerializationContext.SerializationPair<Object> serializationPair =
-                RedisSerializationContext.SerializationPair.fromSerializer(serializer);
+                RedisSerializationContext.SerializationPair.fromSerializer((RedisSerializer<Object>) serializer);
 
         // 默认缓存配置（10分钟）
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()

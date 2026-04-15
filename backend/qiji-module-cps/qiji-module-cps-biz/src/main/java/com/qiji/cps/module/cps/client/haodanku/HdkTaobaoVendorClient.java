@@ -12,7 +12,7 @@ import java.util.*;
  * 好单库-淘宝供应商客户端
  *
  * <p>通过好单库 API 对接淘宝联盟。</p>
- * <p>API文档：https://www.haodanku.com/pages/api</p>
+ * <p>API文档：https://www.haodanku.com/openapi</p>
  *
  * @author CPS System
  */
@@ -29,7 +29,7 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getSearchApiPath() {
-        return "/item_search";
+        return "/supersearch";
     }
 
     @Override
@@ -73,7 +73,7 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getPromotionLinkApiPath() {
-        return "/get_item_link";
+        return "/ratesurl";
     }
 
     @Override
@@ -85,16 +85,23 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient {
         } else if (config.getDefaultAdzoneId() != null) {
             params.put("pid", config.getDefaultAdzoneId());
         }
+        // 好单库转链API可选参数：淘宝授权账号昵称
+        if (config.getAuthToken() != null) {
+            params.put("tb_name", config.getAuthToken());
+        }
+        // 默认返回淘口令
+        params.put("get_taoword", 1);
         return params;
     }
 
     @Override
     protected CpsPromotionLinkResult parsePromotionLinkResponse(JsonNode response) {
         JsonNode data = response.path("data");
+        // 好单库 v3 转链API返回字段：coupon_click_url, item_url, taoword
         return CpsPromotionLinkResult.builder()
-                .shortUrl(data.path("short_url").asText(null))
-                .longUrl(data.path("click_url").asText(null))
-                .tpwd(data.path("tpwd").asText(null))
+                .shortUrl(data.path("coupon_click_url").asText(null))
+                .longUrl(data.path("item_url").asText(null))
+                .tpwd(data.path("taoword").asText(null))
                 .build();
     }
 
@@ -141,7 +148,7 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getTestConnectionApiPath() {
-        return "/item_search";
+        return "/supersearch";
     }
 
     @Override

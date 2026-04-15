@@ -4,6 +4,7 @@ import com.qiji.cps.framework.common.enums.TerminalEnum;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.validation.Mobile;
 import com.qiji.cps.module.member.controller.admin.user.vo.MemberUserPageReqVO;
+import com.qiji.cps.module.member.controller.admin.user.vo.MemberUserUpdatePasswordReqVO;
 import com.qiji.cps.module.member.controller.admin.user.vo.MemberUserUpdateReqVO;
 import com.qiji.cps.module.member.controller.app.user.vo.*;
 import com.qiji.cps.module.member.dal.dataobject.user.MemberUserDO;
@@ -136,6 +137,13 @@ public interface MemberUserService {
      * @param updateReqVO 更新信息
      */
     void updateUser(@Valid MemberUserUpdateReqVO updateReqVO);
+
+    /**
+     * 【管理员】修改会员用户密码
+     *
+     * @param updateReqVO 修改密码信息
+     */
+    void updateUserPassword(@Valid MemberUserUpdatePasswordReqVO updateReqVO);
 
     /**
      * 【管理员】获得会员用户分页

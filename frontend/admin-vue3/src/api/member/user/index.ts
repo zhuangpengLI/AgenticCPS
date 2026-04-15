@@ -46,3 +46,8 @@ export const updateUserLevel = async (data: any) => {
 export const updateUserPoint = async (data: any) => {
   return await request.put({ url: `/member/user/update-point`, data })
 }
+
+// 修改会员用户密码
+export const updateUserPassword = async (data: { id: number; password: string }) => {
+  return await request.put({ url: `/member/user/update-password`, data })
+}

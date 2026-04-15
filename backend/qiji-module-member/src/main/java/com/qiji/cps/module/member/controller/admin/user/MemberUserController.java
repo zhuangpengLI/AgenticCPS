@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.module.member.controller.admin.user.vo.*;
+import com.qiji.cps.module.member.controller.admin.user.vo.MemberUserUpdatePasswordReqVO;
 import com.qiji.cps.module.member.convert.user.MemberUserConvert;
 import com.qiji.cps.module.member.dal.dataobject.group.MemberGroupDO;
 import com.qiji.cps.module.member.dal.dataobject.level.MemberLevelDO;
@@ -50,6 +51,14 @@ public class MemberUserController {
     private MemberGroupService memberGroupService;
     @Resource
     private MemberPointRecordService memberPointRecordService;
+
+    @PutMapping("/update-password")
+    @Operation(summary = "修改会员用户密码")
+    @PreAuthorize("@ss.hasPermission('member:user:update-password')")
+    public CommonResult<Boolean> updateUserPassword(@Valid @RequestBody MemberUserUpdatePasswordReqVO updateReqVO) {
+        memberUserService.updateUserPassword(updateReqVO);
+        return success(true);
+    }
 
     @PutMapping("/update")
     @Operation(summary = "更新会员用户")

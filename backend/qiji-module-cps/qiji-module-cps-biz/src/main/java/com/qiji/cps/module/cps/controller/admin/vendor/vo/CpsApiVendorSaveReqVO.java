@@ -32,8 +32,7 @@ public class CpsApiVendorSaveReqVO {
     @NotBlank(message = "API Key不能为空")
     private String appKey;
 
-    @Schema(description = "API Secret", requiredMode = Schema.RequiredMode.REQUIRED, example = "9fxxx")
-    @NotBlank(message = "API Secret不能为空")
+    @Schema(description = "API Secret（新增时必填；更新时留空表示不修改）", example = "9fxxx")
     private String appSecret;
 
     @Schema(description = "API基础URL", requiredMode = Schema.RequiredMode.REQUIRED, example = "https://openapi.dataoke.com/api")

@@ -27,7 +27,9 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getSearchApiPath() {
-        return "/pdd/item_search";
+        // 好单库拼多多搜索接口：/pdd_goods_search (GET, v2)
+        // 注意：该接口需要在好单库平台进行多多进宝授权，未授权时返回 code=0 错误
+        return "/pdd_goods_search";
     }
 
     @Override
@@ -78,7 +80,8 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getPromotionLinkApiPath() {
-        return "/pdd/get_item_link";
+        // TODO 待验证：好单库拼多多转链接口路径
+        return "/pdd/ratesurl";
     }
 
     @Override
@@ -138,7 +141,7 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getTestConnectionApiPath() {
-        return "/pdd/item_search";
+        return "/pdd_goods_search";
     }
 
     @Override

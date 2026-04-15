@@ -9,6 +9,7 @@ import com.qiji.cps.framework.common.enums.UserTypeEnum;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.member.controller.admin.user.vo.MemberUserPageReqVO;
+import com.qiji.cps.module.member.controller.admin.user.vo.MemberUserUpdatePasswordReqVO;
 import com.qiji.cps.module.member.controller.admin.user.vo.MemberUserUpdateReqVO;
 import com.qiji.cps.module.member.controller.app.user.vo.*;
 import com.qiji.cps.module.member.convert.auth.AuthConvert;
@@ -229,6 +230,16 @@ public class MemberUserServiceImpl implements MemberUserService {
      */
     private String encodePassword(String password) {
         return passwordEncoder.encode(password);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateUserPassword(MemberUserUpdatePasswordReqVO updateReqVO) {
+        // 校验用户是否存在
+        validateUserExists(updateReqVO.getId());
+        // 更新用户密码
+        memberUserMapper.updateById(MemberUserDO.builder().id(updateReqVO.getId())
+                .password(passwordEncoder.encode(updateReqVO.getPassword())).build());
     }
 
     @Override

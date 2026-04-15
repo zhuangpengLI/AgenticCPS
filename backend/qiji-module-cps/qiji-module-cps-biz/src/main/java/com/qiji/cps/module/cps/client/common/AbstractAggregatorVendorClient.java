@@ -79,4 +79,39 @@ public abstract class AbstractAggregatorVendorClient extends AbstractApiVendorCl
         }
     }
 
+    /**
+     * 执行 HTTP POST 请求（表单提交方式）
+     *
+     * <p>部分聚合平台的特定接口（如好单库转链API）要求 POST 方式提交参数。</p>
+     *
+     * @param fullUrl 完整请求URL（含基础URL和路径，不含参数）
+     * @param params  请求参数（将注入签名参数后以表单方式提交）
+     * @param config  供应商配置
+     * @return JSON 响应根节点
+     */
+    protected JsonNode executePostRequest(String fullUrl, Map<String, Object> params, CpsVendorConfig config) {
+        // 1. 复制参数，避免修改原始参数
+        Map<String, Object> allParams = new LinkedHashMap<>(params);
+
+        // 2. 计算签名上下文
+        Map<String, String> signContext = computeSignContext(allParams, config);
+
+        // 3. 注入签名参数
+        injectSignParams(allParams, config, signContext);
+
+        // 4. 发起 HTTP POST 请求（表单方式）
+        try {
+            HttpResponse response = HttpRequest.post(fullUrl)
+                    .form(allParams)
+                    .timeout(HTTP_TIMEOUT)
+                    .execute();
+            String body = response.body();
+            log.debug("[{}:{}] POST请求: {} 响应: {}", getVendorCode(), getPlatformCode(), fullUrl, body);
+            return objectMapper.readTree(body);
+        } catch (Exception e) {
+            log.error("[{}:{}] HTTP POST请求异常: url={}", getVendorCode(), getPlatformCode(), fullUrl, e);
+            return null;
+        }
+    }
+
 }

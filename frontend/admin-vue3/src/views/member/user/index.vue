@@ -140,7 +140,8 @@
                 'member:user:update',
                 'member:user:update-level',
                 'member:user:update-point',
-                'pay:wallet:update-balance'
+                'pay:wallet:update-balance',
+                'member:user:update-password'
               ]"
               @command="(command) => handleCommand(command, scope.row)"
             >
@@ -174,6 +175,12 @@
                   >
                     修改余额
                   </el-dropdown-item>
+                  <el-dropdown-item
+                    v-if="checkPermi(['member:user:update-password'])"
+                    command="handleUpdatePassword"
+                  >
+                    修改密码
+                  </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -198,6 +205,8 @@
   <UserPointUpdateForm ref="updatePointFormRef" @success="getList" />
   <!-- 修改用户余额弹窗 -->
   <UserBalanceUpdateForm ref="UpdateBalanceFormRef" @success="getList" />
+  <!-- 修改用户密码弹窗 -->
+  <UserPasswordUpdateForm ref="updatePasswordFormRef" @success="getList" />
   <!-- 发送优惠券弹窗 -->
   <CouponSendForm ref="couponSendFormRef" />
 </template>
@@ -212,6 +221,7 @@ import MemberGroupSelect from '@/views/member/group/components/MemberGroupSelect
 import UserLevelUpdateForm from './components/UserLevelUpdateForm.vue'
 import UserPointUpdateForm from './components/UserPointUpdateForm.vue'
 import UserBalanceUpdateForm from './components/UserBalanceUpdateForm.vue'
+import UserPasswordUpdateForm from './components/UserPasswordUpdateForm.vue'
 import { CouponSendForm } from '@/views/mall/promotion/coupon/components'
 import { checkPermi } from '@/utils/permission'
 
@@ -237,6 +247,7 @@ const queryFormRef = ref() // 搜索的表单
 const updateLevelFormRef = ref() // 修改会员等级表单
 const updatePointFormRef = ref() // 修改会员积分表单
 const UpdateBalanceFormRef = ref() // 修改用户余额表单
+const updatePasswordFormRef = ref() // 修改用户密码表单
 const selectedIds = ref<number[]>([]) // 表格的选中 ID 数组
 
 /** 查询列表 */
@@ -304,6 +315,9 @@ const handleCommand = (command: string, row: UserApi.UserVO) => {
       break
     case 'handleUpdateBlance':
       UpdateBalanceFormRef.value.open(row.id)
+      break
+    case 'handleUpdatePassword':
+      updatePasswordFormRef.value.open(row.id)
       break
     default:
       break
