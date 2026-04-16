@@ -217,7 +217,17 @@
         </el-col>
         <el-col :span="24">
           <el-form-item label="默认推广位ID" prop="defaultAdzoneId">
-            <el-input v-model="formData.defaultAdzoneId" placeholder="如: mm_xxx_xxx_xxx（可选）" />
+            <div class="flex gap-2 w-full">
+              <el-input
+                v-model="formData.defaultAdzoneId"
+                placeholder="如: mm_xxx_xxx_xxx，或点击右侧按钮选择"
+                clearable
+                class="flex-1"
+              />
+              <el-button @click="openAdzoneDialog">
+                <Icon icon="ep:search" class="mr-5px" /> 选择
+              </el-button>
+            </div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -260,6 +270,9 @@
       <el-button type="primary" :loading="formLoading" @click="handleSubmit">确 定</el-button>
     </template>
   </el-dialog>
+
+  <!-- 推广位选择对话框 -->
+  <AdzoneSelectDialog ref="adzoneDialogRef" @select="handleAdzoneSelect" />
 </template>
 
 <script setup lang="ts">
@@ -274,6 +287,7 @@ import {
 } from '@/api/cps/apiVendor'
 import { formatDate } from '@/utils/formatTime'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import AdzoneSelectDialog from '../components/AdzoneSelectDialog.vue'
 
 defineOptions({ name: 'CpsApiVendor' })
 
@@ -285,6 +299,7 @@ const formLoading = ref(false)
 
 const queryFormRef = ref()
 const formRef = ref()
+const adzoneDialogRef = ref<InstanceType<typeof AdzoneSelectDialog>>()
 
 const queryParams = reactive<CpsApiVendorPageReqVO>({
   pageNo: 1,
@@ -327,6 +342,16 @@ const formRules = computed(() => ({
   apiBaseUrl: [{ required: true, message: 'API基础地址不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
 }))
+
+/** 打开推广位选择对话框 */
+const openAdzoneDialog = () => {
+  adzoneDialogRef.value?.open(formData.platformCode || undefined)
+}
+
+/** 推广位选择回调 */
+const handleAdzoneSelect = (adzoneId: string) => {
+  formData.defaultAdzoneId = adzoneId
+}
 
 /** 根据供应商类型过滤供应商编码选项 */
 const filteredVendorOptions = computed(() => {

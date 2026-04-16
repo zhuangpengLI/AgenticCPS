@@ -144,7 +144,17 @@
         </el-col>
         <el-col :span="24">
           <el-form-item label="默认推广位ID" prop="defaultAdzoneId">
-            <el-input v-model="formData.defaultAdzoneId" placeholder="请输入默认推广位ID（可选）" />
+            <div class="flex gap-2 w-full">
+              <el-input
+                v-model="formData.defaultAdzoneId"
+                placeholder="请输入默认推广位ID，或点击右侧按钮选择"
+                clearable
+                class="flex-1"
+              />
+              <el-button @click="openAdzoneDialog">
+                <Icon icon="ep:search" class="mr-5px" /> 选择
+              </el-button>
+            </div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -217,6 +227,9 @@
       <el-button type="primary" :loading="formLoading" @click="handleSubmit">确 定</el-button>
     </template>
   </el-dialog>
+
+  <!-- 推广位选择对话框 -->
+  <AdzoneSelectDialog ref="adzoneDialogRef" @select="handleAdzoneSelect" />
 </template>
 
 <script setup lang="ts">
@@ -224,6 +237,7 @@ import { CpsPlatformApi, type CpsPlatformVO, type CpsPlatformSaveVO, type CpsPla
 import { VENDOR_CODE_OPTIONS } from '@/api/cps/apiVendor'
 import { formatDate } from '@/utils/formatTime'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import AdzoneSelectDialog from '../components/AdzoneSelectDialog.vue'
 
 defineOptions({ name: 'CpsPlatform' })
 
@@ -235,6 +249,7 @@ const formLoading = ref(false)
 
 const queryFormRef = ref()
 const formRef = ref()
+const adzoneDialogRef = ref<InstanceType<typeof AdzoneSelectDialog>>()
 
 const queryParams = reactive<CpsPlatformPageReqVO>({
   pageNo: 1,
@@ -264,6 +279,16 @@ const formRules = computed(() => ({
   platformName: [{ required: true, message: '平台名称不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
 }))
+
+/** 打开推广位选择对话框 */
+const openAdzoneDialog = () => {
+  adzoneDialogRef.value?.open(formData.platformCode || undefined)
+}
+
+/** 推广位选择回调 */
+const handleAdzoneSelect = (adzoneId: string) => {
+  formData.defaultAdzoneId = adzoneId
+}
 
 /** 供应商名称文本 */
 const vendorLabel = (code?: string) => {
