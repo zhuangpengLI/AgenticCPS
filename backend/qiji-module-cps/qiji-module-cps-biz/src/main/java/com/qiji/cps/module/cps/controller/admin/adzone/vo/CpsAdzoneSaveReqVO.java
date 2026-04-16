@@ -1,5 +1,7 @@
 package com.qiji.cps.module.cps.controller.admin.adzone.vo;
 
+import com.qiji.cps.framework.common.validation.InEnum;
+import com.qiji.cps.module.cps.enums.CpsAdzoneTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,13 +25,14 @@ public class CpsAdzoneSaveReqVO {
     @Schema(description = "推广位名称")
     private String adzoneName;
 
-    @Schema(description = "推广位类型", example = "general")
+    @Schema(description = "推广位类型：general(通用)/channel(渠道专属)/member(用户专属)", example = "general")
+    @InEnum(value = CpsAdzoneTypeEnum.class, message = "推广位类型不合法，可选值：general/channel/member")
     private String adzoneType;
 
-    @Schema(description = "关联类型")
+    @Schema(description = "关联类型（自动同步自 adzoneType）")
     private String relationType;
 
-    @Schema(description = "关联ID")
+    @Schema(description = "关联ID（channel/member 类型时必填）")
     private Long relationId;
 
     @Schema(description = "是否默认", example = "0")
