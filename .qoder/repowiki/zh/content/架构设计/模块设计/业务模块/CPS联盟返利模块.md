@@ -24,7 +24,12 @@
 - [CpsAdzoneController.java](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/adzone/CpsAdzoneController.java)
 - [CpsAdzoneSaveReqVO.java](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/adzone/vo/CpsAdzoneSaveReqVO.java)
 - [CpsAdzoneServiceImpl.java](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/adzone/CpsAdzoneServiceImpl.java)
+- [CpsAdzoneMapper.java](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/dal/mysql/adzone/CpsAdzoneMapper.java)
+- [CpsAdzoneRespVO.java](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/adzone/vo/CpsAdzoneRespVO.java)
+- [CpsAdzonePageReqVO.java](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/adzone/vo/CpsAdzonePageReqVO.java)
 - [InEnum.java](file://backend/qiji-framework/qiji-common/src/main/java/com/qiji/cps/framework/common/validation/InEnum.java)
+- [InEnumValidator.java](file://backend/qiji-framework/qiji-common/src/main/java/com/qiji/cps/framework/common/validation/InEnumValidator.java)
+- [InEnumCollectionValidator.java](file://backend/qiji-framework/qiji-common/src/main/java/com/qiji/cps/framework/common/validation/InEnumCollectionValidator.java)
 </cite>
 
 ## 更新摘要
@@ -33,6 +38,7 @@
 - 完善推广位管理系统的架构描述
 - 增强广告位类型与业务场景的关联分析
 - 补充验证注解在推广位管理中的应用说明
+- 新增推广位数据模型和响应对象的详细说明
 
 ## 目录
 1. [引言](#引言)
@@ -41,16 +47,17 @@
 4. [架构总览](#架构总览)
 5. [详细组件分析](#详细组件分析)
 6. [广告位类型与验证规则](#广告位类型与验证规则)
-7. [依赖关系分析](#依赖关系分析)
-8. [性能考虑](#性能考虑)
-9. [故障排查指南](#故障排查指南)
-10. [结论](#结论)
-11. [附录](#附录)
+7. [推广位管理系统](#推广位管理系统)
+8. [依赖关系分析](#依赖关系分析)
+9. [性能考虑](#性能考虑)
+10. [故障排查指南](#故障排查指南)
+11. [结论](#结论)
+12. [附录](#附录)
 
 ## 引言
 本技术文档面向AgenticCPS CPS联盟返利模块，系统性阐述多平台适配器设计、商品搜索比价、推广链接生成、订单追踪、返利计算与提现管理、风控体系等核心能力。文档以策略模式组织平台适配器（淘宝、京东、拼多多、抖音等），并结合枚举化状态与规则体系，构建从商品搜索到返利到账的全链路闭环。
 
-**更新** 新增广告位类型枚举的完善说明，包括GENERAL、CHANNEL、MEMBER三种类型的详细定义和验证规则。
+**更新** 新增广告位类型枚举的完善说明，包括GENERAL、CHANNEL、MEMBER三种类型的详细定义和验证规则，以及完整的推广位管理系统架构描述。
 
 ## 项目结构
 CPS模块位于后端工程的独立模块中，采用分层+领域驱动的设计理念：
@@ -459,7 +466,111 @@ Success --> Save["保存推广位"]
 - [CpsAdzoneController.java:1-84](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/adzone/CpsAdzoneController.java#L1-L84)
 - [CpsAdzoneSaveReqVO.java:1-46](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/adzone/vo/CpsAdzoneSaveReqVO.java#L1-L46)
 - [CpsAdzoneServiceImpl.java:1-72](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/adzone/CpsAdzoneServiceImpl.java#L1-L72)
-- [InEnum.java:1-36](file://backend/qiji-framework/qiji-common/src/main/java/com/qiji/cps/framework/common/validation/InEnum.java#L1-L36)
+- [CpsAdzoneMapper.java:1-43](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/dal/mysql/adzone/CpsAdzoneMapper.java#L1-L43)
+- [CpsAdzoneRespVO.java:1-43](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/adzone/vo/CpsAdzoneRespVO.java#L1-L43)
+- [CpsAdzonePageReqVO.java:1-28](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/adzone/vo/CpsAdzonePageReqVO.java#L1-L28)
+- [InEnum.java:1-35](file://backend/qiji-framework/qiji-common/src/main/java/com/qiji/cps/framework/common/validation/InEnum.java#L1-L35)
+- [InEnumValidator.java:1-43](file://backend/qiji-framework/qiji-common/src/main/java/com/qiji/cps/framework/common/validation/InEnumValidator.java#L1-L43)
+- [InEnumCollectionValidator.java:1-44](file://backend/qiji-framework/qiji-common/src/main/java/com/qiji/cps/framework/common/validation/InEnumCollectionValidator.java#L1-L44)
+
+## 推广位管理系统
+
+### 系统架构设计
+推广位管理系统采用标准的三层架构设计，确保系统的可维护性和扩展性：
+
+- **表现层（Controller层）**：提供RESTful API接口，处理HTTP请求和响应
+- **业务层（Service层）**：封装业务逻辑，协调各个服务组件
+- **数据访问层（DAO层）**：负责数据的持久化操作
+
+```mermaid
+graph TB
+subgraph "表现层"
+Create["创建推广位接口"]
+Update["更新推广位接口"]
+Delete["删除推广位接口"]
+Get["获取推广位接口"]
+Page["推广位分页接口"]
+List["按平台获取推广位列表接口"]
+end
+subgraph "业务层"
+Service["CpsAdzoneService接口"]
+ServiceImpl["CpsAdzoneServiceImpl实现类"]
+end
+subgraph "数据访问层"
+Mapper["CpsAdzoneMapper接口"]
+DO["CpsAdzoneDO实体类"]
+end
+Create --> Service
+Update --> Service
+Delete --> Service
+Get --> Service
+Page --> Service
+List --> Service
+Service --> ServiceImpl
+ServiceImpl --> Mapper
+Mapper --> DO
+```
+
+**图表来源**
+- [CpsAdzoneController.java:33-81](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/adzone/CpsAdzoneController.java#L33-L81)
+- [CpsAdzoneService.java:16-48](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/adzone/CpsAdzoneService.java#L16-L48)
+- [CpsAdzoneServiceImpl.java:31-63](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/adzone/CpsAdzoneServiceImpl.java#L31-L63)
+- [CpsAdzoneMapper.java:18-42](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/dal/mysql/adzone/CpsAdzoneMapper.java#L18-L42)
+
+### 数据模型详解
+推广位数据模型采用完整的ORM映射设计，支持丰富的业务属性：
+
+- **主键标识**：Long类型的自增主键
+- **平台关联**：String类型的平台编码，关联具体联盟平台
+- **推广位标识**：String类型的推广位ID，对应平台的PID
+- **推广位名称**：String类型的显示名称
+- **推广位类型**：String类型的枚举值，支持三种类型
+- **关联类型**：String类型的关联类型，自动同步自推广位类型
+- **关联ID**：Long类型的关联标识，渠道专属和用户专属时必填
+- **默认标记**：Integer类型的状态标记，0表示非默认，1表示默认
+- **状态管理**：Integer类型的状态值，0表示禁用，1表示启用
+
+**章节来源**
+- [CpsAdzoneDO.java:24-68](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/dal/dataobject/adzone/CpsAdzoneDO.java#L24-L68)
+
+### 请求参数验证
+推广位请求参数采用严格的验证机制，确保数据的完整性和有效性：
+
+- **平台编码**：必填，非空验证
+- **推广位ID**：必填，非空验证  
+- **推广位类型**：必填，使用InEnum注解验证
+- **关联类型**：自动生成，无需手动输入
+- **关联ID**：条件必填，渠道专属和用户专属时必填
+- **默认标记**：可选，默认值为0
+- **状态**：必填，非空验证
+
+**章节来源**
+- [CpsAdzoneSaveReqVO.java:12-45](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/adzone/vo/CpsAdzoneSaveReqVO.java#L12-L45)
+
+### 响应数据结构
+推广位响应数据采用简洁明了的数据结构设计：
+
+- **基础信息**：主键ID、平台编码、推广位ID、名称
+- **类型信息**：推广位类型、关联类型
+- **关联信息**：关联ID
+- **状态信息**：默认标记、状态
+- **时间信息**：创建时间
+
+**章节来源**
+- [CpsAdzoneRespVO.java:10-42](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/adzone/vo/CpsAdzoneRespVO.java#L10-L42)
+
+### 分页查询功能
+推广位分页查询支持多维度筛选和排序：
+
+- **平台编码筛选**：支持按平台编码精确查询
+- **名称模糊查询**：支持按推广位名称模糊匹配
+- **类型筛选**：支持按推广位类型精确筛选
+- **状态筛选**：支持按启用状态精确筛选
+- **排序规则**：按创建时间倒序排列
+
+**章节来源**
+- [CpsAdzonePageReqVO.java:13-27](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/adzone/vo/CpsAdzonePageReqVO.java#L13-L27)
+- [CpsAdzoneMapper.java:20-26](file://backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/dal/mysql/adzone/CpsAdzoneMapper.java#L20-L26)
 
 ## 依赖关系分析
 - 平台与供应商：平台编码与供应商类型相互独立，但通常存在"平台-供应商"映射关系
@@ -479,6 +590,8 @@ graph LR
 广告位类型["广告位类型枚举"] --> 推广位服务["推广位服务"]
 推广位服务 --> 订单服务
 验证注解["InEnum验证注解"] --> 推广位服务
+验证注解 --> 请求参数
+请求参数 --> 推广位服务
 ```
 
 **图表来源**
@@ -487,7 +600,7 @@ graph LR
 - [CpsOrderStatusEnum.java:1-48](file://backend/qiji-module-cps/qiji-module-cps-api/src/main/java/com/qiji/cps/module/cps/enums/CpsOrderStatusEnum.java#L1-L48)
 - [CpsRebateStatusEnum.java:1-40](file://backend/qiji-module-cps/qiji-module-cps-api/src/main/java/com/qiji/cps/module/cps/enums/CpsRebateStatusEnum.java#L1-L40)
 - [CpsAdzoneTypeEnum.java:1-40](file://backend/qiji-module-cps/qiji-module-cps-api/src/main/java/com/qiji/cps/module/cps/enums/CpsAdzoneTypeEnum.java#L1-L40)
-- [InEnum.java:1-36](file://backend/qiji-framework/qiji-common/src/main/java/com/qiji/cps/framework/common/validation/InEnum.java#L1-L36)
+- [InEnum.java:1-35](file://backend/qiji-framework/qiji-common/src/main/java/com/qiji/cps/framework/common/validation/InEnum.java#L1-L35)
 
 **章节来源**
 - [CpsPlatformCodeEnum.java:1-47](file://backend/qiji-module-cps/qiji-module-cps-api/src/main/java/com/qiji/cps/module/cps/enums/CpsPlatformCodeEnum.java#L1-L47)
@@ -503,8 +616,9 @@ graph LR
 - 幂等设计：订单回调与轮询均需保证幂等，防止重复结算
 - 监控与告警：对关键链路埋点，设置延迟与成功率阈值告警
 - **推广位缓存**：推广位类型枚举和验证规则可进行缓存优化，减少重复验证开销
+- **数据库索引**：推广位表应建立平台编码、状态、默认标记等常用查询字段的索引
 
-**更新** 新增推广位缓存优化建议。
+**更新** 新增推广位缓存优化和数据库索引建议。
 
 ## 故障排查指南
 - 错误码定位：参考错误码常量，快速定位问题类型（参数错误、权限不足、接口限流、上游异常）
@@ -512,6 +626,7 @@ graph LR
 - 回放与重试：对失败的回调与打款任务提供重试与回放机制
 - 平台差异：针对不同平台的特殊字段与错误信息，准备差异化处理分支
 - **推广位验证**：当出现推广位类型错误时，检查InEnum注解配置和广告位类型枚举定义
+- **数据一致性**：推广位类型与关联类型不一致时，检查自动同步逻辑
 
 **更新** 新增推广位验证相关的故障排查指导。
 
@@ -521,7 +636,7 @@ graph LR
 ## 结论
 CPS联盟返利模块通过策略化平台适配器与标准化状态机，实现了多平台、多场景的一致体验；配合聚合SDK与官方API，既能快速扩展又能满足合规要求。完善的风控与提现体系保障了资金安全与用户体验。
 
-**更新** 新增的广告位类型管理增强了系统的灵活性和业务适配能力，通过严格的验证机制确保推广位使用的安全性和准确性。
+**更新** 新增的广告位类型管理增强了系统的灵活性和业务适配能力，通过严格的验证机制确保推广位使用的安全性和准确性。推广位管理系统采用完整的分层架构设计，支持灵活的业务场景和良好的扩展性。
 
 ## 附录
 
@@ -545,6 +660,8 @@ CPS联盟返利模块通过策略化平台适配器与标准化状态机，实�
 - 状态管理：严格遵循订单与返利状态机，避免状态错乱
 - 风控策略：结合业务场景动态调整规则阈值，定期评估效果
 - **推广位类型**：根据业务需求选择合适的广告位类型，通用类型适用于大多数场景，渠道专属和用户专属类型用于精细化运营
+- **验证规则**：确保InEnum注解正确配置，推广位类型与关联类型保持一致
+- **数据模型**：合理设计推广位数据模型，支持业务扩展和性能优化
 
 **更新** 新增推广位类型的最佳实践指导。
 
