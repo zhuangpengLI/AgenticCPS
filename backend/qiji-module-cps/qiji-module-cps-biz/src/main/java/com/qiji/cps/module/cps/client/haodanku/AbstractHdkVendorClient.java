@@ -6,6 +6,9 @@ import com.qiji.cps.module.cps.enums.CpsVendorCodeEnum;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,9 +51,9 @@ public abstract class AbstractHdkVendorClient extends AbstractAggregatorVendorCl
 
     @Override
     protected boolean isSuccessResponse(JsonNode root) {
-        // 好单库返回格式：{"code": 1, "msg": "success", "data": {...}}
-        // code=1 表示成功
-        return root != null && root.path("code").asInt(-1) == 1;
+        // 好单库不同接口成功码不完全一致：淘宝商品/转链常见 code=1，京东/PDD/本地生活 v3 接口常见 code=200。
+        int code = root == null ? -1 : root.path("code").asInt(-1);
+        return code == 1 || code == 200;
     }
 
     /**
@@ -68,6 +71,41 @@ public abstract class AbstractHdkVendorClient extends AbstractAggregatorVendorCl
             return baseUrl.replace("v2.api.haodanku.com", "v3.api.haodanku.com");
         }
         return baseUrl;
+    }
+
+    /**
+     * 好单库部分接口把业务字段直接放在根节点，部分接口放在 data 节点。
+     */
+    protected JsonNode hdkPayload(JsonNode response) {
+        JsonNode data = response == null ? null : response.path("data");
+        return data != null && !data.isMissingNode() && !data.isNull() ? data : response;
+    }
+
+    protected String getExtraConfig(CpsVendorConfig config, String key) {
+        return config != null && config.getExtraConfig() != null ? config.getExtraConfig().get(key) : null;
+    }
+
+    protected String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    protected String toHdkUnixSeconds(String value) {
+        if (value == null || value.isBlank()) {
+            return value;
+        }
+        if (value.matches("\\d+")) {
+            return value;
+        }
+        LocalDateTime dateTime = LocalDateTime.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return String.valueOf(dateTime.atZone(ZoneId.of("Asia/Shanghai")).toEpochSecond());
     }
 
     /**

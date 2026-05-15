@@ -101,8 +101,8 @@ def step2_platform_vendor(conn):
 
     # cps_platform - 四大平台
     platforms = [
-        ('taobao', '淘宝',   'DTK_TB_APP_KEY',  'DTK_TB_APP_SECRET',  'https://openapi.dataoke.com/api', 'mm_taobao_default_pid', 'dataoke', 'dataoke,haodan', 1),
-        ('jd',     '京东',   'DTK_JD_APP_KEY',  'DTK_JD_APP_SECRET',  'https://openapi.dataoke.com/api', 'jd_default_unionid',    'dataoke', 'dataoke,haodan', 2),
+        ('taobao', '淘宝',   'DTK_TB_APP_KEY',  'DTK_TB_APP_SECRET',  'https://openapi.dataoke.com/api', 'mm_taobao_default_pid', 'dataoke', 'dataoke,haodanku', 1),
+        ('jd',     '京东',   'DTK_JD_APP_KEY',  'DTK_JD_APP_SECRET',  'https://openapi.dataoke.com/api', 'jd_default_unionid',    'dataoke', 'dataoke,haodanku', 2),
         ('pdd',    '拼多多', 'DTK_PDD_APP_KEY', 'DTK_PDD_APP_SECRET', 'https://openapi.dataoke.com/api', 'pdd_default_pid',       'dataoke', 'dataoke',        3),
         ('douyin', '抖音',   'DY_APP_KEY',      'DY_APP_SECRET',      'https://openapi.jinritemai.com',  'dy_default_pid',        'official','official',        4),
     ]
@@ -121,8 +121,8 @@ def step2_platform_vendor(conn):
         ('dataoke', '大淘客', 'aggregator', 'taobao', 'DTK_TB_APP_KEY',  'DTK_TB_SECRET',  'https://openapi.dataoke.com/api', None,              'mm_dtk_taobao_pid', 10),
         ('dataoke', '大淘客', 'aggregator', 'jd',     'DTK_JD_APP_KEY',  'DTK_JD_SECRET',  'https://openapi.dataoke.com/api', 'DTK_JD_AUTH_TOKEN', None,              10),
         ('dataoke', '大淘客', 'aggregator', 'pdd',    'DTK_PDD_APP_KEY', 'DTK_PDD_SECRET', 'https://openapi.dataoke.com/api', None,              'pdd_dtk_pid',       10),
-        ('haodan',  '好单库', 'aggregator', 'taobao', 'HDK_TB_APP_KEY',  'HDK_TB_SECRET',  'https://v2.api.haodanku.com',     None,              'mm_hdk_taobao_pid',  8),
-        ('haodan',  '好单库', 'aggregator', 'jd',     'HDK_JD_APP_KEY',  'HDK_JD_SECRET',  'https://v2.api.haodanku.com',     None,              None,                 8),
+        ('haodanku','好单库', 'aggregator', 'taobao', 'HDK_TB_APP_KEY',  'HDK_TB_SECRET',  'https://v2.api.haodanku.com',     None,              'mm_hdk_taobao_pid',  8),
+        ('haodanku','好单库', 'aggregator', 'jd',     'HDK_JD_APP_KEY',  'HDK_JD_SECRET',  'https://v2.api.haodanku.com',     None,              None,                 8),
     ]
     for v in vendors:
         cursor.execute("""

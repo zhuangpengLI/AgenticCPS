@@ -62,6 +62,7 @@ public abstract class AbstractAggregatorVendorClient extends AbstractApiVendorCl
 
         // 3. 注入签名参数
         injectSignParams(allParams, config, signContext);
+        allParams.entrySet().removeIf(entry -> entry.getValue() == null);
 
         // 4. 构建 URL
         String url = config.getApiBaseUrl() + path;
@@ -98,6 +99,7 @@ public abstract class AbstractAggregatorVendorClient extends AbstractApiVendorCl
 
         // 3. 注入签名参数
         injectSignParams(allParams, config, signContext);
+        allParams.entrySet().removeIf(entry -> entry.getValue() == null);
 
         // 4. 发起 HTTP POST 请求（表单方式）
         try {

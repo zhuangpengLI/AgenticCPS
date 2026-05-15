@@ -12,7 +12,7 @@ tenant-id: {{adminTenantId}}
   "apiBaseUrl": "https://openapi.dataoke.com/api",
   "defaultAdzoneId": "mm_taobao_default_pid",
   "activeVendorCode": "dataoke",
-  "supportedVendors": "dataoke,haodan",
+  "supportedVendors": "dataoke,haodanku",
   "sort": 1,
   "status": 1
 }
@@ -26,7 +26,7 @@ tenant-id: {{adminTenantId}}
 {
   "id": 1,
   "platformName": "淘宝联盟",
-  "activeVendorCode": "haodan",
+  "activeVendorCode": "haodanku",
   "sort": 1,
   "status": 1
 }

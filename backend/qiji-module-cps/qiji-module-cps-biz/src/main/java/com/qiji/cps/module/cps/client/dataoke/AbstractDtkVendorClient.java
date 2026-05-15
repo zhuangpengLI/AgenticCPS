@@ -16,7 +16,7 @@ import java.util.Random;
  *
  * <p>封装大淘客特有的 MD5 签名机制，所有通过大淘客对接的电商平台（淘宝/京东/拼多多）继承此类。</p>
  *
- * <p>签名规则：MD5(appKey={appKey}&timer={timestamp}&nonce={random6} + appSecret)</p>
+ * <p>签名规则：MD5(appKey={appKey}&timer={timestamp}&nonce={random6}&key={appSecret})，结果转大写。</p>
  *
  * @author CPS System
  */
@@ -31,9 +31,10 @@ public abstract class AbstractDtkVendorClient extends AbstractAggregatorVendorCl
     @Override
     protected Map<String, String> computeSignContext(Map<String, Object> params, CpsVendorConfig config) {
         String timer = String.valueOf(System.currentTimeMillis());
-        String nonce = String.format("%06d", new Random().nextInt(1000000));
-        String urlParamStr = String.format("appKey=%s&timer=%s&nonce=%s", config.getAppKey(), timer, nonce);
-        String sign = DigestUtil.md5Hex(urlParamStr + config.getAppSecret()).toLowerCase();
+        String nonce = String.valueOf(new Random().nextInt(900000) + 100000);
+        String signSource = String.format("appKey=%s&timer=%s&nonce=%s&key=%s",
+                config.getAppKey(), timer, nonce, config.getAppSecret());
+        String sign = DigestUtil.md5Hex(signSource).toUpperCase();
 
         Map<String, String> context = new HashMap<>();
         context.put("timer", timer);
@@ -52,8 +53,29 @@ public abstract class AbstractDtkVendorClient extends AbstractAggregatorVendorCl
     }
 
     @Override
+    protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+        return unwrapResponse(super.executeRequest(path, params, config));
+    }
+
+    @Override
     protected boolean isSuccessResponse(JsonNode root) {
-        return root != null && "0".equals(root.path("code").asText());
+        JsonNode response = unwrapResponse(root);
+        return response != null && "0".equals(response.path("code").asText());
+    }
+
+    /**
+     * 大淘客新旧接口响应结构不完全一致：
+     * <ul>
+     *   <li>旧结构：{code, msg, data}</li>
+     *   <li>新结构：{status, data: {code, msg, data}}</li>
+     * </ul>
+     * 统一拆到包含 code/msg/data 的业务响应层，避免各业务解析器重复判断。
+     */
+    protected JsonNode unwrapResponse(JsonNode root) {
+        if (root != null && root.has("status") && root.path("data").has("code")) {
+            return root.path("data");
+        }
+        return root;
     }
 
 }

@@ -84,7 +84,7 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient {
     protected Map<String, Object> buildPromotionLinkParams(CpsPromotionLinkRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("goodsId", request.getGoodsId());
-        params.put("version", "v1.3.0");
+        params.put("version", "v1.3.1");
         if (request.getAdzoneId() != null) {
             params.put("pid", request.getAdzoneId());
         }
@@ -124,7 +124,7 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient {
         params.put("startTime", request.getStartTime());
         params.put("endTime", request.getEndTime());
         params.put("pageSize", request.getPageSize());
-        params.put("version", "1.0.0");
+        params.put("version", "v1.0.0");
         if (request.getPositionIndex() != null) {
             params.put("positionIndex", request.getPositionIndex());
         }

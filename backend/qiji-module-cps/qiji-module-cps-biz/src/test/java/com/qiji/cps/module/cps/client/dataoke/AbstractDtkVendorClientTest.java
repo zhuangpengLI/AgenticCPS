@@ -65,6 +65,14 @@ class AbstractDtkVendorClientTest {
         public boolean testIsSuccessResponse(JsonNode root) {
             return isSuccessResponse(root);
         }
+
+        public JsonNode testUnwrapResponse(JsonNode root) {
+            return unwrapResponse(root);
+        }
+
+        public String testBuildUrlWithParams(String baseUrl, Map<String, Object> params) {
+            return buildUrlWithParams(baseUrl, params);
+        }
     }
 
     private final TestDtkVendorClient client = new TestDtkVendorClient();
@@ -104,8 +112,8 @@ class AbstractDtkVendorClientTest {
         String timer = context.get("timer");
         String nonce = context.get("nonce");
         String expectedSign = DigestUtil.md5Hex(
-                String.format("appKey=%s&timer=%s&nonce=%s", "myKey123", timer, nonce) + "mySecret456"
-        ).toLowerCase();
+                String.format("appKey=%s&timer=%s&nonce=%s&key=%s", "myKey123", timer, nonce, "mySecret456")
+        ).toUpperCase();
 
         assertEquals(expectedSign, context.get("sign"));
     }
@@ -140,6 +148,25 @@ class AbstractDtkVendorClientTest {
     }
 
     @Test
+    @DisplayName("isSuccessResponse: 大淘客新响应结构 data.code=0 应返回 true")
+    void testIsSuccessResponse_wrappedSuccess() throws Exception {
+        JsonNode root = new com.fasterxml.jackson.databind.ObjectMapper()
+                .readTree("{\"status\": 200, \"data\": {\"code\": 0, \"msg\": \"成功\", \"data\": {\"list\": []}}}");
+        assertTrue(client.testIsSuccessResponse(root));
+    }
+
+    @Test
+    @DisplayName("unwrapResponse: 大淘客新响应结构应拆到业务响应层")
+    void testUnwrapResponse() throws Exception {
+        JsonNode root = new com.fasterxml.jackson.databind.ObjectMapper()
+                .readTree("{\"status\": 200, \"data\": {\"code\": 0, \"msg\": \"成功\", \"data\": {\"list\": []}}}");
+        JsonNode unwrapped = client.testUnwrapResponse(root);
+
+        assertEquals("0", unwrapped.path("code").asText());
+        assertTrue(unwrapped.path("data").path("list").isArray());
+    }
+
+    @Test
     @DisplayName("isSuccessResponse: code=1 应返回 false")
     void testIsSuccessResponse_failure() throws Exception {
         JsonNode root = new com.fasterxml.jackson.databind.ObjectMapper()
@@ -151,6 +178,19 @@ class AbstractDtkVendorClientTest {
     @DisplayName("isSuccessResponse: null 应返回 false")
     void testIsSuccessResponse_null() {
         assertFalse(client.testIsSuccessResponse(null));
+    }
+
+    @Test
+    @DisplayName("buildUrlWithParams 应对中文、空格和链接参数做 URL 编码")
+    void testBuildUrlWithParams_encodeValues() {
+        Map<String, Object> params = new HashMap<>();
+        params.put("content", "中文 口令");
+        params.put("url", "https://example.com/a?b=1&c=2");
+
+        String url = client.testBuildUrlWithParams("https://openapi.dataoke.com/api/test", params);
+
+        assertTrue(url.contains("content=%E4%B8%AD%E6%96%87+%E5%8F%A3%E4%BB%A4"));
+        assertTrue(url.contains("url=https%3A%2F%2Fexample.com%2Fa%3Fb%3D1%26c%3D2"));
     }
 
 }

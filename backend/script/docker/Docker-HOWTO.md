@@ -1,7 +1,7 @@
 # Docker Build & Up
 
 目标: 快速部署体验系统，帮助了解系统之间的依赖关系。
-依赖：docker compose v2，删除`name: qiji-system`，降低`version`版本为`3.3`以下，支持`docker-compose`。
+依赖：Docker Compose v2。
 
 ## 功能文件列表
 
@@ -10,25 +10,20 @@
 ├── Docker-HOWTO.md                 
 ├── docker-compose.yml              
 ├── docker.env                      <-- 提供docker-compose环境变量配置
-├── qiji-server
-│   └── Dockerfile
 └── qiji-ui-admin
-    ├── .dockerignore
     ├── Dockerfile
-    └── nginx.conf                  <-- 提供基础配置，gzip压缩、api转发
+    ├── Dockerfile.dockerignore
+    └── nginx.conf                  <-- Nginx 静态资源托管、gzip压缩、api转发
 ```
+
+后端镜像使用 `backend/qiji-server/Dockerfile` 构建，前端镜像使用 `frontend/admin-vue3` 源码构建。
 
 ## 构建 jar 包
 
 ```shell
-# 创建maven缓存volume
-docker volume create --name qiji-maven-repo
-
-docker run -it --rm --name qiji-maven \
-    -v qiji-maven-repo:/root/.m2 \
-    -v $PWD:/usr/src/mymaven \
-    -w /usr/src/mymaven \
-    maven mvn clean install package '-Dmaven.test.skip=true'
+cd ../../
+mvn clean package -DskipTests
+cd script/docker
 ```
 
 ## 构建启动服务
@@ -37,7 +32,9 @@ docker run -it --rm --name qiji-maven \
 docker compose --env-file docker.env up -d
 ```
 
-首次运行会自动构建容器。可以通过`docker compose build [service]`来手动构建所有或某个docker镜像
+首次运行会自动构建容器。可以通过`docker compose build [service]`来手动构建所有或某个docker镜像。
+
+前端管理后台由 `qiji-admin` 容器提供，构建阶段使用 Node.js + pnpm 打包 `frontend/admin-vue3`，运行阶段使用 Nginx 托管静态资源，并将 `/admin-api/`、`/app-api/` 反向代理到 `qiji-server:48080`。
 
 `--env-file docker.env`为可选参数，只是展示了通过`.env`文件配置容器启动的环境变量，`docker-compose.yml`本身已经提供足够的默认参数来正常运行系统。
 

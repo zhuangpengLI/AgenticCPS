@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -35,9 +37,17 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
     @Override
     protected Map<String, Object> buildSearchParams(CpsGoodsSearchRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("keyword", request.getKeyword());
-        params.put("page", request.getPageNo());
-        params.put("pagesize", request.getPageSize());
+        params.put("keyword", encodeKeywordOnce(request.getKeyword()));
+        params.put("min_id", request.getPageNo());
+        params.put("limit", request.getPageSize());
+        params.put("sort", convertSortType(request.getSortType()));
+        params.put("is_coupon", request.getHasCoupon() == null ? 0 : request.getHasCoupon());
+        if (request.getPriceLowerLimit() != null) {
+            params.put("start_price", request.getPriceLowerLimit());
+        }
+        if (request.getPriceUpperLimit() != null) {
+            params.put("end_price", request.getPriceUpperLimit());
+        }
         if (config.getDefaultAdzoneId() != null) {
             params.put("pid", config.getDefaultAdzoneId());
         }
@@ -80,40 +90,41 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getPromotionLinkApiPath() {
-        // TODO 待验证：好单库拼多多转链接口路径
-        return "/pdd/ratesurl";
+        return "/unify_pdditems_link";
     }
 
     @Override
     protected Map<String, Object> buildPromotionLinkParams(CpsPromotionLinkRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("goods_sign", request.getGoodsSign() != null ? request.getGoodsSign() : request.getGoodsId());
-        params.put("pid", request.getAdzoneId() != null ? request.getAdzoneId() : config.getDefaultAdzoneId());
+        params.put("itemid", firstNonBlank(request.getGoodsSign(), request.getGoodsId()));
+        params.put("channel", firstNonBlank(request.getChannelId(), request.getExternalId()));
         return params;
     }
 
     @Override
     protected CpsPromotionLinkResult parsePromotionLinkResponse(JsonNode response) {
-        JsonNode data = response.path("data");
+        JsonNode data = hdkPayload(response);
         return CpsPromotionLinkResult.builder()
                 .shortUrl(data.path("short_url").asText(null))
-                .longUrl(data.path("mobile_url").asText(null))
+                .longUrl(data.path("url").asText(null))
                 .mobileUrl(data.path("mobile_url").asText(null))
                 .build();
     }
 
     @Override
     protected String getOrderQueryApiPath() {
-        return "/pdd/order_list";
+        return "/unify_pdd_order_list";
     }
 
     @Override
     protected Map<String, Object> buildOrderQueryParams(CpsOrderQueryRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("start_time", request.getStartTime());
-        params.put("end_time", request.getEndTime());
-        params.put("page", request.getPageNo());
-        params.put("pagesize", request.getPageSize());
+        params.put("min_id", firstNonBlank(request.getPositionIndex(), String.valueOf(request.getPageNo())));
+        params.put("back", request.getPageSize());
+        params.put("date_type", request.getQueryType());
+        params.put("state", request.getOrderStatus() == null ? 0 : request.getOrderStatus());
+        params.put("start_date", toHdkUnixSeconds(request.getStartTime()));
+        params.put("end_date", toHdkUnixSeconds(request.getEndTime()));
         return params;
     }
 
@@ -147,10 +158,24 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
     @Override
     protected Map<String, Object> buildTestConnectionParams() {
         Map<String, Object> params = new HashMap<>();
-        params.put("keyword", "手机");
-        params.put("page", 1);
-        params.put("pagesize", 1);
+        params.put("keyword", encodeKeywordOnce("手机"));
+        params.put("min_id", 1);
+        params.put("limit", 10);
         return params;
+    }
+
+    private String encodeKeywordOnce(String keyword) {
+        return keyword == null ? null : URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+    }
+
+    private Integer convertSortType(Integer sortType) {
+        return switch (sortType == null ? 0 : sortType) {
+            case 1 -> 2;
+            case 2 -> 4;
+            case 3 -> 5;
+            case 4 -> 6;
+            default -> 0;
+        };
     }
 
 }

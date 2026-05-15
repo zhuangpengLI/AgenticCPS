@@ -1,5 +1,3 @@
-version: "3.4"
-
 name: qiji-system
 
 services:
@@ -15,7 +13,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
     volumes:
       - mysql:/var/lib/mysql/
-      - ./sql/mysql/ruoyi-vue-pro.sql:/docker-entrypoint-initdb.d/ruoyi-vue-pro.sql:ro
+      - ../../sql/mysql/ruoyi-vue-pro.sql:/docker-entrypoint-initdb.d/ruoyi-vue-pro.sql:ro
 
   redis:
     container_name: qiji-redis
@@ -29,7 +27,7 @@ services:
   server:
     container_name: qiji-server
     build:
-      context: ./qiji-server/
+      context: ../../qiji-server/
     image: qiji-server
     restart: unless-stopped
     ports:
@@ -58,18 +56,18 @@ services:
   admin:
     container_name: qiji-admin
     build:
-      context: ./qiji-ui-admin
+      context: ../../..
+      dockerfile: backend/script/docker/qiji-ui-admin/Dockerfile
       args:
-        NODE_ENV:
-          ENV=${NODE_ENV:-production}
-          PUBLIC_PATH=${PUBLIC_PATH:-/}
-          VUE_APP_TITLE=${VUE_APP_TITLE:-AgenticCPS管理系统}
-          VUE_APP_BASE_API=${VUE_APP_BASE_API:-/prod-api}
-          VUE_APP_APP_NAME=${VUE_APP_APP_NAME:-/}
-          VUE_APP_TENANT_ENABLE=${VUE_APP_TENANT_ENABLE:-true}
-          VUE_APP_CAPTCHA_ENABLE=${VUE_APP_CAPTCHA_ENABLE:-true}
-          VUE_APP_DOC_ENABLE=${VUE_APP_DOC_ENABLE:-true}
-          VUE_APP_BAIDU_CODE=${VUE_APP_BAIDU_CODE:-fadc1bd5db1a1d6f581df60a1807f8ab}
+        VITE_APP_TITLE: ${VITE_APP_TITLE:-AgenticCPS管理系统}
+        VITE_BASE_URL: ${VITE_BASE_URL:-}
+        VITE_API_URL: ${VITE_API_URL:-/admin-api}
+        VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
+        VITE_OUT_DIR: ${VITE_OUT_DIR:-dist-prod}
+        VITE_APP_TENANT_ENABLE: ${VITE_APP_TENANT_ENABLE:-true}
+        VITE_APP_CAPTCHA_ENABLE: ${VITE_APP_CAPTCHA_ENABLE:-true}
+        VITE_APP_DOCALERT_ENABLE: ${VITE_APP_DOCALERT_ENABLE:-true}
+        VITE_APP_BAIDU_CODE: ${VITE_APP_BAIDU_CODE:-}
     image: qiji-admin
     restart: unless-stopped
     ports:

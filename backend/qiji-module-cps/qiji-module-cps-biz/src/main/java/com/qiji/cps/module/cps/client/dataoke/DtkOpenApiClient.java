@@ -8,12 +8,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
  * 大淘客开放平台 HTTP 客户端（轻量封装，无需引入 SDK jar）
  *
- * <p>大淘客 API 签名规则：MD5(appKey=xxx&timer=xxx&nonce=xxx + appSecret)</p>
+ * <p>大淘客 API 签名规则：MD5(appKey=xxx&timer=xxx&nonce=xxx&key=appSecret)，结果转大写。</p>
  *
  * <p>支持两种构造方式：
  * <ul>
@@ -63,9 +65,9 @@ public class DtkOpenApiClient {
         // 构建公共参数
         Map<String, Object> allParams = new LinkedHashMap<>(params);
         String timer = String.valueOf(System.currentTimeMillis());
-        String nonce = String.format("%06d", new Random().nextInt(1000000));
-        String urlParams = String.format("appKey=%s&timer=%s&nonce=%s", appKey, timer, nonce);
-        String sign = DigestUtil.md5Hex(urlParams + appSecret).toLowerCase();
+        String nonce = String.valueOf(new Random().nextInt(900000) + 100000);
+        String signSource = String.format("appKey=%s&timer=%s&nonce=%s&key=%s", appKey, timer, nonce, appSecret);
+        String sign = DigestUtil.md5Hex(signSource).toUpperCase();
 
         allParams.put("appKey", appKey);
         allParams.put("timer", timer);
@@ -84,7 +86,7 @@ public class DtkOpenApiClient {
         strParams.forEach((k, v) -> {
             if (v != null) {
                 if (queryStr.length() > 0) queryStr.append("&");
-                queryStr.append(k).append("=").append(v);
+                queryStr.append(encodeQueryParam(k)).append("=").append(encodeQueryParam(v));
             }
         });
         String url = baseUrl + path + "?" + queryStr;
@@ -106,13 +108,18 @@ public class DtkOpenApiClient {
         try {
             // 使用超级分类接口测试连通性（轻量无参）
             Map<String, Object> params = new HashMap<>();
-            Map<String, Object> result = execute("/goods/get-super-category", params,
+            params.put("version", "v1.1.0");
+            Map<String, Object> result = execute("/category/get-super-category", params,
                     new TypeReference<Map<String, Object>>() {});
             return result != null;
         } catch (Exception e) {
             log.warn("[DtkOpenApiClient] 连接测试失败: {}", e.getMessage());
             return false;
         }
+    }
+
+    private String encodeQueryParam(Object value) {
+        return URLEncoder.encode(String.valueOf(value), StandardCharsets.UTF_8);
     }
 
 }

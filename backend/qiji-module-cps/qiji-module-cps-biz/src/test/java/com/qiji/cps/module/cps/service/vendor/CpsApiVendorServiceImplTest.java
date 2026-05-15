@@ -54,7 +54,7 @@ class CpsApiVendorServiceImplTest {
         when(vendorMapper.insert(any(CpsApiVendorDO.class))).thenReturn(1);
 
         Long id = vendorService.createVendor(reqVO);
-        verify(vendorMapper).insert(argThat(vendor ->
+        verify(vendorMapper).insert(org.mockito.ArgumentMatchers.<CpsApiVendorDO>argThat(vendor ->
                 "dataoke".equals(vendor.getVendorCode()) &&
                 "taobao".equals(vendor.getPlatformCode())
         ));

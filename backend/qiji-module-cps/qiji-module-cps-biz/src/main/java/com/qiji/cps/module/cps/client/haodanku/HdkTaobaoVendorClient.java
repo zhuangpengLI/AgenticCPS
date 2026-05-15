@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -109,16 +111,44 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getOrderQueryApiPath() {
-        return "/order_list";
+        return "/rest";
+    }
+
+    @Override
+    public List<CpsOrderDTO> queryOrders(CpsOrderQueryRequest request, CpsVendorConfig config) {
+        try {
+            String fullUrl = getPromotionLinkBaseUrl(config) + getOrderQueryApiPath();
+            JsonNode response = executePostRequest(fullUrl, buildOrderQueryParams(request, config), config);
+            if (response == null || !isSuccessResponse(response)) {
+                log.warn("[{}:{}] 查询订单失败: {}", getVendorCode(), getPlatformCode(), response);
+                return Collections.emptyList();
+            }
+            return parseOrderQueryResponse(response);
+        } catch (Exception e) {
+            log.error("[{}:{}] 查询订单异常", getVendorCode(), getPlatformCode(), e);
+            return Collections.emptyList();
+        }
     }
 
     @Override
     protected Map<String, Object> buildOrderQueryParams(CpsOrderQueryRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
+        params.put("method", "tbk.order");
+        params.put("v", firstNonBlank(getExtraConfig(config, "order_version"), "3.7.12"));
+        params.put("app_id", firstNonBlank(getExtraConfig(config, "app_id"), getExtraConfig(config, "order_app_id")));
+        params.put("sign", firstNonBlank(getExtraConfig(config, "sign"), getExtraConfig(config, "order_sign")));
+        params.put("date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        params.put("tb_name", firstNonBlank(config.getAuthToken(), getExtraConfig(config, "tb_name")));
         params.put("start_time", request.getStartTime());
         params.put("end_time", request.getEndTime());
-        params.put("page", request.getPageNo());
-        params.put("pagesize", request.getPageSize());
+        params.put("page_no", request.getPageNo());
+        params.put("page_size", request.getPageSize());
+        params.put("jump_type", firstNonBlank(getExtraConfig(config, "jump_type"), "1"));
+        params.put("tk_status", request.getOrderStatus());
+        params.put("order_scene", firstNonBlank(getExtraConfig(config, "order_scene"), "1"));
+        params.put("query_type", request.getQueryType());
+        params.put("member_type", getExtraConfig(config, "member_type"));
+        params.put("position_index", request.getPositionIndex());
         return params;
     }
 

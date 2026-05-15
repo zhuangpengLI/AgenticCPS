@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.URLEncoder;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -215,10 +217,14 @@ public abstract class AbstractApiVendorClient implements CpsApiVendorClient {
                 if (queryStr.length() > 0) {
                     queryStr.append("&");
                 }
-                queryStr.append(k).append("=").append(v);
+                queryStr.append(encodeQueryParam(k)).append("=").append(encodeQueryParam(v));
             }
         });
         return baseUrl + "?" + queryStr;
+    }
+
+    private String encodeQueryParam(Object value) {
+        return URLEncoder.encode(String.valueOf(value), StandardCharsets.UTF_8);
     }
 
 }

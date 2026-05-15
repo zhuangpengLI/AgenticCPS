@@ -25,7 +25,7 @@ Authorization: Bearer {{token}}
 tenant-id: {{adminTenantId}}
 
 {
-  "vendorCode": "haodan",
+  "vendorCode": "haodanku",
   "vendorName": "好单库",
   "vendorType": "aggregator",
   "platformCode": "taobao",

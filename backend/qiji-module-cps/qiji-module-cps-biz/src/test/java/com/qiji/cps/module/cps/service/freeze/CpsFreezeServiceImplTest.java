@@ -59,7 +59,7 @@ class CpsFreezeServiceImplTest {
 
         // Assert
         assertEquals(1, count);
-        verify(freezeRecordMapper).updateById(argThat(r ->
+        verify(freezeRecordMapper).updateById(org.mockito.ArgumentMatchers.<CpsFreezeRecordDO>argThat(r ->
                 "unfreezed".equals(r.getStatus()) && r.getActualUnfreezeTime() != null));
     }
 
@@ -71,7 +71,7 @@ class CpsFreezeServiceImplTest {
         int count = freezeService.batchUnfreeze(10);
 
         assertEquals(0, count);
-        verify(freezeRecordMapper, never()).updateById(any());
+        verify(freezeRecordMapper, never()).updateById(any(CpsFreezeRecordDO.class));
     }
 
     // ==================== manualUnfreeze 测试 ====================
@@ -107,7 +107,7 @@ class CpsFreezeServiceImplTest {
 
         freezeService.manualUnfreeze(1L);
 
-        verify(freezeRecordMapper).updateById(argThat(r ->
+        verify(freezeRecordMapper).updateById(org.mockito.ArgumentMatchers.<CpsFreezeRecordDO>argThat(r ->
                 "unfreezed".equals(r.getStatus()) && r.getActualUnfreezeTime() != null));
     }
 

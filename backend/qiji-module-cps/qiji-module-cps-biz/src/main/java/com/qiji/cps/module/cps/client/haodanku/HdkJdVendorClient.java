@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -27,31 +29,24 @@ public class HdkJdVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getSearchApiPath() {
-        // 好单库京东搜索接口：/jd_goods_search (GET, v2)，返回 code=200
-        // 已验证：http://v2.api.haodanku.com/jd_goods_search 可正常返回京东商品数据
+        // 好单库京东搜索接口：/jd_goods_search，返回 code=200
         return "/jd_goods_search";
-    }
-
-    /**
-     * 好单库京东搜索接口返回 code=200（而非通用的 code=1）
-     */
-    @Override
-    protected boolean isSuccessResponse(com.fasterxml.jackson.databind.JsonNode root) {
-        return root != null && root.path("code").asInt(-1) == 200;
     }
 
     @Override
     protected Map<String, Object> buildSearchParams(CpsGoodsSearchRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("keyword", request.getKeyword());
-        params.put("page", request.getPageNo());
-        params.put("pagesize", request.getPageSize());
-        // /jd_goods_search 支持价格筛选
+        params.put("jd_user_id", firstNonBlank(config.getAuthToken(), getExtraConfig(config, "jd_user_id")));
+        params.put("keyword", encodeKeywordOnce(request.getKeyword()));
+        params.put("min_id", request.getPageNo());
+        params.put("back", request.getPageSize());
+        params.put("has_coupon", request.getHasCoupon() == null ? 0 : request.getHasCoupon());
+        params.put("sort", convertSortType(request.getSortType()));
         if (request.getPriceLowerLimit() != null) {
-            params.put("price_from", request.getPriceLowerLimit());
+            params.put("start_price", request.getPriceLowerLimit());
         }
         if (request.getPriceUpperLimit() != null) {
-            params.put("price_to", request.getPriceUpperLimit());
+            params.put("end_price", request.getPriceUpperLimit());
         }
         return params;
     }
@@ -101,41 +96,43 @@ public class HdkJdVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getPromotionLinkApiPath() {
-        // TODO 待验证：好单库京东转链接口路径
-        return "/jd/ratesurl";
+        return "/unify_jditems_link";
     }
 
     @Override
     protected Map<String, Object> buildPromotionLinkParams(CpsPromotionLinkRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("sku_id", request.getGoodsId());
-        if (config.getAuthToken() != null) {
-            params.put("union_id", config.getAuthToken());
-        }
+        params.put("material_id", firstNonBlank(request.getItemLink(), request.getGoodsId()));
+        params.put("subUnionId", firstNonBlank(request.getChannelId(), request.getExternalId()));
+        params.put("proType", getExtraConfig(config, "proType"));
+        params.put("weChatType", getExtraConfig(config, "weChatType"));
+        params.put("scene_id", getExtraConfig(config, "scene_id"));
         return params;
     }
 
     @Override
     protected CpsPromotionLinkResult parsePromotionLinkResponse(JsonNode response) {
-        JsonNode data = response.path("data");
+        JsonNode data = hdkPayload(response);
         return CpsPromotionLinkResult.builder()
-                .shortUrl(data.path("short_url").asText(null))
-                .longUrl(data.path("click_url").asText(null))
+                .shortUrl(data.path("shortURL").asText(null))
+                .longUrl(data.path("clickURL").asText(null))
                 .build();
     }
 
     @Override
     protected String getOrderQueryApiPath() {
-        return "/jd/order_list";
+        return "/unify_jd_order_list";
     }
 
     @Override
     protected Map<String, Object> buildOrderQueryParams(CpsOrderQueryRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("start_time", request.getStartTime());
-        params.put("end_time", request.getEndTime());
-        params.put("page", request.getPageNo());
-        params.put("pagesize", request.getPageSize());
+        params.put("min_id", firstNonBlank(request.getPositionIndex(), String.valueOf(request.getPageNo())));
+        params.put("back", request.getPageSize());
+        params.put("date_type", request.getQueryType());
+        params.put("state", request.getOrderStatus() == null ? 0 : request.getOrderStatus());
+        params.put("start_date", toHdkUnixSeconds(request.getStartTime()));
+        params.put("end_date", toHdkUnixSeconds(request.getEndTime()));
         return params;
     }
 
@@ -169,10 +166,24 @@ public class HdkJdVendorClient extends AbstractHdkVendorClient {
     @Override
     protected Map<String, Object> buildTestConnectionParams() {
         Map<String, Object> params = new HashMap<>();
-        params.put("keyword", "手机");
-        params.put("page", 1);
-        params.put("pagesize", 1);
+        params.put("keyword", encodeKeywordOnce("手机"));
+        params.put("min_id", 1);
+        params.put("back", 1);
         return params;
+    }
+
+    private String encodeKeywordOnce(String keyword) {
+        return keyword == null ? null : URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+    }
+
+    private Integer convertSortType(Integer sortType) {
+        return switch (sortType == null ? 0 : sortType) {
+            case 1 -> 2;
+            case 2 -> 4;
+            case 3 -> 5;
+            case 4 -> 6;
+            default -> 0;
+        };
     }
 
 }
