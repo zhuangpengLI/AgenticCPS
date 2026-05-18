@@ -1,0 +1,72 @@
+name: Bug report
+description: Report a reproducible bug for Agent E2E triage
+title: "[Bug]: "
+labels: ["bug", "needs-e2e-repro"]
+body:
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - local
+        - dev
+        - test
+        - staging
+        - prod
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Page or entry URL
+      placeholder: "http://127.0.0.1:5173/..."
+    validations:
+      required: true
+  - type: input
+    id: role
+    attributes:
+      label: User role / tenant / account type
+      placeholder: "admin / member / tenant name"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: List the exact steps. The Agent will convert them to Playwright E2E.
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. Enter ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Screenshots, videos, console logs, network errors, requestId, traceId, and time.
+    validations:
+      required: false
+  - type: dropdown
+    id: stability
+    attributes:
+      label: Reproducibility
+      options:
+        - Always
+        - Often
+        - Sometimes
+        - Only once
+    validations:
+      required: true

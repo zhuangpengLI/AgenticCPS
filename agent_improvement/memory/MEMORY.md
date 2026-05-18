@@ -4,7 +4,8 @@
 
 ## 文件
 
-- [codegen-rules.md](codegen-rules.md) - yudao-module-infra 代码生成器模板规则
+- [codegen-rules.md](codegen-rules.md) - 代码生成器模板规则与 CPS AI Coding 约束
+- [testing-specification.md](testing-specification.md) - 单元测试、集成测试与 CPS Human-in-the-loop 测试规范
 
 ## 规则说明
 

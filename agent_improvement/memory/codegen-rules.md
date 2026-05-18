@@ -785,3 +785,70 @@ onMounted(() => getList())
 | `${sceneEnum.basePackage}` | 场景包（admin/app/api） |
 | `${sceneEnum.prefixClass}` | 类名前缀 |
 | `${permissionPrefix}` | 权限前缀 |
+
+## 15. CPS 模块 AI Coding 约束
+
+> 适用于 `backend/qiji-module-cps`。当任务涉及 CPS 搜索、转链、订单、返利、提现、风控、统计、MCP 工具或平台适配器时，本节规则必须优先于通用模板规则执行。
+
+### 15.1 真实模块路径
+
+| 层级 | 当前路径 |
+|------|----------|
+| CPS 业务模块 | `backend/qiji-module-cps/qiji-module-cps-biz` |
+| Java 根包 | `com.qiji.cps.module.cps` |
+| 平台适配器 | `src/main/java/com/qiji/cps/module/cps/client` |
+| 管理端接口 | `src/main/java/com/qiji/cps/module/cps/controller/admin` |
+| 用户端接口 | `src/main/java/com/qiji/cps/module/cps/controller/app` |
+| 数据对象 | `src/main/java/com/qiji/cps/module/cps/dal/dataobject` |
+| Mapper | `src/main/java/com/qiji/cps/module/cps/dal/mysql` |
+| 定时任务 | `src/main/java/com/qiji/cps/module/cps/job` |
+| MCP 工具 | `src/main/java/com/qiji/cps/module/cps/mcp/tool` |
+| 业务服务 | `src/main/java/com/qiji/cps/module/cps/service` |
+
+文档、脚本和提示词中如仍出现 `yudao-module-cps`、`cn.iocoder.yudao.module.cps`，必须先确认是否为历史描述；新增内容统一使用当前 `qiji-module-cps` 与 `com.qiji.cps.module.cps`。
+
+### 15.2 人人对齐：CPS 工程边界
+
+- Controller 只负责参数校验、权限、登录上下文和调用 Service；禁止写平台差异、返利计算、状态流转和复杂查询拼装。
+- Service 负责业务编排、幂等、状态转换、事务边界和跨模块协作；禁止把 HTTP 平台协议细节泄露给 Controller 或 MCP Tool。
+- Client 只负责平台 API 协议适配、签名、请求、响应解析、错误码映射和平台字段归一化；禁止写会员返利、订单归属、提现等本系统业务策略。
+- DAL 只负责数据持久化和查询表达；禁止在 Mapper/DO 中承载业务状态机、返利优先级或平台策略。
+- MCP Tool 是 AI/外部 Agent 接口层，必须把输入转换为稳定的 Service 请求；禁止绕过 Service 直连 Mapper 或平台 Client。
+
+### 15.3 人机对齐：AI 生成代码硬约束
+
+- 金额一律使用 `Integer` 分为单位，禁止使用 `Double` 表示金额；只有在对接第三方 API 字段转换边界可临时使用 `BigDecimal`，进入业务模型前必须转成分。
+- 佣金率、返利率使用整数比例或现有枚举/字段约定，新增字段前必须先查已有命名和单位。
+- CPS 查询必须保留租户隔离、软删除条件和权限边界；新增 Mapper 查询时要检查 `tenant_id`、`deleted`、用户归属字段。
+- 订单同步必须具备幂等能力；新增/更新订单时以平台订单号、平台编码、租户、用户归属等唯一业务键判断，不允许只依赖自增 ID。
+- 订单状态只能通过统一 Service/状态转换方法推进；禁止在多个入口散落 `setStatus(...)` 直接改状态。
+- 返利计算必须遵守优先级：会员个人平台配置 → 会员个人全平台配置 → 等级平台配置 → 等级全平台配置 → 平台默认 → 全局默认。
+- 平台差异必须下沉到 `client/{platform}` 或 `client/common`，通用业务层只依赖统一 DTO/接口。
+- MCP Tool 必须做参数校验、异常归一、耗时记录和访问日志；涉及会员数据时必须从可信上下文获取 memberId，禁止信任客户端传入的 memberId。
+- 新增平台适配器必须实现统一平台 Client 契约、注册为 Spring Bean，并补充连接测试、搜索/详情/转链/订单查询的最小测试或 Mock 示例。
+- 前端新增 CPS 页面优先沿用现有 Vue3/Element Plus 代码生成结构和权限命名，不引入局部另类风格。
+
+### 15.4 技术债随业务需求消化规则
+
+当业务需求触碰以下链路时，必须顺带处理对应技术债，除非明确记录延期原因：
+
+| 业务需求触点 | 顺带消化的技术债 |
+|--------------|------------------|
+| 新增/调整平台搜索、详情、转链 | 收口平台字段映射、统一异常、补齐 Client 测试 |
+| 调整订单同步或结算 | 检查幂等键、状态流转、退款/失效边界和索引 |
+| 调整返利比例或会员等级 | 校验返利优先级、金额单位、历史数据兼容 |
+| 调整 MCP Tool | 校验访问日志、参数脱敏、memberId 上下文和错误返回结构 |
+| 调整提现/冻结/风控 | 校验资金流水一致性、并发锁、重复提交与审计字段 |
+| 新增后台列表/统计 | 检查分页、索引、租户隔离、导出数据范围 |
+
+### 15.5 AI 自查提示词骨架
+
+每次生成或修改 CPS 代码后，AI 必须按以下问题自查：
+
+1. 本次改动是否把平台差异限制在 Client 层？
+2. 是否有金额、佣金率、返利率单位混用？
+3. 是否保留租户隔离、软删除和用户归属限制？
+4. 是否影响订单状态机、幂等、退款或失效逻辑？
+5. 是否影响 MCP Tool 的认证、访问日志、参数脱敏或 memberId 上下文？
+6. 是否需要补充或更新 Service、Mapper、Client、E2E 测试？
+7. 是否存在旧路径 `yudao-module-cps` 或旧包名导致的定位偏差？

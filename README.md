@@ -49,6 +49,66 @@
 
 ---
 
+## Agentic 生态闭环定位
+
+AgenticCPS 不再只是单独的 CPS 导购项目，而是 Agentic 生态中的“返利资产与商品推荐服务”。当前三个项目的基础能力与关系必须这样理解：
+
+- `aitoken-platform` 已经具备多模型网关、Token 计费、会员套餐、积分互转和支付能力，是生态里的 AI 能力与 Token 结算底座。
+- `AgenticCPS` 已经规划并落地商品搜索、比价、转链、订单追踪、返利汇总和 MCP 工具，是生态里的 CPS 返利资产与商品推荐服务。
+- `AgenticAIoT` 已经定位为设备接入、数据流转、规则引擎、AI 运维和多协议 IoT 平台，是生态里的企业设备数据与 AI 运维场景入口。
+
+生态融合要补齐的不是把三套系统揉成一个大单体，而是三者之间的 **账户互通、资产互转、场景联动和 Agent 调用接口**。所有后续新功能都要先判断自己属于哪个项目的边界，再通过开放接口、MCP 工具或事件流水完成跨系统协作。
+
+三者形成以下职责关系：
+
+| 项目 | 生态定位 | 核心职责 | 边界约束 |
+|------|----------|----------|----------|
+| `AgenticCPS` | CPS 返利与商品推荐服务 | 商品搜索、比价、转链、订单追踪、返利结算、返利冻结/扣减、AIoT 场景商品推荐、CPS MCP Tools | 不负责大模型网关、Token 余额主账本、设备接入与设备规则引擎 |
+| `aitoken-platform` | AI Token 与模型调用结算底座 | 多模型网关、Token 钱包、Token 计费、会员套餐、外部返利兑换 Token、API Key 额度、AI 调用成本统计、Token MCP Tools | 不负责 CPS 订单、返利结算、商品推荐和设备业务 |
+| `AgenticAIoT` | 企业级设备数据与 AI 运维场景入口 | 设备接入、指标采集、告警、规则引擎、AI 分析任务、采购需求生成、触发 CPS 推荐、AIoT MCP Tools | 不直接沉淀 Token 钱包，不直接实现 CPS 返利和电商平台适配 |
+
+三套系统融合的长期方向是：
+
+```text
+统一用户、统一账户、统一权益、统一 API 鉴权、统一 MCP 工具、统一事件流水
+```
+
+最小商业闭环已经按 P0 方向落地：
+
+```text
+AgenticCPS 可用返利
+        ↓
+冻结 / 扣减 / 幂等 / 对账
+        ↓
+aitoken-platform 发放 AI Token
+        ↓
+AI Token 可被 AgenticAIoT、CPS AI 导购和其他 Agent 场景消耗
+```
+
+### P0：CPS 返利兑换 AI Token
+
+P0 的目标是先让“返利”变成生态内可消耗的 AI Token 燃料：
+
+- AgenticCPS 提供返利余额、冻结、解冻、确认扣减和本地兑换订单。
+- aitoken-platform 提供兑换预估、兑换提交、Token 入账和兑换订单查询。
+- 两边统一使用 `X-App-Id`、`X-Tenant-Id`、`X-Timestamp`、`X-Nonce`、`X-Signature`、`X-Idempotency-Key` 做服务间鉴权与幂等。
+- 只有 `AVAILABLE` 可用返利允许兑换；待结算、退款、失效、冻结中返利不得兑换。
+- 兑换链路必须遵循：创建本地兑换单 → 冻结返利 → 调用 aitoken 发放 Token → 成功确认扣减 → 失败解冻 → 超时进入补偿状态。
+
+### 后续路线图
+
+| 阶段 | 目标 | 交付效果 |
+|------|------|----------|
+| P0 | CPS 返利兑换 aitoken Token | CPS 返利成为 AI Token 燃料 |
+| P1 | 强化 CPS MCP 工具和 AI 导购能力 | AI 可稳定搜索、比价、转链、查返利 |
+| P2 | AgenticAIoT 统一消耗 aitoken Token | 设备告警、巡检、能耗分析统一计费 |
+| P3 | AIoT 数据驱动 CPS 商品推荐 | 设备问题 → AI 分析 → 商品推荐 → CPS 返利 |
+| P4 | 生态中台化 | 统一用户、账户、鉴权、事件、MCP Gateway、数据看板 |
+
+详细协议与 P0 落地说明见：[docs/agentic-ecosystem-p0-rebate-token-exchange.md](./docs/agentic-ecosystem-p0-rebate-token-exchange.md)
+
+---
+
 ## 为什么选择 AgenticCPS？
 
 ### 传统模式 vs AgenticCPS

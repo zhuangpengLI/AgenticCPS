@@ -8,6 +8,79 @@ AgenticCPS is a **CPS (Cost Per Sale) Alliance Rebate System** built on ruoyi-vu
 
 **Key differentiator**: This project uses Vibe Coding + AI autonomous programming — CPS module code is 100% AI-generated (20,000+ lines of code including business services, scheduled jobs, MCP interface layer, and unit tests).
 
+### Current Project Map Notes (2026-05-18)
+
+- Current backend module names use the `qiji-*` prefix even where older docs still mention `yudao-*`: main app is `backend/qiji-server`, CPS module is `backend/qiji-module-cps`, framework is `backend/qiji-framework`.
+- Backend entry point is `backend/qiji-server/src/main/java/com/qiji/cps/server/QijiServerApplication.java`; it scans `${qiji.info.base-package}.server` and `${qiji.info.base-package}.module`, with `qiji.info.base-package: com.qiji.cps`.
+- Runtime config is split between `backend/qiji-server/src/main/resources/application.yaml` and `application-local.yaml`; local backend port is `48080`.
+- API prefixes are framework-driven: `controller.admin` maps to `/admin-api`, `controller.app` maps to `/app-api`; CPS `controller.openapi` declares its own `/openapi/...` routes.
+- CPS critical flow map: App/MCP -> CPS controller/tool -> `CpsGoodsService` / exchange services -> `CpsPlatformClientFactory` or aitoken OpenAPI -> external platform / aitoken -> CPS DB records.
+- Generated companion map: `docs/project-map.md` contains the latest read-only project map and should be refreshed when module ownership, entrypoints, commands, or risk areas change.
+
+## Agentic Ecosystem Relationship
+
+AgenticCPS is one service in a three-project Agentic ecosystem. Future features must preserve these boundaries unless the user explicitly asks for an architecture change.
+
+Current ecosystem capability baseline:
+
+- `aitoken-platform` already has a multi-model gateway, Token billing, membership plans, credit/points transfer, and payment capabilities. It is the ecosystem's AI capability and Token settlement foundation.
+- `AgenticCPS` already plans and implements product search, price comparison, promotion link generation, order tracking, rebate summary, and MCP tools. It is the ecosystem's CPS rebate asset and product recommendation service.
+- `AgenticAIoT` is positioned as a device access, data flow, rule engine, AI operations, and multi-protocol IoT platform. It is the ecosystem's enterprise device data and AI operations scenario entry.
+
+The missing ecosystem integration is **account interoperability, asset conversion, scenario linkage, and Agent-callable interfaces**. Do not merge the three systems into a monolith. For every new feature, first decide which project owns the responsibility, then connect systems through OpenAPI, MCP tools, or event ledgers.
+
+| Project | Path | Role | Owns | Must Not Own |
+|---------|------|------|------|--------------|
+| AgenticCPS | `F:\ai\AgenticCPS` | CPS rebate and product recommendation service | CPS platform adapters, goods search, price comparison, promotion links, order tracking, rebate settlement, rebate freeze/deduct, CPS MCP tools, AIoT scene-based product recommendation | Model gateway, Token master ledger, IoT device ingestion, IoT rule engine |
+| aitoken-platform | `F:\ai\ai-token-platform` | AI Token and model billing foundation | Multi-model gateway, Token wallet/quota, membership plans, external rebate-to-Token exchange, API Key quota, AI usage cost accounting, Token MCP tools | CPS orders, CPS rebate settlement, product recommendation, IoT devices |
+| AgenticAIoT | `F:\ai\AgenticAIoT` | Enterprise AIoT data and operations scenario service | Device access, metrics, alerts, rules, AI analysis tasks, purchase-need generation, CPS recommendation trigger, AIoT MCP tools | Token wallet master ledger, CPS rebate accounting, ecommerce platform adapters |
+
+The ecosystem direction is:
+
+```text
+Unified user, unified account, unified entitlements, unified OpenAPI auth,
+unified MCP tools, unified event ledger.
+```
+
+### Current P0 Closed Loop
+
+The implemented P0 business loop is:
+
+```text
+AgenticCPS AVAILABLE rebate
+        -> freeze / idempotency / reconciliation
+        -> aitoken-platform Token exchange submit
+        -> new-api user.quota credit
+        -> CPS confirm deduct or unfreeze on failure
+```
+
+Relevant local documentation:
+
+- `docs/agentic-ecosystem-p0-rebate-token-exchange.md`
+- `docs/cps-tech-debt-inventory.md`
+
+### Development Boundary Rules
+
+- When adding CPS-facing features, keep CPS money movement inside AgenticCPS: rebate balance, freeze, unfreeze, deduct, refund/debt, and exchange order state.
+- When adding AI Token features, keep Token balance and model usage accounting inside aitoken-platform. AgenticCPS may call aitoken OpenAPI but must not create a parallel Token ledger.
+- When adding AIoT features, AgenticAIoT should generate structured analysis and purchase needs, then call AgenticCPS for product recommendation and aitoken-platform for model invocation/Token billing.
+- Service-to-service calls must use the shared OpenAPI headers: `X-App-Id`, `X-Tenant-Id`, `X-Timestamp`, `X-Nonce`, `X-Signature`, `X-Idempotency-Key`.
+- Any money or Token mutation must be idempotent and auditable. Required evidence fields are source system, source order id, tenant id, user/member id, idempotency key, status, failure reason, and timestamps.
+- Never trust request-body `memberId` or `userId` for member assets in user-facing APIs. Use login context or a verified service signature.
+- Only `AVAILABLE` CPS rebate can be exchanged to Token. Pending, refunded, invalid, frozen, withdrawn, or debt-related amounts are not exchangeable.
+- The exchange saga must follow: create local exchange order -> freeze rebate -> call aitoken submit -> confirm deduct on success -> unfreeze on failure -> keep PROCESSING on timeout for compensation.
+- Keep P0/P1/P2/P3/P4 scope boundaries clear. Do not mix AIoT device features into CPS or Token wallet features into CPS just because a workflow crosses projects.
+
+### Roadmap Constraints
+
+| Phase | Goal | Implementation Guidance |
+|-------|------|-------------------------|
+| P0 | CPS rebate -> aitoken Token | Maintain the existing exchange saga and HMAC OpenAPI contract. |
+| P1 | CPS as AI-callable shopping tools | Improve `cps_search_goods`, `cps_compare_prices`, `cps_generate_link`, and add scene recommendation without changing Token ownership. |
+| P2 | AIoT consumes aitoken Token | AgenticAIoT should call aitoken `/v1/chat/completions` with metadata and usage accounting. |
+| P3 | AIoT drives CPS recommendation | AIoT creates purchase needs; CPS maps them to categories/products/promotion links. |
+| P4 | Ecosystem hub | Only introduce a separate hub when user/account/auth/event responsibilities outgrow repo-local contracts. |
+
 ## Architecture
 
 ```
@@ -145,6 +218,36 @@ docker-compose down
 
 # View logs
 docker-compose logs -f server
+```
+
+### Additional Verified Commands (2026-05-18)
+
+```bash
+cd backend
+
+# Run a CPS biz module test class
+mvn test -pl qiji-module-cps/qiji-module-cps-biz -Dtest=CpsRebateTokenExchangeServiceImplTest
+
+# Start backend with current module name
+mvn spring-boot:run -pl qiji-server -Dspring-boot.run.profiles=local
+```
+
+```bash
+cd frontend/admin-vue3
+
+# E2E support added in this repo state
+pnpm e2e:install
+pnpm dev:e2e
+pnpm e2e
+```
+
+```bash
+cd frontend/admin-uniapp
+
+# UniApp admin checks/builds
+pnpm type-check
+pnpm lint
+pnpm build:prod
 ```
 
 ## Key Patterns
@@ -343,6 +446,21 @@ with open('local/path/to/file.sql', 'w', encoding='utf-8', newline='') as f:
 `git filter-repo --replace-text` operates at the **byte level** and can corrupt UTF-8 multi-byte sequences when replacement strings overlap byte boundaries. Use Python-based file replacement + clean commit instead.
 
 ---
+
+## Risk Areas
+
+- **Uncommitted workspace state**: this repository may contain existing user/agent edits. Always check `git status --short` before changing files and avoid overwriting unrelated work.
+- **Naming drift**: older documentation and generated snippets may still reference `yudao-*`, while current modules are `qiji-*`. Prefer actual filesystem/POM names over stale prose.
+- **CPS money movement**: rebate balance, freeze, unfreeze, deduct, exchange order, refund/debt, and reconciliation are high-risk. Keep operations idempotent and auditable.
+- **Cross-system Token exchange**: `CpsRebateTokenExchangeServiceImpl`, `CpsAitokenExchangeClient`, and OpenAPI signature code form the P0 saga. Preserve create-order -> freeze -> aitoken submit -> confirm deduct/unfreeze -> PROCESSING-on-timeout semantics.
+- **OpenAPI signature and replay protection**: current HMAC verification depends on `X-App-Id`, `X-Tenant-Id`, `X-Timestamp`, `X-Nonce`, `X-Signature`, and `X-Idempotency-Key`. Any change must consider timestamp windows, nonce replay, tenant isolation, and body canonicalization.
+- **Member identity trust boundary**: never trust request-body `memberId` / `userId` for user-facing asset operations. Use login context or verified service signatures. MCP link generation is especially sensitive because attribution affects rebates.
+- **Platform adapter completeness**: official vendor clients may be partial; switching `active_vendor_code` can turn unimplemented adapters into silent empty results or null link failures.
+- **Order sync and settlement state**: platform order sync can receive duplicates or out-of-order state changes. Guard against status rollback, duplicate rebate records, and repeated account mutation.
+- **MCP auditability**: MCP access log tables exist, but tool-level logging may be incomplete. Changes to MCP tools should preserve tool name, parameter summary, member context, status, duration, and error reason.
+- **Statistics performance**: SQL that wraps indexed time columns, such as `DATE(create_time)`, can degrade on large tables. Prefer range predicates when touching dashboard/statistics queries.
+- **Money units drift**: project rules prefer integer cents, but existing CPS monetary fields include `BigDecimal`. Do not add new mixed-unit fields without documenting units and compatibility.
+- **Encoding safety**: do not use PowerShell `Get-Content` / `Set-Content` or byte-level replacement on Chinese files. Use Python UTF-8 read/write and verify decoding after writes.
 
 ## Important Notes
 
