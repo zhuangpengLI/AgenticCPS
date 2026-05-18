@@ -15,6 +15,7 @@ function pathResolve(dir: string) {
 export default ({command, mode}: ConfigEnv): UserConfig => {
     let env = {} as any
     const isBuild = command === 'build'
+    const isE2E = process.env.VITE_E2E === 'true'
     if (!isBuild) {
         env = loadEnv((process.argv[3] === '--mode' ? process.argv[4] : process.argv[3]), root)
     } else {
@@ -83,6 +84,6 @@ export default ({command, mode}: ConfigEnv): UserConfig => {
                 },
             },
         },
-        optimizeDeps: {include, exclude}
+        optimizeDeps: isE2E ? {include: [], exclude} : {include, exclude}
     }
 }

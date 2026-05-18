@@ -18,6 +18,7 @@ import UnoCSS from 'unocss/vite'
 
 export function createVitePlugins() {
   const root = process.cwd()
+  const isE2E = process.env.VITE_E2E === 'true'
 
   // 路径查找
   function pathResolve(dir: string) {
@@ -66,10 +67,11 @@ export function createVitePlugins() {
       resolvers: [ElementPlusResolver()],
       globs: ["src/components/**/**.{vue, md}", '!src/components/DiyEditor/components/mobile/**']
     }),
-    EslintPlugin({
-      cache: false,
-      include: ['src/**/*.vue', 'src/**/*.ts', 'src/**/*.tsx'] // 检查的文件
-    }),
+    !isE2E &&
+      EslintPlugin({
+        cache: false,
+        include: ['src/**/*.vue', 'src/**/*.ts', 'src/**/*.tsx'] // 检查的文件
+      }),
     VueI18nPlugin({
       runtimeOnly: true,
       compositionOnly: true,
@@ -95,5 +97,5 @@ export function createVitePlugins() {
       // The function to generate import names of top-level await promise in each chunk module
       promiseImportName: (i) => `__tla_${i}`
     })
-  ]
+  ].filter(Boolean)
 }

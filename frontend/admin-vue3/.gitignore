@@ -7,3 +7,5 @@ pnpm-debug
 auto-*.d.ts
 .idea
 .history
+playwright-report/
+test-results/
