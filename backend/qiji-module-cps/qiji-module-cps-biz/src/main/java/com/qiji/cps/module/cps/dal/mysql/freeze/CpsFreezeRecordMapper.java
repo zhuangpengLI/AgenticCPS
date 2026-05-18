@@ -7,6 +7,7 @@ import com.qiji.cps.module.cps.controller.admin.freeze.vo.CpsFreezeRecordPageReq
 import com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeRecordDO;
 import com.qiji.cps.module.cps.enums.CpsFreezeStatusEnum;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,6 +39,21 @@ public interface CpsFreezeRecordMapper extends BaseMapperX<CpsFreezeRecordDO> {
                 .eqIfPresent(CpsFreezeRecordDO::getStatus, reqVO.getStatus())
                 .betweenIfPresent(CpsFreezeRecordDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(CpsFreezeRecordDO::getId));
+    }
+
+    default CpsFreezeRecordDO selectByBusinessAndIdempotencyKey(String businessType, String idempotencyKey) {
+        return selectOne(new LambdaQueryWrapperX<CpsFreezeRecordDO>()
+                .eq(CpsFreezeRecordDO::getBusinessType, businessType)
+                .eq(CpsFreezeRecordDO::getIdempotencyKey, idempotencyKey)
+                .last("LIMIT 1"));
+    }
+
+    default CpsFreezeRecordDO selectByBusinessId(@Param("businessType") String businessType,
+                                                @Param("businessId") String businessId) {
+        return selectOne(new LambdaQueryWrapperX<CpsFreezeRecordDO>()
+                .eq(CpsFreezeRecordDO::getBusinessType, businessType)
+                .eq(CpsFreezeRecordDO::getBusinessId, businessId)
+                .last("LIMIT 1"));
     }
 
 }

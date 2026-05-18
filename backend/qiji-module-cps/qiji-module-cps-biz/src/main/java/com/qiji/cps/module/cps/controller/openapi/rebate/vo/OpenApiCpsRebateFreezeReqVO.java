@@ -1,0 +1,28 @@
+package com.qiji.cps.module.cps.controller.openapi.rebate.vo;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
+import java.math.BigDecimal;
+
+@Data
+public class OpenApiCpsRebateFreezeReqVO {
+
+    @NotNull(message = "用户ID不能为空")
+    private Long userId;
+
+    @NotNull(message = "冻结金额不能为空")
+    @DecimalMin(value = "0.01", message = "冻结金额必须大于0")
+    private BigDecimal amount;
+
+    @NotBlank(message = "业务类型不能为空")
+    private String businessType;
+
+    @NotBlank(message = "业务单号不能为空")
+    private String businessId;
+
+    @NotBlank(message = "幂等键不能为空")
+    private String idempotencyKey;
+}

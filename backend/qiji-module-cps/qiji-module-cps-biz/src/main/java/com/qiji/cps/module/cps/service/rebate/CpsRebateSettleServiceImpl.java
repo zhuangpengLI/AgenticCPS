@@ -201,7 +201,7 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
                     .availableBalance(BigDecimal.ZERO)
                     .frozenBalance(BigDecimal.ZERO)
                     .withdrawnAmount(BigDecimal.ZERO)
-                    .status(CommonStatusEnum.ENABLE.getStatus())
+                    .status(1)
                     .version(0)
                     .build();
             rebateAccountMapper.insert(account);

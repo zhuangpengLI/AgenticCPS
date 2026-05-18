@@ -65,4 +65,13 @@ public interface CpsErrorCodeConstants {
     ErrorCode VENDOR_NOT_EXISTS = new ErrorCode(1_100_013_000, "API供应商配置不存在");
     ErrorCode VENDOR_PLATFORM_DUPLICATE = new ErrorCode(1_100_013_001, "供应商[{}]+平台[{}]的配置已存在");
 
+    // ========== 返利兑换 Token 1-100-014-000 ==========
+    ErrorCode REBATE_EXCHANGE_NOT_EXISTS = new ErrorCode(1_100_014_000, "返利兑换订单不存在");
+    ErrorCode REBATE_EXCHANGE_STATUS_INVALID = new ErrorCode(1_100_014_001, "返利兑换订单状态不合法");
+    ErrorCode REBATE_EXCHANGE_AMOUNT_INVALID = new ErrorCode(1_100_014_002, "兑换金额必须大于0");
+    ErrorCode REBATE_EXCHANGE_IDEMPOTENCY_KEY_REQUIRED = new ErrorCode(1_100_014_003, "兑换幂等键不能为空");
+    ErrorCode REBATE_EXCHANGE_TOKEN_FAILED = new ErrorCode(1_100_014_004, "Token兑换失败：{}");
+    ErrorCode OPENAPI_SIGNATURE_INVALID = new ErrorCode(1_100_014_005, "开放接口签名无效");
+    ErrorCode OPENAPI_HEADER_MISSING = new ErrorCode(1_100_014_006, "缺少开放接口请求头：{}");
+
 }

@@ -19,6 +19,7 @@ public enum CpsFreezeStatusEnum implements ArrayValuable<String> {
     FROZEN("frozen", "已冻结"),
     UNFREEZING("unfreezing", "解冻中"),
     UNFREEZED("unfreezed", "已解冻"),
+    DEDUCTED("deducted", "已扣减"),
     ;
 
     public static final String[] ARRAYS = Arrays.stream(values()).map(CpsFreezeStatusEnum::getStatus).toArray(String[]::new);

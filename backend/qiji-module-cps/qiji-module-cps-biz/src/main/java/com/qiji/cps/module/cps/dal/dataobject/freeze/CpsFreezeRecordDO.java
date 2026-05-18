@@ -43,6 +43,18 @@ public class CpsFreezeRecordDO extends TenantBaseDO {
      */
     private String platformOrderId;
     /**
+     * 业务类型
+     */
+    private String businessType;
+    /**
+     * 业务单号
+     */
+    private String businessId;
+    /**
+     * 幂等键
+     */
+    private String idempotencyKey;
+    /**
      * 冻结金额
      */
     private BigDecimal freezeAmount;

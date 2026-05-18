@@ -281,6 +281,15 @@ qiji:
   security:
     permit-all_urls:
       - /admin-api/mp/open/** # 微信公众号开放平台，微信回调接口，不需要登录
+      - /openapi/cps/** # 生态开放接口，使用 HMAC 签名鉴权
+  cps:
+    aitoken:
+      base-url: ${AITOKEN_PLATFORM_BASE_URL:http://localhost:8081}
+      app-id: ${AITOKEN_PLATFORM_APP_ID:AgenticCPS}
+      app-secret: ${AITOKEN_PLATFORM_APP_SECRET:agentic-cps-dev-secret}
+      source-system: AgenticCPS
+      source-asset: REBATE
+      target-asset: TOKEN
   api-encrypt:
     enable: true # 是否开启 API 加密
     algorithm: AES # 加密算法，支持 AES、RSA 等
