@@ -25,6 +25,16 @@ E2E_HEADLESS=false pnpm e2e
 E2E_SKIP_WEB_SERVER=true E2E_BASE_URL=http://127.0.0.1:5173 pnpm e2e
 ```
 
+Midscene.js 辅助视觉/语义检查只在需要时运行。它不会替代 Playwright 的确定性断言：
+
+```bash
+set MIDSCENE_MODEL_BASE_URL=https://your-model-endpoint/v1
+set MIDSCENE_MODEL_API_KEY=your-api-key
+set MIDSCENE_MODEL_NAME=your-vl-model
+set MIDSCENE_MODEL_FAMILY=qwen2.5-vl
+pnpm e2e:midscene
+```
+
 ## Agent 处理 Issue 的标准闭环
 
 1. 阅读 issue、截图、日志、requestId、traceId 和用户复现步骤。
@@ -37,6 +47,21 @@ E2E_SKIP_WEB_SERVER=true E2E_BASE_URL=http://127.0.0.1:5173 pnpm e2e
    - `pnpm ts:check`
    - 相关后端 `mvn test -Dtest=...`
 7. PR 描述必须包含：复现用例、失败现象、root cause、修复说明、验证命令和剩余风险。
+
+### 用户 Issue 到证据闭环
+
+```text
+用户 issue / 截图 / 日志
+  -> 提取页面、账号角色、租户、复现步骤、期望和实际
+  -> 编写 Playwright 最小失败复现
+  -> 运行并保存 trace、截图、video、console/network 线索
+  -> 基于失败证据查源码、接口、日志和数据边界
+  -> 最小修复
+  -> 复跑 Playwright、TypeScript、必要后端测试
+  -> PR/最终报告列出证据与剩余风险
+```
+
+Midscene.js 可用于“页面是否符合语义预期”的辅助判断，例如登录页、表单布局、关键按钮是否明显可见。它只回答视觉/语义问题；提交前仍必须有 Playwright `expect`、后端单测或类型检查作为硬证据。
 
 ## Issue 必填信息
 

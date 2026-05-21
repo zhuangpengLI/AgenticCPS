@@ -198,7 +198,7 @@ mvn test
 mvn test -Dtest=CpsRebateTokenExchangeServiceImplTest
 
 # 指定 CPS biz 模块测试（推荐做 CPS 改动时优先跑）
-mvn test -pl qiji-module-cps/qiji-module-cps-biz -Dtest=CpsRebateTokenExchangeServiceImplTest
+mvn test -pl qiji-module-cps/qiji-module-cps-biz -am -Dtest=CpsRebateTokenExchangeServiceImplTest "-Dsurefire.failIfNoSpecifiedTests=false"
 ```
 
 测试基类规范见：`agent_improvement/memory/testing-specification.md`。
@@ -222,7 +222,10 @@ pnpm lint:eslint
 pnpm e2e:install
 pnpm dev:e2e
 pnpm e2e
+pnpm e2e:midscene
 ```
+
+`pnpm e2e:midscene` 需要本机提供 `MIDSCENE_MODEL_BASE_URL`、`MIDSCENE_MODEL_API_KEY`、`MIDSCENE_MODEL_NAME`、`MIDSCENE_MODEL_FAMILY`。Midscene.js 只作为视觉/语义辅助，验收仍以 Playwright `expect`、类型检查和后端测试为准。
 
 `admin-uniapp` 当前有：
 
@@ -303,6 +306,16 @@ docker-compose down
 | Windows/PowerShell 编码风险 | 中 | AGENTS 明确禁止用 PowerShell 读写中文文件；后续所有文件写入应使用 Python UTF-8 并验证解码。 |
 
 ## 7. 快速定位清单
+
+### Agentic 工程化入口
+
+- 工作协议：`AGENTS.md`
+- 总览与快速开始：`README.md`
+- Codex/Superpowers/OMX/TDD/E2E SOP：`docs/codex-agentic-development-workflow.md`
+- E2E issue 复现流程：`docs/e2e-agent-issue-workflow.md`
+- Playwright 配置：`frontend/admin-vue3/playwright.config.ts`
+- Midscene fixture：`frontend/admin-vue3/e2e/fixture.ts`
+- Midscene smoke：`frontend/admin-vue3/e2e/midscene-smoke.spec.ts`
 
 ### CPS 关键代码
 

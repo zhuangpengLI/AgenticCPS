@@ -9,3 +9,4 @@ auto-*.d.ts
 .history
 playwright-report/
 test-results/
+midscene_run/

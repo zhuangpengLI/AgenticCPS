@@ -204,6 +204,62 @@ AI 自动完成：
 
 ---
 
+## Codex Agentic 开发方式
+
+AgenticCPS 的新默认开发方式是 **Codex + Superpowers + oh-my-codex + TDD + E2E 证据闭环**。目标不是让 AI 更快“堆代码”，而是让每一次改动都有需求来源、计划、失败测试、实现、验证证据和文档回写。
+
+```text
+需求 / Issue
+  -> Codex 读取 AGENTS.md、README.md、docs/project-map.md
+  -> Superpowers brainstorming / writing-plans 对齐设计与计划
+  -> TDD 写出最小失败测试
+  -> Codex / OMX / 子代理实现独立任务
+  -> Playwright / Midscene.js / Maven / TypeScript 验证
+  -> README、AGENTS、项目地图和测试规范同步更新
+```
+
+### 开发者快速开始：Codex 工作流
+
+后端 CPS 改动优先运行：
+
+```bash
+cd backend
+mvn test -pl qiji-module-cps/qiji-module-cps-biz -am -Dtest=CpsRebateTokenExchangeServiceImplTest "-Dsurefire.failIfNoSpecifiedTests=false"
+```
+
+管理后台前端改动优先运行：
+
+```bash
+cd frontend/admin-vue3
+pnpm ts:check
+pnpm e2e
+```
+
+Midscene.js 只作为视觉/语义辅助 E2E。运行前在本机配置模型环境变量，不要提交密钥：
+
+```bash
+cd frontend/admin-vue3
+set MIDSCENE_MODEL_BASE_URL=https://your-model-endpoint/v1
+set MIDSCENE_MODEL_API_KEY=your-api-key
+set MIDSCENE_MODEL_NAME=your-vl-model
+set MIDSCENE_MODEL_FAMILY=qwen2.5-vl
+pnpm e2e:midscene
+```
+
+### 质量门禁
+
+| 场景 | 必跑验证 | 证据要求 |
+|------|----------|----------|
+| CPS 资金、订单、返利、提现、OpenAPI | 先写后端失败测试，再跑对应 Maven 测试 | 失败/通过输出、涉及幂等和租户边界的断言 |
+| MCP Tool 或 AI Agent 接口 | 单元测试 + 参数/权限/审计日志断言 | 工具名、参数摘要、耗时、错误原因可追踪 |
+| admin-vue3 页面或 issue 修复 | `pnpm ts:check` + Playwright 复现/回归 | `test-results`、trace、截图或 HTML report |
+| 视觉语义检查 | `pnpm e2e:midscene` | Midscene report 作为辅助证据，不能替代确定性断言 |
+| 文档/工作流改动 | UTF-8 解码检查 + 命令路径核对 | 文档命令与 `package.json` / Maven 模块一致 |
+
+更多细节见：[docs/codex-agentic-development-workflow.md](./docs/codex-agentic-development-workflow.md) 与 [docs/e2e-agent-issue-workflow.md](./docs/e2e-agent-issue-workflow.md)。
+
+---
+
 ## 低代码：不只是少写代码，而是不写代码
 
 AgenticCPS 的低代码能力体现在系统的每个层面：

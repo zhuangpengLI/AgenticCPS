@@ -8,6 +8,44 @@ AgenticCPS is a **CPS (Cost Per Sale) Alliance Rebate System** built on ruoyi-vu
 
 **Key differentiator**: This project uses Vibe Coding + AI autonomous programming — CPS module code is 100% AI-generated (20,000+ lines of code including business services, scheduled jobs, MCP interface layer, and unit tests).
 
+## Codex Agentic Engineering Protocol
+
+AgenticCPS is developed with Codex as an autonomous coding agent, deeply integrated with Superpowers, oh-my-codex (OMX), TDD, Playwright, and Midscene.js. Treat this as the default execution model for every non-trivial change.
+
+### Startup Baseline
+
+- Read the applicable `AGENTS.md`, `README.md`, and `docs/project-map.md` before modifying code or docs.
+- Run `git status --short` before changes. Preserve existing user/agent edits and never remove untracked files unless explicitly requested.
+- Prefer current filesystem/POM/package names over stale prose. Current backend modules use `qiji-*`, not older `yudao-*` names.
+- For unfamiliar SDKs or testing tools, check official documentation or installed package types before coding.
+- Keep changes small and reversible. Update docs whenever workflow, commands, entry points, or quality gates change.
+
+### Superpowers Workflow
+
+- Use `brainstorming` before creative or behavior-changing work unless the user has already provided an approved design or implementation plan.
+- Use `writing-plans` for multi-step feature/refactor plans before implementation.
+- Use TDD for feature and bugfix work: write the smallest failing test, prove it fails, implement the minimum change, prove it passes, then broaden verification.
+- Use systematic debugging when behavior is unexpected, a test fails, or logs contradict the current hypothesis.
+- Use verification-before-completion before claiming work is complete. Completion requires fresh command output or a clearly stated validation gap.
+
+### oh-my-codex / Subagent Rules
+
+- Default to solo execution for scoped work.
+- Use Codex native subagents only for independent, bounded, verifiable subtasks that improve throughput without shared-file conflicts.
+- In Codex App outside tmux, do not assume OMX `team`, `hud`, or `question` runtime surfaces are available. Use native structured input or direct execution instead.
+- OMX plans and logs under `.omx/` are operational state. Do not hand-edit them unless recovering a broken workflow or explicitly asked.
+
+### TDD Quality Gates
+
+- CPS P0/P1 paths require tests before implementation: rebate freeze/deduct, exchange saga, order state transitions, tenant isolation, OpenAPI signatures, MCP member attribution, MCP audit logs, and platform adapter failures.
+- Backend test choice:
+  - Pure logic, adapters, and controller orchestration: `BaseMockitoUnitTest` or Mockito extension patterns already used in the CPS module.
+  - Mapper, DB state, idempotency, or transaction-sensitive behavior: `BaseDbUnitTest` / H2-based module tests.
+  - Redis-sensitive behavior: Redis test base from the framework.
+- Frontend issue fixes start with Playwright reproduction in `frontend/admin-vue3/e2e`. Keep Playwright assertions deterministic.
+- Midscene.js is an assisted visual/semantic E2E layer for admin-vue3 only. It may describe UI intent, but final acceptance must still include Playwright `expect` assertions or backend tests.
+- Do not commit model credentials. Midscene reads only environment variables such as `MIDSCENE_MODEL_BASE_URL`, `MIDSCENE_MODEL_API_KEY`, `MIDSCENE_MODEL_NAME`, and `MIDSCENE_MODEL_FAMILY`.
+
 ### Current Project Map Notes (2026-05-18)
 
 - Current backend module names use the `qiji-*` prefix even where older docs still mention `yudao-*`: main app is `backend/qiji-server`, CPS module is `backend/qiji-module-cps`, framework is `backend/qiji-framework`.
@@ -226,7 +264,7 @@ docker-compose logs -f server
 cd backend
 
 # Run a CPS biz module test class
-mvn test -pl qiji-module-cps/qiji-module-cps-biz -Dtest=CpsRebateTokenExchangeServiceImplTest
+mvn test -pl qiji-module-cps/qiji-module-cps-biz -am -Dtest=CpsRebateTokenExchangeServiceImplTest "-Dsurefire.failIfNoSpecifiedTests=false"
 
 # Start backend with current module name
 mvn spring-boot:run -pl qiji-server -Dspring-boot.run.profiles=local

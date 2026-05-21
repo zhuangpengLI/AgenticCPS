@@ -5,8 +5,8 @@ test.describe('admin-vue3 smoke', () => {
     await page.goto('/')
 
     await expect(page).toHaveURL(/\/login/)
-    await expect(page.getByRole('button', { name: /登录|Login/i })).toBeVisible()
-    await expect(page.getByPlaceholder(/用户名|username/i)).toBeVisible()
-    await expect(page.getByPlaceholder(/密码|password/i)).toBeVisible()
+    await expect(page.getByRole('button', { name: /^(登录|Login)$/i })).toBeVisible()
+    await expect(page.locator('input[placeholder="请输入用户名"]').first()).toBeVisible()
+    await expect(page.locator('input[placeholder="请输入密码"]').first()).toBeVisible()
   })
 })
