@@ -337,8 +337,12 @@ docker-compose down
 
 - 生态 P0 闭环：`docs/agentic-ecosystem-p0-rebate-token-exchange.md`
 - CPS 技术债：`docs/cps-tech-debt-inventory.md`
+- CPS 主 R 打样 SOP：`docs/cps-refactor-sop.md`
+- CPS 订单同步打样报告：`docs/cps-order-sync-pilot-pre-pr.md`
+- CPS Pre-PR 模板：`docs/cps-pre-pr-template.md`
 - 测试规范：`agent_improvement/memory/testing-specification.md`
 - 代码生成规则：`agent_improvement/memory/codegen-rules.md`
+- CPS always 级 AI 规则：`agent_improvement/memory/cps-ai-coding-rules.md`
 - CPS 需求/PRD：`docs/CPS系统需求文档.md`、`docs/CPS系统PRD文档.md`
 
 ## 本次未做的事

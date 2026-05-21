@@ -12,6 +12,7 @@ import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderSyncLogDO;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderMapper;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderSyncLogMapper;
 import com.qiji.cps.module.cps.enums.CpsOrderStatusEnum;
+import com.qiji.cps.module.cps.service.rebate.CpsRebateSettleService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,9 @@ public class CpsOrderServiceImpl implements CpsOrderService {
 
     @Resource
     private CpsPlatformClientFactory platformClientFactory;
+
+    @Resource
+    private CpsRebateSettleService rebateSettleService;
 
     // ==================== 订单查询 ====================
 
@@ -90,7 +94,7 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             return 1;
         } else {
             // 已有订单：判断是否需要更新
-            String newStatus = mapPlatformStatus(orderDTO);
+            String newStatus = resolveNextOrderStatus(existing, orderDTO);
             if (Objects.equals(existing.getOrderStatus(), newStatus)
                     && Objects.equals(existing.getCommissionAmount(), orderDTO.getCommissionAmount())) {
                 // 状态和佣金均无变化，跳过
@@ -116,6 +120,13 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             if (Integer.valueOf(1).equals(orderDTO.getRefundTag())) {
                 updateDO.setOrderStatus(CpsOrderStatusEnum.REFUNDED.getStatus());
                 updateDO.setRefundTime(LocalDateTime.now());
+            }
+            if (shouldReverseRebate(existing, updateDO.getOrderStatus())) {
+                boolean reversed = rebateSettleService.reverseRebate(existing.getId());
+                if (!reversed) {
+                    log.warn("[saveOrUpdateOrder] 订单状态已更新为退款/失效，但返利扣回未执行: orderId={}, oldStatus={}, newStatus={}",
+                            existing.getId(), existing.getOrderStatus(), updateDO.getOrderStatus());
+                }
             }
             orderMapper.updateById(updateDO);
             log.debug("[saveOrUpdateOrder] 更新订单: platform={}, orderId={}, status={}",
@@ -266,6 +277,67 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             case -1 -> CpsOrderStatusEnum.INVALID.getStatus();
             default -> CpsOrderStatusEnum.CREATED.getStatus();
         };
+    }
+
+    private String resolveNextOrderStatus(CpsOrderDO existing, CpsOrderDTO dto) {
+        String incomingStatus = mapPlatformStatus(dto);
+        String currentStatus = existing.getOrderStatus();
+        if (isRollbackProtectedTerminalStatus(currentStatus)) {
+            return isReversalStatus(incomingStatus) ? incomingStatus : currentStatus;
+        }
+        if (isReversalStatus(incomingStatus)) {
+            return incomingStatus;
+        }
+        if (statusRank(incomingStatus) < statusRank(currentStatus)) {
+            return currentStatus;
+        }
+        return incomingStatus;
+    }
+
+    private boolean shouldReverseRebate(CpsOrderDO existing, String nextStatus) {
+        if (!isReversalStatus(nextStatus) || existing.getId() == null) {
+            return false;
+        }
+        if (isReversalStatus(existing.getOrderStatus())) {
+            return false;
+        }
+        return existing.getRebateTime() != null
+                || CpsOrderStatusEnum.REBATE_RECEIVED.getStatus().equals(existing.getOrderStatus());
+    }
+
+    private boolean isRollbackProtectedTerminalStatus(String status) {
+        return CpsOrderStatusEnum.REBATE_RECEIVED.getStatus().equals(status)
+                || isReversalStatus(status);
+    }
+
+    private boolean isReversalStatus(String status) {
+        return CpsOrderStatusEnum.REFUNDED.getStatus().equals(status)
+                || CpsOrderStatusEnum.INVALID.getStatus().equals(status);
+    }
+
+    private int statusRank(String status) {
+        if (status == null) {
+            return -1;
+        }
+        if (CpsOrderStatusEnum.CREATED.getStatus().equals(status)) {
+            return 0;
+        }
+        if (CpsOrderStatusEnum.PAID.getStatus().equals(status)) {
+            return 1;
+        }
+        if (CpsOrderStatusEnum.RECEIVED.getStatus().equals(status)) {
+            return 2;
+        }
+        if (CpsOrderStatusEnum.SETTLED.getStatus().equals(status)) {
+            return 3;
+        }
+        if (CpsOrderStatusEnum.REBATE_RECEIVED.getStatus().equals(status)) {
+            return 4;
+        }
+        if (isReversalStatus(status)) {
+            return 5;
+        }
+        return -1;
     }
 
     /**

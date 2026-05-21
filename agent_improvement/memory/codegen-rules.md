@@ -789,6 +789,8 @@ onMounted(() => getList())
 ## 15. CPS 模块 AI Coding 约束
 
 > 适用于 `backend/qiji-module-cps`。当任务涉及 CPS 搜索、转链、订单、返利、提现、风控、统计、MCP 工具或平台适配器时，本节规则必须优先于通用模板规则执行。
+>
+> 完整 always 级规则见 `agent_improvement/memory/cps-ai-coding-rules.md`。本节保留为代码生成入口摘要；若两处表述不一致，以 `cps-ai-coding-rules.md` 为准。
 
 ### 15.1 真实模块路径
 
@@ -817,7 +819,7 @@ onMounted(() => getList())
 
 ### 15.3 人机对齐：AI 生成代码硬约束
 
-- 金额一律使用 `Integer` 分为单位，禁止使用 `Double` 表示金额；只有在对接第三方 API 字段转换边界可临时使用 `BigDecimal`，进入业务模型前必须转成分。
+- 金额一律使用 `Integer` 分为单位，禁止使用 `Double` 表示金额；只有在对接第三方 API 字段转换边界或兼容既有 schema 时可临时使用 `BigDecimal`，并必须标注单位与迁移风险。
 - 佣金率、返利率使用整数比例或现有枚举/字段约定，新增字段前必须先查已有命名和单位。
 - CPS 查询必须保留租户隔离、软删除条件和权限边界；新增 Mapper 查询时要检查 `tenant_id`、`deleted`、用户归属字段。
 - 订单同步必须具备幂等能力；新增/更新订单时以平台订单号、平台编码、租户、用户归属等唯一业务键判断，不允许只依赖自增 ID。

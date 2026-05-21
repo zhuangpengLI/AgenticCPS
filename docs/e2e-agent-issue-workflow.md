@@ -89,47 +89,22 @@ Midscene.js 可用于“页面是否符合语义预期”的辅助判断，例�
 ### Pre-PR 执行顺序
 
 1. 明确改动目标、业务入口和影响范围。
-2. 让 AI 按 `agent_improvement/memory/codegen-rules.md`、`testing-specification.md` 和本文件进行自查。
+2. 让 AI 按 `agent_improvement/memory/cps-ai-coding-rules.md`、`agent_improvement/memory/testing-specification.md` 和本文件进行自查。
 3. 修复 AI 能明确指出且证据充分的问题。
 4. 运行对应验证命令，记录结果。
 5. 生成 PR/交付说明，再进入人工 Review。
 
 ### Pre-PR 文档模板
 
-```markdown
-## 改动目标
+统一模板见 `docs/cps-pre-pr-template.md`。
 
-## 影响范围
-- 后端模块：
-- 前端页面：
-- MCP Tool：
-- 数据表：
-- 外部平台：
+填写时至少覆盖：
 
-## 风险等级
-- P0/P1/P2：
-- 判定原因：
-
-## AI 自查结果
-- 规范问题：
-- 潜在 Bug：
-- 异常处理：
-- 性能/索引：
-- 安全/权限/租户：
-- 测试覆盖：
-
-## 人工重点 Review
-- 需要确认的业务语义：
-- 需要确认的兼容性：
-- 需要确认的资金/订单影响：
-
-## 验证命令
-- `mvn test -Dtest=...`
-- `pnpm ts:check`
-- `pnpm e2e`
-
-## 剩余风险
-```
+- 改动目标、涉及模块、影响接口
+- 数据库影响、租户/权限/软删除检查
+- 金额单位检查、幂等与并发检查
+- MCP 校验项、AI 自查记录、测试命令与结果
+- 人工重点 Review 的业务语义、剩余风险
 
 ### CPS 专项 Pre-PR 检查
 
@@ -160,6 +135,8 @@ Midscene.js 可用于“页面是否符合语义预期”的辅助判断，例�
 5. 将样板沉淀为可重复步骤，再扩展到同类代码。
 6. 每一步都运行最小验证，避免一次性大改后难以定位问题。
 7. PR 中明确“业务需求完成了什么”和“顺带消化了哪些技术债”。
+
+完整样板 SOP 见 `docs/cps-refactor-sop.md`。
 
 ### 不适用场景
 

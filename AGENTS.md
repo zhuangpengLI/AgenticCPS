@@ -124,10 +124,10 @@ Relevant local documentation:
 ```
 AgenticCPS/
 ├── backend/                    # Spring Boot 3.5.9 Java backend
-│   ├── yudao-server/          # Main application entry point (port 48080)
-│   ├── yudao-module-cps/       # CPS rebate core module (primary focus)
-│   │   ├── yudao-module-cps-api/    # API definitions (enums, remote interfaces)
-│   │   └── yudao-module-cps-biz/    # Business implementation
+│   ├── qiji-server/           # Main application entry point (port 48080)
+│   ├── qiji-module-cps/       # CPS rebate core module (primary focus)
+│   │   ├── qiji-module-cps-api/     # API definitions (enums, remote interfaces)
+│   │   └── qiji-module-cps-biz/     # Business implementation
 │   │       ├── controller/admin/    # Admin REST APIs (15 controllers)
 │   │       ├── controller/app/      # Member-facing REST APIs (13 controllers)
 │   │       ├── service/             # Business services (7 service modules)
@@ -140,16 +140,16 @@ AgenticCPS/
 │   │       ├── job/                  # Scheduled jobs (Quartz - order sync, status update)
 │   │       └── mcp/                  # MCP AI interface layer
 │   │           └── tool/             # 5 MCP tool functions
-│   ├── yudao-module-ai/      # AI module (Spring AI 1.1.2 + MCP support)
-│   ├── yudao-module-member/  # Member management
-│   ├── yudao-module-pay/     # Payment/wallet system
-│   ├── yudao-module-mall/    # E-commerce module
-│   ├── yudao-module-system/  # System management (auth, perms, menus)
-│   ├── yudao-module-infra/   # Infrastructure (Redis, file storage, MQ)
-│   ├── yudao-module-report/  # Report & dashboard module
-│   ├── yudao-module-mp/      # WeChat Official Account module
-│   ├── yudao-framework/       # Framework extensions (Web, Security, MyBatis, Redis, Job, Tenant, Data Permission, MQ, Monitor, Excel)
-│   ├── yudao-dependencies/   # Centralized dependency version management
+│   ├── qiji-module-ai/       # AI module (Spring AI 1.1.2 + MCP support)
+│   ├── qiji-module-member/   # Member management
+│   ├── qiji-module-pay/      # Payment/wallet system
+│   ├── qiji-module-mall/     # E-commerce module
+│   ├── qiji-module-system/   # System management (auth, perms, menus)
+│   ├── qiji-module-infra/    # Infrastructure (Redis, file storage, MQ)
+│   ├── qiji-module-report/   # Report & dashboard module
+│   ├── qiji-module-mp/       # WeChat Official Account module
+│   ├── qiji-framework/       # Framework extensions (Web, Security, MyBatis, Redis, Job, Tenant, Data Permission, MQ, Monitor, Excel)
+│   ├── qiji-dependencies/    # Centralized dependency version management
 │   └── sql/                   # Database schema scripts for each module
 │
 ├── frontend/
@@ -216,7 +216,7 @@ mvn test
 mvn test -Dtest=ClassName
 
 # Run with specific profile
-mvn spring-boot:run -pl yudao-server -Dspring-boot.run.profiles=local
+mvn spring-boot:run -pl qiji-server -Dspring-boot.run.profiles=local
 
 # Build JAR
 mvn clean package -DskipTests
@@ -310,7 +310,7 @@ To add a new platform (e.g., Weibo), implement this interface and register as a 
 
 ### MCP AI Interface Layer
 
-Located in `yudao-module-cps-biz/mcp/tool/`, 5 tool functions registered via Spring AI:
+Located in `qiji-module-cps-biz/mcp/tool/`, 5 tool functions registered via Spring AI:
 
 | Tool Class | Tool Name | Description |
 |-----------|-----------|-------------|
