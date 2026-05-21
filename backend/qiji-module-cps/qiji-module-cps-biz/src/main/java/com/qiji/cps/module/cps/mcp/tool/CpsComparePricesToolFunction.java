@@ -2,6 +2,7 @@ package com.qiji.cps.module.cps.mcp.tool;
 
 import com.qiji.cps.module.cps.client.dto.CpsGoodsItem;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
+import com.qiji.cps.module.cps.dal.mysql.mcp.CpsMcpAccessLogMapper;
 import com.qiji.cps.module.cps.service.goods.CpsGoodsService;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -33,6 +34,9 @@ public class CpsComparePricesToolFunction
 
     @Resource
     private CpsGoodsService goodsService;
+
+    @Resource
+    private CpsMcpAccessLogMapper accessLogMapper;
 
     @Data
     @JsonClassDescription("跨平台比价：在淘宝/京东/拼多多/抖音搜索同一关键词，对比价格和返利，推荐最优购买方案")
@@ -112,11 +116,15 @@ public class CpsComparePricesToolFunction
 
     @Override
     public Response apply(Request request) {
+        long startedAt = System.currentTimeMillis();
         if (request.getKeyword() == null || request.getKeyword().isBlank()) {
-            return new Response(0, null, null, null, null, "关键词不能为空");
+            Response response = new Response(0, null, null, null, null, "关键词不能为空");
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_compare_prices", request, response,
+                    new IllegalArgumentException("keyword required"), startedAt);
+            return response;
         }
         try {
-            int topN = request.getTopN() != null ? Math.min(request.getTopN(), 10) : 5;
+            int topN = request.getTopN() != null ? Math.max(1, Math.min(request.getTopN(), 10)) : 5;
 
             CpsGoodsSearchRequest searchRequest = new CpsGoodsSearchRequest();
             searchRequest.setKeyword(request.getKeyword());
@@ -124,7 +132,9 @@ public class CpsComparePricesToolFunction
 
             List<CpsGoodsItem> allItems = goodsService.searchGoodsAllPlatforms(searchRequest);
             if (allItems == null || allItems.isEmpty()) {
-                return new Response(0, null, null, null, new ArrayList<>(), null);
+                Response response = new Response(0, null, null, null, new ArrayList<>(), null);
+                CpsMcpToolAuditSupport.record(accessLogMapper, "cps_compare_prices", request, response, null, startedAt);
+                return response;
             }
 
             // 转换为 PriceItem，计算净价
@@ -166,9 +176,13 @@ public class CpsComparePricesToolFunction
                     .min(Comparator.comparing(Response.PriceItem::getNetPrice))
                     .orElse(null);
 
-            return new Response(priceItems.size(), cheapest, highestRebate, bestValue, priceItems, null);
+            Response response = new Response(priceItems.size(), cheapest, highestRebate, bestValue, priceItems, null);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_compare_prices", request, response, null, startedAt);
+            return response;
         } catch (Exception e) {
-            return new Response(0, null, null, null, new ArrayList<>(), "比价失败：" + e.getMessage());
+            Response response = new Response(0, null, null, null, new ArrayList<>(), "比价失败，请稍后重试");
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_compare_prices", request, response, e, startedAt);
+            return response;
         }
     }
 

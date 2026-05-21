@@ -204,11 +204,15 @@ spring:
         instructions: |
           CPS 联盟返利系统 MCP Server。
           可用工具（Tools）：
-            - cps_search_goods: 多平台商品搜索
-            - cps_compare_prices: 跨平台比价
-            - cps_generate_link: 生成推广链接
-            - cps_get_order_status: 查询会员订单
-            - cps_rebate_summary: 查询会员返利汇总
+            - cps_search_goods: multi-platform goods search
+            - cps_compare_prices: multi-platform price comparison
+            - cps_generate_link: generate promotion links
+            - cps_query_orders: query member CPS orders
+            - cps_get_rebate_summary: query member rebate summary
+            - cps_recommend_by_scene: recommend goods for AIoT scenes
+            - cps_get_rebate_balance: query exchangeable rebate balance
+            - cps_create_token_exchange: create rebate-to-token exchange
+            - cps_query_exchange_status: query rebate-to-token exchange status
         type: SYNC                     # SpringMVC 使用 SYNC，不支持 ASYNC（WebFlux）
         sse-endpoint: /sse             # SSE 连接端点
         sse-message-endpoint: /mcp/message  # Streamable HTTP 消息端点

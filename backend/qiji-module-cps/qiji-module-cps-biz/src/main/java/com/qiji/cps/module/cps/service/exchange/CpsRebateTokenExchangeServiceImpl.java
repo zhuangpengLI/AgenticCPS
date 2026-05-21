@@ -16,6 +16,7 @@ import com.qiji.cps.module.cps.enums.CpsRebateExchangeStatusEnum;
 import com.qiji.cps.module.cps.service.exchange.dto.CpsAitokenExchangeOrderRespDTO;
 import com.qiji.cps.module.cps.service.exchange.dto.CpsAitokenExchangePreviewReqDTO;
 import com.qiji.cps.module.cps.service.exchange.dto.CpsAitokenExchangePreviewRespDTO;
+import com.qiji.cps.module.cps.service.exchange.dto.CpsAitokenExchangeStatusUpdateReqDTO;
 import com.qiji.cps.module.cps.service.exchange.dto.CpsAitokenExchangeSubmitReqDTO;
 import com.qiji.cps.module.cps.service.rebate.CpsRebateSettleService;
 import jakarta.annotation.Resource;
@@ -199,14 +200,35 @@ public class CpsRebateTokenExchangeServiceImpl implements CpsRebateTokenExchange
             submitReq.setIdempotencyKey(idempotencyKey);
             CpsAitokenExchangeOrderRespDTO aitokenOrder = aitokenExchangeClient.submit(submitReq, tenantId);
 
-            if (aitokenOrder != null && "approved".equalsIgnoreCase(aitokenOrder.getStatus())) {
-                confirmDeduct(freezeResp.getFreezeId(), exchangeOrderNo);
-                updateOrderStatus(order, CpsRebateExchangeStatusEnum.SUCCESS, null,
+            if (isAitokenCredited(aitokenOrder)) {
+                updateOrderStatus(order, CpsRebateExchangeStatusEnum.CREDITED, null,
                         freezeResp.getFreezeId(), aitokenOrder.getExchangeOrderId());
-            } else {
+                try {
+                    confirmDeduct(freezeResp.getFreezeId(), exchangeOrderNo);
+                    aitokenExchangeClient.confirmSourceDeduct(aitokenOrder.getExchangeOrderId(),
+                            buildStatusUpdateRequest(exchangeOrderNo, idempotencyKey, "CPS返利已确认扣减"), tenantId);
+                    updateOrderStatus(order, CpsRebateExchangeStatusEnum.SUCCESS, null,
+                            freezeResp.getFreezeId(), aitokenOrder.getExchangeOrderId());
+                } catch (Exception deductException) {
+                    log.error("[submit] CPS确认扣减失败，尝试请求aitoken回滚, exchangeOrderNo={}", exchangeOrderNo, deductException);
+                    try {
+                        aitokenExchangeClient.rollback(aitokenOrder.getExchangeOrderId(),
+                                buildStatusUpdateRequest(exchangeOrderNo, idempotencyKey, deductException.getMessage()), tenantId);
+                    } catch (Exception rollbackException) {
+                        log.error("[submit] aitoken回滚请求失败, exchangeOrderNo={}, aitokenOrderId={}",
+                                exchangeOrderNo, aitokenOrder.getExchangeOrderId(), rollbackException);
+                    }
+                    updateOrderStatus(order, CpsRebateExchangeStatusEnum.ROLLBACK_REQUIRED,
+                            deductException.getMessage(), freezeResp.getFreezeId(), aitokenOrder.getExchangeOrderId());
+                }
+            } else if (isAitokenFailed(aitokenOrder)) {
                 String failureReason = aitokenOrder == null ? "aitoken返回为空" : aitokenOrder.getFailureReason();
                 unfreeze(freezeResp.getFreezeId(), failureReason);
                 updateOrderStatus(order, CpsRebateExchangeStatusEnum.FAILED, failureReason,
+                        freezeResp.getFreezeId(), aitokenOrder == null ? null : aitokenOrder.getExchangeOrderId());
+            } else {
+                String reason = aitokenOrder == null ? "aitoken返回为空" : "aitoken状态处理中：" + aitokenOrder.getStatus();
+                updateOrderStatus(order, CpsRebateExchangeStatusEnum.PROCESSING, reason,
                         freezeResp.getFreezeId(), aitokenOrder == null ? null : aitokenOrder.getExchangeOrderId());
             }
         } catch (Exception e) {
@@ -268,6 +290,29 @@ public class CpsRebateTokenExchangeServiceImpl implements CpsRebateTokenExchange
             update.setCompletedAt(LocalDateTime.now());
         }
         exchangeOrderMapper.updateById(update);
+    }
+
+    private boolean isAitokenCredited(CpsAitokenExchangeOrderRespDTO aitokenOrder) {
+        return aitokenOrder != null
+                && ("credited".equalsIgnoreCase(aitokenOrder.getStatus())
+                || "approved".equalsIgnoreCase(aitokenOrder.getStatus())
+                || "confirmed".equalsIgnoreCase(aitokenOrder.getStatus()));
+    }
+
+    private boolean isAitokenFailed(CpsAitokenExchangeOrderRespDTO aitokenOrder) {
+        return aitokenOrder == null || "failed".equalsIgnoreCase(aitokenOrder.getStatus())
+                || "rejected".equalsIgnoreCase(aitokenOrder.getStatus())
+                || "cancelled".equalsIgnoreCase(aitokenOrder.getStatus());
+    }
+
+    private CpsAitokenExchangeStatusUpdateReqDTO buildStatusUpdateRequest(String exchangeOrderNo,
+                                                                          String idempotencyKey,
+                                                                          String reason) {
+        CpsAitokenExchangeStatusUpdateReqDTO request = new CpsAitokenExchangeStatusUpdateReqDTO();
+        request.setSourceOrderId(exchangeOrderNo);
+        request.setIdempotencyKey(idempotencyKey);
+        request.setReason(reason);
+        return request;
     }
 
     private String generateExchangeOrderNo() {

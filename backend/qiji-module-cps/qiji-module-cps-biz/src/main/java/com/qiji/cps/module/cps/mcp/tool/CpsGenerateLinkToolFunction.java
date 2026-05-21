@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.mcp.tool;
 
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
+import com.qiji.cps.module.cps.dal.mysql.mcp.CpsMcpAccessLogMapper;
 import com.qiji.cps.module.cps.service.goods.CpsGoodsService;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -33,6 +34,9 @@ public class CpsGenerateLinkToolFunction
 
     @Resource
     private CpsGoodsService goodsService;
+
+    @Resource
+    private CpsMcpAccessLogMapper accessLogMapper;
 
     @Data
     @JsonClassDescription("为指定商品生成带返利追踪的推广链接（转链），支持淘宝口令、短链、移动链接等格式")
@@ -96,13 +100,17 @@ public class CpsGenerateLinkToolFunction
 
     @Override
     public Response apply(Request request, ToolContext toolContext) {
+        long startedAt = System.currentTimeMillis();
         if (request.getPlatformCode() == null || request.getGoodsId() == null) {
-            return new Response(null, null, null, null, null, null, null, null, "platform_code 和 goods_id 不能为空");
+            Response response = new Response(null, null, null, null, null, null, null, null, "platform_code 和 goods_id 不能为空");
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response,
+                    new IllegalArgumentException("platform_code/goods_id required"), startedAt);
+            return response;
         }
         try {
-            // 从 ToolContext 获取会员 ID（若 request 未传）
-            Long memberId = request.getMemberId();
-            if (memberId == null && toolContext != null) {
+            // ToolContext 是可信身份来源；request.memberId 仅用于没有上下文的服务端调用兜底。
+            Long memberId = null;
+            if (toolContext != null) {
                 Map<String, Object> ctx = toolContext.getContext();
                 Object userId = ctx.get(TOOL_CONTEXT_LOGIN_USER_ID);
                 if (userId instanceof Long) {
@@ -110,6 +118,9 @@ public class CpsGenerateLinkToolFunction
                 } else if (userId instanceof Number) {
                     memberId = ((Number) userId).longValue();
                 }
+            }
+            if (memberId == null) {
+                memberId = request.getMemberId();
             }
 
             CpsPromotionLinkResult result = goodsService.generatePromotionLink(
@@ -120,10 +131,13 @@ public class CpsGenerateLinkToolFunction
                     request.getAdzoneId());
 
             if (result == null) {
-                return new Response(null, null, null, null, null, null, null, null, "转链失败，请检查商品ID是否正确");
+                Response response = new Response(null, null, null, null, null, null, null, null, "转链失败，请检查商品ID是否正确");
+                CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response,
+                        new IllegalStateException("empty promotion link result"), startedAt);
+                return response;
             }
 
-            return new Response(
+            Response response = new Response(
                     result.getShortUrl(),
                     result.getLongUrl(),
                     result.getTpwd(),
@@ -133,8 +147,12 @@ public class CpsGenerateLinkToolFunction
                     result.getCommissionAmount(),
                     result.getCouponInfo(),
                     null);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response, null, startedAt);
+            return response;
         } catch (Exception e) {
-            return new Response(null, null, null, null, null, null, null, null, "转链失败：" + e.getMessage());
+            Response response = new Response(null, null, null, null, null, null, null, null, "转链失败，请稍后重试");
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response, e, startedAt);
+            return response;
         }
     }
 

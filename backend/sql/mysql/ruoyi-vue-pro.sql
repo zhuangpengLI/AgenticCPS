@@ -2419,6 +2419,11 @@ INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_i
 -- 数据统计 按钮权限
 INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (5091, '统计查询', 'cps:statistics:query', 3, 1, 5090, '', '', '', NULL, 0, b'1', b'1', b'1', 'admin', '2026-01-01 00:00:00', 'admin', '2026-01-01 00:00:00', b'0');
 INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (5092, '统计导出', 'cps:statistics:export', 3, 2, 5090, '', '', '', NULL, 0, b'1', b'1', b'1', 'admin', '2026-01-01 00:00:00', 'admin', '2026-01-01 00:00:00', b'0');
+
+-- 商品返利查询 二级菜单 (ID: 5093)
+INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (5093, '商品返利查询', '', 2, 11, 5050, 'goods-rebate-query', 'ep:search', 'cps/goods/rebate-query/index', 'CpsGoodsRebateQuery', 0, b'1', b'1', b'1', 'admin', '2026-01-01 00:00:00', 'admin', '2026-01-01 00:00:00', b'0');
+-- 商品返利查询 按钮权限
+INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES (5094, '商品返利查询', 'cps:goods-rebate-query:query', 3, 1, 5093, '', '', '', NULL, 0, b'1', b'1', b'1', 'admin', '2026-01-01 00:00:00', 'admin', '2026-01-01 00:00:00', b'0');
 COMMIT;
 
 -- ----------------------------

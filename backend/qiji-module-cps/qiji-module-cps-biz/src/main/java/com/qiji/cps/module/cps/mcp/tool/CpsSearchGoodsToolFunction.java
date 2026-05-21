@@ -2,6 +2,7 @@ package com.qiji.cps.module.cps.mcp.tool;
 
 import com.qiji.cps.module.cps.client.dto.CpsGoodsItem;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
+import com.qiji.cps.module.cps.dal.mysql.mcp.CpsMcpAccessLogMapper;
 import com.qiji.cps.module.cps.service.goods.CpsGoodsService;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -31,6 +32,9 @@ public class CpsSearchGoodsToolFunction
 
     @Resource
     private CpsGoodsService goodsService;
+
+    @Resource
+    private CpsMcpAccessLogMapper accessLogMapper;
 
     @Data
     @JsonClassDescription("在联盟平台（淘宝/京东/拼多多/抖音）搜索商品，返回商品列表及价格信息")
@@ -119,14 +123,17 @@ public class CpsSearchGoodsToolFunction
 
     @Override
     public Response apply(Request request) {
+        long startedAt = System.currentTimeMillis();
         if (request.getKeyword() == null || request.getKeyword().isBlank()) {
-            return new Response(0, Collections.emptyList(), "关键词不能为空");
+            Response response = new Response(0, Collections.emptyList(), "关键词不能为空");
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_search_goods", request, response,
+                    new IllegalArgumentException("keyword required"), startedAt);
+            return response;
         }
         try {
             CpsGoodsSearchRequest searchRequest = new CpsGoodsSearchRequest();
             searchRequest.setKeyword(request.getKeyword());
-            searchRequest.setPageSize(request.getPageSize() != null
-                    ? Math.min(request.getPageSize(), 20) : 10);
+            searchRequest.setPageSize(normalizePageSize(request.getPageSize()));
 
             List<CpsGoodsItem> items;
             if (request.getPlatformCode() != null && !request.getPlatformCode().isBlank()) {
@@ -167,10 +174,21 @@ public class CpsSearchGoodsToolFunction
                         return vo;
                     }).collect(Collectors.toList());
 
-            return new Response(voList.size(), voList, null);
+            Response response = new Response(voList.size(), voList, null);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_search_goods", request, response, null, startedAt);
+            return response;
         } catch (Exception e) {
-            return new Response(0, Collections.emptyList(), "搜索失败：" + e.getMessage());
+            Response response = new Response(0, Collections.emptyList(), "搜索失败，请稍后重试");
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_search_goods", request, response, e, startedAt);
+            return response;
         }
+    }
+
+    private Integer normalizePageSize(Integer pageSize) {
+        if (pageSize == null) {
+            return 10;
+        }
+        return Math.max(1, Math.min(pageSize, 20));
     }
 
 }

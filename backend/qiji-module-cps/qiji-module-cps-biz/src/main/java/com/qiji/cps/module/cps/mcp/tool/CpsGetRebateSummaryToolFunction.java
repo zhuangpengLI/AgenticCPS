@@ -2,6 +2,7 @@ package com.qiji.cps.module.cps.mcp.tool;
 
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateAccountDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateRecordDO;
+import com.qiji.cps.module.cps.dal.mysql.mcp.CpsMcpAccessLogMapper;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateRecordMapper;
 import com.qiji.cps.module.cps.service.rebate.CpsRebateSettleService;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
@@ -40,6 +41,9 @@ public class CpsGetRebateSummaryToolFunction
 
     @Resource
     private CpsRebateRecordMapper rebateRecordMapper;
+
+    @Resource
+    private CpsMcpAccessLogMapper accessLogMapper;
 
     @Data
     @JsonClassDescription("查询当前登录会员的返利账户汇总信息：可用余额、冻结余额、累计返利总额、已提现金额，以及最近5条返利记录")
@@ -106,9 +110,13 @@ public class CpsGetRebateSummaryToolFunction
 
     @Override
     public Response apply(Request request, ToolContext toolContext) {
+        long startedAt = System.currentTimeMillis();
         Long memberId = extractMemberId(toolContext);
         if (memberId == null) {
-            return new Response(null, null, null, null, null, Collections.emptyList(), "未登录或无法获取用户信息，请先登录");
+            Response response = new Response(null, null, null, null, null, Collections.emptyList(), "未登录或无法获取用户信息，请先登录");
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_get_rebate_summary", request, response,
+                    new IllegalStateException("missing tool context user"), startedAt);
+            return response;
         }
         try {
             // 获取或初始化返利账户
@@ -117,7 +125,7 @@ public class CpsGetRebateSummaryToolFunction
             String accountStatus = account.getStatus() != null && account.getStatus() == 1 ? "normal" : "frozen";
 
             // 查询最近返利记录
-            int recentCount = request.getRecentCount() != null ? Math.min(request.getRecentCount(), 20) : 5;
+            int recentCount = request.getRecentCount() != null ? Math.max(1, Math.min(request.getRecentCount(), 20)) : 5;
             com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateRecordPageReqVO reqVO =
                     new com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateRecordPageReqVO();
             reqVO.setMemberId(memberId);
@@ -136,7 +144,7 @@ public class CpsGetRebateSummaryToolFunction
                 return vo;
             }).collect(Collectors.toList());
 
-            return new Response(
+            Response response = new Response(
                     account.getAvailableBalance(),
                     account.getFrozenBalance(),
                     account.getTotalRebate(),
@@ -144,8 +152,12 @@ public class CpsGetRebateSummaryToolFunction
                     accountStatus,
                     recentRecords,
                     null);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_get_rebate_summary", request, response, null, startedAt);
+            return response;
         } catch (Exception e) {
-            return new Response(null, null, null, null, null, Collections.emptyList(), "查询返利汇总失败：" + e.getMessage());
+            Response response = new Response(null, null, null, null, null, Collections.emptyList(), "查询返利汇总失败，请稍后重试");
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_get_rebate_summary", request, response, e, startedAt);
+            return response;
         }
     }
 

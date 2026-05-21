@@ -3,6 +3,7 @@ package com.qiji.cps.module.cps.mcp.tool;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderPageReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
+import com.qiji.cps.module.cps.dal.mysql.mcp.CpsMcpAccessLogMapper;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderMapper;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -38,6 +39,9 @@ public class CpsQueryOrdersToolFunction
 
     @Resource
     private CpsOrderMapper orderMapper;
+
+    @Resource
+    private CpsMcpAccessLogMapper accessLogMapper;
 
     @Data
     @JsonClassDescription("查询当前登录会员的CPS联盟返利订单列表，可按平台、状态筛选，分页返回")
@@ -119,18 +123,22 @@ public class CpsQueryOrdersToolFunction
 
     @Override
     public Response apply(Request request, ToolContext toolContext) {
+        long startedAt = System.currentTimeMillis();
         // 从 ToolContext 获取会员 ID
         Long memberId = extractMemberId(toolContext);
         if (memberId == null) {
-            return new Response(0L, Collections.emptyList(), "未登录或无法获取用户信息，请先登录");
+            Response response = new Response(0L, Collections.emptyList(), "未登录或无法获取用户信息，请先登录");
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_query_orders", request, response,
+                    new IllegalStateException("missing tool context user"), startedAt);
+            return response;
         }
         try {
             CpsOrderPageReqVO reqVO = new CpsOrderPageReqVO();
             reqVO.setMemberId(memberId);
             reqVO.setPlatformCode(request.getPlatformCode());
             reqVO.setOrderStatus(request.getOrderStatus());
-            reqVO.setPageNo(request.getPageNo() != null ? request.getPageNo() : 1);
-            reqVO.setPageSize(request.getPageSize() != null ? Math.min(request.getPageSize(), 20) : 10);
+            reqVO.setPageNo(request.getPageNo() != null ? Math.max(1, request.getPageNo()) : 1);
+            reqVO.setPageSize(request.getPageSize() != null ? Math.max(1, Math.min(request.getPageSize(), 20)) : 10);
 
             PageResult<CpsOrderDO> pageResult = orderMapper.selectPageByMemberId(reqVO, memberId);
 
@@ -150,9 +158,13 @@ public class CpsQueryOrdersToolFunction
                 return vo;
             }).collect(Collectors.toList());
 
-            return new Response(pageResult.getTotal(), voList, null);
+            Response response = new Response(pageResult.getTotal(), voList, null);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_query_orders", request, response, null, startedAt);
+            return response;
         } catch (Exception e) {
-            return new Response(0L, Collections.emptyList(), "查询订单失败：" + e.getMessage());
+            Response response = new Response(0L, Collections.emptyList(), "查询订单失败，请稍后重试");
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_query_orders", request, response, e, startedAt);
+            return response;
         }
     }
 

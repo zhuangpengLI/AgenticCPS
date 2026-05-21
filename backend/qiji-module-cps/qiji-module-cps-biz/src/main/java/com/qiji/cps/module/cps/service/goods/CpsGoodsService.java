@@ -45,4 +45,14 @@ public interface CpsGoodsService {
     CpsPromotionLinkResult generatePromotionLink(String platformCode, String goodsId,
                                                   String goodsSign, Long memberId, String adzoneId);
 
+    /**
+     * 解析最终使用的推广位 ID.
+     *
+     * @param platformCode 平台编码
+     * @param memberId     会员ID
+     * @param adzoneId     请求指定推广位ID
+     * @return 实际推广位ID
+     */
+    String resolvePromotionAdzoneId(String platformCode, Long memberId, String adzoneId);
+
 }

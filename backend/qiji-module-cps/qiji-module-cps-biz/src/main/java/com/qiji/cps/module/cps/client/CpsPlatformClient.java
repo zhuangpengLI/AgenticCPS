@@ -37,6 +37,18 @@ public interface CpsPlatformClient {
     CpsPromotionLinkResult generatePromotionLink(CpsPromotionLinkRequest request);
 
     /**
+     * 解析商品链接或平台口令.
+     *
+     * <p>默认不支持平台口令解析；具体平台或供应商适配器可逐步覆盖。</p>
+     *
+     * @param request 解析请求
+     * @return 解析结果
+     */
+    default CpsContentParseResult parseContent(CpsContentParseRequest request) {
+        return CpsContentParseResult.unsupported("COMMAND_UNSUPPORTED", "暂不支持该渠道口令自动解析，请粘贴商品链接或商品ID");
+    }
+
+    /**
      * 查询平台订单（用于定时同步）
      *
      * @param request 订单查询请求

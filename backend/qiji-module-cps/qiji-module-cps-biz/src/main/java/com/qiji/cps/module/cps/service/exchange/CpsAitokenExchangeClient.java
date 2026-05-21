@@ -4,6 +4,7 @@ import com.qiji.cps.module.cps.config.CpsAitokenExchangeProperties;
 import com.qiji.cps.module.cps.service.exchange.dto.CpsAitokenExchangeOrderRespDTO;
 import com.qiji.cps.module.cps.service.exchange.dto.CpsAitokenExchangePreviewReqDTO;
 import com.qiji.cps.module.cps.service.exchange.dto.CpsAitokenExchangePreviewRespDTO;
+import com.qiji.cps.module.cps.service.exchange.dto.CpsAitokenExchangeStatusUpdateReqDTO;
 import com.qiji.cps.module.cps.service.exchange.dto.CpsAitokenExchangeSubmitReqDTO;
 import jakarta.annotation.Resource;
 import org.springframework.http.HttpEntity;
@@ -22,6 +23,8 @@ public class CpsAitokenExchangeClient {
     private static final String PREVIEW_PATH = "/api/v1/openapi/token/exchange/preview";
     private static final String SUBMIT_PATH = "/api/v1/openapi/token/exchange/submit";
     private static final String ORDER_PATH = "/api/v1/openapi/token/exchange/orders/";
+    private static final String CONFIRM_SOURCE_DEDUCT_SUFFIX = "/confirm-source-deduct";
+    private static final String ROLLBACK_SUFFIX = "/rollback";
 
     @Resource
     private RestTemplate restTemplate;
@@ -49,6 +52,24 @@ public class CpsAitokenExchangeClient {
         HttpHeaders headers = buildHeaders("GET", path, null, null, tenantId);
         return restTemplate.exchange(properties.getBaseUrl() + path, HttpMethod.GET,
                 new HttpEntity<>(headers), CpsAitokenExchangeOrderRespDTO.class).getBody();
+    }
+
+    public CpsAitokenExchangeOrderRespDTO confirmSourceDeduct(String exchangeOrderId,
+                                                              CpsAitokenExchangeStatusUpdateReqDTO request,
+                                                              Long tenantId) {
+        String path = ORDER_PATH + exchangeOrderId + CONFIRM_SOURCE_DEDUCT_SUFFIX;
+        HttpHeaders headers = buildHeaders("POST", path, request.getIdempotencyKey(), request, tenantId);
+        return restTemplate.postForObject(properties.getBaseUrl() + path,
+                new HttpEntity<>(request, headers), CpsAitokenExchangeOrderRespDTO.class);
+    }
+
+    public CpsAitokenExchangeOrderRespDTO rollback(String exchangeOrderId,
+                                                   CpsAitokenExchangeStatusUpdateReqDTO request,
+                                                   Long tenantId) {
+        String path = ORDER_PATH + exchangeOrderId + ROLLBACK_SUFFIX;
+        HttpHeaders headers = buildHeaders("POST", path, request.getIdempotencyKey(), request, tenantId);
+        return restTemplate.postForObject(properties.getBaseUrl() + path,
+                new HttpEntity<>(request, headers), CpsAitokenExchangeOrderRespDTO.class);
     }
 
     private HttpHeaders buildHeaders(String method, String path, String idempotencyKey, Object body, Long tenantId) {

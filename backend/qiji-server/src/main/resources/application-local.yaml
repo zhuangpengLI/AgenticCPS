@@ -56,7 +56,7 @@ spring:
           #          url: jdbc:kingbase8://127.0.0.1:54321/test  # 人大金仓 KingbaseES 连接的示例
           #          url: jdbc:postgresql://127.0.0.1:5432/postgres # OpenGauss 连接的示例
           username: root
-          password: fastbee
+          password: admin@123
           #          username: sa # SQL Server 连接的示例
           #          password: Qiji@2024 # SQL Server 连接的示例
           #          username: SYSDBA # DM 连接的示例
@@ -67,7 +67,7 @@ spring:
           lazy: true # 开启懒加载，保证启动速度
           url: jdbc:mysql://127.0.0.1:3306/cps?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&nullCatalogMeansCurrent=true
           username: root
-          password: fastbee
+          password: admin@123
 #        tdengine: # IoT 数据库（需要 IoT 物联网再开启噢！）
 #          lazy: true # 开启懒加载，保证启动速度
 #          url: jdbc:TAOS-WS://127.0.0.1:6041/ruoyi_vue_pro?varcharAsString=true

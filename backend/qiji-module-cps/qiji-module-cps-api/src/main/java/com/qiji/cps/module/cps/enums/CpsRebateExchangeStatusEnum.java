@@ -12,9 +12,11 @@ public enum CpsRebateExchangeStatusEnum implements ArrayValuable<String> {
 
     INIT("INIT", "已创建"),
     FROZEN("FROZEN", "返利已冻结"),
+    CREDITED("CREDITED", "Token已发放"),
     PROCESSING("PROCESSING", "处理中"),
     SUCCESS("SUCCESS", "兑换成功"),
     FAILED("FAILED", "兑换失败"),
+    ROLLBACK_REQUIRED("ROLLBACK_REQUIRED", "待回滚补偿"),
     CANCELED("CANCELED", "已取消"),
     ;
 

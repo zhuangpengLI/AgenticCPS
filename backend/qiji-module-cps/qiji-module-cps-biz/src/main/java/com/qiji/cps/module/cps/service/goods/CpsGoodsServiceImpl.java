@@ -77,10 +77,28 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
     public CpsPromotionLinkResult generatePromotionLink(String platformCode, String goodsId,
                                                          String goodsSign, Long memberId, String adzoneId) {
         // 校验平台
-        CpsPlatformDO platform = validatePlatform(platformCode);
+        validatePlatform(platformCode);
         CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
 
         // 确定使用的推广位
+        String finalAdzoneId = resolvePromotionAdzoneId(platformCode, memberId, adzoneId);
+
+        // 构建转链请求
+        CpsPromotionLinkRequest linkRequest = new CpsPromotionLinkRequest();
+        linkRequest.setGoodsId(goodsId);
+        linkRequest.setGoodsSign(goodsSign);
+        linkRequest.setAdzoneId(finalAdzoneId);
+        // 将 memberId 作为外部用户标识，用于订单归因
+        if (memberId != null) {
+            linkRequest.setExternalId(String.valueOf(memberId));
+        }
+
+        return client.generatePromotionLink(linkRequest);
+    }
+
+    @Override
+    public String resolvePromotionAdzoneId(String platformCode, Long memberId, String adzoneId) {
+        CpsPlatformDO platform = validatePlatform(platformCode);
         String finalAdzoneId = adzoneId;
         if (finalAdzoneId == null) {
             // 先查会员专属推广位，再查平台默认推广位
@@ -94,18 +112,7 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
                 finalAdzoneId = platform.getDefaultAdzoneId();
             }
         }
-
-        // 构建转链请求
-        CpsPromotionLinkRequest linkRequest = new CpsPromotionLinkRequest();
-        linkRequest.setGoodsId(goodsId);
-        linkRequest.setGoodsSign(goodsSign);
-        linkRequest.setAdzoneId(finalAdzoneId);
-        // 将 memberId 作为外部用户标识，用于订单归因
-        if (memberId != null) {
-            linkRequest.setExternalId(String.valueOf(memberId));
-        }
-
-        return client.generatePromotionLink(linkRequest);
+        return finalAdzoneId;
     }
 
     // ==================== 私有方法 ====================
