@@ -39,8 +39,8 @@
 - Create: `backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/goods/CpsGoodsToolboxService.java`
 - Create: `backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/goods/CpsGoodsToolboxServiceImpl.java`
 - Test: `backend/qiji-module-cps/qiji-module-cps-biz/src/test/java/com/qiji/cps/module/cps/service/goods/CpsGoodsToolboxServiceImplTest.java`
-- Modify: `backend/sql/mysql/ruoyi-vue-pro.sql`  
-  Add or adjust menu records for “返利工具箱” and permissions. Use UTF-8 safe editing.
+- Modify: `backend/sql/mysql/cps-all-in-one.sql`  
+  Add or adjust CPS menu records for “返利工具箱” and permissions. Keep CPS SQL out of `ruoyi-vue-pro.sql` and use UTF-8 safe editing.
 - Optional docs: update `docs/project-map.md` only if routes or module ownership change materially.
 
 ## Task 1: Lock Current Behavior
@@ -314,7 +314,7 @@ Expected: PASS.
 ## Task 9: Menu and Permissions
 
 **Files:**
-- Modify: `backend/sql/mysql/ruoyi-vue-pro.sql`
+- Modify: `backend/sql/mysql/cps-all-in-one.sql`
 - Optional modify: generated or seed SQL for other databases only if this repo currently keeps CPS menu rows there.
 
 - [ ] **Step 1: Find existing CPS menu rows**
@@ -331,6 +331,7 @@ Add or update:
 - Child/button permissions: `cps:toolbox:link`
 
 Use UTF-8 safe editing and verify the SQL still decodes as UTF-8.
+Do not add CPS table, seed, menu, or permission rows to `backend/sql/mysql/ruoyi-vue-pro.sql`.
 
 - [ ] **Step 3: Keep old permissions compatible**
 

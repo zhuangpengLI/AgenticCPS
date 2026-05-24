@@ -1,0 +1,47 @@
+package com.qiji.cps.module.cps.service.selection;
+
+/**
+ * CPS 选品库固定状态与来源常量。
+ */
+public final class CpsSelectionConstants {
+
+    private CpsSelectionConstants() {
+    }
+
+    public static final class ThemeStatus {
+        public static final String DRAFT = "DRAFT";
+        public static final String PUBLISHED = "PUBLISHED";
+        public static final String OFFLINE = "OFFLINE";
+
+        private ThemeStatus() {
+        }
+    }
+
+    public static final class ItemStatus {
+        public static final String ENABLED = "ENABLED";
+        public static final String DISABLED = "DISABLED";
+
+        private ItemStatus() {
+        }
+    }
+
+    public static final class SourceType {
+        public static final String MANUAL = "MANUAL";
+        public static final String AI_RECOMMEND = "AI_RECOMMEND";
+        public static final String VENDOR_PULL = "VENDOR_PULL";
+        public static final String PROMOTION_TEMPLATE = "PROMOTION_TEMPLATE";
+
+        private SourceType() {
+        }
+    }
+
+    public static final class ImportTaskStatus {
+        public static final String PROCESSING = "PROCESSING";
+        public static final String SUCCESS = "SUCCESS";
+        public static final String PARTIAL_SUCCESS = "PARTIAL_SUCCESS";
+        public static final String FAILED = "FAILED";
+
+        private ImportTaskStatus() {
+        }
+    }
+}

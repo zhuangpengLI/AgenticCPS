@@ -238,7 +238,8 @@ CPS联盟返利系统
 │   ├── 2.2 链接/口令商品解析
 │   ├── 2.3 多平台比价
 │   ├── 2.4 商品详情查询
-│   └── 2.5 商品推荐频道
+│   ├── 2.5 商品推荐频道
+│   └── 2.6 选品库主题商品快照
 │
 ├── 3. 推广链接模块
 │   ├── 3.1 推广链接/口令生成
@@ -442,6 +443,75 @@ CPS联盟返利系统
 | 大额券 | 优惠券金额较大的商品 | 按优惠券筛选 |
 | 9.9包邮 | 低价商品 | 拼多多频道API等 |
 | 品牌特卖 | 品牌折扣商品 | 品牌筛选 |
+
+#### 4.3.4 管理后台活动中心
+
+活动中心面向运营人员，用运营配置作为稳定数据源，把外卖、本地生活、票券、会员权益等活动以卡片方式集中展示，并与返利商品广场联动。首期仅建设管理后台，不新增用户端页面。
+
+**查询能力**：
+
+| 能力 | 说明 |
+|------|------|
+| 平台/场景导航 | 顶部 tabs 优先来自活动数据和启用平台配置，兜底热门、美团、饿了么、抖音、本地生活、飞猪、拼多多、淘宝、京东 |
+| 计费类型筛选 | 支持 `CPS`、`CPA`、`CPS+CPA` 与全部 |
+| 排序 | 热门按推广数/排序，最新按上线时间/创建时间 |
+| 搜索 | 按活动名、短描述、奖励文案、搜索关键词、标签文案匹配 |
+| 分页 | 返回 `cards`、`total`、`pageNo`、`pageSize` |
+
+**卡片字段**：活动名、平台编码/名称/图标、主图、活动类型、CPS/CPA 类型、推广数、奖励文案、活动时间、跳转类型、跳转参数、来源类型、外部活动 ID、标签文案。
+
+**跳转规则**：`search` 跳到管理后台返利商品广场并带入平台、关键词和活动标签；`url` 新窗口打开外部活动页；`none` 仅展示。
+
+#### 4.3.5 管理后台返利工具箱
+
+返利工具箱面向运营、客服和社群分发人员，把万能转链、口令解析、返利商品广场、推广文案编辑和批量复制集中到一个后台工作台。首版仅建设管理后台，不新增用户端页面，不改动返利结算、订单归因、冻结扣减、提现或 Token 兑换链路。
+
+**工具能力**：
+
+| 能力 | 说明 |
+|------|------|
+| 万能转链 | 支持商品链接、商品 ID、口令等内容生成推广链接，复用既有返利查询和转链服务 |
+| 批量转链 | 忽略空行，最多 20 条非空内容，逐条返回成功/失败并保留原始输入序号 |
+| 口令解析 | 解析平台、商品 ID、goodsSign、标题等商品信息，不生成推广链接或转链记录 |
+| 商品广场 | 在工具箱内复用商品广场筛选、查看和转链能力，支持从活动中心/商品广场跳转进入 |
+| 推广文案编辑 | 汇总短链、长链、口令、移动端链接和推广文案，支持单条复制和批量复制 |
+
+**权限要求**：
+
+| 权限 | 用途 |
+|------|------|
+| `cps:toolbox:query` | 访问工具箱、口令解析和查询类操作 |
+| `cps:toolbox:link` | 单条或批量生成推广链接 |
+
+**边界规则**：
+
+- 批量转链超过 20 条非空内容时返回 `每次最多支持 20 条内容批量转链`。
+- 单条失败不阻断整批，结果中必须保留输入序号、原始内容、状态和失败原因。
+- 解析能力优先使用通用解析器，再按平台能力补充识别；解析接口不得新增转链记录。
+- CPS 菜单、权限和种子 SQL 统一维护在 `backend/sql/mysql/cps-all-in-one.sql`，不得写入 `ruoyi-vue-pro.sql`。
+
+#### 4.3.6 管理后台选品库
+
+选品库面向运营人员，用主题规则和商品快照沉淀可复用的商品货架。第一版仅建设管理后台和 MCP 查询能力，不新增用户端页面。
+
+**主题能力**：
+
+| 能力 | 说明 |
+|------|------|
+| 主题配置 | 维护主题编码、主题名称、主题类型、大促标识、平台范围、供应商、封面、描述、标签、规则 JSON、AI Prompt、排序和状态 |
+| 大促模板 | 内置 `618抢先购`、`618预售`、`双11爆品`、`双12清仓`、`年货节`、`开学季`、`中秋礼赠`，模板只创建草稿 |
+| 第三方拉取 | 将主题规则转换为商品广场搜索请求，复用现有平台/供应商搜索能力 |
+| AI 推荐 | 规则评分决定排序，LLM 只补充主题文案和商品推荐理由；模型不可用时自动降级 |
+| 发布控制 | 主题状态为 `DRAFT`、`PUBLISHED`、`OFFLINE`，发布前必须有启用商品 |
+
+**商品快照能力**：
+
+| 能力 | 说明 |
+|------|------|
+| 商品入库 | 支持手工导入、AI 推荐导入、第三方拉取导入和大促模板来源 |
+| 去重更新 | 按 `themeId + platformCode + vendorCode + goodsId + goodsSign` 去重更新 |
+| 运营调整 | 支持排序、置顶、启用/停用、删除 |
+| 快照边界 | 商品 ID、价格、券、佣金、销量、店铺、类目等来自第三方快照，只用于运营选品和 AI 推荐，不作为资金结算依据 |
 
 ---
 
@@ -1186,6 +1256,39 @@ MCP Tools 是AI Agent可直接调用的可执行函数。每个Tool定义包含�
 }
 ```
 
+##### Tool 8: cps_list_selection_themes（选品库主题查询）
+
+查询已发布的选品库主题，供 AI Agent 在对话中选择“618抢先购”“开学季”“中秋礼赠”等运营主题。
+
+```json
+{
+  "name": "cps_list_selection_themes",
+  "title": "CPS选品库主题查询",
+  "description": "查询已发布选品库主题，支持按主题类型、大促标识、平台和关键词筛选。"
+}
+```
+
+##### Tool 9: cps_recommend_from_selection_theme（主题选品推荐）
+
+按已发布主题返回启用商品、推荐理由、券后价、佣金和来源信息；默认只读。只有显式传入 `generate_link=true` 且存在可信 ToolContext 会员身份时，才生成推广链接。
+
+```json
+{
+  "name": "cps_recommend_from_selection_theme",
+  "title": "CPS主题选品推荐",
+  "description": "按选品库主题返回商品推荐，必要时为可信会员上下文生成推广链接。",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "theme_id": { "type": "integer", "description": "选品主题ID" },
+      "theme_code": { "type": "string", "description": "选品主题编码" },
+      "limit": { "type": "integer", "description": "返回数量，默认10" },
+      "generate_link": { "type": "boolean", "description": "是否生成推广链接，默认false" }
+    }
+  }
+}
+```
+
 ##### MCP Tools 汇总表
 
 | Tool名称 | 对应CPS功能 | 复用的Service层 | 鉴权要求 |
@@ -1197,6 +1300,12 @@ MCP Tools 是AI Agent可直接调用的可执行函数。每个Tool定义包含�
 | cps_query_orders | 订单查询 | CpsOrderService | 必须会员身份 |
 | cps_get_rebate_summary | 返利汇总 | CpsRebateService（新增） | 必须会员身份 |
 | cps_get_recommendations | 商品推荐 | CpsGoodsSearchService | 可选会员身份 |
+| cps_recommend_by_scene | AIoT 场景推荐 | CpsSceneRecommendService / CpsGoodsService | 可选会员身份 |
+| cps_list_selection_themes | 选品库主题查询 | CpsSelectionThemeService | 无会员身份要求，仅返回已发布主题 |
+| cps_recommend_from_selection_theme | 主题选品推荐 | CpsSelectionThemeService / CpsGoodsService | 默认只读；生成推广链接时必须可信会员身份 |
+| cps_get_rebate_balance | 可兑换返利查询 | CpsRebateTokenExchangeService | 必须会员身份 |
+| cps_create_token_exchange | 返利兑换 Token | CpsRebateTokenExchangeService | 必须会员身份 |
+| cps_query_exchange_status | 兑换状态查询 | CpsRebateTokenExchangeService | 按兑换单权限校验 |
 
 #### 4.10.4 MCP Resources 定义
 
@@ -1537,6 +1646,51 @@ CREATE TABLE cps_platform_adzone (
 ) COMMENT = 'CPS推广位表';
 ```
 
+#### cps_rebate_activity（返利活动中心配置表）
+
+```sql
+CREATE TABLE cps_rebate_activity (
+    id                   bigint       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    activity_name        varchar(128) NOT NULL COMMENT '活动名称',
+    activity_type        varchar(32)  NOT NULL COMMENT '专题类型',
+    platform_code        varchar(32)  NOT NULL COMMENT '平台/场景编码',
+    main_pic             varchar(512) DEFAULT NULL COMMENT '活动主图',
+    short_desc           varchar(256) DEFAULT NULL COMMENT '短描述',
+    rebate_desc          varchar(256) DEFAULT NULL COMMENT '奖励文案',
+    billing_type         varchar(16)  NOT NULL DEFAULT 'CPS' COMMENT '计费类型：CPS/CPA/CPS+CPA',
+    promotion_count      int          NOT NULL DEFAULT 0 COMMENT '推广数',
+    source_type          varchar(32)  NOT NULL DEFAULT 'configured' COMMENT '来源：configured/vendor',
+    external_activity_id varchar(128) DEFAULT NULL COMMENT '外部活动ID',
+    tag_text             varchar(32)  DEFAULT NULL COMMENT '标签文案',
+    jump_type            varchar(16)  NOT NULL DEFAULT 'search' COMMENT '跳转类型：search/url/none',
+    jump_url             varchar(512) DEFAULT NULL COMMENT '跳转地址',
+    search_keyword       varchar(128) DEFAULT NULL COMMENT '搜索关键词',
+    sort                 int          NOT NULL DEFAULT 0 COMMENT '排序',
+    status               tinyint      NOT NULL DEFAULT 1 COMMENT '状态（1启用 0禁用）',
+    start_time           datetime     DEFAULT NULL COMMENT '上线时间',
+    end_time             datetime     DEFAULT NULL COMMENT '下线时间',
+    remark               varchar(256) DEFAULT NULL COMMENT '备注',
+    creator              varchar(64)  DEFAULT NULL COMMENT '创建者',
+    create_time          datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updater              varchar(64)  DEFAULT NULL COMMENT '更新者',
+    update_time          datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted              bit(1)       NOT NULL DEFAULT b'0' COMMENT '是否删除',
+    tenant_id            bigint       NOT NULL DEFAULT 0 COMMENT '租户ID',
+    PRIMARY KEY (id),
+    KEY idx_cps_rebate_activity_center (tenant_id, deleted, status, platform_code, billing_type, start_time, end_time, sort),
+    KEY idx_cps_rebate_activity_external (source_type, external_activity_id)
+) COMMENT = 'CPS返利活动中心配置表';
+```
+
+#### cps_selection_theme / cps_selection_theme_item（选品库主题与商品快照表）
+
+选品库新增两张核心表：
+
+- `cps_selection_theme`：主题库主表，保存主题编码、主题名称、主题类型、大促标识、平台范围、供应商、封面、描述、标签、规则 JSON、AI Prompt、状态、上线/下线时间、刷新状态、最后刷新时间、排序、租户字段；主题编码在租户内唯一。
+- `cps_selection_theme_item`：主题商品快照表，保存主题 ID、平台编码、供应商、商品 ID、goodsSign、标题、主图、原价、券后价、优惠券、佣金率、预估佣金、销量、店铺、类目、活动标签、推荐分、推荐理由、置顶状态、上下架状态、快照来源、原始链接、快照时间、租户字段。
+
+核心索引要求覆盖租户、删除标记、状态、主题编码、平台、活动时间和排序；主题商品按 `themeId + platformCode + vendorCode + goodsId + goodsSign` 去重更新。选品库快照字段只作为运营选品和 AI 推荐依据，不参与返利账户、订单归因和 Token 兑换资金链路。
+
 #### cps_order（CPS订单表）
 
 ```sql
@@ -1806,6 +1960,25 @@ CREATE TABLE cps_mcp_request_log (
 | 推广位 | `/admin-api/cps/adzone/update` | PUT | 更新推广位 |
 | 推广位 | `/admin-api/cps/adzone/delete` | DELETE | 删除推广位 |
 | 推广位 | `/admin-api/cps/adzone/page` | GET | 分页查询推广位 |
+| 活动中心 | `/admin-api/cps/rebate-activity/center` | GET | 聚合查询活动中心 tabs、计费类型和活动卡片 |
+| 活动中心 | `/admin-api/cps/rebate-activity/create` | POST | 创建活动卡片 |
+| 活动中心 | `/admin-api/cps/rebate-activity/update` | PUT | 更新活动卡片 |
+| 活动中心 | `/admin-api/cps/rebate-activity/delete` | DELETE | 删除活动卡片 |
+| 活动中心 | `/admin-api/cps/rebate-activity/page` | GET | 分页查询活动配置 |
+| 返利工具箱 | `/admin-api/cps/goods/parse` | POST | 解析商品链接、商品 ID 或口令，不生成推广链接 |
+| 返利工具箱 | `/admin-api/cps/goods/batch-transfer` | POST | 最多 20 条非空内容批量转链，逐条返回结果 |
+| 选品库 | `/admin-api/cps/selection-theme/page` | GET | 分页查询选品主题 |
+| 选品库 | `/admin-api/cps/selection-theme/get` | GET | 获取选品主题详情 |
+| 选品库 | `/admin-api/cps/selection-theme/create` | POST | 创建选品主题草稿 |
+| 选品库 | `/admin-api/cps/selection-theme/update` | PUT | 更新选品主题 |
+| 选品库 | `/admin-api/cps/selection-theme/publish` | PUT | 发布选品主题 |
+| 选品库 | `/admin-api/cps/selection-theme/offline` | PUT | 下线选品主题 |
+| 选品库 | `/admin-api/cps/selection-theme/ai-recommend` | POST | AI 推荐并保存主题商品快照 |
+| 选品库 | `/admin-api/cps/selection-theme/vendor-pull` | POST | 按主题规则第三方拉取商品 |
+| 选品库 | `/admin-api/cps/selection-theme/items/import` | POST | 人工导入主题商品快照 |
+| 选品库 | `/admin-api/cps/selection-theme/items/sort` | PUT | 调整主题商品排序和置顶 |
+| 选品库 | `/admin-api/cps/selection-theme/items/status` | PUT | 启用或停用主题商品 |
+| 选品库 | `/admin-api/cps/selection-theme/items/delete` | DELETE | 删除主题商品 |
 | 返利配置 | `/admin-api/cps/rebate-config/create` | POST | 创建返利配置 |
 | 返利配置 | `/admin-api/cps/rebate-config/update` | PUT | 更新返利配置 |
 | 返利配置 | `/admin-api/cps/rebate-config/delete` | DELETE | 删除返利配置 |
@@ -2030,6 +2203,8 @@ MCP接口基于JSON-RPC 2.0协议，通过Streamable HTTP传输层暴露。以�
 - 拼多多联盟适配器开发（搜索、转链、订单同步）
 - 统一商品搜索与多平台比价
 - 推广链接生成功能
+- 管理后台返利工具箱、口令解析、批量转链和推广文案编辑
+- 管理后台选品库、主题商品快照、AI 推荐和第三方拉取
 
 ### 阶段三：返利结算体系
 

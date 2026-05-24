@@ -1,8 +1,8 @@
 # AgenticCPS 项目地图（草稿）
 
-> 生成日期：2026-05-18  
-> 生成方式：只读扫描仓库结构、配置、POM、前端 `package.json`、CPS 核心代码与既有技术债文档后整理。  
-> 约束：本次未修改业务代码；仅新增此文档草稿。仓库当前已有多处未提交改动，见“风险与注意事项”。
+> 生成日期：2026-05-24
+> 生成方式：只读扫描仓库结构、配置、POM、前端 `package.json`、CPS 核心代码与既有技术债文档后整理；2026-05-24 补充活动中心、返利工具箱与选品库落地信息。
+> 约束：仓库当前已有多处未提交改动，见“风险与注意事项”。后续编辑需继续区分既有改动和本次改动。
 
 ## 1. 项目入口在哪里
 
@@ -78,14 +78,14 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 
 | 包 | 当前职责 |
 |---|---|
-| `controller/admin` | 后台管理：平台、推广位、订单、返利配置/记录、冻结、风控、统计、供应商、提现、转账等。 |
+| `controller/admin` | 后台管理：活动中心、返利工具箱、商品广场、平台、推广位、订单、返利配置/记录、冻结、风控、统计、供应商、提现、转账、选品库等。 |
 | `controller/app` | 用户端：商品搜索/转链、我的返利账户/记录、返利兑换 Token。 |
 | `controller/openapi` | 服务间 OpenAPI：返利余额、冻结、解冻、确认扣减。 |
 | `client` | CPS 平台与供应商适配器，包含大淘客、好单库、官方 API、淘宝/京东/拼多多/抖音/美团/唯品会适配器。 |
-| `service` | 核心业务：goods、order、rebate、freeze、exchange、risk、statistics、withdraw、transfer、vendor、adzone。 |
-| `dal/dataobject` + `dal/mysql` | CPS 表 DO 与 MyBatis Mapper。 |
+| `service` | 核心业务：goods、toolbox、activity、order、rebate、freeze、exchange、risk、statistics、withdraw、transfer、vendor、adzone、selection。 |
+| `dal/dataobject` + `dal/mysql` | CPS 表 DO 与 MyBatis Mapper，包括 `cps_rebate_activity` 活动卡片配置、`cps_selection_theme` 选品主题、`cps_selection_theme_item` 主题商品快照。 |
 | `job` | 定时任务：订单同步、返利结算、冻结解冻、统计聚合。 |
-| `mcp/tool` | 5 个 Agent 可调用工具：搜索、比价、转链、查订单、查返利汇总。 |
+| `mcp/tool` | Agent 可调用工具：搜索、比价、转链、查订单、查返利汇总、AIoT 场景推荐、选品库主题查询与主题商品推荐。 |
 | `config` | CPS 缓存、aitoken 兑换配置。 |
 
 ## 3. 数据流是什么
@@ -110,6 +110,70 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 - `CpsGenerateLinkToolFunction`：`@Component("cps_generate_link")`，通过 ToolContext 或请求参数取得 memberId 后调用转链。
 - `CpsPlatformClient`：定义 `searchGoods`、`generatePromotionLink`、`queryOrders`、`testConnection`。
 - `CpsPlatformClientFactory`：启动时注册平台客户端与 `vendorCode:platformCode` 供应商客户端，并从平台配置选择 active vendor。
+
+### 3.1.1 管理后台活动中心
+
+```text
+运营人员
+  -> frontend/admin-vue3/src/views/cps/activity/square/index.vue
+  -> GET /admin-api/cps/rebate-activity/center
+  -> CpsRebateActivityController
+  -> CpsRebateActivityService.getActivityCenter()
+  -> cps_rebate_activity + 启用平台配置
+  -> 返回 tabs / billingTypeOptions / cards / pagination
+```
+
+关键证据：
+
+- `CpsRebateActivityController`：`GET /cps/rebate-activity/center` 聚合活动中心卡片；CRUD 权限沿用 `cps:rebate-activity:query/create/update/delete`。
+- `CpsRebateActivityServiceImpl`：只返回启用且在有效时间窗口内的活动，支持平台、`CPS` / `CPA` / `CPS+CPA`、关键词、热门/最新排序和分页。
+- `cps_rebate_activity`：活动运营配置表，新增 `billing_type`、`promotion_count`、`source_type`、`external_activity_id`、`tag_text`，并补充活动中心查询索引。
+- 前端活动中心卡片 `search` 跳转到商品广场并带入 `platformCode`、`keyword`、`activityTag`；`url` 新窗口打开；`none` 仅展示。
+- 平台 tabs 优先来自活动数据与启用平台配置，兜底包含热门、美团、饿了么、抖音、本地生活、飞猪、拼多多、淘宝、京东。
+
+### 3.1.2 管理后台返利工具箱
+
+管理后台返利工具箱是面向运营的统一工作台，用于把万能转链、口令解析、返利商品广场、推广文案编辑和批量复制收敛到一个入口。
+
+```text
+运营人员
+  -> frontend/admin-vue3/src/views/cps/toolbox/index.vue
+  -> POST /admin-api/cps/goods/parse 或 /batch-transfer
+  -> CpsGoodsRebateQueryController
+  -> CpsGoodsToolboxService
+  -> CpsContentParser / CpsGoodsRebateQueryService / 平台解析能力
+  -> 返回解析结果或逐条转链结果
+```
+
+关键证据：
+
+- `CpsGoodsRebateQueryController`：新增 `POST /cps/goods/parse` 和 `POST /cps/goods/batch-transfer`，权限分别为 `cps:toolbox:query`、`cps:toolbox:link`。
+- `CpsGoodsToolboxServiceImpl`：解析仅识别商品信息，不生成推广链接或转链记录；批量转链逐条调用既有 `CpsGoodsRebateQueryService.queryRebate()`。
+- 批量转链忽略空行，最多支持 20 条非空内容，保留原始输入序号，单条失败不阻断整批。
+- 前端工具箱包含万能转链、口令解析、商品广场与推广文案编辑区，商品广场入口可通过 `/cps/toolbox?tool=goods-square` 直达。
+- 菜单与权限 SQL 放在 `backend/sql/mysql/cps-all-in-one.sql`；不要把 CPS 菜单、权限或种子数据写回 `ruoyi-vue-pro.sql`。
+
+### 3.1.3 选品库主题与商品快照
+
+```text
+运营后台
+  -> CPS联盟 / 选品库
+  -> CpsSelectionThemeController
+  -> CpsSelectionThemeService
+  -> 复用 CpsGoodsSquareService 第三方拉取
+  -> 规则评分 + 文案推荐
+  -> cps_selection_theme / cps_selection_theme_item
+  -> MCP 工具只读查询已发布主题与启用商品
+```
+
+第一版只提供管理后台与 MCP 查询，不做用户端/App 展示页；商品价格、券、佣金、销量只作为第三方快照与运营选品依据，不参与返利账户、订单归因、Token 兑换等资金链路。
+
+关键证据：
+
+- `CpsSelectionThemeController`：提供主题 CRUD、发布/下线、AI 推荐、第三方拉取、商品导入、排序、状态切换接口。
+- `CpsSelectionThemeServiceImpl`：保存主题规则 JSON 与商品快照，发布前校验启用商品，导入时按 `themeId + platformCode + vendorCode + goodsId + goodsSign` 去重更新。
+- `CpsSelectionAiRecommendService`：规则评分决定排序，LLM/文案能力不可用时仍可返回稳定推荐；文案不得覆盖商品 ID、价格、佣金等第三方事实字段。
+- `cps_selection_theme` / `cps_selection_theme_item`：选品主题主表与主题商品快照表，均带租户、软删、状态与排序索引。
 
 ### 3.2 订单同步与返利结算
 
@@ -179,8 +243,11 @@ AI Agent
 - `cps_search_goods`
 - `cps_compare_prices`
 - `cps_generate_link`
-- `cps_get_order_status`（代码实际类名为 `CpsQueryOrdersToolFunction`）
-- `cps_rebate_summary`（代码实际类名为 `CpsGetRebateSummaryToolFunction`）
+- `cps_query_orders`
+- `cps_get_rebate_summary`
+- `cps_recommend_by_scene`
+- `cps_list_selection_themes`
+- `cps_recommend_from_selection_theme`
 
 注意：配置中的工具显示名与实际 Bean 名需要进一步核对，避免 Agent 工具列表和代码注册不一致。
 
@@ -199,6 +266,15 @@ mvn test -Dtest=CpsRebateTokenExchangeServiceImplTest
 
 # 指定 CPS biz 模块测试（推荐做 CPS 改动时优先跑）
 mvn test -pl qiji-module-cps/qiji-module-cps-biz -am -Dtest=CpsRebateTokenExchangeServiceImplTest "-Dsurefire.failIfNoSpecifiedTests=false"
+
+# 活动中心聚合查询测试
+mvn test -pl qiji-module-cps/qiji-module-cps-biz -am -Dtest=CpsRebateActivityServiceImplTest "-Dsurefire.failIfNoSpecifiedTests=false"
+
+# 选品库主题、AI 推荐、MCP 工具测试
+mvn test -pl qiji-module-cps/qiji-module-cps-biz -am "-Dtest=CpsSelectionThemeServiceImplTest,CpsSelectionAiRecommendServiceTest,CpsSelectionThemeMcpToolFunctionTest" "-Dsurefire.failIfNoSpecifiedTests=false"
+
+# 返利工具箱、返利查询、商品广场测试
+mvn test -pl qiji-module-cps/qiji-module-cps-biz -am "-Dtest=CpsGoodsToolboxServiceImplTest,CpsGoodsRebateQueryServiceImplTest,CpsGoodsSquareServiceImplTest" "-Dsurefire.failIfNoSpecifiedTests=false"
 ```
 
 测试基类规范见：`agent_improvement/memory/testing-specification.md`。
@@ -301,7 +377,7 @@ docker-compose down
 | 官方 vendor 多处可能未完全实现 | 中高 | 既有技术债文档记录 official client 多处 `return null` / 待实现；active vendor 切换时可能表现为静默空结果。 |
 | 订单同步状态机和幂等边界 | 中高 | 订单同步按平台回写订单；既有技术债指出平台状态可能直接覆盖本地状态，需要防乱序/回退/重复入账。 |
 | 统计 SQL 可能不走索引 | 中 | `CpsOrderMapper.xml` 对 `create_time` 使用 `DATE(create_time)`，大表统计可能导致索引失效。 |
-| MCP 审计闭环不足 | 中 | 存在 `CpsMcpAccessLogDO` / Mapper，但 5 个 Tool 中未看到统一访问日志写入。 |
+| MCP 审计闭环不足 | 中 | 存在 `CpsMcpAccessLogDO` / Mapper；新选品库 Tool 已接入审计，但历史基础 Tool 仍需逐步补齐统一访问日志写入与脱敏结构。 |
 | 金额类型规则漂移 | 中 | 项目规范要求金额用 Integer 分，但 CPS 多处资金字段使用 `BigDecimal`；不建议立刻大改，但新增资金字段应先统一单位策略。 |
 | Windows/PowerShell 编码风险 | 中 | AGENTS 明确禁止用 PowerShell 读写中文文件；后续所有文件写入应使用 Python UTF-8 并验证解码。 |
 
@@ -319,6 +395,16 @@ docker-compose down
 
 ### CPS 关键代码
 
+- 活动中心 Controller：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/activity/CpsRebateActivityController.java`
+- 活动中心服务：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/activity/CpsRebateActivityServiceImpl.java`
+- 活动中心前端：`frontend/admin-vue3/src/views/cps/activity/square/index.vue`
+- 返利工具箱 Controller：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/goods/CpsGoodsRebateQueryController.java`
+- 返利工具箱服务：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/goods/CpsGoodsToolboxServiceImpl.java`
+- 返利工具箱前端：`frontend/admin-vue3/src/views/cps/toolbox/index.vue`
+- 选品库 Controller：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/selection/CpsSelectionThemeController.java`
+- 选品库服务：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/selection/CpsSelectionThemeServiceImpl.java`
+- 选品库 AI 推荐：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/selection/CpsSelectionAiRecommendService.java`
+- 选品库前端：`frontend/admin-vue3/src/views/cps/selection/theme/index.vue`
 - 商品搜索/转链 Controller：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/app/goods/AppCpsGoodsController.java`
 - 返利账户/兑换 Controller：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/app/rebate/AppCpsRebateController.java`
 - 返利 OpenAPI Controller：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/openapi/rebate/OpenApiCpsRebateController.java`
@@ -344,10 +430,11 @@ docker-compose down
 - 代码生成规则：`agent_improvement/memory/codegen-rules.md`
 - CPS always 级 AI 规则：`agent_improvement/memory/cps-ai-coding-rules.md`
 - CPS 需求/PRD：`docs/CPS系统需求文档.md`、`docs/CPS系统PRD文档.md`
+- CPS MySQL 模块脚本：`backend/sql/mysql/cps-all-in-one.sql`，集中维护 CPS 表、种子数据、菜单与权限；`ruoyi-vue-pro.sql` 保持系统基础 SQL。
 
 ## 本次未做的事
 
-- 未运行全量测试或构建；本文档的“测试/构建怎么跑”来自仓库脚本与配置扫描。
-- 未验证数据库脚本是否与当前 DO/Mapper 完全一致。
+- 未运行全量测试或前端生产构建；活动中心、返利工具箱与选品库均已通过目标后端测试，前端全量类型检查仍受仓库既有无关类型错误影响。
+- 未全面验证数据库脚本是否与所有当前 DO/Mapper 完全一致；活动中心、返利工具箱菜单权限与选品库表字段已按本轮实现静态同步，CPS SQL 集中在 MySQL `cps-all-in-one.sql`。
 - 未验证 MCP Server 实际启动后的工具列表是否与配置声明完全一致。
-- 未修改任何业务代码。
+- 本次刷新仅更新文档说明，不改动业务代码。

@@ -22,12 +22,15 @@ AgenticCPS 的 CPS 联盟返利模块是整个系统的核心，提供以下关�
 |---------|------|
 | 多平台接入 | 淘宝/京东/拼多多/抖音联盟统一接入，一套代码管理所有平台 |
 | 商品搜索与比价 | 关键词搜索、商品链接解析、跨平台实时比价 |
+| 活动中心 | 管理后台配置活动卡片，支持 CPS/CPA、热门/最新、平台/场景导航，并可跳转商品广场 |
+| 返利工具箱 | 集成万能转链、口令解析、商品广场、推广文案编辑、批量复制和批量转链 |
+| 选品库 | 运营自定义主题、AI 推荐、第三方平台拉取、大促模板和商品快照沉淀 |
 | 多供应商切换 | 大淘客、好单库等多家供应商 API 无缝切换，数据库一条记录热切换 |
 | 推广链接生成 | 带返利追踪的转链（短链/长链/口令/移动端），会员自动归因 |
 | 订单全链路追踪 | 从转链到结算，订单状态每 5 分钟增量同步 |
 | 返利计算与结算 | 等级 + 平台 + 个人多维度返利配置，冻结 → 解冻 → 入账自动流转 |
 | 提现管理 | 支付宝/微信提现，支持自动/人工审核 |
-| MCP AI 接口 | 5 个 AI Tools，让 AI Agent 直接调用 CPS 能力 |
+| MCP AI 接口 | 11 个 AI Tools，让 AI Agent 直接调用 CPS 能力 |
 
 ---
 
@@ -88,7 +91,7 @@ UPDATE cps_platform SET active_vendor_code = 'haodanku' WHERE platform_code = 't
 
 这是 AgenticCPS 区别于普通 CPS 系统最核心的差异——**MCP（Model Context Protocol）AI 接口层**。
 
-基于 Spring AI 1.1.2，系统暴露了 5 个标准 MCP Tool Function，任何兼容 MCP 协议的 AI Agent 都可以直接调用：
+基于 Spring AI 1.1.2，系统暴露了 11 个标准 MCP Tool Function，任何兼容 MCP 协议的 AI Agent 都可以直接调用：
 
 | Tool 名称 | 功能描述 |
 |----------|---------|
@@ -97,6 +100,12 @@ UPDATE cps_platform SET active_vendor_code = 'haodanku' WHERE platform_code = 't
 | `cps_generate_link` | 生成带会员归因的推广转链，支持短链/长链/口令 |
 | `cps_query_orders` | 查询会员返利订单状态 |
 | `cps_get_rebate_summary` | 查询账户余额、待结算金额、累计返利及近期记录 |
+| `cps_recommend_by_scene` | 面向 AIoT 或采购场景推荐 CPS 商品 |
+| `cps_list_selection_themes` | 查询已发布选品库主题 |
+| `cps_recommend_from_selection_theme` | 按主题返回商品快照、推荐理由、券后价和佣金，可选生成推广链接 |
+| `cps_get_rebate_balance` | 查询可兑换 Token 的返利余额 |
+| `cps_create_token_exchange` | 创建返利兑换 Token 订单 |
+| `cps_query_exchange_status` | 查询返利兑换 Token 状态 |
 
 **比价接口的实现尤为精妙**。`CpsComparePricesToolFunction` 调用 `goodsService.searchGoodsAllPlatforms()`，该方法遍历所有启用平台，异常时静默跳过（不影响其他平台），最终聚合结果并计算三类最优解：
 
@@ -202,12 +211,12 @@ AgenticCPS 最令开发者着迷的，是它本身就是 Vibe Coding 的产物�
 
 CPS 模块的 **20,000+ 行生产代码 100% 由 AI 自主编程完成**，涵盖：
 
-- 9 张数据库表的设计与 DDL
-- 15 个管理后台 REST API Controller
-- 13 个会员端 REST API Controller
-- 7 大核心业务 Service（商品、转链、订单、返利、提现、统计、风控）
+- CPS 核心数据库表的设计与 DDL（含活动中心配置表、选品主题、商品快照表和 CPS 菜单权限脚本）
+- 管理后台 REST API Controller（含活动中心、返利工具箱、选品库、商品广场、平台/订单等）
+- 会员端 REST API Controller
+- 多个核心业务 Service（商品、活动、转链、订单、返利、提现、统计、风控等）
 - 6 个 Quartz 定时任务（订单同步、状态更新、返利结算、账单生成等）
-- 5 个 MCP Tool Function
+- 11 个 MCP Tool Function
 - 完整的单元测试套件
 
 AgenticCPS 引入了**规范化 AI 编程工作流**，通过 `.qoder/specs`（编码规范）、`.qoder/plans`（实施计划）、`.qoder/agents`（AI 代理角色）约束 AI 的行为，告别"AI 随便写"的粗放模式：
@@ -311,8 +320,11 @@ AgenticCPS 不只是一个返利系统，它是**"一人公司 × Vibe Coding ×
 **主要功能**：
 
 - 淘宝/京东/拼多多/抖音四平台联盟 CPS 聚合接入
+- 管理后台活动中心，支持跨平台活动卡片、CPS/CPA 类型筛选、热门/最新和商品广场联动
+- 管理后台返利工具箱，支持万能转链、口令解析、商品广场嵌入、推广文案编辑和批量转链
+- 管理后台选品库，支持主题规则、AI 推荐、第三方拉取、大促模板、商品快照和 MCP 查询
 - 多供应商架构（大淘客、好单库）+ 热切换，无需重启
-- 5 个 MCP AI Tool，支持 AI Agent 零代码接入 CPS 能力
+- 11 个 MCP AI Tool，支持 AI Agent 零代码接入 CPS 能力
 - 跨平台实时比价（最低价/最高返利/综合最优）
 - 会员返利体系（多维度返利配置 + 冻结/解冻/入账自动流转）
 - Quartz 定时任务全自动订单同步与状态更新

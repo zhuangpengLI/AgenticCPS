@@ -210,6 +210,8 @@ spring:
             - cps_query_orders: query member CPS orders
             - cps_get_rebate_summary: query member rebate summary
             - cps_recommend_by_scene: recommend goods for AIoT scenes
+            - cps_list_selection_themes: list published selection themes
+            - cps_recommend_from_selection_theme: recommend goods from a selection theme
             - cps_get_rebate_balance: query exchangeable rebate balance
             - cps_create_token_exchange: create rebate-to-token exchange
             - cps_query_exchange_status: query rebate-to-token exchange status

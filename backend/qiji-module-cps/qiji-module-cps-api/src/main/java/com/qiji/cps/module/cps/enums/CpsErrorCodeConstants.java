@@ -77,4 +77,10 @@ public interface CpsErrorCodeConstants {
     // ========== 返利活动 1-100-015-000 ==========
     ErrorCode REBATE_ACTIVITY_NOT_EXISTS = new ErrorCode(1_100_015_000, "返利活动不存在");
 
+    // ========== 选品库 1-100-016-000 ==========
+    ErrorCode SELECTION_THEME_NOT_EXISTS = new ErrorCode(1_100_016_000, "选品主题不存在");
+    ErrorCode SELECTION_THEME_CODE_DUPLICATE = new ErrorCode(1_100_016_001, "选品主题编码[{}]已存在");
+    ErrorCode SELECTION_THEME_STATUS_INVALID = new ErrorCode(1_100_016_002, "选品主题状态不合法：{}");
+    ErrorCode SELECTION_THEME_ITEM_NOT_EXISTS = new ErrorCode(1_100_016_003, "选品主题商品不存在");
+
 }
