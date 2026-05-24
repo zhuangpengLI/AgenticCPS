@@ -81,6 +81,9 @@ public class CpsGoodsRebateQueryRespVO {
         @Schema(description = "实际使用推广位ID")
         private String usedAdzoneId;
 
+        @Schema(description = "实际使用API供应商编码")
+        private String usedVendorCode;
+
     }
 
     @Schema(description = "可复制链接信息")

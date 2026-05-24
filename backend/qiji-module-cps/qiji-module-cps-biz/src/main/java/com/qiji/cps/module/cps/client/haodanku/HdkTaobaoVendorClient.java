@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.client.haodanku;
 
 import com.qiji.cps.module.cps.client.dto.*;
+import com.qiji.cps.module.cps.client.selection.CpsTaobaoSelectionVendorClient;
 import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,7 @@ import java.util.*;
  */
 @Slf4j
 @Component
-public class HdkTaobaoVendorClient extends AbstractHdkVendorClient {
+public class HdkTaobaoVendorClient extends AbstractHdkVendorClient implements CpsTaobaoSelectionVendorClient {
 
     @Override
     public String getPlatformCode() {
@@ -50,6 +51,9 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient {
         if (request.getPriceUpperLimit() != null) {
             params.put("max_price", request.getPriceUpperLimit());
         }
+        if (request.getHasCoupon() != null) {
+            params.put("is_coupon", request.getHasCoupon());
+        }
         return params;
     }
 
@@ -69,6 +73,53 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient {
                 .pageNo(request.getPageNo())
                 .pageSize(request.getPageSize())
                 .build();
+    }
+
+    @Override
+    public CpsGoodsSearchResult searchGoods(CpsGoodsSearchRequest request, CpsVendorConfig config) {
+        if (!hasColumnSearchCondition(request)) {
+            return super.searchGoods(request, config);
+        }
+        try {
+            JsonNode response = executeRequest("/column", buildColumnSearchParams(request), config);
+            if (response == null || !isSuccessResponse(response)) {
+                log.warn("[{}:{}] column search failed: {}", getVendorCode(), getPlatformCode(), response);
+                return buildEmptyResult(request);
+            }
+            return parseSearchResponse(response, request);
+        } catch (Exception e) {
+            log.error("[{}:{}] column search exception", getVendorCode(), getPlatformCode(), e);
+            return buildEmptyResult(request);
+        }
+    }
+
+    public Map<String, Object> buildColumnSearchParams(CpsGoodsSearchRequest request) {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("type", convertChannelType(request.getChannelCode()));
+        params.put("back", request.getPageSize());
+        params.put("min_id", request.getPageNo());
+        if (request.getSortType() != null) {
+            params.put("sort", convertColumnSortType(request.getSortType()));
+        }
+        if (hasText(request.getCategoryId()) && !"0".equals(request.getCategoryId())) {
+            params.put("cid", parseInteger(request.getCategoryId()));
+        }
+        if (request.getPriceLowerLimit() != null) {
+            params.put("price_min", request.getPriceLowerLimit());
+        }
+        if (request.getPriceUpperLimit() != null) {
+            params.put("price_max", request.getPriceUpperLimit());
+        }
+        if (request.getCouponAmountMin() != null) {
+            params.put("coupon_min", request.getCouponAmountMin());
+        }
+        if (request.getMinMonthSales() != null) {
+            params.put("sale_min", request.getMinMonthSales());
+        }
+        if (Boolean.TRUE.equals(request.getTmallOnly())) {
+            params.put("shoptype", "B");
+        }
+        return params;
     }
 
     // ==================== 推广转链 ====================
@@ -190,6 +241,16 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient {
         return params;
     }
 
+    @Override
+    public CpsGoodsSelectionMeta getSelectionMeta(CpsVendorConfig config) {
+        return CpsGoodsSelectionMeta.builder()
+                .hotKeywords(fetchHotKeywords(config))
+                .categories(fetchCategories(config))
+                .activities(fetchColumns(config))
+                .metaSource(getVendorCode())
+                .build();
+    }
+
     // ==================== 私有方法 ====================
 
     private CpsGoodsItem parseGoodsItem(JsonNode item) {
@@ -206,6 +267,13 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient {
                 .shopName(item.path("shopname").asText(null))
                 .shopType(item.path("shoptype").asInt(0))
                 .itemLink(item.path("itemlink").asText(null))
+                .vendorCode(getVendorCode())
+                .source(firstText(item, "item_from", "source"))
+                .activityTag(firstText(item, "activity_type", "activity_tag"))
+                .categoryName(categoryName(item.path("fqcat").asText(null)))
+                .couponEndTime(firstText(item, "couponendtime", "coupon_end_time"))
+                .rankTag(firstText(item, "rank_tag", "son_category"))
+                .sellingPoint(firstText(item, "itemdesc", "guide_article", "itemshorttitle"))
                 .build();
     }
 
@@ -217,6 +285,160 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient {
             case 4 -> 4;  // 佣金率降序
             default -> 0; // 综合排序
         };
+    }
+
+    private boolean hasColumnSearchCondition(CpsGoodsSearchRequest request) {
+        return hasText(request.getChannelCode())
+                || (hasText(request.getCategoryId()) && !"0".equals(request.getCategoryId()))
+                || request.getCouponAmountMin() != null
+                || request.getMinMonthSales() != null
+                || Boolean.TRUE.equals(request.getTmallOnly())
+                || Boolean.TRUE.equals(request.getBrandOnly());
+    }
+
+    private Integer convertChannelType(String channelCode) {
+        if (!hasText(channelCode)) {
+            return 1;
+        }
+        return switch (channelCode) {
+            case "brand" -> 8;
+            case "presale" -> 7;
+            case "flash" -> 5;
+            case "tmall" -> 9;
+            default -> 1;
+        };
+    }
+
+    private Integer convertColumnSortType(Integer sortType) {
+        return switch (sortType) {
+            case 1 -> 4;
+            case 2 -> 1;
+            case 3 -> 2;
+            case 4 -> 5;
+            default -> 0;
+        };
+    }
+
+    private List<CpsGoodsSelectionOption> fetchHotKeywords(CpsVendorConfig config) {
+        JsonNode response = executeRequest("/hot_key", new LinkedHashMap<>(), config);
+        if (response == null || !isSuccessResponse(response)) {
+            return Collections.emptyList();
+        }
+        JsonNode payload = hdkPayload(response);
+        JsonNode list = payload.isArray() ? payload : firstArray(payload, "data", "hot_key", "list");
+        return parseOptionList(list, "keyword", "keyword", "word", "name");
+    }
+
+    private List<CpsGoodsSelectionOption> fetchCategories(CpsVendorConfig config) {
+        JsonNode response = executeRequest("/super_classify", new LinkedHashMap<>(), config);
+        if (response == null || !isSuccessResponse(response)) {
+            return Collections.emptyList();
+        }
+        JsonNode payload = hdkPayload(response);
+        JsonNode list = payload.isArray() ? payload : firstArray(payload, "general_classify", "data", "list");
+        return parseOptionList(list, "cid", "main_name", "name", "label");
+    }
+
+    private List<CpsGoodsSelectionOption> fetchColumns(CpsVendorConfig config) {
+        JsonNode response = executeRequest("/column", Map.of("min_id", 1, "back", 1), config);
+        if (response == null || !isSuccessResponse(response)) {
+            return Collections.emptyList();
+        }
+        return List.of(
+                option("hot", "今日热卖", "热", "实时热销选品"),
+                option("brand", "品牌精选", "品", "品牌和天猫精选"),
+                option("flash", "限时爆款", "抢", "限时高转化商品"),
+                option("presale", "预售清单", null, "活动预售商品"));
+    }
+
+    private List<CpsGoodsSelectionOption> parseOptionList(JsonNode list, String valueField, String... labelFields) {
+        if (list == null || !list.isArray()) {
+            return Collections.emptyList();
+        }
+        List<CpsGoodsSelectionOption> options = new ArrayList<>();
+        for (JsonNode item : list) {
+            String value = firstText(item, valueField, "id", "cid");
+            String label = firstText(item, labelFields);
+            if (!hasText(label) && item.isTextual()) {
+                label = item.asText();
+                value = label;
+            }
+            if (hasText(value) && hasText(label)) {
+                options.add(CpsGoodsSelectionOption.of(value, label));
+            }
+        }
+        return options;
+    }
+
+    private CpsGoodsSelectionOption option(String value, String label, String tag, String description) {
+        return CpsGoodsSelectionOption.builder()
+                .value(value)
+                .label(label)
+                .tag(tag)
+                .description(description)
+                .build();
+    }
+
+    private JsonNode firstArray(JsonNode node, String... fieldNames) {
+        if (node == null) {
+            return null;
+        }
+        for (String fieldName : fieldNames) {
+            JsonNode value = node.path(fieldName);
+            if (value.isArray()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String firstText(JsonNode node, String... fieldNames) {
+        if (node == null) {
+            return null;
+        }
+        for (String fieldName : fieldNames) {
+            String value = node.path(fieldName).asText(null);
+            if (hasText(value)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private Integer parseInteger(String value) {
+        try {
+            return Integer.valueOf(value);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private String categoryName(String fqcat) {
+        if (!hasText(fqcat)) {
+            return null;
+        }
+        return switch (fqcat) {
+            case "1" -> "女装";
+            case "2" -> "男装";
+            case "3" -> "内衣";
+            case "4" -> "美妆";
+            case "5" -> "配饰";
+            case "6" -> "鞋品";
+            case "7" -> "箱包";
+            case "8" -> "儿童";
+            case "9" -> "母婴";
+            case "10" -> "居家";
+            case "11" -> "美食";
+            case "12" -> "数码家电";
+            case "13" -> "车品";
+            case "14" -> "文体";
+            case "15" -> "宠物";
+            default -> null;
+        };
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
 }

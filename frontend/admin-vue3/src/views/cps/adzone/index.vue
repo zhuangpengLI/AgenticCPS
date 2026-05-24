@@ -79,10 +79,10 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="是否默认" align="center" prop="isDefault" width="90">
+      <el-table-column label="平台默认" align="center" width="90">
         <template #default="scope">
-          <el-tag :type="scope.row.isDefault === 1 ? 'success' : 'info'" size="small">
-            {{ scope.row.isDefault === 1 ? '默认' : '非默认' }}
+          <el-tag :type="isPlatformDefault(scope.row) ? 'success' : 'info'" size="small">
+            {{ isPlatformDefault(scope.row) ? '默认' : '非默认' }}
           </el-tag>
         </template>
       </el-table-column>
@@ -176,14 +176,17 @@
           <el-button v-if="formData.relationId" @click="clearMember">清除</el-button>
         </div>
       </el-form-item>
-      <el-form-item label="是否默认" prop="isDefault">
+      <el-form-item label="默认标记" prop="isDefault">
         <el-switch
           v-model="formData.isDefault"
           :active-value="1"
           :inactive-value="0"
-          active-text="默认推广位"
-          inactive-text="非默认"
+          active-text="标记默认"
+          inactive-text="普通"
         />
+        <div class="mt-1 text-xs text-gray-400">
+          运行时平台默认推广位请在平台管理选择；这里仅作为推广位自身标记。
+        </div>
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-radio-group v-model="formData.status">
@@ -264,6 +267,7 @@ import {
   type CpsAdzoneSaveVO,
   type CpsAdzonePageReqVO
 } from '@/api/cps/adzone'
+import { CpsPlatformApi, type CpsPlatformVO } from '@/api/cps/platform'
 import { getUserPage, type UserVO } from '@/api/member/user/index'
 import { formatDate } from '@/utils/formatTime'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -272,6 +276,7 @@ defineOptions({ name: 'CpsAdzone' })
 
 const loading = ref(false)
 const list = ref<CpsAdzoneVO[]>([])
+const platformList = ref<CpsPlatformVO[]>([])
 const total = ref(0)
 const dialogVisible = ref(false)
 const formLoading = ref(false)
@@ -326,6 +331,13 @@ const adzoneTypeTagType = (type: string | undefined): 'danger' | 'primary' | 'wa
 const adzoneTypeLabel = (type: string | undefined) => {
   const map: Record<string, string> = { general: '通用', channel: '渠道专属', member: '用户专属' }
   return type ? (map[type] || type) : '-'
+}
+
+const isPlatformDefault = (row: CpsAdzoneVO) => {
+  return platformList.value.some(
+    (platform) =>
+      platform.platformCode === row.platformCode && platform.defaultAdzoneId === row.adzoneId
+  )
 }
 
 /** 类型变更时清空关联字段 */
@@ -409,6 +421,10 @@ const clearMember = () => {
 }
 
 /** 查询列表 */
+const getPlatformList = async () => {
+  platformList.value = await CpsPlatformApi.getEnabledPlatformList()
+}
+
 const getList = async () => {
   loading.value = true
   try {
@@ -466,5 +482,8 @@ const handleDelete = async (id: number) => {
   getList()
 }
 
-onMounted(getList)
+onMounted(() => {
+  getPlatformList()
+  getList()
+})
 </script>

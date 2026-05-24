@@ -38,6 +38,10 @@ public class CpsGoodsRebateQueryServiceImpl implements CpsGoodsRebateQueryServic
 
     @Override
     public CpsGoodsRebateQueryRespVO queryRebate(CpsGoodsRebateQueryReqVO reqVO) {
+        return platformClientFactory.withVendorCode(reqVO.getVendorCode(), () -> doQueryRebate(reqVO));
+    }
+
+    private CpsGoodsRebateQueryRespVO doQueryRebate(CpsGoodsRebateQueryReqVO reqVO) {
         CpsContentParseResult parseResult = parseContent(reqVO);
         if (!Boolean.TRUE.equals(parseResult.getSupported())) {
             return buildFailure("PARSE_FAILED", parseResult.getFailureReason());
@@ -53,7 +57,8 @@ public class CpsGoodsRebateQueryServiceImpl implements CpsGoodsRebateQueryServic
                 parseResult.getGoodsId(),
                 parseResult.getGoodsSign(),
                 reqVO.getMemberId(),
-                usedAdzoneId);
+                usedAdzoneId,
+                reqVO.getVendorCode());
         if (linkResult == null) {
             return buildFailure("LINK_FAILED", "商品不可转链或供应商暂不可用，请稍后重试");
         }
@@ -65,7 +70,8 @@ public class CpsGoodsRebateQueryServiceImpl implements CpsGoodsRebateQueryServic
         response.setParseStatus("SUCCESS");
         response.setParseMessage("解析成功");
         response.setGoods(buildGoods(reqVO.getPlatformCode(), parseResult, linkResult));
-        response.setRebate(buildRebate(linkResult, usedAdzoneId));
+        response.setRebate(buildRebate(linkResult, usedAdzoneId,
+                platformClientFactory.resolveActiveVendorCode(reqVO.getPlatformCode())));
         response.setLinks(buildLinks(linkResult));
         response.setTransferRecordId(record.getId());
         return response;
@@ -127,12 +133,14 @@ public class CpsGoodsRebateQueryServiceImpl implements CpsGoodsRebateQueryServic
         return goods;
     }
 
-    private CpsGoodsRebateQueryRespVO.Rebate buildRebate(CpsPromotionLinkResult linkResult, String usedAdzoneId) {
+    private CpsGoodsRebateQueryRespVO.Rebate buildRebate(CpsPromotionLinkResult linkResult, String usedAdzoneId,
+                                                         String usedVendorCode) {
         CpsGoodsRebateQueryRespVO.Rebate rebate = new CpsGoodsRebateQueryRespVO.Rebate();
         rebate.setCommissionRate(linkResult.getCommissionRate());
         rebate.setCommissionAmount(defaultAmount(linkResult.getCommissionAmount()));
         rebate.setEstimateRebateAmount(defaultAmount(linkResult.getCommissionAmount()));
         rebate.setUsedAdzoneId(usedAdzoneId);
+        rebate.setUsedVendorCode(usedVendorCode);
         return rebate;
     }
 

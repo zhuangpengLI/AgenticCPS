@@ -3,9 +3,7 @@ package com.qiji.cps.module.cps.service.goods;
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.dto.*;
-import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
-import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
 import com.qiji.cps.module.cps.service.platform.CpsPlatformService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -35,16 +33,18 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
     @Resource
     private CpsPlatformService platformService;
 
-    @Resource
-    private CpsAdzoneService adzoneService;
-
     @Override
     public CpsGoodsSearchResult searchGoods(String platformCode, CpsGoodsSearchRequest request) {
+        return searchGoods(platformCode, request, null);
+    }
+
+    @Override
+    public CpsGoodsSearchResult searchGoods(String platformCode, CpsGoodsSearchRequest request, String vendorCode) {
         // 校验平台
         validatePlatform(platformCode);
         // 获取适配器
         CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
-        return client.searchGoods(request);
+        return platformClientFactory.withVendorCode(vendorCode, () -> client.searchGoods(request));
     }
 
     @Override
@@ -76,6 +76,19 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
     @Override
     public CpsPromotionLinkResult generatePromotionLink(String platformCode, String goodsId,
                                                          String goodsSign, Long memberId, String adzoneId) {
+        return generatePromotionLink(platformCode, goodsId, goodsSign, memberId, adzoneId, null);
+    }
+
+    @Override
+    public CpsPromotionLinkResult generatePromotionLink(String platformCode, String goodsId,
+                                                         String goodsSign, Long memberId, String adzoneId,
+                                                         String vendorCode) {
+        return platformClientFactory.withVendorCode(vendorCode,
+                () -> doGeneratePromotionLink(platformCode, goodsId, goodsSign, memberId, adzoneId));
+    }
+
+    private CpsPromotionLinkResult doGeneratePromotionLink(String platformCode, String goodsId,
+                                                           String goodsSign, Long memberId, String adzoneId) {
         // 校验平台
         validatePlatform(platformCode);
         CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
@@ -101,16 +114,7 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
         CpsPlatformDO platform = validatePlatform(platformCode);
         String finalAdzoneId = adzoneId;
         if (finalAdzoneId == null) {
-            // 先查会员专属推广位，再查平台默认推广位
-            if (memberId != null) {
-                CpsAdzoneDO memberAdzone = getMemberAdzone(platformCode, memberId);
-                if (memberAdzone != null) {
-                    finalAdzoneId = memberAdzone.getAdzoneId();
-                }
-            }
-            if (finalAdzoneId == null) {
-                finalAdzoneId = platform.getDefaultAdzoneId();
-            }
+            finalAdzoneId = platform.getDefaultAdzoneId();
         }
         return finalAdzoneId;
     }
@@ -126,16 +130,6 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
             throw exception(PLATFORM_IS_DISABLE, platformCode);
         }
         return platform;
-    }
-
-    private CpsAdzoneDO getMemberAdzone(String platformCode, Long memberId) {
-        List<CpsAdzoneDO> adzones = adzoneService.getAdzoneListByPlatformCode(platformCode);
-        return adzones.stream()
-                .filter(a -> "member".equals(a.getRelationType())
-                        && memberId.equals(a.getRelationId())
-                        && a.getStatus() == 1)
-                .findFirst()
-                .orElse(null);
     }
 
     private CpsGoodsSearchRequest cloneRequestWithPageSize(CpsGoodsSearchRequest original, int pageSize) {

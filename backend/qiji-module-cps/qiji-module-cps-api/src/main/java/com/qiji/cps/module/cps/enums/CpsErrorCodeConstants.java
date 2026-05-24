@@ -74,4 +74,7 @@ public interface CpsErrorCodeConstants {
     ErrorCode OPENAPI_SIGNATURE_INVALID = new ErrorCode(1_100_014_005, "开放接口签名无效");
     ErrorCode OPENAPI_HEADER_MISSING = new ErrorCode(1_100_014_006, "缺少开放接口请求头：{}");
 
+    // ========== 返利活动 1-100-015-000 ==========
+    ErrorCode REBATE_ACTIVITY_NOT_EXISTS = new ErrorCode(1_100_015_000, "返利活动不存在");
+
 }

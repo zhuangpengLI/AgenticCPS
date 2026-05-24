@@ -50,6 +50,14 @@ public class CpsComparePricesToolFunction
         @JsonPropertyDescription("每个平台返回前N条结果参与比价，默认5，最大10")
         private Integer topN;
 
+        @JsonProperty(value = "platform_code")
+        @JsonPropertyDescription("指定单个平台进行平台内比价；不传则跨全平台聚合比价")
+        private String platformCode;
+
+        @JsonProperty(value = "vendor_code")
+        @JsonPropertyDescription("API供应商编码；仅指定 platform_code 时生效，不填则使用平台默认供应商")
+        private String vendorCode;
+
     }
 
     @Data
@@ -130,7 +138,12 @@ public class CpsComparePricesToolFunction
             searchRequest.setKeyword(request.getKeyword());
             searchRequest.setPageSize(topN);
 
-            List<CpsGoodsItem> allItems = goodsService.searchGoodsAllPlatforms(searchRequest);
+            List<CpsGoodsItem> allItems;
+            if (request.getPlatformCode() != null && !request.getPlatformCode().isBlank()) {
+                allItems = goodsService.searchGoods(request.getPlatformCode(), searchRequest, request.getVendorCode()).getList();
+            } else {
+                allItems = goodsService.searchGoodsAllPlatforms(searchRequest);
+            }
             if (allItems == null || allItems.isEmpty()) {
                 Response response = new Response(0, null, null, null, new ArrayList<>(), null);
                 CpsMcpToolAuditSupport.record(accessLogMapper, "cps_compare_prices", request, response, null, startedAt);

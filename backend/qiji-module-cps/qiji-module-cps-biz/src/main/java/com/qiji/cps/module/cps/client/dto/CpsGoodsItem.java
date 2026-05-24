@@ -89,4 +89,39 @@ public class CpsGoodsItem {
      */
     private String goodsSign;
 
+    /**
+     * 实际使用的 API 供应商编码
+     */
+    private String vendorCode;
+
+    /**
+     * 商品来源，如好单库精选/联盟超级搜
+     */
+    private String source;
+
+    /**
+     * 活动标签
+     */
+    private String activityTag;
+
+    /**
+     * 类目名称
+     */
+    private String categoryName;
+
+    /**
+     * 优惠券结束时间
+     */
+    private String couponEndTime;
+
+    /**
+     * 榜单或热销标签
+     */
+    private String rankTag;
+
+    /**
+     * 商品卖点文案
+     */
+    private String sellingPoint;
+
 }

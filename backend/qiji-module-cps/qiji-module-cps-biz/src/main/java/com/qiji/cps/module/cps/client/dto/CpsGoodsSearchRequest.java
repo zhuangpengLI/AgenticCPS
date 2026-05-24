@@ -57,4 +57,54 @@ public class CpsGoodsSearchRequest {
      */
     private String externalId;
 
+    /**
+     * 选品频道编码（淘系选品库专用）
+     */
+    private String channelCode;
+
+    /**
+     * 供应商类目 ID（淘系选品库专用）
+     */
+    private String categoryId;
+
+    /**
+     * 最低佣金比例（百分比）
+     */
+    private BigDecimal minCommissionRate;
+
+    /**
+     * 最低预估佣金金额（元）
+     */
+    private BigDecimal minCommissionAmount;
+
+    /**
+     * 最低月销量
+     */
+    private Long minMonthSales;
+
+    /**
+     * 最低优惠券金额（元）
+     */
+    private BigDecimal couponAmountMin;
+
+    /**
+     * 是否只看天猫
+     */
+    private Boolean tmallOnly;
+
+    /**
+     * 是否只看品牌商品
+     */
+    private Boolean brandOnly;
+
+    /**
+     * 店铺类型
+     */
+    private String shopType;
+
+    /**
+     * 活动标签
+     */
+    private String activityTag;
+
 }

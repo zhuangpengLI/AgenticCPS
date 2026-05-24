@@ -8,6 +8,7 @@ import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsRebateQueryReqV
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +40,14 @@ class CpsGoodsRebateQueryServiceImplTest {
     @Mock
     private CpsTransferRecordMapper transferRecordMapper;
 
+    @BeforeEach
+    void setUp() {
+        lenient().when(platformClientFactory.withVendorCode(any(), any())).thenAnswer(invocation -> {
+            java.util.function.Supplier<?> supplier = invocation.getArgument(1);
+            return supplier.get();
+        });
+    }
+
     @Test
     @DisplayName("queryRebate - 链接解析后使用指定会员和默认推广位转链并写入转链记录")
     void queryRebate_generatesLinkWithMemberAndWritesTransferRecord() {
@@ -48,7 +57,7 @@ class CpsGoodsRebateQueryServiceImplTest {
         reqVO.setMemberId(100L);
 
         when(goodsService.resolvePromotionAdzoneId("jd", 100L, null)).thenReturn("jd-default-pid");
-        when(goodsService.generatePromotionLink("jd", "100012043978", null, 100L, "jd-default-pid"))
+        when(goodsService.generatePromotionLink("jd", "100012043978", null, 100L, "jd-default-pid", null))
                 .thenReturn(CpsPromotionLinkResult.builder()
                         .shortUrl("https://u.jd.com/short")
                         .longUrl("https://union.jd.com/long")
@@ -62,6 +71,7 @@ class CpsGoodsRebateQueryServiceImplTest {
             record.setId(999L);
             return 1;
         });
+        when(platformClientFactory.resolveActiveVendorCode("jd")).thenReturn("dataoke");
 
         var response = service.queryRebate(reqVO);
 
@@ -72,9 +82,10 @@ class CpsGoodsRebateQueryServiceImplTest {
         assertEquals("https://item.jd.com/100012043978.html", response.getGoods().getItemLink());
         assertEquals(new BigDecimal("8.80"), response.getRebate().getEstimateRebateAmount());
         assertEquals("jd-default-pid", response.getRebate().getUsedAdzoneId());
+        assertEquals("dataoke", response.getRebate().getUsedVendorCode());
         assertEquals("https://u.jd.com/short", response.getLinks().getShortUrl());
 
-        verify(goodsService).generatePromotionLink("jd", "100012043978", null, 100L, "jd-default-pid");
+        verify(goodsService).generatePromotionLink("jd", "100012043978", null, 100L, "jd-default-pid", null);
         ArgumentCaptor<CpsTransferRecordDO> recordCaptor = ArgumentCaptor.forClass(CpsTransferRecordDO.class);
         verify(transferRecordMapper).insert(recordCaptor.capture());
         CpsTransferRecordDO record = recordCaptor.getValue();
@@ -85,6 +96,34 @@ class CpsGoodsRebateQueryServiceImplTest {
         assertEquals("https://u.jd.com/short", record.getPromotionUrl());
         assertEquals("jd-default-pid", record.getAdzoneId());
         assertEquals(1, record.getStatus());
+    }
+
+    @Test
+    @DisplayName("queryRebate - 指定供应商和推广位时返回实际使用路由")
+    void queryRebate_returnsExplicitVendorAndAdzoneRoute() {
+        CpsGoodsRebateQueryReqVO reqVO = new CpsGoodsRebateQueryReqVO();
+        reqVO.setPlatformCode("taobao");
+        reqVO.setOriginalContent("https://item.taobao.com/item.htm?id=123456");
+        reqVO.setMemberId(100L);
+        reqVO.setVendorCode("haodanku");
+        reqVO.setAdzoneId("mm_1_2_3");
+
+        when(goodsService.resolvePromotionAdzoneId("taobao", 100L, "mm_1_2_3")).thenReturn("mm_1_2_3");
+        when(goodsService.generatePromotionLink("taobao", "123456", null, 100L, "mm_1_2_3", "haodanku"))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .shortUrl("https://cps.example/s")
+                        .commissionAmount(new BigDecimal("3.20"))
+                        .build());
+        when(transferRecordMapper.insert(org.mockito.ArgumentMatchers.<CpsTransferRecordDO>any())).thenReturn(1);
+        when(platformClientFactory.resolveActiveVendorCode("taobao")).thenReturn("haodanku");
+
+        var response = service.queryRebate(reqVO);
+
+        assertEquals("SUCCESS", response.getParseStatus());
+        assertEquals("mm_1_2_3", response.getRebate().getUsedAdzoneId());
+        assertEquals("haodanku", response.getRebate().getUsedVendorCode());
+        verify(platformClientFactory).withVendorCode(eq("haodanku"), any());
+        verify(goodsService).generatePromotionLink("taobao", "123456", null, 100L, "mm_1_2_3", "haodanku");
     }
 
     @Test
@@ -104,7 +143,7 @@ class CpsGoodsRebateQueryServiceImplTest {
                 .title("平台解析商品")
                 .build());
         when(goodsService.resolvePromotionAdzoneId("taobao", 100L, "mm_1_2_3")).thenReturn("mm_1_2_3");
-        when(goodsService.generatePromotionLink("taobao", "123456", null, 100L, "mm_1_2_3"))
+        when(goodsService.generatePromotionLink("taobao", "123456", null, 100L, "mm_1_2_3", null))
                 .thenReturn(CpsPromotionLinkResult.builder()
                         .tpwd("￥newcmd￥")
                         .commissionAmount(new BigDecimal("3.20"))
@@ -138,6 +177,7 @@ class CpsGoodsRebateQueryServiceImplTest {
         assertEquals("暂不支持该渠道口令自动解析，请粘贴商品链接或商品ID", response.getParseMessage());
         assertNull(response.getLinks());
         verify(goodsService, never()).generatePromotionLink(anyString(), any(), any(), any(), any());
-        verify(transferRecordMapper, never()).insert(any());
+        verify(goodsService, never()).generatePromotionLink(anyString(), any(), any(), any(), any(), any());
+        verify(transferRecordMapper, never()).insert(org.mockito.ArgumentMatchers.<CpsTransferRecordDO>any());
     }
 }

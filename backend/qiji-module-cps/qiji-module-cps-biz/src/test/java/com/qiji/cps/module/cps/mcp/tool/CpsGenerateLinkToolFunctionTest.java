@@ -42,8 +42,9 @@ class CpsGenerateLinkToolFunctionTest {
         request.setGoodsId("goods-1");
         request.setGoodsSign("sign-1");
         request.setMemberId(200L);
+        request.setVendorCode("haodanku");
 
-        when(goodsService.generatePromotionLink(eq("jd"), eq("goods-1"), eq("sign-1"), eq(100L), isNull()))
+        when(goodsService.generatePromotionLink(eq("jd"), eq("goods-1"), eq("sign-1"), eq(100L), isNull(), eq("haodanku")))
                 .thenReturn(CpsPromotionLinkResult.builder()
                         .shortUrl("https://cps.example/s")
                         .actualPrice(new BigDecimal("88.00"))
@@ -54,7 +55,7 @@ class CpsGenerateLinkToolFunctionTest {
 
         assertNull(response.getError());
         assertEquals("https://cps.example/s", response.getShortUrl());
-        verify(goodsService).generatePromotionLink("jd", "goods-1", "sign-1", 100L, null);
+        verify(goodsService).generatePromotionLink("jd", "goods-1", "sign-1", 100L, null, "haodanku");
         ArgumentCaptor<CpsMcpAccessLogDO> logCaptor = ArgumentCaptor.forClass(CpsMcpAccessLogDO.class);
         verify(accessLogMapper).insert(logCaptor.capture());
         assertEquals("cps_generate_link", logCaptor.getValue().getToolName());
@@ -67,7 +68,7 @@ class CpsGenerateLinkToolFunctionTest {
         CpsGenerateLinkToolFunction.Request request = new CpsGenerateLinkToolFunction.Request();
         request.setPlatformCode("jd");
         request.setGoodsId("goods-1");
-        when(goodsService.generatePromotionLink(anyString(), anyString(), any(), any(), any()))
+        when(goodsService.generatePromotionLink(anyString(), anyString(), any(), any(), any(), any()))
                 .thenThrow(new IllegalStateException("SQL signature secret leaked"));
 
         var response = toolFunction.apply(request, new ToolContext(Map.of("LOGIN_USER_ID", 100L)));

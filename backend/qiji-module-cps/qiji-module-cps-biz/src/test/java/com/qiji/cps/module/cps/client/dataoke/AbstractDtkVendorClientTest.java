@@ -1,11 +1,13 @@
 package com.qiji.cps.module.cps.client.dataoke;
 
 import cn.hutool.crypto.digest.DigestUtil;
+import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -191,6 +193,30 @@ class AbstractDtkVendorClientTest {
 
         assertTrue(url.contains("content=%E4%B8%AD%E6%96%87+%E5%8F%A3%E4%BB%A4"));
         assertTrue(url.contains("url=https%3A%2F%2Fexample.com%2Fa%3Fb%3D1%26c%3D2"));
+    }
+
+    @Test
+    @DisplayName("淘宝选品筛选应映射到大淘客搜索参数")
+    void testTaobaoSelectionSearchParams() {
+        CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
+        request.setKeyword("洗衣液");
+        request.setPageNo(2);
+        request.setPageSize(20);
+        request.setCategoryId("10");
+        request.setMinCommissionRate(new BigDecimal("20"));
+        request.setMinMonthSales(1000L);
+        request.setCouponAmountMin(new BigDecimal("5"));
+        request.setTmallOnly(true);
+        request.setBrandOnly(true);
+
+        Map<String, Object> params = new DtkTaobaoVendorClient().buildSearchParams(request, CpsVendorConfig.builder().build());
+
+        assertEquals("10", params.get("cids"));
+        assertEquals(new BigDecimal("20"), params.get("commissionRateLowerLimit"));
+        assertEquals(1000L, params.get("monthSalesLowerLimit"));
+        assertEquals(new BigDecimal("5"), params.get("couponPriceLowerLimit"));
+        assertEquals(1, params.get("tmall"));
+        assertEquals(1, params.get("brand"));
     }
 
 }

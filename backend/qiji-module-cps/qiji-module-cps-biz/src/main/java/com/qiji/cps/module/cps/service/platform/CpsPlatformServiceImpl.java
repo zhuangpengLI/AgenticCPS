@@ -6,12 +6,17 @@ import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.cps.config.CpsCacheConfig;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformSaveReqVO;
+import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
+import com.qiji.cps.module.cps.dal.dataobject.vendor.CpsApiVendorDO;
 import com.qiji.cps.module.cps.dal.mysql.platform.CpsPlatformMapper;
+import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
+import com.qiji.cps.module.cps.service.vendor.CpsApiVendorService;
 import jakarta.annotation.Resource;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
@@ -28,13 +33,23 @@ import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.*;
 @Validated
 public class CpsPlatformServiceImpl implements CpsPlatformService {
 
+    private static final Integer CPS_ENABLE_STATUS = 1;
+
     @Resource
     private CpsPlatformMapper platformMapper;
+
+    @Resource
+    private CpsApiVendorService vendorService;
+
+    @Resource
+    private CpsAdzoneService adzoneService;
 
     @Override
     public Long createPlatform(CpsPlatformSaveReqVO createReqVO) {
         // 校验平台编码唯一
         validatePlatformCodeUnique(null, createReqVO.getPlatformCode());
+        validateDefaultVendor(createReqVO.getPlatformCode(), createReqVO.getActiveVendorCode());
+        validateDefaultAdzone(createReqVO.getPlatformCode(), createReqVO.getDefaultAdzoneId());
         // 插入
         CpsPlatformDO platform = BeanUtils.toBean(createReqVO, CpsPlatformDO.class);
         platformMapper.insert(platform);
@@ -48,6 +63,8 @@ public class CpsPlatformServiceImpl implements CpsPlatformService {
         validatePlatformExists(updateReqVO.getId());
         // 校验平台编码唯一
         validatePlatformCodeUnique(updateReqVO.getId(), updateReqVO.getPlatformCode());
+        validateDefaultVendor(updateReqVO.getPlatformCode(), updateReqVO.getActiveVendorCode());
+        validateDefaultAdzone(updateReqVO.getPlatformCode(), updateReqVO.getDefaultAdzoneId());
         // 更新
         CpsPlatformDO updateObj = BeanUtils.toBean(updateReqVO, CpsPlatformDO.class);
         platformMapper.updateById(updateObj);
@@ -96,6 +113,29 @@ public class CpsPlatformServiceImpl implements CpsPlatformService {
         }
         if (id == null || !id.equals(platform.getId())) {
             throw exception(PLATFORM_CODE_DUPLICATE, platformCode);
+        }
+    }
+
+    private void validateDefaultVendor(String platformCode, String activeVendorCode) {
+        if (!StringUtils.hasText(activeVendorCode)) {
+            return;
+        }
+        CpsApiVendorDO vendor = vendorService.getVendorByCodeAndPlatform(activeVendorCode, platformCode);
+        if (vendor == null || !CPS_ENABLE_STATUS.equals(vendor.getStatus())) {
+            throw exception(VENDOR_NOT_EXISTS);
+        }
+    }
+
+    private void validateDefaultAdzone(String platformCode, String defaultAdzoneId) {
+        if (!StringUtils.hasText(defaultAdzoneId)) {
+            return;
+        }
+        List<CpsAdzoneDO> adzones = adzoneService.getAdzoneListByPlatformCode(platformCode);
+        boolean exists = adzones.stream()
+                .anyMatch(adzone -> defaultAdzoneId.equals(adzone.getAdzoneId())
+                        && CPS_ENABLE_STATUS.equals(adzone.getStatus()));
+        if (!exists) {
+            throw exception(ADZONE_NOT_EXISTS);
         }
     }
 

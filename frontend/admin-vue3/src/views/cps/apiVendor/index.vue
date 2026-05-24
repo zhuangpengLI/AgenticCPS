@@ -83,7 +83,7 @@
         </template>
       </el-table-column>
       <el-table-column label="API基础地址" align="center" prop="apiBaseUrl" min-width="200" show-overflow-tooltip />
-      <el-table-column label="推广位ID" align="center" prop="defaultAdzoneId" min-width="140" show-overflow-tooltip />
+      <el-table-column label="备用推广位" align="center" prop="defaultAdzoneId" min-width="140" show-overflow-tooltip />
       <el-table-column label="优先级" align="center" prop="priority" width="80" />
       <el-table-column label="状态" align="center" prop="status" width="90">
         <template #default="scope">
@@ -216,17 +216,20 @@
           </el-form-item>
         </el-col>
         <el-col :span="24">
-          <el-form-item label="默认推广位ID" prop="defaultAdzoneId">
+          <el-form-item label="备用推广位" prop="defaultAdzoneId">
             <div class="flex gap-2 w-full">
               <el-input
                 v-model="formData.defaultAdzoneId"
-                placeholder="如: mm_xxx_xxx_xxx，或点击右侧按钮选择"
+                placeholder="可选；平台默认推广位请在平台管理配置"
                 clearable
                 class="flex-1"
               />
               <el-button @click="openAdzoneDialog">
                 <Icon icon="ep:search" class="mr-5px" /> 选择
               </el-button>
+            </div>
+            <div class="mt-1 text-xs text-gray-400">
+              运行时默认推广位以平台管理为准；这里仅保留供应商兼容配置。
             </div>
           </el-form-item>
         </el-col>

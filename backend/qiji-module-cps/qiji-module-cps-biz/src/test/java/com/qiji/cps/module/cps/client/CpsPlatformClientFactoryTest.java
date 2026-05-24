@@ -140,15 +140,30 @@ class CpsPlatformClientFactoryTest {
     }
 
     @Test
-    @DisplayName("getActiveVendorClient 未设置 activeVendorCode 时默认使用 dataoke")
-    void testGetActiveVendorClient_defaultToDataoke() {
+    @DisplayName("getActiveVendorClient 未设置 activeVendorCode 时返回 null，不再硬编码 dataoke")
+    void testGetActiveVendorClient_returnsNullWhenActiveVendorMissing() {
         CpsPlatformDO platform = new CpsPlatformDO();
         platform.setActiveVendorCode(null);
         when(platformService.getPlatformByCode("taobao")).thenReturn(platform);
 
-        CpsApiVendorClient client = factory.getActiveVendorClient("taobao");
-        assertNotNull(client);
-        assertEquals("dataoke", client.getVendorCode());
+        assertNull(factory.getActiveVendorClient("taobao"));
+    }
+
+    @Test
+    @DisplayName("withVendorCode 指定供应商只影响当前回调且执行后不串扰")
+    void testWithVendorCode_overrideDoesNotLeak() {
+        CpsPlatformDO platform = new CpsPlatformDO();
+        platform.setActiveVendorCode("dataoke");
+        when(platformService.getPlatformByCode("taobao")).thenReturn(platform);
+
+        CpsApiVendorClient overrideClient = factory.withVendorCode("haodanku",
+                () -> factory.getActiveVendorClient("taobao"));
+        CpsApiVendorClient defaultClient = factory.getActiveVendorClient("taobao");
+
+        assertNotNull(overrideClient);
+        assertEquals("haodanku", overrideClient.getVendorCode());
+        assertNotNull(defaultClient);
+        assertEquals("dataoke", defaultClient.getVendorCode());
     }
 
     @Test

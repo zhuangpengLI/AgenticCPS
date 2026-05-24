@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.client.dataoke;
 
 import com.qiji.cps.module.cps.client.dto.*;
+import com.qiji.cps.module.cps.client.selection.CpsTaobaoSelectionVendorClient;
 import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,7 @@ import java.util.*;
  */
 @Slf4j
 @Component
-public class DtkTaobaoVendorClient extends AbstractDtkVendorClient {
+public class DtkTaobaoVendorClient extends AbstractDtkVendorClient implements CpsTaobaoSelectionVendorClient {
 
     @Override
     public String getPlatformCode() {
@@ -49,6 +50,24 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient {
         }
         if (request.getHasCoupon() != null) {
             params.put("hasCoupon", request.getHasCoupon());
+        }
+        if (hasText(request.getCategoryId()) && !"0".equals(request.getCategoryId())) {
+            params.put("cids", request.getCategoryId());
+        }
+        if (request.getMinCommissionRate() != null) {
+            params.put("commissionRateLowerLimit", request.getMinCommissionRate());
+        }
+        if (request.getMinMonthSales() != null) {
+            params.put("monthSalesLowerLimit", request.getMinMonthSales());
+        }
+        if (request.getCouponAmountMin() != null) {
+            params.put("couponPriceLowerLimit", request.getCouponAmountMin());
+        }
+        if (Boolean.TRUE.equals(request.getTmallOnly())) {
+            params.put("tmall", 1);
+        }
+        if (Boolean.TRUE.equals(request.getBrandOnly())) {
+            params.put("brand", 1);
         }
         params.put("version", "v2.1.2");
         return params;
@@ -159,6 +178,18 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient {
         return new HashMap<>();
     }
 
+    @Override
+    public CpsGoodsSelectionMeta getSelectionMeta(CpsVendorConfig config) {
+        JsonNode response = executeRequest("/goods/get-super-category", new LinkedHashMap<>(), config);
+        if (response == null || !isSuccessResponse(response)) {
+            return CpsGoodsSelectionMeta.builder().metaSource(getVendorCode()).build();
+        }
+        return CpsGoodsSelectionMeta.builder()
+                .categories(parseCategoryOptions(response.path("data")))
+                .metaSource(getVendorCode())
+                .build();
+    }
+
     // ==================== 私有方法 ====================
 
     private CpsGoodsItem parseTaobaoGoodsItem(JsonNode item) {
@@ -176,6 +207,13 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient {
                 .shopType(item.path("shopType").asInt(0))
                 .itemLink(item.path("itemLink").asText(null))
                 .brandName(item.path("brandName").asText(null))
+                .vendorCode(getVendorCode())
+                .source("大淘客")
+                .activityTag(firstText(item, "activityType", "activityTag", "marketingTag"))
+                .categoryName(firstText(item, "cidName", "categoryName", "subcidName"))
+                .couponEndTime(firstText(item, "couponEndTime", "couponEndTimeStr"))
+                .rankTag(firstText(item, "ranking", "rankTag"))
+                .sellingPoint(firstText(item, "desc", "marketingMainPic", "dtitle"))
                 .build();
     }
 
@@ -210,6 +248,49 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient {
             case 4 -> "4";  // 佣金率降序
             default -> "0"; // 综合排序
         };
+    }
+
+    private List<CpsGoodsSelectionOption> parseCategoryOptions(JsonNode data) {
+        List<CpsGoodsSelectionOption> options = new ArrayList<>();
+        if (data == null || data.isMissingNode() || data.isNull()) {
+            return options;
+        }
+        JsonNode list = data.isArray() ? data : firstArray(data, "list", "categories", "data");
+        if (list == null || !list.isArray()) {
+            return options;
+        }
+        for (JsonNode item : list) {
+            String value = firstText(item, "cid", "cids", "id");
+            String label = firstText(item, "cname", "name", "label");
+            if (hasText(value) && hasText(label)) {
+                options.add(CpsGoodsSelectionOption.of(value, label));
+            }
+        }
+        return options;
+    }
+
+    private JsonNode firstArray(JsonNode node, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            JsonNode value = node.path(fieldName);
+            if (value.isArray()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String firstText(JsonNode node, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            String value = node.path(fieldName).asText(null);
+            if (hasText(value)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
 }

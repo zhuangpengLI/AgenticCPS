@@ -8,11 +8,13 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * CPS 平台客户端工厂（策略模式注册中心 + 双维度路由）
@@ -38,6 +40,11 @@ public class CpsPlatformClientFactory {
      * vendorCode:platformCode → 供应商客户端映射表（面向底层实现）
      */
     private final Map<String, CpsApiVendorClient> vendorClientMap = new ConcurrentHashMap<>();
+
+    /**
+     * 当前请求临时指定的供应商编码；为空时使用平台配置的默认供应商。
+     */
+    private final ThreadLocal<String> vendorCodeOverride = new ThreadLocal<>();
 
     /**
      * 所有平台客户端适配器（Spring 自动注入所有实现 Bean）
@@ -158,16 +165,50 @@ public class CpsPlatformClientFactory {
      * @return 当前激活的供应商客户端，若不存在则返回 null
      */
     public CpsApiVendorClient getActiveVendorClient(String platformCode) {
+        String vendorCode = resolveActiveVendorCode(platformCode);
+        if (!StringUtils.hasText(vendorCode)) {
+            return null;
+        }
+        return getVendorClient(vendorCode, platformCode);
+    }
+
+    /**
+     * 在当前线程中临时使用指定供应商执行回调。
+     *
+     * @param vendorCode 供应商编码；为空时不覆盖平台默认供应商
+     * @param supplier   回调
+     * @param <T>        返回类型
+     * @return 回调结果
+     */
+    public <T> T withVendorCode(String vendorCode, Supplier<T> supplier) {
+        if (!StringUtils.hasText(vendorCode)) {
+            return supplier.get();
+        }
+        String previousVendorCode = vendorCodeOverride.get();
+        vendorCodeOverride.set(vendorCode);
+        try {
+            return supplier.get();
+        } finally {
+            if (StringUtils.hasText(previousVendorCode)) {
+                vendorCodeOverride.set(previousVendorCode);
+            } else {
+                vendorCodeOverride.remove();
+            }
+        }
+    }
+
+    public String resolveActiveVendorCode(String platformCode) {
+        String overrideVendorCode = vendorCodeOverride.get();
+        if (StringUtils.hasText(overrideVendorCode)) {
+            return overrideVendorCode;
+        }
         CpsPlatformDO platform = platformService.getPlatformByCode(platformCode);
         if (platform == null) {
             log.warn("[CpsPlatformClientFactory] 未找到平台配置: {}", platformCode);
             return null;
         }
         String vendorCode = platform.getActiveVendorCode();
-        if (vendorCode == null || vendorCode.isBlank()) {
-            vendorCode = "dataoke"; // 默认使用大淘客
-        }
-        return getVendorClient(vendorCode, platformCode);
+        return StringUtils.hasText(vendorCode) ? vendorCode : null;
     }
 
     /**
@@ -177,13 +218,16 @@ public class CpsPlatformClientFactory {
      * @return 供应商运行时配置
      */
     public CpsVendorConfig getActiveVendorConfig(String platformCode) {
-        CpsPlatformDO platform = platformService.getPlatformByCode(platformCode);
-        if (platform == null) {
+        String vendorCode = resolveActiveVendorCode(platformCode);
+        if (!StringUtils.hasText(vendorCode)) {
             return null;
         }
-        String vendorCode = platform.getActiveVendorCode();
-        if (vendorCode == null || vendorCode.isBlank()) {
-            vendorCode = "dataoke";
+        return vendorService.getVendorConfig(vendorCode, platformCode);
+    }
+
+    public CpsVendorConfig getVendorConfig(String vendorCode, String platformCode) {
+        if (!StringUtils.hasText(vendorCode)) {
+            return getActiveVendorConfig(platformCode);
         }
         return vendorService.getVendorConfig(vendorCode, platformCode);
     }

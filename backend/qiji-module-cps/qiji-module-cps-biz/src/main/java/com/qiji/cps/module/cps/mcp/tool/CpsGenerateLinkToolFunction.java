@@ -62,6 +62,10 @@ public class CpsGenerateLinkToolFunction
         @JsonPropertyDescription("推广位ID，不填则使用平台默认推广位")
         private String adzoneId;
 
+        @JsonProperty(value = "vendor_code")
+        @JsonPropertyDescription("API供应商编码，不填则使用平台默认供应商")
+        private String vendorCode;
+
     }
 
     @Data
@@ -128,7 +132,8 @@ public class CpsGenerateLinkToolFunction
                     request.getGoodsId(),
                     request.getGoodsSign(),
                     memberId,
-                    request.getAdzoneId());
+                    request.getAdzoneId(),
+                    request.getVendorCode());
 
             if (result == null) {
                 Response response = new Response(null, null, null, null, null, null, null, null, "转链失败，请检查商品ID是否正确");

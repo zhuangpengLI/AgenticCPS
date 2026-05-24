@@ -6,6 +6,7 @@ import com.qiji.cps.module.cps.client.dto.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -179,5 +180,48 @@ class AbstractHdkVendorClientTest {
         assertEquals(1, pddParams.get("state"));
         assertEquals("1704038400", jdParams.get("start_date"));
         assertEquals("1704042000", pddParams.get("end_date"));
+    }
+
+    @Test
+    @DisplayName("淘宝选品类目筛选应使用好单库 column 参数")
+    void testTaobaoColumnSelectionParams() {
+        CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
+        request.setPageNo(3);
+        request.setPageSize(20);
+        request.setCategoryId("10");
+        request.setChannelCode("brand");
+        request.setSortType(4);
+        request.setPriceLowerLimit(new BigDecimal("10"));
+        request.setPriceUpperLimit(new BigDecimal("80"));
+        request.setCouponAmountMin(new BigDecimal("5"));
+        request.setMinMonthSales(1000L);
+
+        HdkTaobaoVendorClient client = new HdkTaobaoVendorClient();
+        Map<String, Object> params = client.buildColumnSearchParams(request);
+
+        assertEquals(8, params.get("type"));
+        assertEquals(20, params.get("back"));
+        assertEquals(3, params.get("min_id"));
+        assertEquals(10, params.get("cid"));
+        assertEquals(5, params.get("sort"));
+        assertEquals(new BigDecimal("10"), params.get("price_min"));
+        assertEquals(new BigDecimal("80"), params.get("price_max"));
+        assertEquals(new BigDecimal("5"), params.get("coupon_min"));
+        assertEquals(1000L, params.get("sale_min"));
+    }
+
+    @Test
+    @DisplayName("淘宝关键词搜索仍使用好单库 supersearch")
+    void testTaobaoKeywordSearchKeepsSuperSearch() {
+        CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
+        request.setKeyword("牙刷");
+        request.setHasCoupon(1);
+
+        HdkTaobaoVendorClient client = new HdkTaobaoVendorClient();
+        Map<String, Object> params = client.buildSearchParams(request, CpsVendorConfig.builder().build());
+
+        assertEquals("/supersearch", client.getSearchApiPath());
+        assertEquals(1, params.get("is_coupon"));
+        assertFalse(params.containsKey("type"));
     }
 }

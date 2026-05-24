@@ -24,6 +24,16 @@ public interface CpsGoodsService {
     CpsGoodsSearchResult searchGoods(String platformCode, CpsGoodsSearchRequest request);
 
     /**
+     * 在指定平台搜索商品，可临时指定 API 供应商.
+     *
+     * @param platformCode 平台编码
+     * @param request      搜索请求
+     * @param vendorCode   API供应商编码；为空时使用平台默认供应商
+     * @return 搜索结果
+     */
+    CpsGoodsSearchResult searchGoods(String platformCode, CpsGoodsSearchRequest request, String vendorCode);
+
+    /**
      * 聚合多平台搜索（比价）
      * <p>在所有已启用平台中搜索关键词，合并结果并按券后价排序</p>
      *
@@ -44,6 +54,21 @@ public interface CpsGoodsService {
      */
     CpsPromotionLinkResult generatePromotionLink(String platformCode, String goodsId,
                                                   String goodsSign, Long memberId, String adzoneId);
+
+    /**
+     * 生成推广链接（转链），可临时指定 API 供应商.
+     *
+     * @param platformCode 平台编码
+     * @param goodsId      商品ID
+     * @param goodsSign    商品goodsSign（拼多多必填）
+     * @param memberId     会员ID（用于订单归因）
+     * @param adzoneId     推广位ID（优先使用，不传则用平台默认）
+     * @param vendorCode   API供应商编码；为空时使用平台默认供应商
+     * @return 推广链接结果
+     */
+    CpsPromotionLinkResult generatePromotionLink(String platformCode, String goodsId,
+                                                  String goodsSign, Long memberId, String adzoneId,
+                                                  String vendorCode);
 
     /**
      * 解析最终使用的推广位 ID.

@@ -26,6 +26,9 @@ public class CpsGoodsRebateQueryReqVO {
     @NotNull(message = "会员ID不能为空")
     private Long memberId;
 
+    @Schema(description = "API供应商编码，不传则使用平台默认供应商", example = "dataoke")
+    private String vendorCode;
+
     @Schema(description = "推广位ID，不传则使用会员推广位或平台默认推广位")
     private String adzoneId;
 

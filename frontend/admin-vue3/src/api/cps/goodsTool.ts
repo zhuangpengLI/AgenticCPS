@@ -4,6 +4,7 @@ export interface CpsGoodsRebateQueryReqVO {
   platformCode: string
   originalContent: string
   memberId: number
+  vendorCode?: string
   adzoneId?: string
 }
 
@@ -26,6 +27,7 @@ export interface CpsGoodsRebateQueryRespVO {
     commissionAmount?: number
     estimateRebateAmount?: number
     usedAdzoneId?: string
+    usedVendorCode?: string
   }
   links?: {
     shortUrl?: string

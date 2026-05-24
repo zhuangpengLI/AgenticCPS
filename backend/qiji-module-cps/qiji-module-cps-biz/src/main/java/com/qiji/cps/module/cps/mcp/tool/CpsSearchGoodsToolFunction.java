@@ -60,6 +60,10 @@ public class CpsSearchGoodsToolFunction
         @JsonPropertyDescription("最高价格（元），可选筛选条件")
         private BigDecimal priceMax;
 
+        @JsonProperty(value = "vendor_code")
+        @JsonPropertyDescription("API供应商编码；指定单平台搜索时可用，不填则使用平台默认供应商")
+        private String vendorCode;
+
     }
 
     @Data
@@ -137,7 +141,7 @@ public class CpsSearchGoodsToolFunction
 
             List<CpsGoodsItem> items;
             if (request.getPlatformCode() != null && !request.getPlatformCode().isBlank()) {
-                items = goodsService.searchGoods(request.getPlatformCode(), searchRequest).getList();
+                items = goodsService.searchGoods(request.getPlatformCode(), searchRequest, request.getVendorCode()).getList();
             } else {
                 items = goodsService.searchGoodsAllPlatforms(searchRequest);
             }

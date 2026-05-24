@@ -125,11 +125,24 @@
       <el-row :gutter="16">
         <el-col :span="12">
           <el-form-item label="平台编码" prop="platformCode">
-            <el-input
+            <el-select
               v-model="formData.platformCode"
               placeholder="如: taobao"
+              filterable
+              allow-create
+              default-first-option
+              clearable
               :disabled="!!formData.id"
-            />
+              class="w-full"
+              @change="handlePlatformCodeChange"
+            >
+              <el-option
+                v-for="item in PLATFORM_CODE_OPTIONS"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -143,17 +156,27 @@
           </el-form-item>
         </el-col>
         <el-col :span="24">
-          <el-form-item label="默认推广位ID" prop="defaultAdzoneId">
-            <div class="flex gap-2 w-full">
-              <el-input
+          <el-form-item label="默认推广位" prop="defaultAdzoneId">
+            <div class="w-full">
+              <el-select
                 v-model="formData.defaultAdzoneId"
-                placeholder="请输入默认推广位ID，或点击右侧按钮选择"
+                :placeholder="adzoneSelectPlaceholder"
                 clearable
-                class="flex-1"
-              />
-              <el-button @click="openAdzoneDialog">
-                <Icon icon="ep:search" class="mr-5px" /> 选择
-              </el-button>
+                filterable
+                :disabled="!formData.platformCode"
+                :loading="optionLoading"
+                class="w-full"
+              >
+                <el-option
+                  v-for="item in enabledAdzoneOptions"
+                  :key="item.adzoneId"
+                  :label="formatAdzoneLabel(item)"
+                  :value="item.adzoneId"
+                />
+              </el-select>
+              <div class="mt-1 text-xs text-gray-400">
+                这里配置平台运行时默认推广位；后台工具和 MCP 可在调用时临时覆盖。
+              </div>
             </div>
           </el-form-item>
         </el-col>
@@ -187,17 +210,23 @@
           <el-form-item label="激活供应商" prop="activeVendorCode">
             <el-select
               v-model="formData.activeVendorCode"
-              placeholder="请选择供应商"
+              :placeholder="vendorSelectPlaceholder"
               clearable
+              filterable
+              :disabled="!formData.platformCode"
+              :loading="optionLoading"
               class="w-full"
             >
               <el-option
-                v-for="item in VENDOR_CODE_OPTIONS"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
+                v-for="item in enabledVendorOptions"
+                :key="`${item.vendorCode}:${item.platformCode}`"
+                :label="formatVendorLabel(item)"
+                :value="item.vendorCode"
               />
             </el-select>
+            <div class="mt-1 text-xs text-gray-400">
+              每个平台只能选择一个默认 API 供应商；未指定供应商的运行时调用使用它。
+            </div>
           </el-form-item>
         </el-col>
         <el-col :span="24">
@@ -228,16 +257,19 @@
     </template>
   </el-dialog>
 
-  <!-- 推广位选择对话框 -->
-  <AdzoneSelectDialog ref="adzoneDialogRef" @select="handleAdzoneSelect" />
 </template>
 
 <script setup lang="ts">
 import { CpsPlatformApi, type CpsPlatformVO, type CpsPlatformSaveVO, type CpsPlatformPageReqVO } from '@/api/cps/platform'
-import { VENDOR_CODE_OPTIONS } from '@/api/cps/apiVendor'
+import {
+  CpsApiVendorApi,
+  PLATFORM_CODE_OPTIONS,
+  VENDOR_CODE_OPTIONS,
+  type CpsApiVendorVO
+} from '@/api/cps/apiVendor'
+import { CpsAdzoneApi, type CpsAdzoneVO } from '@/api/cps/adzone'
 import { formatDate } from '@/utils/formatTime'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import AdzoneSelectDialog from '../components/AdzoneSelectDialog.vue'
 
 defineOptions({ name: 'CpsPlatform' })
 
@@ -246,10 +278,12 @@ const list = ref<CpsPlatformVO[]>([])
 const total = ref(0)
 const dialogVisible = ref(false)
 const formLoading = ref(false)
+const optionLoading = ref(false)
+const vendorOptions = ref<CpsApiVendorVO[]>([])
+const adzoneOptions = ref<CpsAdzoneVO[]>([])
 
 const queryFormRef = ref()
 const formRef = ref()
-const adzoneDialogRef = ref<InstanceType<typeof AdzoneSelectDialog>>()
 
 const queryParams = reactive<CpsPlatformPageReqVO>({
   pageNo: 1,
@@ -275,24 +309,58 @@ const defaultFormData = (): CpsPlatformSaveVO => ({
 const formData = reactive<CpsPlatformSaveVO>(defaultFormData())
 
 const formRules = computed(() => ({
-  platformCode: [{ required: true, message: '平台编码不能为空', trigger: 'blur' }],
+  platformCode: [{ required: true, message: '平台编码不能为空', trigger: 'change' }],
   platformName: [{ required: true, message: '平台名称不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
 }))
 
-/** 打开推广位选择对话框 */
-const openAdzoneDialog = () => {
-  adzoneDialogRef.value?.open(formData.platformCode || undefined)
-}
+const enabledVendorOptions = computed(() => vendorOptions.value.filter((item) => item.status === 1))
+const enabledAdzoneOptions = computed(() => adzoneOptions.value.filter((item) => item.status === 1))
 
-/** 推广位选择回调 */
-const handleAdzoneSelect = (adzoneId: string) => {
-  formData.defaultAdzoneId = adzoneId
-}
+const vendorSelectPlaceholder = computed(() =>
+  formData.platformCode ? '请选择当前平台启用供应商' : '请先选择平台编码'
+)
+
+const adzoneSelectPlaceholder = computed(() =>
+  formData.platformCode ? '请选择当前平台启用推广位' : '请先选择平台编码'
+)
 
 /** 供应商名称文本 */
 const vendorLabel = (code?: string) => {
   return VENDOR_CODE_OPTIONS.find((item) => item.value === code)?.label ?? code ?? '-'
+}
+
+const formatVendorLabel = (item: CpsApiVendorVO) => {
+  const name = item.vendorName || vendorLabel(item.vendorCode)
+  return `${name} / ${item.vendorCode}`
+}
+
+const formatAdzoneLabel = (item: CpsAdzoneVO) => {
+  const name = item.adzoneName ? `${item.adzoneName} / ` : ''
+  return `${name}${item.adzoneId}`
+}
+
+const loadPlatformOptions = async (platformCode?: string) => {
+  vendorOptions.value = []
+  adzoneOptions.value = []
+  if (!platformCode) return
+  optionLoading.value = true
+  try {
+    const [vendors, adzones] = await Promise.all([
+      CpsApiVendorApi.getVendorListByPlatform(platformCode),
+      CpsAdzoneApi.getAdzoneListByPlatform(platformCode)
+    ])
+    vendorOptions.value = vendors
+    adzoneOptions.value = adzones
+  } finally {
+    optionLoading.value = false
+  }
+}
+
+const handlePlatformCodeChange = async () => {
+  formData.activeVendorCode = undefined
+  formData.defaultAdzoneId = undefined
+  await loadPlatformOptions(formData.platformCode || undefined)
 }
 
 /** 查询列表 */
@@ -318,8 +386,10 @@ const resetQuery = () => {
 }
 
 /** 打开新增/编辑弹窗 */
-const openForm = (row?: CpsPlatformVO) => {
+const openForm = async (row?: CpsPlatformVO) => {
   Object.assign(formData, defaultFormData())
+  vendorOptions.value = []
+  adzoneOptions.value = []
   if (row) {
     Object.assign(formData, {
       id: row.id,
@@ -336,6 +406,7 @@ const openForm = (row?: CpsPlatformVO) => {
     })
   }
   dialogVisible.value = true
+  await loadPlatformOptions(formData.platformCode || undefined)
 }
 
 /** 提交表单 */
@@ -366,6 +437,7 @@ const handleStatusChange = async (row: CpsPlatformVO) => {
       platformCode: row.platformCode,
       platformName: row.platformName,
       defaultAdzoneId: row.defaultAdzoneId,
+      activeVendorCode: row.activeVendorCode,
       status: row.status
     })
     ElMessage.success(`已${text}平台：${row.platformName}`)
