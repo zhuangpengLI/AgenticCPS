@@ -54,7 +54,7 @@
 AgenticCPS 不再只是单独的 CPS 导购项目，而是 Agentic 生态中的“返利资产与商品推荐服务”。当前三个项目的基础能力与关系必须这样理解：
 
 - `aitoken-platform` 已经具备多模型网关、Token 计费、会员套餐、积分互转和支付能力，是生态里的 AI 能力与 Token 结算底座。
-- `AgenticCPS` 已经规划并落地商品搜索、比价、转链、订单追踪、返利汇总和 MCP 工具，是生态里的 CPS 返利资产与商品推荐服务。
+- `AgenticCPS` 已经规划并落地活动中心、返利工具箱、选品库、商品搜索、比价、批量转链、订单追踪、返利汇总和 MCP 工具，是生态里的 CPS 返利资产与商品推荐服务。
 - `AgenticAIoT` 已经定位为设备接入、数据流转、规则引擎、AI 运维和多协议 IoT 平台，是生态里的企业设备数据与 AI 运维场景入口。
 
 生态融合要补齐的不是把三套系统揉成一个大单体，而是三者之间的 **账户互通、资产互转、场景联动和 Agent 调用接口**。所有后续新功能都要先判断自己属于哪个项目的边界，再通过开放接口、MCP 工具或事件流水完成跨系统协作。
@@ -63,7 +63,7 @@ AgenticCPS 不再只是单独的 CPS 导购项目，而是 Agentic 生态中的�
 
 | 项目 | 生态定位 | 核心职责 | 边界约束 |
 |------|----------|----------|----------|
-| `AgenticCPS` | CPS 返利与商品推荐服务 | 商品搜索、比价、转链、订单追踪、返利结算、返利冻结/扣减、AIoT 场景商品推荐、CPS MCP Tools | 不负责大模型网关、Token 余额主账本、设备接入与设备规则引擎 |
+| `AgenticCPS` | CPS 返利与商品推荐服务 | 活动中心运营配置、返利工具箱、选品库主题与商品快照、商品搜索、比价、批量转链、口令解析、订单追踪、返利结算、返利冻结/扣减、AIoT 场景商品推荐、CPS MCP Tools | 不负责大模型网关、Token 余额主账本、设备接入与设备规则引擎 |
 | `aitoken-platform` | AI Token 与模型调用结算底座 | 多模型网关、Token 钱包、Token 计费、会员套餐、外部返利兑换 Token、API Key 额度、AI 调用成本统计、Token MCP Tools | 不负责 CPS 订单、返利结算、商品推荐和设备业务 |
 | `AgenticAIoT` | 企业级设备数据与 AI 运维场景入口 | 设备接入、指标采集、告警、规则引擎、AI 分析任务、采购需求生成、触发 CPS 推荐、AIoT MCP Tools | 不直接沉淀 Token 钱包，不直接实现 CPS 返利和电商平台适配 |
 
@@ -100,7 +100,7 @@ P0 的目标是先让“返利”变成生态内可消耗的 AI Token 燃料：
 | 阶段 | 目标 | 交付效果 |
 |------|------|----------|
 | P0 | CPS 返利兑换 aitoken Token | CPS 返利成为 AI Token 燃料 |
-| P1 | 强化 CPS MCP 工具和 AI 导购能力 | AI 可稳定搜索、比价、转链、查返利 |
+| P1 | 强化活动中心、返利工具箱、选品库、CPS MCP 工具和 AI 导购能力 | 运营可配置跨平台活动卡片、批量转链工作台和主题选品库，AI 可稳定搜索、比价、转链、查返利、按主题推荐商品 |
 | P2 | AgenticAIoT 统一消耗 aitoken Token | 设备告警、巡检、能耗分析统一计费 |
 | P3 | AIoT 数据驱动 CPS 商品推荐 | 设备问题 → AI 分析 → 商品推荐 → CPS 返利 |
 | P4 | 生态中台化 | 统一用户、账户、鉴权、事件、MCP Gateway、数据看板 |
@@ -313,7 +313,7 @@ AgenticCPS 的低代码能力体现在系统的每个层面：
 }
 ```
 
-**5 个 AI Tools 开筱即用**：
+**11 个 AI Tools 开箱即用**：
 
 | Tool | 功能 | 一句话说明 |
 |------|------|-----------|
@@ -322,6 +322,12 @@ AgenticCPS 的低代码能力体现在系统的每个层面：
 | `cps_generate_link` | 推广链接生成 | 生成带返利追踪的购买链接（短链/长链/口令/移动端） |
 | `cps_query_orders` | 订单查询 | 查看用户的返利订单列表与全链路状态 |
 | `cps_get_rebate_summary` | 返利汇总 | 查看余额、待结算、累计返利与最近记录 |
+| `cps_recommend_by_scene` | 场景推荐 | 面向 AIoT 场景按采购需求推荐 CPS 商品 |
+| `cps_list_selection_themes` | 选品库主题查询 | 查询已发布主题库，供 AI Agent 选择活动主题 |
+| `cps_recommend_from_selection_theme` | 主题选品推荐 | 按主题返回商品快照、推荐理由、券后价、佣金，可选生成推广链接 |
+| `cps_get_rebate_balance` | 可兑换返利查询 | 查询会员可兑换 Token 的返利余额 |
+| `cps_create_token_exchange` | 返利兑换 Token | 创建 CPS 返利兑换 aitoken Token 订单 |
+| `cps_query_exchange_status` | 兑换状态查询 | 查询返利兑换 Token 订单状态 |
 
 ---
 
@@ -335,10 +341,13 @@ AgenticCPS 的低代码能力体现在系统的每个层面：
 |---------|------|------------|
 | 多平台 CPS 接入 | 淘宝/京东/拼多多/抖音联盟统一接入 | 一套系统管所有平台 |
 | 商品搜索与比价 | 关键词搜索、链接解析、跨平台比价 | 帮用户找到最省钱的方案 |
+| 活动中心 | 管理后台配置跨平台活动卡片，支持 CPS/CPA、热门/最新、搜索和跳转商品广场 | 运营能快速搭建外卖、本地生活、票券等活动入口 |
+| 返利工具箱 | 集成万能转链、口令解析、商品广场、推广文案编辑和批量复制 | 运营在一个工作台完成选品、解析、转链和社群分发 |
+| 选品库 | 运营自定义主题、AI 推荐、第三方拉取、大促模板、商品快照沉淀 | 把一次性选品沉淀成可复用的主题货架 |
 | 会员返利体系 | 等级 + 平台 + 个人多维度返利配置 | 灵活设定利润空间 |
 | 订单全链路追踪 | 查询 → 转链 → 下单 → 结算 → 入账 | 每一分钱都追踪到位 |
 | 提现管理 | 支付宝/微信提现，自动/人工审核 | 自动化资金流转 |
-| MCP AI 接口 | 5 个 AI Tools，AI Agent 直接调用 | 接入 ChatGPT、Claude 等 AI 助手 |
+| MCP AI 接口 | 11 个 AI Tools，AI Agent 直接调用 | 接入 ChatGPT、Claude 等 AI 助手 |
 | 运营数据看板 | 订单/佣金/返利/利润实时统计 | 一个人掌控全局 |
 | 风控管理 | 异常行为检测、黑名单、退款率预警 | 自动守护资金安全 |
 
@@ -351,15 +360,15 @@ qiji-module-cps/
 │   └── api/                       # 远程服务接口
 │
 └── qiji-module-cps-biz/           # 业务实现层
-    ├── controller/admin/          # 管理后台接口（15 个）
-    ├── controller/app/            # 会员端接口（13 个）
-    ├── service/                   # 业务服务（7 大服务模块）
+    ├── controller/admin/          # 管理后台接口（含活动中心、返利工具箱、选品库、商品广场、平台/订单等）
+    ├── controller/app/            # 会员端接口
+    ├── service/                   # 业务服务（goods/toolbox/order/rebate/activity/selection/exchange 等）
     ├── client/                    # 平台适配器（策略模式，可插拔扩展）
     │   ├── taobao/                # 淘宝联盟
     │   ├── jingdong/              # 京东联盟
     │   ├── pinduoduo/             # 拼多多联盟
     │   └── douyin/                # 抖音联盟
-    ├── dal/                       # 数据访问层（9 张核心业务表）
+    ├── dal/                       # 数据访问层（CPS 核心业务表）
     ├── job/                       # 定时任务（订单同步、状态更新）
     └── mcp/                       # MCP AI 接口层
 ```
@@ -439,8 +448,8 @@ git clone https://github.com/zhuangpengLI/AgenticCPS.git
 cd AgenticCPS/backend
 
 # 2. 初始化数据库
-#    导入 sql/mysql/ruoyi-vue-pro.sql（主库表结构）
-#    按需导入各模块子 SQL（如 CPS 模块）
+#    先导入 sql/mysql/ruoyi-vue-pro.sql（主库表结构）
+#    再导入 sql/mysql/cps-all-in-one.sql（CPS 表、种子数据、菜单和权限）
 #    配置 application-local.yaml 中的数据库连接信息
 
 # 3. 启动后端
@@ -510,7 +519,7 @@ pnpm build:prod
 > **小李**，独立开发者，想做一个 AI 购物助手。
 > 
 > 以前：需要自己对接淘宝/京东/拼多多 API，写搜索、比价、转链逻辑。
-> 现在：接入 AgenticCPS 的 MCP 接口，5 个 AI Tools 开箱即用。
+> 现在：接入 AgenticCPS 的 MCP 接口，11 个 AI Tools 开箱即用，支持搜索、比价、转链、选品库推荐和返利兑换。
 > **1 天完成原来 2 个月的工作量。**
 
 ### 场景 3：Vibe Coding 快速扩展
@@ -531,7 +540,10 @@ pnpm build:prod
 - ✅ Phase 4：会员与提现（已完成）
 - ✅ Phase 5：数据统计（已完成）
 - ✅ Phase 6：MCP AI 接口（已完成）
-- ✅ Phase 7：文档与优化（已完成）
+- ✅ Phase 7：管理后台活动中心与商品广场联动（已完成）
+- ✅ Phase 8：管理后台选品库与主题商品快照（已完成）
+- ✅ Phase 9：返利工具箱（万能转链、口令解析、商品广场嵌入、推广文案编辑）（已完成）
+- ✅ Phase 10：文档与优化（持续更新）
 
 ---
 

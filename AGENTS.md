@@ -4,7 +4,7 @@ This file provides guidance to AI Agents (Qoder, Claude Code, etc.) when working
 
 ## Project Overview
 
-AgenticCPS is a **CPS (Cost Per Sale) Alliance Rebate System** built on ruoyi-vue-pro. It aggregates Taobao, JD.com, Pinduoduo, and Douyin affiliate platforms to provide rebate search, price comparison, order tracking, and settlement services. The system features AI Agent integration via MCP (Model Context Protocol).
+AgenticCPS is a **CPS (Cost Per Sale) Alliance Rebate System** built on ruoyi-vue-pro. It aggregates Taobao, JD.com, Pinduoduo, Douyin, and local-life style affiliate scenarios to provide activity-center operations, rebate toolbox operations, selection-theme operations, rebate search, price comparison, order tracking, and settlement services. The system features AI Agent integration via MCP (Model Context Protocol).
 
 **Key differentiator**: This project uses Vibe Coding + AI autonomous programming — CPS module code is 100% AI-generated (20,000+ lines of code including business services, scheduled jobs, MCP interface layer, and unit tests).
 
@@ -46,13 +46,15 @@ AgenticCPS is developed with Codex as an autonomous coding agent, deeply integra
 - Midscene.js is an assisted visual/semantic E2E layer for admin-vue3 only. It may describe UI intent, but final acceptance must still include Playwright `expect` assertions or backend tests.
 - Do not commit model credentials. Midscene reads only environment variables such as `MIDSCENE_MODEL_BASE_URL`, `MIDSCENE_MODEL_API_KEY`, `MIDSCENE_MODEL_NAME`, and `MIDSCENE_MODEL_FAMILY`.
 
-### Current Project Map Notes (2026-05-18)
+### Current Project Map Notes (2026-05-24)
 
 - Current backend module names use the `qiji-*` prefix even where older docs still mention `yudao-*`: main app is `backend/qiji-server`, CPS module is `backend/qiji-module-cps`, framework is `backend/qiji-framework`.
 - Backend entry point is `backend/qiji-server/src/main/java/com/qiji/cps/server/QijiServerApplication.java`; it scans `${qiji.info.base-package}.server` and `${qiji.info.base-package}.module`, with `qiji.info.base-package: com.qiji.cps`.
 - Runtime config is split between `backend/qiji-server/src/main/resources/application.yaml` and `application-local.yaml`; local backend port is `48080`.
 - API prefixes are framework-driven: `controller.admin` maps to `/admin-api`, `controller.app` maps to `/app-api`; CPS `controller.openapi` declares its own `/openapi/...` routes.
 - CPS critical flow map: App/MCP -> CPS controller/tool -> `CpsGoodsService` / exchange services -> `CpsPlatformClientFactory` or aitoken OpenAPI -> external platform / aitoken -> CPS DB records.
+- Activity center flow: Admin activity center -> `CpsRebateActivityController` -> `CpsRebateActivityService` -> `cps_rebate_activity`; card `search` jumps to `frontend/admin-vue3/src/views/cps/goods/square/index.vue` with platform/keyword/tag query params.
+- Rebate toolbox flow: Admin toolbox -> `frontend/admin-vue3/src/views/cps/toolbox/index.vue` -> `CpsGoodsRebateQueryController` parse/batch-transfer endpoints -> `CpsGoodsToolboxService` -> existing rebate query and platform parsing services.
 - Generated companion map: `docs/project-map.md` contains the latest read-only project map and should be refreshed when module ownership, entrypoints, commands, or risk areas change.
 
 ## Agentic Ecosystem Relationship
@@ -62,14 +64,14 @@ AgenticCPS is one service in a three-project Agentic ecosystem. Future features 
 Current ecosystem capability baseline:
 
 - `aitoken-platform` already has a multi-model gateway, Token billing, membership plans, credit/points transfer, and payment capabilities. It is the ecosystem's AI capability and Token settlement foundation.
-- `AgenticCPS` already plans and implements product search, price comparison, promotion link generation, order tracking, rebate summary, and MCP tools. It is the ecosystem's CPS rebate asset and product recommendation service.
+- `AgenticCPS` already plans and implements activity-center operations, rebate toolbox operations, selection-theme libraries, product search, price comparison, promotion link generation, order tracking, rebate summary, and MCP tools. It is the ecosystem's CPS rebate asset and product recommendation service.
 - `AgenticAIoT` is positioned as a device access, data flow, rule engine, AI operations, and multi-protocol IoT platform. It is the ecosystem's enterprise device data and AI operations scenario entry.
 
 The missing ecosystem integration is **account interoperability, asset conversion, scenario linkage, and Agent-callable interfaces**. Do not merge the three systems into a monolith. For every new feature, first decide which project owns the responsibility, then connect systems through OpenAPI, MCP tools, or event ledgers.
 
 | Project | Path | Role | Owns | Must Not Own |
 |---------|------|------|------|--------------|
-| AgenticCPS | `F:\ai\AgenticCPS` | CPS rebate and product recommendation service | CPS platform adapters, goods search, price comparison, promotion links, order tracking, rebate settlement, rebate freeze/deduct, CPS MCP tools, AIoT scene-based product recommendation | Model gateway, Token master ledger, IoT device ingestion, IoT rule engine |
+| AgenticCPS | `F:\ai\AgenticCPS` | CPS rebate and product recommendation service | Activity-center operations, rebate toolbox operations, selection-theme libraries and item snapshots, CPS platform adapters, goods search, price comparison, promotion links, batch transfer, content parsing, order tracking, rebate settlement, rebate freeze/deduct, CPS MCP tools, AIoT scene-based product recommendation | Model gateway, Token master ledger, IoT device ingestion, IoT rule engine |
 | aitoken-platform | `F:\ai\ai-token-platform` | AI Token and model billing foundation | Multi-model gateway, Token wallet/quota, membership plans, external rebate-to-Token exchange, API Key quota, AI usage cost accounting, Token MCP tools | CPS orders, CPS rebate settlement, product recommendation, IoT devices |
 | AgenticAIoT | `F:\ai\AgenticAIoT` | Enterprise AIoT data and operations scenario service | Device access, metrics, alerts, rules, AI analysis tasks, purchase-need generation, CPS recommendation trigger, AIoT MCP tools | Token wallet master ledger, CPS rebate accounting, ecommerce platform adapters |
 
@@ -114,7 +116,7 @@ Relevant local documentation:
 | Phase | Goal | Implementation Guidance |
 |-------|------|-------------------------|
 | P0 | CPS rebate -> aitoken Token | Maintain the existing exchange saga and HMAC OpenAPI contract. |
-| P1 | CPS as AI-callable shopping tools | Improve `cps_search_goods`, `cps_compare_prices`, `cps_generate_link`, and add scene recommendation without changing Token ownership. |
+| P1 | CPS as AI-callable shopping tools | Improve `cps_search_goods`, `cps_compare_prices`, `cps_generate_link`, selection-theme recommendation, and scene recommendation without changing Token ownership. |
 | P2 | AIoT consumes aitoken Token | AgenticAIoT should call aitoken `/v1/chat/completions` with metadata and usage accounting. |
 | P3 | AIoT drives CPS recommendation | AIoT creates purchase needs; CPS maps them to categories/products/promotion links. |
 | P4 | Ecosystem hub | Only introduce a separate hub when user/account/auth/event responsibilities outgrow repo-local contracts. |
@@ -128,18 +130,18 @@ AgenticCPS/
 │   ├── qiji-module-cps/       # CPS rebate core module (primary focus)
 │   │   ├── qiji-module-cps-api/     # API definitions (enums, remote interfaces)
 │   │   └── qiji-module-cps-biz/     # Business implementation
-│   │       ├── controller/admin/    # Admin REST APIs (15 controllers)
-│   │       ├── controller/app/      # Member-facing REST APIs (13 controllers)
-│   │       ├── service/             # Business services (7 service modules)
+│   │       ├── controller/admin/    # Admin REST APIs, including activity center, rebate toolbox, selection library, and goods square
+│   │       ├── controller/app/      # Member-facing REST APIs
+│   │       ├── service/             # Business services (goods, toolbox, order, rebate, activity, selection, exchange, etc.)
 │   │       ├── client/              # CPS platform adapters (Strategy pattern)
 │   │       │   ├── taobao/          # Taobao affiliate adapter
 │   │       │   ├── jingdong/        # JD.com affiliate adapter
 │   │       │   ├── pinduoduo/       # Pinduoduo affiliate adapter
 │   │       │   └── douyin/          # Douyin affiliate adapter
-│   │       ├── dal/                  # Data access layer (MyBatis Plus, 9 core tables)
+│   │       ├── dal/                  # Data access layer (MyBatis Plus, CPS core tables)
 │   │       ├── job/                  # Scheduled jobs (Quartz - order sync, status update)
 │   │       └── mcp/                  # MCP AI interface layer
-│   │           └── tool/             # 5 MCP tool functions
+│   │           └── tool/             # MCP tool functions for goods, rebate, exchange, scenes, and selection libraries
 │   ├── qiji-module-ai/       # AI module (Spring AI 1.1.2 + MCP support)
 │   ├── qiji-module-member/   # Member management
 │   ├── qiji-module-pay/      # Payment/wallet system
@@ -308,9 +310,41 @@ public interface CpsPlatformClient {
 
 To add a new platform (e.g., Weibo), implement this interface and register as a Spring Bean. No core logic changes required. Platform registration is managed by `CpsPlatformClientFactory`.
 
+### Activity Center / Rebate Activity Cards
+
+The admin activity center is backed by `cps_rebate_activity` and `CpsRebateActivityService`. It is an operations-configured source of truth with optional vendor metadata enhancement only; do not add external SDK dependencies just to populate activity cards.
+
+- Admin API: `GET /admin-api/cps/rebate-activity/center` with `platformCode`, `billingType`, `keyword`, `sortMode`, `pageNo`, and `pageSize`.
+- Frontend page: `frontend/admin-vue3/src/views/cps/activity/square/index.vue`; card `search` jumps to `frontend/admin-vue3/src/views/cps/goods/square/index.vue`.
+- Card fields include activity name, platform code/name/logo, main image, `CPS` / `CPA` / `CPS+CPA`, promotion count, reward text, activity window, jump type/params, source type, external activity id, and tag text.
+- Required permissions: `cps:rebate-activity:query/create/update/delete`.
+- Fallback tabs must include hot, Meituan, Eleme, Douyin, local life, Fliggy, Pinduoduo, Taobao, and JD even when no platform adapter exists yet.
+
+### Rebate Toolbox
+
+The admin rebate toolbox is the unified operations workbench for parsing, batch transfer, goods-square selection, and promotion copy editing. It is inspired by Dataoke-style tool workspaces but must reuse existing CPS services instead of creating a second transfer pipeline.
+
+- Frontend page: `frontend/admin-vue3/src/views/cps/toolbox/index.vue`.
+- Admin APIs: `POST /admin-api/cps/goods/parse` and `POST /admin-api/cps/goods/batch-transfer`.
+- Backend service: `CpsGoodsToolboxService`; batch transfer delegates to `CpsGoodsRebateQueryService.queryRebate()` per item.
+- Batch transfer accepts at most 20 nonblank inputs, preserves input index, and does not stop the whole batch when one item fails.
+- Permissions: `cps:toolbox:query` for parsing/viewing and `cps:toolbox:link` for batch transfer.
+
+### Selection Library / Theme Goods Shelf
+
+The admin selection library is backed by `cps_selection_theme` and `cps_selection_theme_item`. It is an operations-owned thematic goods shelf: themes store reusable rules, while items store third-party goods snapshots captured at import/refresh time.
+
+- Admin API root: `/admin-api/cps/selection-theme`; permissions use `cps:selection-theme:*`.
+- Frontend page: `frontend/admin-vue3/src/views/cps/selection/theme/index.vue`.
+- Data boundary: selection item prices, coupons, commissions, sales, and shop/category fields are snapshots for operations and AI recommendation only; they must not drive rebate settlement, order attribution, freeze/deduct, withdrawal, or Token exchange.
+- Import sources are fixed as `MANUAL`, `AI_RECOMMEND`, `VENDOR_PULL`, and `PROMOTION_TEMPLATE`; item status is `ENABLED` / `DISABLED`; theme status is `DRAFT` / `PUBLISHED` / `OFFLINE`.
+- Third-party pull must reuse `CpsGoodsSquareService` / `CpsGoodsService` / `CpsPlatformClientFactory`; do not add a platform adapter just for selection-library ingestion.
+- AI recommendation must remain explainable: deterministic rule scoring decides ranking, while LLM output may only enrich theme copy and item recommendation reasons. Never let LLM output overwrite third-party facts such as `goodsId`, price, coupon, commission, or sales.
+- Built-in promotion templates create draft themes only. Operations must explicitly publish after reviewing rules and imported items.
+
 ### MCP AI Interface Layer
 
-Located in `qiji-module-cps-biz/mcp/tool/`, 5 tool functions registered via Spring AI:
+Located in `qiji-module-cps-biz/mcp/tool/`, MCP tool functions registered via Spring AI include:
 
 | Tool Class | Tool Name | Description |
 |-----------|-----------|-------------|
@@ -319,6 +353,12 @@ Located in `qiji-module-cps-biz/mcp/tool/`, 5 tool functions registered via Spri
 | `CpsGenerateLinkToolFunction` | `cps_generate_link` | Generate promotion links with rebate tracking (short/long/token/mobile) |
 | `CpsQueryOrdersToolFunction` | `cps_query_orders` | Query member orders and rebate status |
 | `CpsGetRebateSummaryToolFunction` | `cps_get_rebate_summary` | Query rebate account: balance, pending, total, recent records |
+| `CpsRecommendBySceneToolFunction` | `cps_recommend_by_scene` | Recommend CPS goods for AIoT or scenario-based purchase needs |
+| `CpsListSelectionThemesToolFunction` | `cps_list_selection_themes` | List published selection-library themes |
+| `CpsRecommendFromSelectionThemeToolFunction` | `cps_recommend_from_selection_theme` | Return goods from a published selection theme; only generate promotion links when explicitly requested with trusted member context |
+| `CpsGetRebateBalanceToolFunction` | `cps_get_rebate_balance` | Query exchangeable rebate balance |
+| `CpsCreateTokenExchangeToolFunction` | `cps_create_token_exchange` | Create a rebate-to-Token exchange order |
+| `CpsQueryExchangeStatusToolFunction` | `cps_query_exchange_status` | Query rebate-to-Token exchange status |
 
 **MCP Protocol Details:**
 - Transport: Streamable HTTP (JSON-RPC 2.0)
@@ -373,6 +413,7 @@ See `agent_improvement/memory/codegen-rules.md` for full details.
 - Soft delete via `deleted` bit field
 - Multi-tenancy via `tenant_id` column
 - CPS module tables: `cps_*` prefix
+- CPS business SQL lives in `backend/sql/mysql/cps-all-in-one.sql`; do not add CPS tables, seed data, menus, or permissions to `backend/sql/mysql/ruoyi-vue-pro.sql`.
 
 ## Configuration
 
@@ -442,7 +483,8 @@ replacements = [
     # add more pairs...
 ]
 files = [
-    'backend/sql/mysql/ruoyi-vue-pro.sql',
+    'backend/sql/mysql/cps-all-in-one.sql',  # CPS business SQL
+    'backend/sql/mysql/ruoyi-vue-pro.sql',  # non-CPS base SQL only
     'backend/sql/oracle/ruoyi-vue-pro.sql',
     # add more files...
 ]
@@ -494,6 +536,8 @@ with open('local/path/to/file.sql', 'w', encoding='utf-8', newline='') as f:
 - **OpenAPI signature and replay protection**: current HMAC verification depends on `X-App-Id`, `X-Tenant-Id`, `X-Timestamp`, `X-Nonce`, `X-Signature`, and `X-Idempotency-Key`. Any change must consider timestamp windows, nonce replay, tenant isolation, and body canonicalization.
 - **Member identity trust boundary**: never trust request-body `memberId` / `userId` for user-facing asset operations. Use login context or verified service signatures. MCP link generation is especially sensitive because attribution affects rebates.
 - **Platform adapter completeness**: official vendor clients may be partial; switching `active_vendor_code` can turn unimplemented adapters into silent empty results or null link failures.
+- **Activity center data boundary**: operation-configured cards are the stable source; vendor/source metadata is optional enhancement. Keep `search/url/none` jump semantics safe, and do not make card availability depend on external platform calls.
+- **Selection library snapshot boundary**: theme items are marketing/operations snapshots, not financial truth. Refresh/import must preserve tenant isolation, item dedupe, and source/status fields; AI copy must not mutate platform facts.
 - **Order sync and settlement state**: platform order sync can receive duplicates or out-of-order state changes. Guard against status rollback, duplicate rebate records, and repeated account mutation.
 - **MCP auditability**: MCP access log tables exist, but tool-level logging may be incomplete. Changes to MCP tools should preserve tool name, parameter summary, member context, status, duration, and error reason.
 - **Statistics performance**: SQL that wraps indexed time columns, such as `DATE(create_time)`, can degrade on large tables. Prefer range predicates when touching dashboard/statistics queries.
