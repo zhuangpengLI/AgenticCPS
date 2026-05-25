@@ -15,7 +15,7 @@ import java.util.Set;
 /**
  * 签到记录 Mapper
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Mapper
 public interface MemberSignInRecordMapper extends BaseMapperX<MemberSignInRecordDO> {

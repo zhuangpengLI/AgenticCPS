@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * 限时折扣活动 Convert
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Mapper
 public interface DiscountActivityConvert {

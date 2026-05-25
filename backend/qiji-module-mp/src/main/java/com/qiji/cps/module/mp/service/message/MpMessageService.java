@@ -14,7 +14,7 @@ import jakarta.validation.Valid;
 /**
  * 公众号消息 Service 接口
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public interface MpMessageService {
 

@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * {@link ZhiPuAiChatModel} 的集成测试
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public class ZhiPuAiChatModelTests {
 

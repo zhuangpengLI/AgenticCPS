@@ -6,7 +6,7 @@ import lombok.Data;
 /**
  * 会员等级 Resp DTO
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Data
 public class MemberLevelRespDTO {

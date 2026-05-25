@@ -18,7 +18,7 @@ import static com.qiji.cps.framework.common.util.collection.CollectionUtils.conv
 /**
  * 字典工具类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Slf4j
 public class DictFrameworkUtils {

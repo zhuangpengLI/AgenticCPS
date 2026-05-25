@@ -33,7 +33,7 @@ import static com.qiji.cps.module.mp.enums.ErrorCodeConstants.MENU_SAVE_FAIL;
 /**
  * 公众号菜单 Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Validated

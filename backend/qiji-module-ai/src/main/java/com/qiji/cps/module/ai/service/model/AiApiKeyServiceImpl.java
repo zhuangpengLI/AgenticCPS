@@ -20,7 +20,7 @@ import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.API_KEY_NOT_EXISTS
 /**
  * AI API 密钥 Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Validated

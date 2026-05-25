@@ -43,7 +43,7 @@ import static com.qiji.cps.module.member.enums.ErrorCodeConstants.*;
 /**
  * 会员 User Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Valid

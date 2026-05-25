@@ -3,7 +3,7 @@ package com.qiji.cps.module.system.service.member;
 /**
  * Member Service 接口
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public interface MemberService {
 

@@ -6,7 +6,7 @@ import lombok.Getter;
 /**
  * 文档地址
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Getter
 @AllArgsConstructor

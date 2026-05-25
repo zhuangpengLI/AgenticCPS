@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * 自动回复消息的事件处理器
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Component
 @Slf4j

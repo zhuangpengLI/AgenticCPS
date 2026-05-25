@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * 会员用户 Service 接口
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public interface MemberUserService {
 

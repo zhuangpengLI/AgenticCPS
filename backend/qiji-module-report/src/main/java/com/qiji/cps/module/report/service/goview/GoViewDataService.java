@@ -5,7 +5,7 @@ import com.qiji.cps.module.report.controller.admin.goview.vo.data.GoViewDataResp
 /**
  * GoView 数据 Service 接口
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public interface GoViewDataService {
 

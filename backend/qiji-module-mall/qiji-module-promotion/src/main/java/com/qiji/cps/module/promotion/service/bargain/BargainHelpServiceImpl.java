@@ -27,7 +27,7 @@ import static com.qiji.cps.module.promotion.enums.ErrorCodeConstants.*;
 /**
  * 砍价助力 Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Validated

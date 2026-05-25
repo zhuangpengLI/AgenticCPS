@@ -7,6 +7,6 @@ test.describe('issue reproduction template', () => {
     // 1. Arrange: prepare test data, route, account, or API mocks.
     // 2. Act: execute the exact user-reported steps.
     // 3. Assert: capture the broken behavior before fixing code.
-    await expect(page).toHaveTitle(/芋道|AgenticCPS|管理后台/)
+    await expect(page).toHaveTitle(/AgenticCPS|AgenticCPS|管理后台/)
   })
 })

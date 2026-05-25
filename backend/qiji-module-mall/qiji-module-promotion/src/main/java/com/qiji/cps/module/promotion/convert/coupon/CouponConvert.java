@@ -18,7 +18,7 @@ import java.util.Collection;
 /**
  * 优惠劵 Convert
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Mapper
 public interface CouponConvert {

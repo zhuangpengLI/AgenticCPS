@@ -15,7 +15,7 @@
 
 ## 🐯 商城简介
 
-**芋道商城**，基于 [芋道开发平台](https://github.com/YunaiV/ruoyi-vue-pro) 构建，以开发者为中心，打造中国第一流的 Java 开源商城系统，全部开源，个人与企业可 100% 免费使用。
+**AgenticCPS商城**，基于 [AgenticCPS开发平台](https://github.com/YunaiV/ruoyi-vue-pro) 构建，以开发者为中心，打造中国第一流的 Java 开源商城系统，全部开源，个人与企业可 100% 免费使用。
 
 > 有任何问题，或者想要的功能，可以在 Issues 中提给艿艿。
 >

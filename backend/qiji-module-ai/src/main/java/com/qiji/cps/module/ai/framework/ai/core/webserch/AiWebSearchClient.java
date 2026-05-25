@@ -3,7 +3,7 @@ package com.qiji.cps.module.ai.framework.ai.core.webserch;
 /**
  * 网络搜索客户端接口
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public interface AiWebSearchClient {
 

@@ -1,6 +1,7 @@
 package com.qiji.cps.module.system.service.permission;
 
 import com.qiji.cps.framework.common.enums.CommonStatusEnum;
+import com.qiji.cps.framework.common.exception.ServiceException;
 import com.qiji.cps.framework.test.core.ut.BaseDbUnitTest;
 import com.qiji.cps.module.system.controller.admin.permission.vo.menu.MenuListReqVO;
 import com.qiji.cps.module.system.controller.admin.permission.vo.menu.MenuSaveVO;
@@ -27,6 +28,7 @@ import static com.qiji.cps.module.system.dal.dataobject.permission.MenuDO.ID_ROO
 import static com.qiji.cps.module.system.enums.ErrorCodeConstants.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -299,6 +301,28 @@ public class MenuServiceImplTest extends BaseDbUnitTest {
         // 调用，并断言异常
         assertServiceException(() -> menuService.validateMenuName(parentId, otherSonMenuName, otherSonMenuId),
                 MENU_NAME_DUPLICATE);
+    }
+
+    @Test
+    public void testCreateMenu_sameParentPathDuplicate() {
+        // mock 数据
+        MenuDO parentMenu = buildMenuDO(MenuTypeEnum.DIR, "parent", ID_ROOT);
+        menuMapper.insert(parentMenu);
+        MenuDO firstMenu = buildMenuDO(MenuTypeEnum.MENU, "first", parentMenu.getId());
+        firstMenu.setPath("same-path");
+        firstMenu.setComponentName("");
+        menuMapper.insert(firstMenu);
+        // 准备参数：同一个父级下再次创建相同路由地址
+        MenuSaveVO reqVO = randomPojo(MenuSaveVO.class, o -> {
+            o.setParentId(parentMenu.getId());
+            o.setName("second");
+            o.setType(MenuTypeEnum.MENU.getType());
+            o.setPath(firstMenu.getPath());
+            o.setComponentName("");
+        }).setId(null);
+
+        // 调用，并断言异常
+        assertThrows(ServiceException.class, () -> menuService.createMenu(reqVO));
     }
 
     // ====================== 初始化方法 ======================

@@ -21,7 +21,7 @@ import static com.qiji.cps.module.infra.enums.ErrorCodeConstants.DATA_SOURCE_CON
 /**
  * 数据源配置 Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Validated

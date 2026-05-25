@@ -14,7 +14,7 @@ import java.util.Optional;
 /**
  * 佣金提现 Convert
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Mapper
 public interface BrokerageWithdrawConvert {

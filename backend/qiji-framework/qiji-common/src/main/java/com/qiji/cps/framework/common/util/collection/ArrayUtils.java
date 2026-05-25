@@ -13,7 +13,7 @@ import static com.qiji.cps.framework.common.util.collection.CollectionUtils.conv
 /**
  * Array 工具类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public class ArrayUtils {
 

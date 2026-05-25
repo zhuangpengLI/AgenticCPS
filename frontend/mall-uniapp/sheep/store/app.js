@@ -72,7 +72,7 @@ const app = defineStore({
       // TODO 芋艿：【初始化优化】未来支持管理后台可配；对应 https://api.shopro.sheepjs.com/shop/api/init
       if (true) {
         this.info = {
-          name: '芋道商城',
+          name: 'AgenticCPS商城',
           logo: 'https://static.iocoder.cn/ruoyi-vue-pro-logo.png',
           version: '2026.01',
           copyright: '全部开源，个人与企业可 100% 免费使用',

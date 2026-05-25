@@ -35,7 +35,7 @@ import static com.qiji.cps.module.member.enums.ErrorCodeConstants.SIGN_IN_RECORD
 /**
  * 签到记录 Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Validated

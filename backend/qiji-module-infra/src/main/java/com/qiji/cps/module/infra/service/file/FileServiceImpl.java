@@ -29,7 +29,7 @@ import static com.qiji.cps.module.infra.enums.ErrorCodeConstants.FILE_NOT_EXISTS
 /**
  * 文件 Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 public class FileServiceImpl implements FileService {

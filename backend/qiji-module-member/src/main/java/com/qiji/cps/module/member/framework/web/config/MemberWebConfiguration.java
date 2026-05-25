@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * member 模块的 web 组件的 Configuration
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Configuration(proxyBeanMethods = false)
 public class MemberWebConfiguration {

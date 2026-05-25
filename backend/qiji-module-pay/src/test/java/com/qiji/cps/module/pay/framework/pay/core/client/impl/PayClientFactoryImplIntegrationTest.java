@@ -20,7 +20,7 @@ import java.io.FileNotFoundException;
 /**
  * {@link PayClientFactoryImpl} 的集成测试
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Disabled
 public class PayClientFactoryImplIntegrationTest {

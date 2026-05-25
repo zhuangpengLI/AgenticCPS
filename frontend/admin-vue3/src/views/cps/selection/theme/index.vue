@@ -81,6 +81,29 @@
           </el-col>
         </el-row>
       </el-form>
+
+      <div class="stat-strip">
+        <div class="stat-card">
+          <span>主题总数</span>
+          <b>{{ themeTotal }}</b>
+          <em>当前筛选</em>
+        </div>
+        <div class="stat-card success">
+          <span>已发布</span>
+          <b>{{ themeStats.published }}</b>
+          <em>MCP 可见</em>
+        </div>
+        <div class="stat-card warning">
+          <span>草稿</span>
+          <b>{{ themeStats.draft }}</b>
+          <em>待确认</em>
+        </div>
+        <div class="stat-card primary">
+          <span>当前商品</span>
+          <b>{{ itemStats.total }}</b>
+          <em>{{ itemStats.enabled }} 启用 / {{ itemStats.disabled }} 停用</em>
+        </div>
+      </div>
     </ContentWrap>
 
     <div class="selection-layout">
@@ -88,6 +111,16 @@
         <div class="pane-head">
           <span>主题列表</span>
           <el-tag effect="plain">{{ themeTotal }}</el-tag>
+        </div>
+        <div class="quick-filters">
+          <el-check-tag
+            v-for="item in quickStatusFilters"
+            :key="item.value"
+            :checked="queryParams.status === item.value"
+            @change="setQuickStatus(item.value)"
+          >
+            {{ item.label }}
+          </el-check-tag>
         </div>
         <el-empty v-if="!themeLoading && themeList.length === 0" description="暂无主题" />
         <div v-else v-loading="themeLoading" class="theme-list">
@@ -107,12 +140,16 @@
             <div class="theme-meta">
               {{ item.themeCode }} · {{ item.platformCodes || '全平台' }}
             </div>
+            <div v-if="item.description" class="theme-desc">{{ item.description }}</div>
             <div class="theme-tags">
               <el-tag v-if="item.promotionEvent" size="small" type="danger" effect="plain">
                 {{ item.promotionEvent }}
               </el-tag>
+              <el-tag v-if="item.themeType" size="small" effect="plain">
+                {{ themeTypeLabel(item.themeType) }}
+              </el-tag>
               <el-tag v-if="item.refreshStatus" size="small" effect="plain">
-                {{ item.refreshStatus }}
+                {{ refreshStatusLabel(item.refreshStatus) }}
               </el-tag>
             </div>
           </button>
@@ -142,11 +179,34 @@
             <div class="selected-desc">
               {{ selectedTheme?.description || '创建主题后可导入商品快照并发布给 MCP 使用' }}
             </div>
+            <div v-if="selectedTheme" class="selected-meta">
+              <el-tag v-for="item in selectedPlatforms" :key="item" size="small" effect="plain">
+                {{ platformLabel(item) }}
+              </el-tag>
+              <el-tag
+                v-for="item in selectedTags"
+                :key="item"
+                size="small"
+                type="success"
+                effect="plain"
+              >
+                {{ item }}
+              </el-tag>
+              <span v-if="selectedTheme.lastRefreshTime">
+                最近刷新 {{ formatDateTime(selectedTheme.lastRefreshTime) }}
+              </span>
+            </div>
           </div>
           <div class="toolbar-actions">
             <el-segmented v-model="viewMode" :options="viewOptions" />
+            <el-button :disabled="!selectedTheme" :loading="itemLoading" @click="getItems">
+              <Icon icon="ep:refresh" />
+            </el-button>
             <el-button :disabled="!selectedTheme" @click="openThemeForm('update')">
               <Icon icon="ep:edit" />
+            </el-button>
+            <el-button type="danger" plain :disabled="!selectedTheme" @click="handleDeleteTheme">
+              <Icon icon="ep:delete" />
             </el-button>
             <el-button type="success" :disabled="!selectedTheme" @click="handlePublish">
               <Icon icon="ep:upload" class="mr-5px" /> 发布
@@ -156,6 +216,35 @@
             </el-button>
           </div>
         </div>
+
+        <div v-if="selectedTheme" class="theme-insight">
+          <div>
+            <span>主题编码</span>
+            <b>{{ selectedTheme.themeCode }}</b>
+          </div>
+          <div>
+            <span>来源供应商</span>
+            <b>{{ selectedTheme.vendorCode || '默认路由' }}</b>
+          </div>
+          <div>
+            <span>商品快照</span>
+            <b>{{ itemStats.total }}</b>
+          </div>
+          <div>
+            <span>推荐均分</span>
+            <b>{{ averageScore }}</b>
+          </div>
+        </div>
+
+        <el-alert
+          v-if="selectedTheme && themeTips.length"
+          class="theme-alert"
+          type="warning"
+          :closable="false"
+          show-icon
+        >
+          <template #title>{{ themeTips.join('；') }}</template>
+        </el-alert>
 
         <div class="action-panel">
           <el-button type="primary" :disabled="!selectedTheme" @click="openAiDrawer">
@@ -171,17 +260,22 @@
             :disabled="selectedItemIds.length === 0"
             @click="batchUpdateItemStatus('ENABLED')"
           >
-            启用
+            批量启用
           </el-button>
           <el-button
             :disabled="selectedItemIds.length === 0"
             @click="batchUpdateItemStatus('DISABLED')"
           >
-            停用
+            批量停用
           </el-button>
+          <span v-if="selectedItemIds.length" class="selection-count">
+            已选 {{ selectedItemIds.length }} 个商品
+          </span>
         </div>
 
-        <el-empty v-if="!selectedTheme" description="从左侧选择一个主题" />
+        <el-empty v-if="!selectedTheme" description="从左侧选择一个主题">
+          <el-button type="primary" @click="openThemeForm('create')">新建主题</el-button>
+        </el-empty>
         <template v-else>
           <el-table
             v-if="viewMode === 'table'"
@@ -229,6 +323,12 @@
               </template>
             </el-table-column>
             <el-table-column prop="monthSales" label="销量" width="110" />
+            <el-table-column label="来源/快照" width="150">
+              <template #default="{ row }">
+                <div>{{ sourceLabel(row.sourceType) }}</div>
+                <div class="text-12px text-gray-500">{{ formatDateTime(row.snapshotTime) }}</div>
+              </template>
+            </el-table-column>
             <el-table-column label="推荐" min-width="220">
               <template #default="{ row }">
                 <div class="score-line">
@@ -256,6 +356,15 @@
                 <el-button link type="danger" @click="deleteItem(row)">删除</el-button>
               </template>
             </el-table-column>
+            <template #empty>
+              <el-empty description="该主题还没有商品快照">
+                <div class="empty-actions">
+                  <el-button type="primary" @click="openAiDrawer">AI 推荐</el-button>
+                  <el-button @click="openVendorDrawer">第三方拉取</el-button>
+                  <el-button @click="openImportDialog">人工添加</el-button>
+                </div>
+              </el-empty>
+            </template>
           </el-table>
 
           <div v-else v-loading="itemLoading" class="goods-grid">
@@ -263,6 +372,12 @@
               <div class="card-image">
                 <el-image v-if="item.mainPic" :src="item.mainPic" fit="cover" lazy />
                 <div v-else class="goods-placeholder">{{ platformLabel(item.platformCode) }}</div>
+                <div class="card-badges">
+                  <el-tag size="small" effect="dark">{{ platformLabel(item.platformCode) }}</el-tag>
+                  <el-tag v-if="item.topFlag === 1" size="small" type="warning" effect="dark">
+                    置顶
+                  </el-tag>
+                </div>
               </div>
               <div class="card-body">
                 <div class="goods-title">{{ item.title || '-' }}</div>
@@ -280,8 +395,25 @@
                   <span>分 {{ item.recommendScore || 0 }}</span>
                 </div>
                 <p>{{ item.recommendReason || item.sellingPoint || '暂无推荐理由' }}</p>
+                <div class="card-footer">
+                  <el-tag size="small" :type="itemStatusMeta(item.status).type" effect="plain">
+                    {{ itemStatusMeta(item.status).label }}
+                  </el-tag>
+                  <div>
+                    <el-button link type="primary" @click="toggleTop(item)">
+                      {{ item.topFlag === 1 ? '取消置顶' : '置顶' }}
+                    </el-button>
+                    <el-button link type="primary" @click="toggleItemStatus(item)">
+                      {{ item.status === 'ENABLED' ? '停用' : '启用' }}
+                    </el-button>
+                  </div>
+                </div>
               </div>
             </article>
+            <el-empty
+              v-if="!itemLoading && itemList.length === 0"
+              description="该主题还没有商品快照"
+            />
           </div>
         </template>
       </ContentWrap>
@@ -324,6 +456,53 @@
               <el-input v-model="themeForm.vendorCode" placeholder="dataoke/haodanku" />
             </el-form-item>
           </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="封面图">
+              <el-input v-model="themeForm.coverPic" placeholder="https://..." />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="标签">
+              <el-input v-model="themeForm.tags" placeholder="高佣,有券,社群" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="状态">
+              <el-select v-model="themeForm.status" class="w-full">
+                <el-option
+                  v-for="item in SELECTION_THEME_STATUS_OPTIONS"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="排序">
+              <el-input-number v-model="themeForm.sort" :min="0" class="w-full" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="上线时间">
+              <el-date-picker
+                v-model="themeForm.startTime"
+                type="datetime"
+                value-format="YYYY-MM-DD HH:mm:ss"
+                class="w-full"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="下线时间">
+              <el-date-picker
+                v-model="themeForm.endTime"
+                type="datetime"
+                value-format="YYYY-MM-DD HH:mm:ss"
+                class="w-full"
+              />
+            </el-form-item>
+          </el-col>
           <el-col :span="24">
             <el-form-item label="描述">
               <el-input v-model="themeForm.description" maxlength="180" show-word-limit />
@@ -360,6 +539,12 @@
           />
         </el-form-item>
         <el-form-item label="本次规则 JSON">
+          <div class="rule-summary">
+            <el-tag v-for="item in parsedRuleKeywords" :key="item" size="small" effect="plain">
+              {{ item }}
+            </el-tag>
+            <span>拉取 {{ parsedRulePullCount }} 个 · {{ parsedRulePlatforms }}</span>
+          </div>
           <el-input v-model="operateRuleJson" type="textarea" :rows="12" />
         </el-form-item>
       </el-form>
@@ -390,6 +575,12 @@
     <el-dialog v-model="importVisible" title="人工添加商品快照" width="640px">
       <el-form label-position="top">
         <el-form-item label="商品 JSON 数组">
+          <el-alert
+            class="mb-12px"
+            type="info"
+            :closable="false"
+            title="字段至少包含 platformCode、goodsId；价格、券、佣金、销量为运营快照，不参与资金结算。"
+          />
           <el-input v-model="manualImportJson" type="textarea" :rows="12" />
         </el-form-item>
       </el-form>
@@ -448,6 +639,55 @@ const queryParams = reactive({
 const selectedTheme = computed(() =>
   themeList.value.find((item) => item.id === selectedThemeId.value)
 )
+const quickStatusFilters = [
+  { label: '全部', value: '' as SelectionThemeStatus | '' },
+  { label: '草稿', value: 'DRAFT' as SelectionThemeStatus },
+  { label: '已发布', value: 'PUBLISHED' as SelectionThemeStatus },
+  { label: '已下线', value: 'OFFLINE' as SelectionThemeStatus }
+]
+const themeStats = computed(() => ({
+  draft: themeList.value.filter((item) => item.status === 'DRAFT').length,
+  published: themeList.value.filter((item) => item.status === 'PUBLISHED').length,
+  offline: themeList.value.filter((item) => item.status === 'OFFLINE').length
+}))
+const itemStats = computed(() => ({
+  total: itemList.value.length,
+  enabled: itemList.value.filter((item) => item.status === 'ENABLED').length,
+  disabled: itemList.value.filter((item) => item.status === 'DISABLED').length
+}))
+const averageScore = computed(() => {
+  if (!itemList.value.length) return '0.00'
+  const sum = itemList.value.reduce((total, item) => total + Number(item.recommendScore || 0), 0)
+  return (sum / itemList.value.length).toFixed(2)
+})
+const selectedPlatforms = computed(() => splitTextList(selectedTheme.value?.platformCodes))
+const selectedTags = computed(() => splitTextList(selectedTheme.value?.tags))
+const themeTips = computed(() => {
+  if (!selectedTheme.value) return []
+  const tips: string[] = []
+  if (selectedTheme.value.status === 'PUBLISHED' && itemStats.value.enabled === 0) {
+    tips.push('已发布主题缺少启用商品，MCP 推荐会为空')
+  }
+  if (!selectedTheme.value.ruleJson) {
+    tips.push('缺少规则 JSON，AI 推荐和第三方拉取将使用默认规则')
+  }
+  if (selectedTheme.value.status === 'DRAFT' && itemStats.value.total > 0) {
+    tips.push('草稿已有商品，确认后可发布给 MCP 使用')
+  }
+  return tips
+})
+const parsedOperateRule = computed(() => parseJsonRecord(operateRuleJson.value))
+const parsedRuleKeywords = computed(() => {
+  const keywords = parsedOperateRule.value?.keywords
+  return Array.isArray(keywords) ? keywords.map(String).filter(Boolean).slice(0, 5) : []
+})
+const parsedRulePullCount = computed(() => Number(parsedOperateRule.value?.pullCount || 30))
+const parsedRulePlatforms = computed(() => {
+  const platforms = parsedOperateRule.value?.platforms
+  return Array.isArray(platforms) && platforms.length
+    ? platforms.map((item) => platformLabel(String(item))).join('、')
+    : '全平台'
+})
 
 const themeFormRef = ref<FormInstance>()
 const themeFormVisible = ref(false)
@@ -525,6 +765,11 @@ const resetQuery = () => {
   getThemePage()
 }
 
+const setQuickStatus = (status: SelectionThemeStatus | '') => {
+  queryParams.status = status
+  handleQuery()
+}
+
 const selectTheme = async (theme: CpsSelectionThemeVO) => {
   selectedThemeId.value = theme.id
   selectedItemIds.value = []
@@ -533,12 +778,17 @@ const selectTheme = async (theme: CpsSelectionThemeVO) => {
 
 const openThemeForm = (type: 'create' | 'update') => {
   themeFormType.value = type
-  Object.assign(themeForm, type === 'create' ? buildDefaultThemeForm() : selectedTheme.value)
+  Object.assign(
+    themeForm,
+    buildDefaultThemeForm(),
+    type === 'create' ? {} : selectedTheme.value || {}
+  )
   themeFormVisible.value = true
 }
 
 const submitThemeForm = async () => {
   await themeFormRef.value?.validate()
+  if (!validateJsonObject(themeForm.ruleJson, '规则 JSON')) return
   themeFormLoading.value = true
   try {
     if (themeFormType.value === 'create') {
@@ -572,6 +822,16 @@ const handleOffline = async () => {
   await getThemePage()
 }
 
+const handleDeleteTheme = async () => {
+  if (!selectedThemeId.value) return
+  await ElMessageBox.confirm('删除主题会移除主题配置，确认删除？', '删除主题', { type: 'warning' })
+  await CpsSelectionThemeApi.deleteTheme(selectedThemeId.value)
+  ElMessage.success('删除成功')
+  selectedThemeId.value = undefined
+  itemList.value = []
+  await getThemePage()
+}
+
 const openAiDrawer = () => {
   operateMode.value = 'ai'
   operateObjective.value = selectedTheme.value?.aiPrompt || ''
@@ -588,6 +848,7 @@ const openVendorDrawer = () => {
 
 const submitOperate = async () => {
   if (!selectedThemeId.value) return
+  if (!validateJsonObject(operateRuleJson.value, '本次规则 JSON')) return
   operateLoading.value = true
   try {
     const data =
@@ -638,6 +899,14 @@ const submitManualImport = async () => {
   manualImportLoading.value = true
   try {
     const items = JSON.parse(manualImportJson.value) as CpsSelectionThemeImportItemVO[]
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new Error('商品 JSON 必须是非空数组')
+    }
+    items.forEach((item, index) => {
+      if (!item.platformCode || !item.goodsId) {
+        throw new Error(`第 ${index + 1} 个商品缺少 platformCode 或 goodsId`)
+      }
+    })
     await CpsSelectionThemeApi.importItems({
       themeId: selectedThemeId.value,
       sourceType: 'MANUAL',
@@ -646,6 +915,8 @@ const submitManualImport = async () => {
     ElMessage.success('导入成功')
     importVisible.value = false
     await getItems()
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '商品 JSON 格式不正确')
   } finally {
     manualImportLoading.value = false
   }
@@ -656,6 +927,7 @@ const handleItemSelectionChange = (rows: CpsSelectionThemeItemVO[]) => {
 }
 
 const batchUpdateItemStatus = async (status: SelectionThemeItemStatus) => {
+  if (selectedItemIds.value.length === 0) return
   await CpsSelectionThemeApi.updateItemStatus({ ids: selectedItemIds.value, status })
   ElMessage.success('状态已更新')
   selectedItemIds.value = []
@@ -761,6 +1033,25 @@ const itemStatusMeta = (status?: SelectionThemeItemStatus) =>
 const sourceLabel = (source?: SelectionThemeSourceType) =>
   SELECTION_SOURCE_OPTIONS.find((item) => item.value === source)?.label || source || '-'
 
+const themeTypeLabel = (type?: string) => {
+  const map: Record<string, string> = {
+    PROMOTION: '大促',
+    CUSTOM: '自定义',
+    CATEGORY: '类目'
+  }
+  return type ? map[type] || type : '-'
+}
+
+const refreshStatusLabel = (status?: string) => {
+  const map: Record<string, string> = {
+    PROCESSING: '刷新中',
+    SUCCESS: '已刷新',
+    PARTIAL_SUCCESS: '部分成功',
+    FAILED: '刷新失败'
+  }
+  return status ? map[status] || status : '-'
+}
+
 const platformLabel = (platformCode?: string) => {
   const map: Record<string, string> = {
     taobao: '淘宝',
@@ -774,6 +1065,39 @@ const platformLabel = (platformCode?: string) => {
 const formatMoney = (value?: number) => (value == null ? '-' : `¥${Number(value).toFixed(2)}`)
 const formatPercent = (value?: number) => (value == null ? '-' : `${Number(value).toFixed(2)}%`)
 const normalizeScore = (value?: number) => Math.max(0, Math.min(100, Number(value || 0)))
+const formatDateTime = (value?: string) => (value ? value.replace('T', ' ').slice(0, 16) : '-')
+
+function splitTextList(value?: string) {
+  return (value || '')
+    .split(/[,，]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function parseJsonRecord(value?: string): Record<string, unknown> | undefined {
+  if (!value) return undefined
+  try {
+    const data = JSON.parse(value)
+    return data && typeof data === 'object' && !Array.isArray(data) ? data : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function validateJsonObject(value: string | undefined, label: string) {
+  if (!value) return true
+  try {
+    const data = JSON.parse(value)
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      ElMessage.error(`${label} 必须是 JSON 对象`)
+      return false
+    }
+    return true
+  } catch {
+    ElMessage.error(`${label} 格式不正确`)
+    return false
+  }
+}
 
 onMounted(() => {
   getThemePage()
@@ -804,6 +1128,53 @@ onMounted(() => {
   justify-content: flex-start;
 }
 
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.stat-card {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  background: var(--el-fill-color-lighter);
+}
+
+.stat-card span,
+.stat-card em,
+.theme-insight span,
+.selection-count {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.stat-card b {
+  display: block;
+  margin: 4px 0;
+  color: var(--el-text-color-primary);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.stat-card.success {
+  border-color: var(--el-color-success-light-7);
+  background: var(--el-color-success-light-9);
+}
+
+.stat-card.warning {
+  border-color: var(--el-color-warning-light-7);
+  background: var(--el-color-warning-light-9);
+}
+
+.stat-card.primary {
+  border-color: var(--el-color-primary-light-7);
+  background: var(--el-color-primary-light-9);
+}
+
 .selection-layout {
   display: grid;
   grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
@@ -819,6 +1190,20 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.quick-filters,
+.selected-meta,
+.empty-actions,
+.rule-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.quick-filters {
+  margin: 12px 0;
 }
 
 .theme-item {
@@ -859,6 +1244,7 @@ onMounted(() => {
 }
 
 .theme-meta,
+.theme-desc,
 .selected-desc,
 .goods-meta,
 .recommend-reason {
@@ -867,11 +1253,51 @@ onMounted(() => {
   font-size: 12px;
 }
 
+.theme-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
 .selected-title {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 16px;
+}
+
+.selected-meta {
+  margin-top: 8px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.theme-insight {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.theme-insight > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  background: var(--el-fill-color-extra-light);
+}
+
+.theme-insight b {
+  display: block;
+  overflow: hidden;
+  margin-top: 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-alert {
+  margin-top: 12px;
 }
 
 .action-panel {
@@ -897,6 +1323,10 @@ onMounted(() => {
   border-radius: 6px;
   overflow: hidden;
   flex: none;
+}
+
+.empty-actions {
+  justify-content: center;
 }
 
 .goods-placeholder {
@@ -942,6 +1372,7 @@ onMounted(() => {
 
 .goods-card,
 .template-card {
+  position: relative;
   border: 1px solid var(--el-border-color-light);
   border-radius: 8px;
   overflow: hidden;
@@ -949,6 +1380,7 @@ onMounted(() => {
 }
 
 .card-image {
+  position: relative;
   width: 100%;
   aspect-ratio: 1.2;
   height: auto;
@@ -957,6 +1389,15 @@ onMounted(() => {
 .card-image .el-image {
   width: 100%;
   height: 100%;
+}
+
+.card-badges {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .card-body,
@@ -981,6 +1422,21 @@ onMounted(() => {
   line-height: 1.6;
 }
 
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.rule-summary {
+  width: 100%;
+  margin-bottom: 8px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
 .template-title {
   font-weight: 700;
 }
@@ -992,6 +1448,25 @@ onMounted(() => {
 @media (max-width: 1100px) {
   .selection-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .stat-strip,
+  .theme-insight {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .stat-strip,
+  .theme-insight {
+    grid-template-columns: 1fr;
+  }
+
+  .selected-head {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>

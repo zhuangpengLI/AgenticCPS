@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 /**
  * 随机工具类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public class RandomUtils {
 

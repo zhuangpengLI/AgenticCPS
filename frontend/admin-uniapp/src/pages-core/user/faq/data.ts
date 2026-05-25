@@ -21,22 +21,22 @@ export interface FaqCategory {
 export const faqList: FaqCategory[] = [
   {
     icon: 'github-filled',
-    title: '芋道问题',
+    title: 'AgenticCPS问题',
     childList: [
       {
-        title: '芋道开源吗？',
+        title: 'AgenticCPS开源吗？',
         content: '开源，基于 MIT 协议，可免费商用。',
       },
       {
-        title: '芋道可以商用吗？',
-        content: '可以，芋道采用 MIT 开源协议，允许商业使用。',
+        title: 'AgenticCPS可以商用吗？',
+        content: '可以，AgenticCPS采用 MIT 开源协议，允许商业使用。',
       },
       {
-        title: '芋道官网地址多少？',
+        title: 'AgenticCPS官网地址多少？',
         content: 'https://www.iocoder.cn',
       },
       {
-        title: '芋道文档地址多少？',
+        title: 'AgenticCPS文档地址多少？',
         content: 'https://doc.iocoder.cn',
       },
     ],

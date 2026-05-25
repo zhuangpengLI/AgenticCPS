@@ -14,7 +14,7 @@ import static java.util.Collections.singletonList;
 /**
  * {@link com.qiji.cps.framework.common.pojo.PageParam} 工具类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public class PageUtils {
 

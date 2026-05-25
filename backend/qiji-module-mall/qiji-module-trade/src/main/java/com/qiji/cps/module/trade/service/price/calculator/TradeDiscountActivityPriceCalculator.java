@@ -31,7 +31,7 @@ import static com.qiji.cps.module.trade.service.price.calculator.TradePriceCalcu
  *
  * 由于“会员折扣”和“限时折扣”是冲突，需要选择优惠金额多的，所以也放在这里计算
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Component
 @Order(TradePriceCalculator.ORDER_DISCOUNT_ACTIVITY)

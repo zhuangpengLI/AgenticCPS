@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * {@link DouBaoChatModel} 集成测试
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public class DouBaoChatModelTests {
 

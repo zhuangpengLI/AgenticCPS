@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 /**
  * {@link TradeDiscountActivityPriceCalculator} 的单元测试类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Disabled // TODO 芋艿：后续修复
 public class TradeDiscountActivityPriceCalculatorTest extends BaseMockitoUnitTest {

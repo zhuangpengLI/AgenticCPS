@@ -37,7 +37,7 @@ import static com.qiji.cps.module.mp.enums.ErrorCodeConstants.USER_UPDATE_TAG_FA
 /**
  * 微信公众号粉丝 Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Validated

@@ -3,7 +3,7 @@
   <div class="relative flex flex-row justify-center w-full h-full">
     <!-- title -->
     <div class="flex flex-col justify-center">
-      <div class="text-28px font-bold text-center">芋道 AI</div>
+      <div class="text-28px font-bold text-center">AgenticCPS AI</div>
       <div class="flex flex-row flex-wrap items-center justify-center w-460px mt-20px">
         <div
           class="flex justify-center w-180px leading-50px border border-solid border-[#e4e4e4] rounded-10px m-10px cursor-pointer hover:bg-[rgba(243,243,243,0.73)]"

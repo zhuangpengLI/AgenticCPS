@@ -31,7 +31,7 @@ import static com.qiji.cps.module.system.enums.ErrorCodeConstants.SOCIAL_USER_NO
 /**
  * 社交用户 Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Validated

@@ -7,7 +7,7 @@ import org.apache.tika.Tika;
 /**
  * 文件类型 Utils
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Slf4j
 public class FileTypeUtils {

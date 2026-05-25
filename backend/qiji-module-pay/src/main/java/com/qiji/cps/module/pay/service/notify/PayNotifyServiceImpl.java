@@ -55,7 +55,7 @@ import static com.qiji.cps.module.pay.framework.job.config.PayJobConfiguration.N
 /**
  * 支付通知 Core Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Valid

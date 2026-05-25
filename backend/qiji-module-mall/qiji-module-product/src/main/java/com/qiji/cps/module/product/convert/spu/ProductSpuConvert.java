@@ -19,7 +19,7 @@ import static com.qiji.cps.framework.common.util.collection.CollectionUtils.conv
 /**
  * 商品 SPU Convert
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Mapper
 public interface ProductSpuConvert {

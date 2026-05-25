@@ -1,5 +1,5 @@
 {
-  "name": "芋道商城",
+  "name": "AgenticCPS商城",
   "appid": "__UNI__460BC4C",
   "description": "基于 uni-app + Vue3 技术驱动的在线商城系统，内含诸多功能与丰富的活动，期待您的使用和反馈。",
   "versionName": "2026.01",
@@ -210,7 +210,7 @@
     "async": {
       "timeout": 20000
     },
-    "title": "芋道商城",
+    "title": "AgenticCPS商城",
     "optimization": {
       "treeShaking": {
         "enable": true

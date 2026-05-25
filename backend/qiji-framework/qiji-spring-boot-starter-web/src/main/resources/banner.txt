@@ -1,4 +1,4 @@
-芋道源码 http://www.iocoder.cn
+AgenticCPS源码 http://www.iocoder.cn
 Application Version: ${qiji.info.version}
 Spring Boot Version: ${spring-boot.version}
 

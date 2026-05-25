@@ -14,7 +14,7 @@ import static com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils.s
 /**
  * 默认的 {@link SecurityFrameworkService} 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @AllArgsConstructor
 public class SecurityFrameworkServiceImpl implements SecurityFrameworkService {

@@ -3,7 +3,7 @@ package com.qiji.cps.module.infra.framework.file.core.client;
 /**
  * 文件客户端
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public interface FileClient {
 

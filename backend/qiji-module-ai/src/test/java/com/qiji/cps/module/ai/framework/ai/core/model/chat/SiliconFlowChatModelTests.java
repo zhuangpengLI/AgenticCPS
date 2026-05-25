@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * {@link SiliconFlowChatModel} 集成测试
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public class SiliconFlowChatModelTests {
 

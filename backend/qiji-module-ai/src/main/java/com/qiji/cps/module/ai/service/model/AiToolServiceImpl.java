@@ -22,7 +22,7 @@ import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.TOOL_NOT_EXISTS;
 /**
  * AI 工具 Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Validated

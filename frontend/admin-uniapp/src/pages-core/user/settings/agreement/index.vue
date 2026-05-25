@@ -20,7 +20,7 @@
         <view class="mb-32rpx">
           <text class="mb-16rpx block text-gray-800 font-bold">一、总则</text>
           <text class="block">
-            1.1 欢迎使用芋道移动端应用（以下简称"本应用"）。在使用本应用前，请您仔细阅读本协议。
+            1.1 欢迎使用AgenticCPS移动端应用（以下简称"本应用"）。在使用本应用前，请您仔细阅读本协议。
           </text>
           <text class="mt-16rpx block">
             1.2 您在使用本应用时，即表示您已充分阅读、理解并接受本协议的全部内容，并与本应用达成协议。

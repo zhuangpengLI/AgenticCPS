@@ -6,7 +6,7 @@ import lombok.Getter;
 /**
  * 支付 UI 展示模式
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Getter
 @AllArgsConstructor

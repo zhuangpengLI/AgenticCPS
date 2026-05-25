@@ -13,7 +13,7 @@ import static com.qiji.cps.module.pay.dal.redis.RedisKeyConstants.PAY_WALLET_LOC
 /**
  * 支付钱包的锁 Redis DAO
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Repository
 public class PayWalletLockRedisDAO {

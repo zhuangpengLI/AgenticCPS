@@ -19,7 +19,7 @@ import static com.qiji.cps.module.pay.framework.pay.core.client.impl.alipay.Alip
  *
  * 文档：<a href="https://opendocs.alipay.com/apis/02890k">扫码支付</a>
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Slf4j
 public class AlipayQrPayClient extends AbstractAlipayPayClient {

@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 /**
  * 退款单信息 Response DTO
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Data
 public class PayRefundRespDTO {

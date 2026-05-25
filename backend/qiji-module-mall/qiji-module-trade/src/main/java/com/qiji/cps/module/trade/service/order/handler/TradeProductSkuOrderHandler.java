@@ -15,7 +15,7 @@ import static java.util.Collections.singletonList;
 /**
  * 商品 SKU 库存的 {@link TradeOrderHandler} 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Component
 public class TradeProductSkuOrderHandler implements TradeOrderHandler {

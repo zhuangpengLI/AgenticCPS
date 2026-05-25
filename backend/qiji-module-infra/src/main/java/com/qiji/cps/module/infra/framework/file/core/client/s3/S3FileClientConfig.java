@@ -12,7 +12,7 @@ import jakarta.validation.constraints.NotNull;
 /**
  * S3 文件客户端的配置类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Data
 public class S3FileClientConfig implements FileClientConfig {

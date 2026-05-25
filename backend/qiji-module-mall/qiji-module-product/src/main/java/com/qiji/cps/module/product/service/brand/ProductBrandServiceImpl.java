@@ -23,7 +23,7 @@ import static com.qiji.cps.module.product.enums.ErrorCodeConstants.*;
 /**
  * 品牌 Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Validated

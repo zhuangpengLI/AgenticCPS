@@ -41,7 +41,7 @@ import static com.qiji.cps.module.mp.enums.ErrorCodeConstants.MESSAGE_SEND_FAIL;
 /**
  * 粉丝消息 Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Validated

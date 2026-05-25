@@ -9,7 +9,7 @@ import java.util.Arrays;
 /**
  * 交易售后 - 类型
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @RequiredArgsConstructor
 @Getter

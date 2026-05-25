@@ -10,7 +10,7 @@ import jakarta.annotation.Resource;
 /**
  * 交易订单的自动收货 Job
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Component
 public class TradeOrderAutoReceiveJob implements JobHandler {

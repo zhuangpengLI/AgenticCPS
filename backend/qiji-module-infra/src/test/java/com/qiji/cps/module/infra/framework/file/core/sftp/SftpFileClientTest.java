@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 /**
  * {@link SftpFileClient} 集成测试
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public class SftpFileClientTest {
 

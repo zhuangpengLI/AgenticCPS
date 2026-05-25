@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 /**
  * 钱包 API 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 public class PayWalletApiImpl implements PayWalletApi {

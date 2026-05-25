@@ -12,7 +12,7 @@ import jakarta.annotation.Resource;
  * 支付通知 Job
  * 通过不断扫描待通知的 PayNotifyTaskDO 记录，回调业务线的回调接口
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Component
 @Slf4j

@@ -41,7 +41,7 @@ import static com.qiji.cps.framework.common.util.collection.CollectionUtils.conv
 /**
  * 自定义的 Spring Security 配置适配器实现
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @AutoConfiguration
 @AutoConfigureOrder(-1) // 目的：先于 Spring Security 自动配置，避免一键改包后，org.* 基础包无法生效

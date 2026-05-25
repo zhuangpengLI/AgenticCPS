@@ -222,9 +222,9 @@ wx:
       key-prefix: wa # Redis Key 的前缀
       http-client-type: HttpClient # 采用 HttpClient 请求微信公众号平台
 
---- #################### 芋道相关配置 ####################
+--- #################### AgenticCPS相关配置 ####################
 
-# 芋道配置项，设置当前项目所有自定义的配置
+# AgenticCPS配置项，设置当前项目所有自定义的配置
 qiji:
   captcha:
     enable: false # 本地环境，暂时关闭图片验证码，方便登录等接口的测试；

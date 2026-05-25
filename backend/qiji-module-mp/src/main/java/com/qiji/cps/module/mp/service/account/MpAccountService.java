@@ -15,7 +15,7 @@ import static com.qiji.cps.module.mp.enums.ErrorCodeConstants.ACCOUNT_NOT_EXISTS
 /**
  * 公众号账号 Service 接口
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public interface MpAccountService {
 

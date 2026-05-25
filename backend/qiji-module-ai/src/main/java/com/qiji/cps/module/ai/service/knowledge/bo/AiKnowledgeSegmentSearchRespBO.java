@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * AI 知识库段落搜索 Response BO
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Data
 public class AiKnowledgeSegmentSearchRespBO {

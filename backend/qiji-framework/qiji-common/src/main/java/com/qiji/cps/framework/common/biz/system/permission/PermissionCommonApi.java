@@ -5,7 +5,7 @@ import com.qiji.cps.framework.common.biz.system.permission.dto.DeptDataPermissio
 /**
  * 权限 API 接口
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public interface PermissionCommonApi {
 

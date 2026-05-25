@@ -22,7 +22,7 @@ import static com.qiji.cps.framework.common.util.collection.CollectionUtils.conv
 /**
  * 签到记录 Convert
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Mapper
 public interface MemberSignInRecordConvert {

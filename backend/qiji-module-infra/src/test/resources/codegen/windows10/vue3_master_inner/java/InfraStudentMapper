@@ -12,7 +12,7 @@ import com.qiji.cps.module.infra.controller.admin.demo.vo.*;
 /**
  * 学生 Mapper
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Mapper
 public interface InfraStudentMapper extends BaseMapperX<InfraStudentDO> {

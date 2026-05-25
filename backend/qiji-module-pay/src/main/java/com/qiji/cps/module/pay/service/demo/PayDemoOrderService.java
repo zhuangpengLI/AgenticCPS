@@ -10,7 +10,7 @@ import jakarta.validation.Valid;
 /**
  * 示例订单 Service 接口
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public interface PayDemoOrderService {
 

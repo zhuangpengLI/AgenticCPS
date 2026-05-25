@@ -30,7 +30,7 @@ import static com.qiji.cps.module.trade.enums.ErrorCodeConstants.PRICE_CALCULATE
 /**
  * 优惠劵的 {@link TradePriceCalculator} 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Component
 @Order(TradePriceCalculator.ORDER_COUPON)

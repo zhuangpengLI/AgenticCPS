@@ -50,7 +50,7 @@ import static com.qiji.cps.framework.common.exception.enums.GlobalErrorCodeConst
 /**
  * 全局异常处理器，将 Exception 翻译成 CommonResult + 对应的异常编号
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @RestControllerAdvice
 @AllArgsConstructor

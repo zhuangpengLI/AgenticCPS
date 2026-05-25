@@ -23,7 +23,7 @@ import static com.qiji.cps.framework.common.util.collection.CollectionUtils.find
 /**
  * 区域工具类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Slf4j
 @UtilityClass

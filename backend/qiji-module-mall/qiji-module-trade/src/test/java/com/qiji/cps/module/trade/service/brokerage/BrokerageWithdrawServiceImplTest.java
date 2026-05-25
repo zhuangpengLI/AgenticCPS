@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * {@link BrokerageWithdrawServiceImpl} 的单元测试类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Disabled // TODO 芋艿：后续 fix 补充的单测
 @Import(BrokerageWithdrawServiceImpl.class)

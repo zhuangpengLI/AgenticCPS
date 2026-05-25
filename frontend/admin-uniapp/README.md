@@ -5,7 +5,7 @@
 </p>
 
 <h1 align="center">
-  <a href="https://github.com/yudaocode/yudao-ui-admin-uniapp" target="_blank">芋道管理后台 · 移动端</a>
+  <a href="https://github.com/yudaocode/yudao-ui-admin-uniapp" target="_blank">AgenticCPS管理后台 · 移动端</a>
 </h1>
 
 <div align="center">
@@ -45,7 +45,7 @@
 
 ## 🐯 平台简介
 
-**芋道**，以开发者为中心，打造中国第一流的快速开发平台，全部开源，个人与企业可 100% 免费使用。本项目是 **芋道管理后台的移动端**：
+**AgenticCPS**，以开发者为中心，打造中国第一流的快速开发平台，全部开源，个人与企业可 100% 免费使用。本项目是 **AgenticCPS管理后台的移动端**：
 
 |               工作台                |               工作流                |               个人中心               |
 |:--------------------------------:|:--------------------------------:|:--------------------------------:|

@@ -33,7 +33,7 @@ import static com.qiji.cps.framework.common.util.collection.MapUtils.findAndThen
 /**
  * 秒杀活动 Convert
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Mapper
 public interface SeckillActivityConvert {

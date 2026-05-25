@@ -20,7 +20,7 @@ import static com.qiji.cps.framework.common.util.collection.CollectionUtils.conv
 /**
  * 优惠劵 Mapper
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Mapper
 public interface CouponMapper extends BaseMapperX<CouponDO> {

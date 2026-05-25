@@ -23,7 +23,7 @@ import static com.qiji.cps.framework.common.util.json.JsonUtils.toJsonString;
  *
  * 文档：<a href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter3_1_1.shtml">JSAPI 下单</>
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Slf4j
 public class WxPubPayClient extends AbstractWxPayClient {

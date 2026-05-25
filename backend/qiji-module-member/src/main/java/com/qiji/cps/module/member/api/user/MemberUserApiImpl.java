@@ -17,7 +17,7 @@ import static com.qiji.cps.module.member.enums.ErrorCodeConstants.USER_MOBILE_NO
 /**
  * 会员用户的 API 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Validated

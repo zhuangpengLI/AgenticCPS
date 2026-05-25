@@ -35,7 +35,7 @@ import static com.qiji.cps.module.trade.enums.ErrorCodeConstants.PRICE_CALCULATE
 /**
  * 价格计算 Service 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Validated

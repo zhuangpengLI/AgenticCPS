@@ -1,5 +1,5 @@
 ### 获取租户编号 /admin-api/system/get-id-by-name
-GET {{baseUrl}}/system/tenant/get-id-by-name?name=芋道源码
+GET {{baseUrl}}/system/tenant/get-id-by-name?name=AgenticCPS源码
 
 ### 创建租户 /admin-api/system/tenant/create
 POST {{baseUrl}}/system/tenant/create
@@ -8,7 +8,7 @@ Authorization: Bearer {{token}}
 tenant-id: {{adminTenantId}}
 
 {
-  "name": "芋道",
+  "name": "AgenticCPS",
   "contactName": "芋艿",
   "contactMobile": "15601691300",
   "status": 0,

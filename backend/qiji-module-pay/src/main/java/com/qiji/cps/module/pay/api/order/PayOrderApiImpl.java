@@ -12,7 +12,7 @@ import jakarta.annotation.Resource;
 /**
  * 支付单 API 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 public class PayOrderApiImpl implements PayOrderApi {

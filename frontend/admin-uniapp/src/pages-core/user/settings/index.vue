@@ -17,7 +17,7 @@
         src="/static/logo.svg"
         mode="aspectFit"
       />
-      <text class="text-40rpx text-gray-800 font-medium">芋道移动端</text>
+      <text class="text-40rpx text-gray-800 font-medium">AgenticCPS移动端</text>
     </view>
 
     <!-- 设置列表 -->
@@ -57,7 +57,7 @@
         Copyright © 2026 iocoder.cn All Rights Reserved.
       </text>
       <text class="text-24rpx text-gray-400">
-        芋道源码
+        AgenticCPS源码
       </text>
     </view>
   </view>

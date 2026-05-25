@@ -17,7 +17,7 @@ import static com.qiji.cps.framework.common.util.collection.CollectionUtils.conv
 /**
  * 佣金提现 Service 接口
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public interface BrokerageWithdrawService {
 

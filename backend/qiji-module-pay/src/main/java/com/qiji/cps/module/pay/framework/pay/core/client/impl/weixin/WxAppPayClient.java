@@ -22,7 +22,7 @@ import static com.qiji.cps.framework.common.util.json.JsonUtils.toJsonString;
  *
  * // TODO 芋艿：未详细测试，因为手头没 App
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Slf4j
 public class WxAppPayClient extends AbstractWxPayClient {

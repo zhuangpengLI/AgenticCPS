@@ -41,7 +41,7 @@ import static com.qiji.cps.module.member.enums.ErrorCodeConstants.*;
 /**
  * 会员的认证 Service 接口
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Service
 @Slf4j

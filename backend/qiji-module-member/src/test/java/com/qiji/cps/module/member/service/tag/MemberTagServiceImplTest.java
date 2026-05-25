@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * {@link MemberTagServiceImpl} 的单元测试类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Import(MemberTagServiceImpl.class)
 public class MemberTagServiceImplTest extends BaseDbUnitTest {

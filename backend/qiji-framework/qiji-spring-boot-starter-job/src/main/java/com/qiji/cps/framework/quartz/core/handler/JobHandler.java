@@ -3,7 +3,7 @@ package com.qiji.cps.framework.quartz.core.handler;
 /**
  * 任务处理器
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 public interface JobHandler {
 

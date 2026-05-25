@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * WebSocketMessageSender 实现类
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Slf4j
 @RequiredArgsConstructor

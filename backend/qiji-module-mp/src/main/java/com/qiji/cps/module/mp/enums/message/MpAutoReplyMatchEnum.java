@@ -6,7 +6,7 @@ import lombok.Getter;
 /**
  * 公众号消息自动回复的匹配模式
  *
- * @author 芋道源码
+ * @author AgenticCPS源码
  */
 @Getter
 @AllArgsConstructor
