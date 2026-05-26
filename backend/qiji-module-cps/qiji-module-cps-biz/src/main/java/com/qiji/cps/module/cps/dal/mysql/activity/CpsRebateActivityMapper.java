@@ -37,4 +37,10 @@ public interface CpsRebateActivityMapper extends BaseMapperX<CpsRebateActivityDO
                 .orderByDesc(CpsRebateActivityDO::getId));
     }
 
+    default CpsRebateActivityDO selectBySourceTypeAndExternalActivityId(String sourceType, String externalActivityId) {
+        return selectOne(new LambdaQueryWrapperX<CpsRebateActivityDO>()
+                .eq(CpsRebateActivityDO::getSourceType, sourceType)
+                .eq(CpsRebateActivityDO::getExternalActivityId, externalActivityId));
+    }
+
 }

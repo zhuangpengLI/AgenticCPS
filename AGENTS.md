@@ -54,7 +54,7 @@ AgenticCPS is developed with Codex as an autonomous coding agent, deeply integra
 - API prefixes are framework-driven: `controller.admin` maps to `/admin-api`, `controller.app` maps to `/app-api`; CPS `controller.openapi` declares its own `/openapi/...` routes.
 - CPS critical flow map: App/MCP -> CPS controller/tool -> `CpsGoodsService` / exchange services -> `CpsPlatformClientFactory` or aitoken OpenAPI -> external platform / aitoken -> CPS DB records.
 - Activity center flow: Admin activity center -> `CpsRebateActivityController` -> `CpsRebateActivityService` -> `cps_rebate_activity`; card `search` jumps to `frontend/admin-vue3/src/views/cps/goods/square/index.vue` with platform/keyword/tag query params.
-- Rebate toolbox flow: Admin toolbox -> `frontend/admin-vue3/src/views/cps/toolbox/index.vue` -> `CpsGoodsRebateQueryController` parse/batch-transfer endpoints -> `CpsGoodsToolboxService` -> existing rebate query and platform parsing services.
+- Rebate toolbox flow: Admin toolbox -> `frontend/admin-vue3/src/views/cps/toolbox/index.vue` -> `CpsGoodsRebateQueryController` toolbox endpoints -> `CpsGoodsToolboxService` -> existing rebate query, goods square, transfer record, and platform parsing services.
 - Generated companion map: `docs/project-map.md` contains the latest read-only project map and should be refreshed when module ownership, entrypoints, commands, or risk areas change.
 
 ## Agentic Ecosystem Relationship
@@ -322,13 +322,14 @@ The admin activity center is backed by `cps_rebate_activity` and `CpsRebateActiv
 
 ### Rebate Toolbox
 
-The admin rebate toolbox is the unified operations workbench for parsing, batch transfer, goods-square selection, and promotion copy editing. It is inspired by Dataoke-style tool workspaces but must reuse existing CPS services instead of creating a second transfer pipeline.
+The admin rebate toolbox is the unified operations workbench for parsing, batch transfer, ownership checking, coupon querying, goods-square selection, cash-gift planning, and promotion copy editing. It is inspired by Dataoke-style tool workspaces but must reuse existing CPS services instead of creating a second transfer pipeline.
 
 - Frontend page: `frontend/admin-vue3/src/views/cps/toolbox/index.vue`.
-- Admin APIs: `POST /admin-api/cps/goods/parse` and `POST /admin-api/cps/goods/batch-transfer`.
+- Admin APIs: `POST /admin-api/cps/goods/parse`, `POST /admin-api/cps/goods/batch-transfer`, `POST /admin-api/cps/goods/ownership-check`, `POST /admin-api/cps/goods/coupon-query`, and `POST /admin-api/cps/goods/cash-gift/plan`.
 - Backend service: `CpsGoodsToolboxService`; batch transfer delegates to `CpsGoodsRebateQueryService.queryRebate()` per item.
 - Batch transfer accepts at most 20 nonblank inputs, preserves input index, and does not stop the whole batch when one item fails.
-- Permissions: `cps:toolbox:query` for parsing/viewing and `cps:toolbox:link` for batch transfer.
+- Permissions: `cps:toolbox:query` for parsing/viewing/ownership/coupon checks and `cps:toolbox:link` for transfer or cash-gift planning actions.
+- Cash-gift planning is plan-only until a real Taobao official or vendor cash-gift creation API is integrated; do not mutate balances or create real subsidies from the toolbox.
 
 ### Selection Library / Theme Goods Shelf
 

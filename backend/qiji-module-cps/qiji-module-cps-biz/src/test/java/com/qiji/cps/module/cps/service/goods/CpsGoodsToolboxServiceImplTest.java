@@ -4,8 +4,15 @@ import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.dto.CpsContentParseResult;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsBatchTransferReqVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsCashGiftPlanReqVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsCouponQueryReqVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsOwnershipCheckReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsParseReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsRebateQueryRespVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsRespVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
+import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
+import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +21,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,6 +41,12 @@ class CpsGoodsToolboxServiceImplTest {
 
     @Mock
     private CpsGoodsRebateQueryService goodsRebateQueryService;
+
+    @Mock
+    private CpsGoodsSquareService goodsSquareService;
+
+    @Mock
+    private CpsTransferRecordMapper transferRecordMapper;
 
     @Mock
     private CpsPlatformClientFactory platformClientFactory;
@@ -146,6 +160,107 @@ class CpsGoodsToolboxServiceImplTest {
         IllegalArgumentException exception = org.junit.jupiter.api.Assertions.assertThrows(
                 IllegalArgumentException.class, () -> service.batchTransfer(tooManyReqVO));
         assertEquals("每次最多支持 20 条内容批量转链", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("checkOwnership - 返回会员和推广位归属匹配结果")
+    void checkOwnership_returnsMatchedTransferRecord() {
+        CpsGoodsOwnershipCheckReqVO reqVO = new CpsGoodsOwnershipCheckReqVO();
+        reqVO.setPlatformCode("taobao");
+        reqVO.setOriginalContent("https://item.taobao.com/item.htm?id=111");
+        reqVO.setMemberId(100L);
+        reqVO.setAdzoneId("mm_1_2_3");
+        CpsTransferRecordDO record = CpsTransferRecordDO.builder()
+                .id(10L)
+                .memberId(100L)
+                .platformCode("taobao")
+                .itemId("111")
+                .itemTitle("测试商品")
+                .adzoneId("mm_1_2_3")
+                .promotionUrl("https://s.example/111")
+                .taoCommand("￥111￥")
+                .status(1)
+                .build();
+        when(transferRecordMapper.selectList(any())).thenReturn(List.of(record));
+
+        var result = service.checkOwnership(reqVO);
+
+        assertEquals("MATCH", result.getCheckStatus());
+        assertEquals(10L, result.getTransferRecordId());
+        assertEquals("测试商品", result.getItemTitle());
+        assertTrue(result.getMismatches().isEmpty());
+    }
+
+    @Test
+    @DisplayName("checkOwnership - 记录存在但期望会员不一致时返回不一致项")
+    void checkOwnership_returnsMismatchReasons() {
+        CpsGoodsOwnershipCheckReqVO reqVO = new CpsGoodsOwnershipCheckReqVO();
+        reqVO.setPlatformCode("taobao");
+        reqVO.setOriginalContent("https://item.taobao.com/item.htm?id=111");
+        reqVO.setMemberId(200L);
+        when(transferRecordMapper.selectList(any())).thenReturn(List.of(CpsTransferRecordDO.builder()
+                .id(10L)
+                .memberId(100L)
+                .platformCode("taobao")
+                .itemId("111")
+                .status(1)
+                .build()));
+
+        var result = service.checkOwnership(reqVO);
+
+        assertEquals("MISMATCH", result.getCheckStatus());
+        assertEquals(List.of("memberId"), result.getMismatches());
+    }
+
+    @Test
+    @DisplayName("queryCoupons - 优惠券查询复用商品广场且强制只看有券")
+    void queryCoupons_reusesGoodsSquareSearchWithCouponFilter() {
+        CpsGoodsCouponQueryReqVO reqVO = new CpsGoodsCouponQueryReqVO();
+        reqVO.setPlatformCode("taobao");
+        reqVO.setQueryText("零食");
+        reqVO.setVendorCode("haodanku");
+        reqVO.setCouponAmountMin(new BigDecimal("5"));
+        reqVO.setPageNo(1);
+        reqVO.setPageSize(10);
+        CpsGoodsSquareGoodsRespVO goods = new CpsGoodsSquareGoodsRespVO();
+        goods.setGoodsId("111");
+        goods.setTitle("有券商品");
+        goods.setCouponPrice(new BigDecimal("6"));
+        when(goodsSquareService.searchGoods(any())).thenReturn(CpsGoodsSquareSearchRespVO.builder()
+                .list(List.of(goods))
+                .total(1L)
+                .pageNo(1)
+                .pageSize(10)
+                .build());
+
+        var result = service.queryCoupons(reqVO);
+
+        assertEquals(1L, result.getTotal());
+        assertEquals("已找到 1 个有券商品", result.getSummary());
+        ArgumentCaptor<com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchReqVO> captor =
+                ArgumentCaptor.forClass(com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchReqVO.class);
+        verify(goodsSquareService).searchGoods(captor.capture());
+        assertEquals(1, captor.getValue().getHasCoupon());
+        assertEquals(new BigDecimal("5"), captor.getValue().getCouponAmountMin());
+    }
+
+    @Test
+    @DisplayName("planCashGift - 生成淘礼金计划并提示预算缺口")
+    void planCashGift_calculatesBudgetGap() {
+        CpsGoodsCashGiftPlanReqVO reqVO = new CpsGoodsCashGiftPlanReqVO();
+        reqVO.setTemplateCode("flash-sale");
+        reqVO.setCampaignName("爆品补贴");
+        reqVO.setPlatformCode("taobao");
+        reqVO.setBudgetAmount(new BigDecimal("80"));
+        reqVO.setGiftAmount(new BigDecimal("2"));
+        reqVO.setTotalQuantity(50);
+
+        var result = service.planCashGift(reqVO);
+
+        assertEquals("RISK", result.getPlanStatus());
+        assertEquals(new BigDecimal("20.00"), result.getBudgetGap());
+        assertFalse(result.getBudgetEnough());
+        assertFalse(result.getTemplates().isEmpty());
     }
 
     private CpsGoodsRebateQueryRespVO successResponse(String goodsId, Long transferRecordId) {

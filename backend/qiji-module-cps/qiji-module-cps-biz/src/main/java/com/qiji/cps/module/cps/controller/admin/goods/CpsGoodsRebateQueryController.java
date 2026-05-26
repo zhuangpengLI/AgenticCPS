@@ -3,6 +3,12 @@ package com.qiji.cps.module.cps.controller.admin.goods;
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsBatchTransferReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsBatchTransferRespVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsCashGiftPlanReqVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsCashGiftPlanRespVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsCouponQueryReqVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsCouponQueryRespVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsOwnershipCheckReqVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsOwnershipCheckRespVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsParseReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsParseRespVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsRebateQueryReqVO;
@@ -58,6 +64,27 @@ public class CpsGoodsRebateQueryController {
     @PreAuthorize("@ss.hasPermission('cps:toolbox:link')")
     public CommonResult<CpsGoodsBatchTransferRespVO> batchTransfer(@Valid @RequestBody CpsGoodsBatchTransferReqVO reqVO) {
         return success(goodsToolboxService.batchTransfer(reqVO));
+    }
+
+    @PostMapping("/ownership-check")
+    @Operation(summary = "检测转链会员和推广位归属")
+    @PreAuthorize("@ss.hasPermission('cps:toolbox:query')")
+    public CommonResult<CpsGoodsOwnershipCheckRespVO> checkOwnership(@Valid @RequestBody CpsGoodsOwnershipCheckReqVO reqVO) {
+        return success(goodsToolboxService.checkOwnership(reqVO));
+    }
+
+    @PostMapping("/coupon-query")
+    @Operation(summary = "查询优惠券商品")
+    @PreAuthorize("@ss.hasPermission('cps:toolbox:query')")
+    public CommonResult<CpsGoodsCouponQueryRespVO> queryCoupons(@Valid @RequestBody CpsGoodsCouponQueryReqVO reqVO) {
+        return success(goodsToolboxService.queryCoupons(reqVO));
+    }
+
+    @PostMapping("/cash-gift/plan")
+    @Operation(summary = "生成淘礼金计划配置")
+    @PreAuthorize("@ss.hasPermission('cps:toolbox:link')")
+    public CommonResult<CpsGoodsCashGiftPlanRespVO> planCashGift(@Valid @RequestBody CpsGoodsCashGiftPlanReqVO reqVO) {
+        return success(goodsToolboxService.planCashGift(reqVO));
     }
 
 }

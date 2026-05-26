@@ -1,7 +1,7 @@
 # AgenticCPS 项目地图（草稿）
 
 > 生成日期：2026-05-24
-> 生成方式：只读扫描仓库结构、配置、POM、前端 `package.json`、CPS 核心代码与既有技术债文档后整理；2026-05-24 补充活动中心、返利工具箱与选品库落地信息。
+> 生成方式：只读扫描仓库结构、配置、POM、前端 `package.json`、CPS 核心代码与既有技术债文档后整理；2026-05-24 补充活动中心、返利工具箱与选品库落地信息；2026-05-26 补充 CPS 主导型 CPX 任务/资讯/平台资料库骨架、后台页面、看板骨架与 OpenAPI 签名校验。
 > 约束：仓库当前已有多处未提交改动，见“风险与注意事项”。后续编辑需继续区分既有改动和本次改动。
 
 ## 1. 项目入口在哪里
@@ -78,12 +78,12 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 
 | 包 | 当前职责 |
 |---|---|
-| `controller/admin` | 后台管理：活动中心、返利工具箱、商品广场、平台、推广位、订单、返利配置/记录、冻结、风控、统计、供应商、提现、转账、选品库等。 |
+| `controller/admin` | 后台管理：活动中心、返利工具箱、商品广场、平台、推广位、订单、返利配置/记录、冻结、风控、统计、供应商、提现、转账、选品库，以及新增 CPX 任务/资讯/平台对接中心和 CPX 看板汇总。 |
 | `controller/app` | 用户端：商品搜索/转链、我的返利账户/记录、返利兑换 Token。 |
-| `controller/openapi` | 服务间 OpenAPI：返利余额、冻结、解冻、确认扣减。 |
+| `controller/openapi` | 服务间 OpenAPI：返利余额、冻结、解冻、确认扣减；CPX 曝光、点击、线索、动作/转化事件上报，统一 HMAC 签名与幂等键。 |
 | `client` | CPS 平台与供应商适配器，包含大淘客、好单库、官方 API、淘宝/京东/拼多多/抖音/美团/唯品会适配器。 |
-| `service` | 核心业务：goods、toolbox、activity、order、rebate、freeze、exchange、risk、statistics、withdraw、transfer、vendor、adzone、selection。 |
-| `dal/dataobject` + `dal/mysql` | CPS 表 DO 与 MyBatis Mapper，包括 `cps_rebate_activity` 活动卡片配置、`cps_selection_theme` 选品主题、`cps_selection_theme_item` 主题商品快照。 |
+| `service` | 核心业务：goods、toolbox、activity、order、rebate、freeze、exchange、risk、statistics、withdraw、transfer、vendor、adzone、selection、cpx。 |
+| `dal/dataobject` + `dal/mysql` | CPS 表 DO 与 MyBatis Mapper，包括 `cps_rebate_activity` 活动卡片配置、`cps_selection_theme` 选品主题、`cps_selection_theme_item` 主题商品快照；CPX 新增 `cpx_task`、`cpx_offer`、`cpx_material`、`cpx_article`、`cpx_platform_profile`、`cpx_tracking_link`、`cpx_event`、`cpx_conversion`、`cpx_settlement_record`、`cpx_lead_detail`。 |
 | `job` | 定时任务：订单同步、返利结算、冻结解冻、统计聚合。 |
 | `mcp/tool` | Agent 可调用工具：搜索、比价、转链、查订单、查返利汇总、AIoT 场景推荐、选品库主题查询与主题商品推荐。 |
 | `config` | CPS 缓存、aitoken 兑换配置。 |
@@ -133,7 +133,7 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 
 ### 3.1.2 管理后台返利工具箱
 
-管理后台返利工具箱是面向运营的统一工作台，用于把万能转链、口令解析、返利商品广场、推广文案编辑和批量复制收敛到一个入口。
+管理后台返利工具箱是面向运营的统一工作台，用于把万能转链、口令解析、归属检测、优惠券查询、返利商品广场、淘礼金计划、推广文案编辑和批量复制收敛到一个入口。
 
 ```text
 运营人员
@@ -150,7 +150,8 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 - `CpsGoodsRebateQueryController`：新增 `POST /cps/goods/parse` 和 `POST /cps/goods/batch-transfer`，权限分别为 `cps:toolbox:query`、`cps:toolbox:link`。
 - `CpsGoodsToolboxServiceImpl`：解析仅识别商品信息，不生成推广链接或转链记录；批量转链逐条调用既有 `CpsGoodsRebateQueryService.queryRebate()`。
 - 批量转链忽略空行，最多支持 20 条非空内容，保留原始输入序号，单条失败不阻断整批。
-- 前端工具箱包含万能转链、口令解析、商品广场与推广文案编辑区，商品广场入口可通过 `/cps/toolbox?tool=goods-square` 直达。
+- P1/P2 接口包含 `POST /cps/goods/ownership-check`、`POST /cps/goods/coupon-query`、`POST /cps/goods/cash-gift/plan`；淘礼金当前只生成运营计划和预算检查，不调用真实发放接口。
+- 前端工具箱包含万能转链、口令解析、归属检测、优惠券查询、商品广场、淘礼金计划与推广文案编辑区，商品广场入口可通过 `/cps/toolbox?tool=goods-square` 直达。
 - 菜单与权限 SQL 放在 `backend/sql/mysql/cps-all-in-one.sql`；不要把 CPS 菜单、权限或种子数据写回 `ruoyi-vue-pro.sql`。
 
 ### 3.1.3 选品库主题与商品快照

@@ -198,7 +198,7 @@ Tools:
 - `parse`
 - `goods-square`
 - `copy-editor`
-- disabled P1/P2 placeholders: `ownership-check`, `coupon-query`, `cash-gift`
+- enabled P1/P2 tools: `ownership-check`, `coupon-query`, `cash-gift`
 
 - [ ] **Step 3: Verify layout responsiveness**
 

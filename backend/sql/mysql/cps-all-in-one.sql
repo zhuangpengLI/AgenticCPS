@@ -136,6 +136,272 @@ CREATE TABLE `cps_selection_theme_item`  (
   KEY `idx_cps_selection_theme_item_platform` (`tenant_id`, `deleted`, `platform_code`, `source_type`) USING BTREE,
   KEY `idx_cps_selection_theme_item_score` (`tenant_id`, `deleted`, `theme_id`, `recommend_score`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPS选品主题商品快照表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- CPX core tables: task, offer, material, article, platform profile, tracking, event, conversion and settlement
+-- CPS orders remain in cps_order; non-CPS traffic and rewards are recorded here.
+-- ----------------------------
+DROP TABLE IF EXISTS `cpx_task`;
+CREATE TABLE `cpx_task` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '任务ID',
+  `task_no` varchar(64) NOT NULL COMMENT '任务编号',
+  `task_name` varchar(128) NOT NULL COMMENT '任务名称',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `promotion_method` varchar(16) NOT NULL DEFAULT 'CPS' COMMENT '推广方式：CPS/CPA/CPL/CPM/CPC/OCPA/OCPC/MIXED',
+  `task_type` varchar(32) DEFAULT NULL COMMENT '任务类型',
+  `offer_type` varchar(32) DEFAULT NULL COMMENT 'Offer类型',
+  `title` varchar(255) DEFAULT NULL COMMENT '展示标题',
+  `short_desc` varchar(512) DEFAULT NULL COMMENT '任务简介',
+  `reward_desc` varchar(255) DEFAULT NULL COMMENT '奖励文案',
+  `budget_amount` int DEFAULT NULL COMMENT '总预算，单位分',
+  `daily_budget_amount` int DEFAULT NULL COMMENT '日预算，单位分',
+  `reward_amount` int DEFAULT NULL COMMENT '固定奖励，单位分',
+  `reward_rate` int DEFAULT NULL COMMENT '奖励比例，万分比',
+  `member_reward_enabled` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否开启会员奖励；CPC/oCPC 默认关闭',
+  `dedupe_window_seconds` int DEFAULT NULL COMMENT '去重窗口秒数',
+  `frequency_limit` int DEFAULT NULL COMMENT '频控次数',
+  `start_time` datetime DEFAULT NULL COMMENT '开始时间',
+  `end_time` datetime DEFAULT NULL COMMENT '结束时间',
+  `status` tinyint NOT NULL DEFAULT 0 COMMENT '状态：0草稿 1上线 2下线',
+  `priority` int NOT NULL DEFAULT 20 COMMENT '排序优先级；CPS 默认更高',
+  `tags` varchar(255) DEFAULT NULL COMMENT '标签',
+  `material_json` text COMMENT '素材配置JSON',
+  `rule_json` text COMMENT '审核/结算规则JSON',
+  `landing_url` varchar(1024) DEFAULT NULL COMMENT '落地页',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cpx_task_no` (`tenant_id`, `task_no`, `deleted`) USING BTREE,
+  KEY `idx_cpx_task_hall` (`tenant_id`, `deleted`, `status`, `promotion_method`, `platform_code`, `priority`, `start_time`, `end_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPX任务表';
+
+DROP TABLE IF EXISTS `cpx_offer`;
+CREATE TABLE `cpx_offer` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'OfferID',
+  `task_id` bigint NOT NULL COMMENT '任务ID',
+  `offer_code` varchar(64) NOT NULL COMMENT 'Offer编码',
+  `offer_name` varchar(128) NOT NULL COMMENT 'Offer名称',
+  `promotion_method` varchar(16) NOT NULL COMMENT '推广方式',
+  `reward_amount` int DEFAULT NULL COMMENT '奖励金额，单位分',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态',
+  `rule_json` text COMMENT '规则JSON',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cpx_offer_code` (`tenant_id`, `offer_code`, `deleted`) USING BTREE,
+  KEY `idx_cpx_offer_task` (`tenant_id`, `deleted`, `task_id`, `status`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPX Offer表';
+
+DROP TABLE IF EXISTS `cpx_material`;
+CREATE TABLE `cpx_material` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '素材ID',
+  `task_id` bigint NOT NULL COMMENT '任务ID',
+  `offer_id` bigint DEFAULT NULL COMMENT 'OfferID',
+  `material_type` varchar(32) NOT NULL COMMENT '素材类型',
+  `title` varchar(255) DEFAULT NULL COMMENT '标题',
+  `content` text COMMENT '内容',
+  `image_url` varchar(1024) DEFAULT NULL COMMENT '图片',
+  `landing_url` varchar(1024) DEFAULT NULL COMMENT '落地页',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_cpx_material_task` (`tenant_id`, `deleted`, `task_id`, `offer_id`, `status`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPX素材表';
+
+DROP TABLE IF EXISTS `cpx_platform_profile`;
+CREATE TABLE `cpx_platform_profile` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '平台档案ID',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `platform_name` varchar(128) NOT NULL COMMENT '平台名称',
+  `platform_logo` varchar(512) DEFAULT NULL COMMENT '平台Logo',
+  `supported_methods` varchar(128) DEFAULT NULL COMMENT '支持计费模型',
+  `api_base_url` varchar(512) DEFAULT NULL COMMENT '接口地址',
+  `callback_url` varchar(512) DEFAULT NULL COMMENT '回调地址',
+  `import_template` text COMMENT '导入模板说明',
+  `health_status` varchar(32) DEFAULT 'UNKNOWN' COMMENT '健康状态',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态',
+  `remark` varchar(512) DEFAULT NULL COMMENT '运营说明',
+  `extra_config` text COMMENT '扩展配置',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cpx_platform_profile_code` (`tenant_id`, `platform_code`, `deleted`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPX平台对接档案表';
+
+DROP TABLE IF EXISTS `cpx_article`;
+CREATE TABLE `cpx_article` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '资讯ID',
+  `title` varchar(255) NOT NULL COMMENT '标题',
+  `category` varchar(32) DEFAULT NULL COMMENT '分类',
+  `summary` varchar(512) DEFAULT NULL COMMENT '摘要',
+  `cover_url` varchar(1024) DEFAULT NULL COMMENT '封面',
+  `content` mediumtext COMMENT '正文',
+  `platform_code` varchar(32) DEFAULT NULL COMMENT '关联平台',
+  `promotion_method` varchar(16) DEFAULT NULL COMMENT '关联计费模型',
+  `related_task_id` bigint DEFAULT NULL COMMENT '关联任务ID',
+  `tags` varchar(255) DEFAULT NULL COMMENT '标签',
+  `status` tinyint NOT NULL DEFAULT 0 COMMENT '状态：0草稿 1发布 2下线',
+  `publish_time` datetime DEFAULT NULL COMMENT '发布时间',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_cpx_article_list` (`tenant_id`, `deleted`, `status`, `category`, `promotion_method`, `publish_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPX资讯表';
+
+DROP TABLE IF EXISTS `cpx_tracking_link`;
+CREATE TABLE `cpx_tracking_link` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '追踪链接ID',
+  `tracking_id` varchar(64) NOT NULL COMMENT '追踪ID',
+  `task_id` bigint NOT NULL COMMENT '任务ID',
+  `offer_id` bigint DEFAULT NULL COMMENT 'OfferID',
+  `material_id` bigint DEFAULT NULL COMMENT '素材ID',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `promotion_method` varchar(16) NOT NULL COMMENT '推广方式',
+  `member_id` bigint DEFAULT NULL COMMENT '会员ID',
+  `adzone_id` varchar(128) DEFAULT NULL COMMENT '推广位',
+  `channel_code` varchar(64) DEFAULT NULL COMMENT '渠道编码',
+  `target_url` varchar(1024) DEFAULT NULL COMMENT '目标地址',
+  `tracking_url` varchar(1024) DEFAULT NULL COMMENT '追踪地址',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cpx_tracking_id` (`tenant_id`, `tracking_id`, `deleted`) USING BTREE,
+  KEY `idx_cpx_tracking_member` (`tenant_id`, `deleted`, `member_id`, `task_id`, `promotion_method`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPX追踪链接表';
+
+DROP TABLE IF EXISTS `cpx_event`;
+CREATE TABLE `cpx_event` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '事件ID',
+  `event_id` varchar(64) NOT NULL COMMENT '事件编号',
+  `tracking_id` varchar(64) DEFAULT NULL COMMENT '追踪ID',
+  `task_id` bigint NOT NULL COMMENT '任务ID',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `promotion_method` varchar(16) NOT NULL COMMENT '推广方式',
+  `event_type` varchar(32) NOT NULL COMMENT '事件类型',
+  `source_event_id` varchar(128) NOT NULL COMMENT '外部事件ID',
+  `idempotency_key` varchar(255) NOT NULL COMMENT '幂等键',
+  `member_id` bigint DEFAULT NULL COMMENT '会员ID',
+  `client_ip` varchar(64) DEFAULT NULL COMMENT '客户端IP',
+  `user_agent` varchar(512) DEFAULT NULL COMMENT 'UA',
+  `event_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '事件时间',
+  `raw_payload` mediumtext COMMENT '原始载荷',
+  `valid_flag` bit(1) NOT NULL DEFAULT b'1' COMMENT '是否有效',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cpx_event_idempotency` (`tenant_id`, `idempotency_key`, `deleted`) USING BTREE,
+  KEY `idx_cpx_event_task` (`tenant_id`, `deleted`, `task_id`, `event_type`, `event_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPX事件账本表';
+
+DROP TABLE IF EXISTS `cpx_conversion`;
+CREATE TABLE `cpx_conversion` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '转化ID',
+  `conversion_no` varchar(64) NOT NULL COMMENT '转化编号',
+  `task_id` bigint NOT NULL COMMENT '任务ID',
+  `tracking_id` varchar(64) DEFAULT NULL COMMENT '追踪ID',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `promotion_method` varchar(16) NOT NULL COMMENT '推广方式',
+  `source_event_id` varchar(128) NOT NULL COMMENT '来源事件ID',
+  `target_event_type` varchar(32) DEFAULT NULL COMMENT '目标事件类型',
+  `member_id` bigint DEFAULT NULL COMMENT '会员ID',
+  `amount` int DEFAULT NULL COMMENT '交易/成本金额，单位分',
+  `reward_amount` int DEFAULT NULL COMMENT '奖励金额，单位分',
+  `conversion_status` varchar(32) NOT NULL DEFAULT 'PENDING' COMMENT '转化状态',
+  `settlement_status` varchar(32) NOT NULL DEFAULT 'PENDING' COMMENT '结算状态',
+  `confirmed_time` datetime DEFAULT NULL COMMENT '确认时间',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cpx_conversion_source` (`tenant_id`, `platform_code`, `promotion_method`, `source_event_id`, `deleted`) USING BTREE,
+  KEY `idx_cpx_conversion_member` (`tenant_id`, `deleted`, `member_id`, `settlement_status`, `create_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPX转化表';
+
+DROP TABLE IF EXISTS `cpx_settlement_record`;
+CREATE TABLE `cpx_settlement_record` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '结算记录ID',
+  `settlement_no` varchar(64) NOT NULL COMMENT '结算编号',
+  `conversion_id` bigint NOT NULL COMMENT '转化ID',
+  `task_id` bigint NOT NULL COMMENT '任务ID',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `promotion_method` varchar(16) NOT NULL COMMENT '推广方式',
+  `member_id` bigint DEFAULT NULL COMMENT '会员ID',
+  `amount` int DEFAULT NULL COMMENT '结算金额，单位分',
+  `reward_amount` int DEFAULT NULL COMMENT '会员奖励，单位分',
+  `settlement_status` varchar(32) NOT NULL DEFAULT 'PENDING' COMMENT '结算状态：PENDING/FROZEN/AVAILABLE/DEDUCTED/REVERSED',
+  `freeze_record_id` bigint DEFAULT NULL COMMENT '返利冻结记录ID',
+  `rebate_record_id` bigint DEFAULT NULL COMMENT '返利记录ID',
+  `idempotency_key` varchar(255) NOT NULL COMMENT '幂等键',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cpx_settlement_idem` (`tenant_id`, `idempotency_key`, `deleted`) USING BTREE,
+  KEY `idx_cpx_settlement_member` (`tenant_id`, `deleted`, `member_id`, `settlement_status`, `create_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPX结算记录表';
+
+DROP TABLE IF EXISTS `cpx_lead_detail`;
+CREATE TABLE `cpx_lead_detail` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '线索详情ID',
+  `conversion_id` bigint DEFAULT NULL COMMENT '转化ID',
+  `task_id` bigint NOT NULL COMMENT '任务ID',
+  `tracking_id` varchar(64) DEFAULT NULL COMMENT '追踪ID',
+  `contact_hash` varchar(128) DEFAULT NULL COMMENT '联系方式摘要',
+  `encrypted_contact` text COMMENT '加密联系方式',
+  `consent_flag` bit(1) NOT NULL DEFAULT b'0' COMMENT '用户授权标识',
+  `review_status` varchar(32) NOT NULL DEFAULT 'PENDING' COMMENT '审核状态',
+  `review_reason` varchar(512) DEFAULT NULL COMMENT '审核原因',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_cpx_lead_task` (`tenant_id`, `deleted`, `task_id`, `review_status`, `create_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPX线索详情表';
 COMMIT;
 
 -- ----------------------------
@@ -145,7 +411,7 @@ COMMIT;
 BEGIN;
 INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES
 -- 一级菜单
-(6200, 'CPS联盟', '', 1, 70, 0, '/cps', 'ep:shopping-cart', NULL, NULL, 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
+(6200, 'CPX联盟', '', 1, 70, 0, '/cps', 'ep:shopping-cart', NULL, NULL, 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 
 -- 运营工作台
 (6201, '活动中心', 'cps:rebate-activity:query', 2, 10, 6200, 'activity/square', 'ep:present', 'cps/activity/square/index', 'CpsRebateActivitySquare', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
@@ -221,6 +487,25 @@ INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_i
 (6263, '供应商创建', 'cps:api-vendor:create', 3, 2, 6261, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6264, '供应商更新', 'cps:api-vendor:update', 3, 3, 6261, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6265, '供应商删除', 'cps:api-vendor:delete', 3, 4, 6261, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0');
+COMMIT;
+
+-- CPX extension menus: CPS remains the primary business under the upgraded CPX alliance.
+BEGIN;
+INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES
+(6282, 'CPX看板', 'cpx:dashboard:query', 2, 160, 6200, 'cpx/dashboard', 'ep:data-analysis', 'cpx/dashboard/index', 'CpxDashboard', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0'),
+(6283, '看板查询', 'cpx:dashboard:query', 3, 1, 6282, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0'),
+(6270, '任务中心', 'cpx:task:query', 2, 170, 6200, 'cpx/task', 'ep:promotion', 'cpx/task/index', 'CpxTask', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0'),
+(6271, '任务查询', 'cpx:task:query', 3, 1, 6270, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0'),
+(6272, '任务创建', 'cpx:task:create', 3, 2, 6270, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0'),
+(6273, '任务更新', 'cpx:task:update', 3, 3, 6270, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0'),
+(6274, '资讯中心', 'cpx:article:query', 2, 180, 6200, 'cpx/article', 'ep:reading', 'cpx/article/index', 'CpxArticle', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0'),
+(6275, '资讯查询', 'cpx:article:query', 3, 1, 6274, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0'),
+(6276, '资讯创建', 'cpx:article:create', 3, 2, 6274, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0'),
+(6280, '资讯更新', 'cpx:article:update', 3, 3, 6274, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0'),
+(6277, '平台对接中心', 'cpx:platform:query', 2, 190, 6200, 'cpx/platform-profile', 'ep:connection', 'cpx/platformProfile/index', 'CpxPlatformProfile', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0'),
+(6278, '平台档案查询', 'cpx:platform:query', 3, 1, 6277, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0'),
+(6279, '平台档案创建', 'cpx:platform:create', 3, 2, 6277, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0'),
+(6281, '平台档案更新', 'cpx:platform:update', 3, 3, 6277, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-26 00:00:00', '1', '2026-05-26 00:00:00', b'0');
 COMMIT;
 
 SET FOREIGN_KEY_CHECKS = 1;
