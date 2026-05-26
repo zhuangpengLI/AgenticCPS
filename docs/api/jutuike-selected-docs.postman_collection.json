@@ -1,0 +1,1517 @@
+{
+  "info": {
+    "_postman_id": "2e48f4d9-09dd-4bdb-a6e3-jutuike-selected",
+    "name": "聚推客开放平台接口（doc37-doc48-doc125-doc115抓取）",
+    "description": "根据用户指定的 doc/37、doc/48、doc/125、doc/115 页面抓取左侧接口目录并解析所有唯一 API 生成。GET/POST 双方式接口同时生成 GET 和 POST 请求项。请在环境变量中填写 jutuikeApikey。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "聚推客 API",
+      "item": [
+        {
+          "name": "doc-34 聚推客联盟活动列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/34\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n获取聚推客联盟平台下的所有活动基本信息\n\n### 原始请求方式\nGET\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| page | Number | 否 |  | 页码 默认 1 |\n| pageSize | Number | 否 |  | 每页显示多少 默认 20 最大 100 |\n| xcx_spread | Number | 否 | 0 | 是否支持微信小程序 0-全部 1-支持小程序 |\n| alipay_xcx_spread | Number | 否 | 0 | 是否支持支付宝小程序 0-全部 1-支持小程序 |\n| cate_name | String | 否 | 美团 | 饿了么、美团、打车出行、特惠酒店、电影票、快递优惠、连锁餐饮、本地生活、电商、京东外卖 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| act_id | Number |  | 活动ID |\n| act_name | String |  | 活动名称 |\n| desc | String |  | 活动描述 |\n| img | String |  | 活动样例 |\n| icon | String |  | icon图标 |\n| poster | String |  | 海报(部分活动没有) |\n| start_date | String |  | 活动开始日期 |\n| end_date | String |  | 活动截止日期 |\n| introduce | String |  | 活动介绍 |\n| attribution_explain | String |  | 归属说明 |\n| note | String |  | 注意事项 |\n| settlement_time | String |  | 结算时间 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/union/act_list",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "union",
+                "act_list"
+              ],
+              "query": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码 默认 1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Number | required: 否 | 每页显示多少 默认 20 最大 100",
+                  "disabled": true
+                },
+                {
+                  "key": "xcx_spread",
+                  "value": "0",
+                  "description": "Number | required: 否 | 是否支持微信小程序 0-全部 1-支持小程序",
+                  "disabled": true
+                },
+                {
+                  "key": "alipay_xcx_spread",
+                  "value": "0",
+                  "description": "Number | required: 否 | 是否支持支付宝小程序 0-全部 1-支持小程序",
+                  "disabled": true
+                },
+                {
+                  "key": "cate_name",
+                  "value": "美团",
+                  "description": "String | required: 否 | 饿了么、美团、打车出行、特惠酒店、电影票、快递优惠、连锁餐饮、本地生活、电商、京东外卖",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-37 聚推客联盟统一订单数据接口 [GET]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/37\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n该接口返回聚推客联盟平台所有活动订单接口，全部活动的订单从这一个接口获取， 该订单接口只聚合了所有活动订单里重合度较高的字段，统一了订单状态。\n\n### 原始请求方式\nGET/POST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| start_time | Date | 是 | 2021-06-05 00:00:00 | 开始时间与结束时间不能超过1小时 |\n| end_time | Date | 是 | 2021-06-05 00:00:00 | 结束时间与开始时间不能超过1小时 |\n| query_type | Number | 否 | 1 | 1： 按支付时间 2：按更新时间 3：创建时间 ，默认：3 |\n| sid | String | 否 |  | 自定义参数跟单 |\n| brand_id | Number | 否 | 1 | 品牌id 1 美团 2 饿了么 3 拼多多 4 京东 5 肯德基 6 电影 7 麦当劳 8 话费充值 9 百果园 10 奈雪的茶 11 瑞幸咖啡 12 星巴克 13 喜茶 14 唯品会 15 滴滴/花小猪 16 汉堡王 17 高德打车 18 电费充值 19 会员充值 20 特价快递 21 联联周边游 22 抖音联盟 23 必胜客 24 旅划算 25 大牌餐券 26 千千惠生活 27 流量卡 28 同程出行 29 华莱士 30 T3出行 31 景点门票 32 淘宝 33 库迪咖啡 34 携程旅行 35 分销酒店 36 美团赚 |\n| status | Number | 否 | 1 | 订单统一状态，0：未付款 1：已付款 2：待结算 3：已结算 4：无效订单 |\n| order_sn | String | 否 | 1234567 | 订单号 |\n| relation_flag_name | String | 否 |  | 第三方渠道标识 |\n| page | Number | 否 | 1 | 页码 默认 1 |\n| pageSize | Number | 否 | 20 | 每页显示多少 默认 20 最大 100 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| act_name | String | 美团外卖 | 活动名称 |\n| act_id | Number | 1 | 活动id，jd：19 、考拉：35、 pdd：14 、 淘宝：40 、vip：39 、47-高德打车 对应该接口 https://www.jutuike.com/doc/34 |\n| sid | String | 123456 | 渠道标识 |\n| pub_id | Number | 123 | 推广者id，平台用户唯一id |\n| jtk_share_rate | String | 0.3 | 佣金比例，0.1 则代表10% （实际佣金比率 = 比例x100） |\n| jtk_share_fee | String | 1.2 | 佣金 |\n| order_sn | String | 12345678 | 订单号 |\n| order_title | String | 北京烤鸭 | 商品名称 |\n| create_time | Date | 2021-06-05 21:41:52 | 下单时间 |\n| pay_time | Date | 2021-06-05 21:41:52 | 付款时间 |\n| modified_time | Date | 2021-06-05 21:41:52 | 最后一次更新时间 |\n| order_price | String | 12 | 商品单价 |\n| pay_price | String | 10 | 实际付款金额 |\n| status | Number | 1 | 订单统一状态，0：未付款 1：已付款 2：待结算 3：已结算 4：无效订单 |\n| status_desc | String | 已付款 | 状态描述 |\n| extension | String |  | 扩展参数，可根据需要解析 |\n| brand_id | Number |  | 品牌id 1 美团 2 饿了么 3 拼多多 4 京东 5 肯德基 6 电影 7 麦当劳 8 话费充值 9 百果园 10 奈雪的茶 11 瑞幸咖啡 12 星巴克 13 喜茶 14 唯品会 15 滴滴/花小猪 16 汉堡王 17 高德打车 18 电费充值 19 会员充值 20 特价快递 21 联联周边游 22 抖音联盟 23 必胜客 24 旅划算 25 大牌餐券 26 千千惠生活 27 流量卡 28 同程出行 29 华莱士 30 T3出行 31 景点门票 32 淘宝 33 库迪咖啡 34 携程旅行 35 分销酒店 36 美团赚 |\n| invalid_reason | String |  | 失效原因 |\n| icon | String |  | icon 图标 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/union/orders",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "union",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "start_time",
+                  "value": "2021-06-05 00:00:00",
+                  "description": "Date | required: 是 | 开始时间与结束时间不能超过1小时",
+                  "disabled": false
+                },
+                {
+                  "key": "end_time",
+                  "value": "2021-06-05 00:00:00",
+                  "description": "Date | required: 是 | 结束时间与开始时间不能超过1小时",
+                  "disabled": false
+                },
+                {
+                  "key": "query_type",
+                  "value": "1",
+                  "description": "Number | required: 否 | 1： 按支付时间 2：按更新时间 3：创建时间 ，默认：3",
+                  "disabled": true
+                },
+                {
+                  "key": "sid",
+                  "value": "test_sid",
+                  "description": "String | required: 否 | 自定义参数跟单",
+                  "disabled": true
+                },
+                {
+                  "key": "brand_id",
+                  "value": "1",
+                  "description": "Number | required: 否 | 品牌id 1 美团 2 饿了么 3 拼多多 4 京东 5 肯德基 6 电影 7 麦当劳 8 话费充值 9 百果园 10 奈雪的茶 11 瑞幸咖啡 12 星巴克 13 喜茶 14 唯品会 15 滴滴/花小猪 16 汉堡王 17 高德打车 18 电费充值 19 会员充值 20 特价快递 21 联联周边游 22 抖音联盟 23 必胜客 24 旅划算 25 大牌餐券 26 千千惠生活 27 流量卡 28 同程出行 29 华莱士 30 T3出行 31 景点门票 32 淘宝 33 库迪咖啡 34 携程旅行 35 分销酒店 36 美团赚",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "1",
+                  "description": "Number | required: 否 | 订单统一状态，0：未付款 1：已付款 2：待结算 3：已结算 4：无效订单",
+                  "disabled": true
+                },
+                {
+                  "key": "order_sn",
+                  "value": "1234567",
+                  "description": "String | required: 否 | 订单号",
+                  "disabled": true
+                },
+                {
+                  "key": "relation_flag_name",
+                  "value": "test_sid",
+                  "description": "String | required: 否 | 第三方渠道标识",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码 默认 1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Number | required: 否 | 每页显示多少 默认 20 最大 100",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-37 聚推客联盟统一订单数据接口 [POST]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/37\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n该接口返回聚推客联盟平台所有活动订单接口，全部活动的订单从这一个接口获取， 该订单接口只聚合了所有活动订单里重合度较高的字段，统一了订单状态。\n\n### 原始请求方式\nGET/POST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| start_time | Date | 是 | 2021-06-05 00:00:00 | 开始时间与结束时间不能超过1小时 |\n| end_time | Date | 是 | 2021-06-05 00:00:00 | 结束时间与开始时间不能超过1小时 |\n| query_type | Number | 否 | 1 | 1： 按支付时间 2：按更新时间 3：创建时间 ，默认：3 |\n| sid | String | 否 |  | 自定义参数跟单 |\n| brand_id | Number | 否 | 1 | 品牌id 1 美团 2 饿了么 3 拼多多 4 京东 5 肯德基 6 电影 7 麦当劳 8 话费充值 9 百果园 10 奈雪的茶 11 瑞幸咖啡 12 星巴克 13 喜茶 14 唯品会 15 滴滴/花小猪 16 汉堡王 17 高德打车 18 电费充值 19 会员充值 20 特价快递 21 联联周边游 22 抖音联盟 23 必胜客 24 旅划算 25 大牌餐券 26 千千惠生活 27 流量卡 28 同程出行 29 华莱士 30 T3出行 31 景点门票 32 淘宝 33 库迪咖啡 34 携程旅行 35 分销酒店 36 美团赚 |\n| status | Number | 否 | 1 | 订单统一状态，0：未付款 1：已付款 2：待结算 3：已结算 4：无效订单 |\n| order_sn | String | 否 | 1234567 | 订单号 |\n| relation_flag_name | String | 否 |  | 第三方渠道标识 |\n| page | Number | 否 | 1 | 页码 默认 1 |\n| pageSize | Number | 否 | 20 | 每页显示多少 默认 20 最大 100 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| act_name | String | 美团外卖 | 活动名称 |\n| act_id | Number | 1 | 活动id，jd：19 、考拉：35、 pdd：14 、 淘宝：40 、vip：39 、47-高德打车 对应该接口 https://www.jutuike.com/doc/34 |\n| sid | String | 123456 | 渠道标识 |\n| pub_id | Number | 123 | 推广者id，平台用户唯一id |\n| jtk_share_rate | String | 0.3 | 佣金比例，0.1 则代表10% （实际佣金比率 = 比例x100） |\n| jtk_share_fee | String | 1.2 | 佣金 |\n| order_sn | String | 12345678 | 订单号 |\n| order_title | String | 北京烤鸭 | 商品名称 |\n| create_time | Date | 2021-06-05 21:41:52 | 下单时间 |\n| pay_time | Date | 2021-06-05 21:41:52 | 付款时间 |\n| modified_time | Date | 2021-06-05 21:41:52 | 最后一次更新时间 |\n| order_price | String | 12 | 商品单价 |\n| pay_price | String | 10 | 实际付款金额 |\n| status | Number | 1 | 订单统一状态，0：未付款 1：已付款 2：待结算 3：已结算 4：无效订单 |\n| status_desc | String | 已付款 | 状态描述 |\n| extension | String |  | 扩展参数，可根据需要解析 |\n| brand_id | Number |  | 品牌id 1 美团 2 饿了么 3 拼多多 4 京东 5 肯德基 6 电影 7 麦当劳 8 话费充值 9 百果园 10 奈雪的茶 11 瑞幸咖啡 12 星巴克 13 喜茶 14 唯品会 15 滴滴/花小猪 16 汉堡王 17 高德打车 18 电费充值 19 会员充值 20 特价快递 21 联联周边游 22 抖音联盟 23 必胜客 24 旅划算 25 大牌餐券 26 千千惠生活 27 流量卡 28 同程出行 29 华莱士 30 T3出行 31 景点门票 32 淘宝 33 库迪咖啡 34 携程旅行 35 分销酒店 36 美团赚 |\n| invalid_reason | String |  | 失效原因 |\n| icon | String |  | icon 图标 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/union/orders",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "union",
+                "orders"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "start_time",
+                  "value": "2021-06-05 00:00:00",
+                  "description": "Date | required: 是 | 开始时间与结束时间不能超过1小时",
+                  "disabled": false
+                },
+                {
+                  "key": "end_time",
+                  "value": "2021-06-05 00:00:00",
+                  "description": "Date | required: 是 | 结束时间与开始时间不能超过1小时",
+                  "disabled": false
+                },
+                {
+                  "key": "query_type",
+                  "value": "1",
+                  "description": "Number | required: 否 | 1： 按支付时间 2：按更新时间 3：创建时间 ，默认：3",
+                  "disabled": true
+                },
+                {
+                  "key": "sid",
+                  "value": "test_sid",
+                  "description": "String | required: 否 | 自定义参数跟单",
+                  "disabled": true
+                },
+                {
+                  "key": "brand_id",
+                  "value": "1",
+                  "description": "Number | required: 否 | 品牌id 1 美团 2 饿了么 3 拼多多 4 京东 5 肯德基 6 电影 7 麦当劳 8 话费充值 9 百果园 10 奈雪的茶 11 瑞幸咖啡 12 星巴克 13 喜茶 14 唯品会 15 滴滴/花小猪 16 汉堡王 17 高德打车 18 电费充值 19 会员充值 20 特价快递 21 联联周边游 22 抖音联盟 23 必胜客 24 旅划算 25 大牌餐券 26 千千惠生活 27 流量卡 28 同程出行 29 华莱士 30 T3出行 31 景点门票 32 淘宝 33 库迪咖啡 34 携程旅行 35 分销酒店 36 美团赚",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "1",
+                  "description": "Number | required: 否 | 订单统一状态，0：未付款 1：已付款 2：待结算 3：已结算 4：无效订单",
+                  "disabled": true
+                },
+                {
+                  "key": "order_sn",
+                  "value": "1234567",
+                  "description": "String | required: 否 | 订单号",
+                  "disabled": true
+                },
+                {
+                  "key": "relation_flag_name",
+                  "value": "test_sid",
+                  "description": "String | required: 否 | 第三方渠道标识",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码 默认 1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Number | required: 否 | 每页显示多少 默认 20 最大 100",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-48 聚推客联盟统一活动转链接口 [GET]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/48\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n该接口用于聚推客联盟平台所有活动获取推广链接接口，全部活动的推广链接从这一个接口获取\n\n### 原始请求方式\nGET/POST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| sid | String | 是 | 123456 | 自定义参数跟单 |\n| act_id | Number | 是 | 1 | 活动ID，聚推客联盟活动列表接口获取 https://www.jutuike.com/doc/34 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| h5 | String |  | 推广短链接(部分活动没有，请注意判断) |\n| we_app_info | OBJECT |  | 小程序信息(部分活动没有，请注意判断) |\n| app_id | String |  | 小程序ID |\n| page_path | String |  | 小程序路径 |\n| miniCode | String |  | 小程序码(部分活动没有，请注意判断) |\n| act_name | String |  | 活动名称 |\n| long_h5 | String |  | 推广长链接(部分活动没有，请注意判断) |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/union/act",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "union",
+                "act"
+              ],
+              "query": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "sid",
+                  "value": "123456",
+                  "description": "String | required: 是 | 自定义参数跟单",
+                  "disabled": false
+                },
+                {
+                  "key": "act_id",
+                  "value": "1",
+                  "description": "Number | required: 是 | 活动ID，聚推客联盟活动列表接口获取 https://www.jutuike.com/doc/34",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-48 聚推客联盟统一活动转链接口 [POST]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/48\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n该接口用于聚推客联盟平台所有活动获取推广链接接口，全部活动的推广链接从这一个接口获取\n\n### 原始请求方式\nGET/POST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| sid | String | 是 | 123456 | 自定义参数跟单 |\n| act_id | Number | 是 | 1 | 活动ID，聚推客联盟活动列表接口获取 https://www.jutuike.com/doc/34 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| h5 | String |  | 推广短链接(部分活动没有，请注意判断) |\n| we_app_info | OBJECT |  | 小程序信息(部分活动没有，请注意判断) |\n| app_id | String |  | 小程序ID |\n| page_path | String |  | 小程序路径 |\n| miniCode | String |  | 小程序码(部分活动没有，请注意判断) |\n| act_name | String |  | 活动名称 |\n| long_h5 | String |  | 推广长链接(部分活动没有，请注意判断) |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/union/act",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "union",
+                "act"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "sid",
+                  "value": "123456",
+                  "description": "String | required: 是 | 自定义参数跟单",
+                  "disabled": false
+                },
+                {
+                  "key": "act_id",
+                  "value": "1",
+                  "description": "Number | required: 是 | 活动ID，聚推客联盟活动列表接口获取 https://www.jutuike.com/doc/34",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-125 抖音团购分类API接口",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/125\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n团购分类接口\n\n### 原始请求方式\nPOST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| first_cateid | String |  | 一级分类id |\n| first_name | String |  | 一级分类名称 |\n| cate_list | String[] |  | 二级分类信息 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/douyin/getCateInfo",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "douyin",
+                "getCateInfo"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-115 会员卡券产品转链接口2（H5）",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/115\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n需开通单页功能后才可调用此接口\n\n### 原始请求方式\nPOST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| sid | String | 是 | danye | 渠道标识，自定义参数跟单，长度不超过30位 |\n| mobile | String | 否 | 18888888888 | 用户手机号，传用户真实手机号，可以免短信验证登陆 |\n| id | Number | 否 | 产品id | 后台=》采买=》产品列表=》产品id，传产品id进单独产品充值页面 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| url | String |  | 单页地址 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/mhcz/act",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "mhcz",
+                "act"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "sid",
+                  "value": "danye",
+                  "description": "String | required: 是 | 渠道标识，自定义参数跟单，长度不超过30位",
+                  "disabled": false
+                },
+                {
+                  "key": "mobile",
+                  "value": "18888888888",
+                  "description": "String | required: 否 | 用户手机号，传用户真实手机号，可以免短信验证登陆",
+                  "disabled": true
+                },
+                {
+                  "key": "id",
+                  "value": "产品id",
+                  "description": "Number | required: 否 | 后台=》采买=》产品列表=》产品id，传产品id进单独产品充值页面",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-9 淘宝订单列表接口",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/9\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n饿了么外卖订单列表\n\n### 原始请求方式\nGET\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| start_time | String | 否 | 2019-05-24 12:00:00 | 开始时间 |\n| end_time | String | 否 | 2019-05-25 12:00:00 | 结束时间 |\n| query_type | Number | 否 | 1 | 查询时间类型，1：按照订单淘客创建时间查询，2:按照订单淘客付款时间查询，3:按照订单淘客结算时间查询 4-按订单更新时间 默认1 |\n| page | Number | 否 | 1 | 页码 默认 1 |\n| pageSize | Number | 否 | 20 | 每页显示多少 默认 20 最大 100 |\n| sid | String | 否 |  | sid |\n| type | Number | 否 | 1 | 1: 外卖 2：生鲜 3:淘宝客 |\n| tk_status | Number | 否 | 3 | 3：订单结算，12：订单付款， 13：订单失效，14：订单成功 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| tk_create_time | String | 2021-03-29 12:11:12 | 订单创建的时间 |\n| tk_paid_time | String | 2021-03-29 12:11:38 | 订单付款时间 |\n| tk_earning_time | String | 2021-03-29 13:04:53 | 订单结算时间 |\n| trade_id | String |  | 订单号，此订单号唯一 |\n| trade_parent_id | String |  | 订单号,此订单号不唯一，和买家后台一致 |\n| jtk_share_rate | String |  | 佣金比例，0.1 则代表10% （实际佣金比率 = 比例x100） |\n| jtk_share_fee | String |  | 佣金金额（元） |\n| alipay_total_price | String | 11.2 | 买家拍下付款的金额 |\n| item_img | String |  | 商品图片 |\n| tk_status | Number | 3 | 3：订单结算，12：订单付款， 13：订单失效，14：订单成功 |\n| refund_tag | Number | 0 | 0: 代表正常 1:代表完成后用户又发起维权，维权订单饿了么将无法结算，固佣金为0 |\n| item_title | String |  | 商品标题 |\n| click_time | String |  | 通过推广链接达到商品、店铺详情页的点击时间 |\n| item_category_name | String |  | 商品所属的根类目，即一级类目的名称 |\n| seller_nick | String |  | 店铺名称 |\n| sid | String |  | sid |\n| type | Number | 1 | 1：外卖 2：生鲜 |\n| modified_time | String |  | 更新时间 |\n| payoff | String | 0 | 0-未结算 |\n| payoff_time | String |  | 结算时间 |\n| frozen | Number |  | 1: 代表冻结不结算 |\n| total | Number |  | 总条数 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/Ele/orders",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "Ele",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "start_time",
+                  "value": "2019-05-24 12:00:00",
+                  "description": "String | required: 否 | 开始时间",
+                  "disabled": true
+                },
+                {
+                  "key": "end_time",
+                  "value": "2019-05-25 12:00:00",
+                  "description": "String | required: 否 | 结束时间",
+                  "disabled": true
+                },
+                {
+                  "key": "query_type",
+                  "value": "1",
+                  "description": "Number | required: 否 | 查询时间类型，1：按照订单淘客创建时间查询，2:按照订单淘客付款时间查询，3:按照订单淘客结算时间查询 4-按订单更新时间 默认1",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码 默认 1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Number | required: 否 | 每页显示多少 默认 20 最大 100",
+                  "disabled": true
+                },
+                {
+                  "key": "sid",
+                  "value": "test_sid",
+                  "description": "String | required: 否 | sid",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "1",
+                  "description": "Number | required: 否 | 1: 外卖 2：生鲜 3:淘宝客",
+                  "disabled": true
+                },
+                {
+                  "key": "tk_status",
+                  "value": "3",
+                  "description": "Number | required: 否 | 3：订单结算，12：订单付款， 13：订单失效，14：订单成功",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-113 饿了么单店推广店铺列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/113\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n饿了么单店推广店铺列表\n\n### 原始请求方式\nPOST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| longitude | String | 是 |  | 经度 |\n| latitude | String | 是 |  | 纬度 |\n| page_size | Number | 否 |  | 每页数量（1~20，默认20） |\n| session_id | String | 否 |  | 会话ID（分页场景首次请求结果返回，后续请求必须携带，服务根据session_id相同请求次数自动翻页返回） |\n| sid | String | 否 |  | 渠道标识，自定义参数跟单，长度不超过30位，默认123456 |\n| filter_first_categories | String | 否 |  | 207-快餐便当,220-中式菜系,233-小吃/烧烤,239-甜点饮品,260-全球美食,1242-香锅火锅 |\n| filter_one_point_five_categories | String | 否 |  | 10000 地方菜 10001 特色菜 10002 甜品 10003 烘焙 10004 奶茶果汁 10005 咖啡 10006 便当简餐 10007 米粉/捞烫 10008 面条 10009 滋补/汤炖 10010 粥食面点 10011 小吃 10012 龙虾烧烤 10013 火锅 10014 香锅 10015 西式快餐 10016 西餐 10017 日韩料理 90001 便利超市 90002 其他零售 90003 其他餐饮 90004 医药健康 90005 大型卖场 90006 宠物母婴 90007 标超 90008 水果 90009 生鲜食材 90010 百货 90011 美妆个护 90012 购物商场 90013 酒水饮料 90014 零食干果 90015 鲜花绿植 10000029016 商超日百 10000029017 水果生鲜 10000029018 鲜花 10000029019 专卖专营店 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| title | String |  | 门店名称 |\n| shop_logo | String |  | 门店logo |\n| indistinct_monthly_sales | String |  | 模糊销量 |\n| commission_rate | String |  | 佣金比例 |\n| wx_appid | String |  | 小程序appid |\n| wx_path |  |  | 微信小程序path链接 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/ele/store_list",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "ele",
+                "store_list"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "longitude",
+                  "value": "116.397128",
+                  "description": "String | required: 是 | 经度",
+                  "disabled": false
+                },
+                {
+                  "key": "latitude",
+                  "value": "39.916527",
+                  "description": "String | required: 是 | 纬度",
+                  "disabled": false
+                },
+                {
+                  "key": "page_size",
+                  "value": "20",
+                  "description": "Number | required: 否 | 每页数量（1~20，默认20）",
+                  "disabled": true
+                },
+                {
+                  "key": "session_id",
+                  "value": "1",
+                  "description": "String | required: 否 | 会话ID（分页场景首次请求结果返回，后续请求必须携带，服务根据session_id相同请求次数自动翻页返回）",
+                  "disabled": true
+                },
+                {
+                  "key": "sid",
+                  "value": "test_sid",
+                  "description": "String | required: 否 | 渠道标识，自定义参数跟单，长度不超过30位，默认123456",
+                  "disabled": true
+                },
+                {
+                  "key": "filter_first_categories",
+                  "value": "",
+                  "description": "String | required: 否 | 207-快餐便当,220-中式菜系,233-小吃/烧烤,239-甜点饮品,260-全球美食,1242-香锅火锅",
+                  "disabled": true
+                },
+                {
+                  "key": "filter_one_point_five_categories",
+                  "value": "",
+                  "description": "String | required: 否 | 10000 地方菜 10001 特色菜 10002 甜品 10003 烘焙 10004 奶茶果汁 10005 咖啡 10006 便当简餐 10007 米粉/捞烫 10008 面条 10009 滋补/汤炖 10010 粥食面点 10011 小吃 10012 龙虾烧烤 10013 火锅 10014 香锅 10015 西式快餐 10016 西餐 10017 日韩料理 90001 便利超市 90002 其他零售 90003 其他餐饮 90004 医药健康 90005 大型卖场 90006 宠物母婴 90007 标超 90008 水果 90009 生鲜食材 90010 百货 90011 美妆个护 90012 购物商场 90013 酒水饮料 90014 零食干果 90015 鲜花绿植 10000029016 商超日百 10000029017 水果生鲜 10000029018 鲜花 10000029019 专卖专营店",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-114 饿了么单店推广单店铺查询",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/114\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n饿了么单店推广单店铺查询\n\n### 原始请求方式\nPOST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| shop_id | String | 是 |  | 门店ID |\n| sid | String | 否 |  | 渠道标识，自定义参数跟单，长度不超过30位，默认123456 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| commission_rate | String |  | 佣金比例 |\n| indistinct_monthly_sales | String |  | 销量 |\n| mini_qrcode | String |  | 小程序推广二维码 |\n| picture | String |  | 小程序推广海报 |\n| wx_appid | String |  | 小程序appid |\n| wx_path | String |  | 小程序路径 |\n| shop_logo | String |  | 店铺logo |\n| title | String |  | 店铺名称 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/ele/store_promotion",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "ele",
+                "store_promotion"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "shop_id",
+                  "value": "1",
+                  "description": "String | required: 是 | 门店ID",
+                  "disabled": false
+                },
+                {
+                  "key": "sid",
+                  "value": "test_sid",
+                  "description": "String | required: 否 | 渠道标识，自定义参数跟单，长度不超过30位，默认123456",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-133 饿了么品牌活动接口",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/133\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n饿了么品牌活动\n\n### 原始请求方式\nPOST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| title | String |  | 活动描述 |\n| bg_images | String |  | 活动图片 |\n| coupon_id | String |  | 活动id，转链使用 |\n| commission_rate_des | String |  | 佣金描述 |\n| xcx_short_title | String |  | 活动名称 |\n| start_time | String |  | 活动开始时间 |\n| end_time | String |  | 活动结束时间 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/ele/getEleCouponList",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "ele",
+                "getEleCouponList"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-134 饿了么品牌活动转链接口",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/134\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n饿了么品牌活动转链接口\n\n### 原始请求方式\nPOST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| sid | String | 是 | 123456 | 自定义字段，只允许 数字、字母和_，限制长度为40 |\n| activity_id | String | 是 |  | 活动id |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| alipay_promotion | String[] |  | 支付宝推广路径 |\n| taobao_promotion | String[] |  | 淘宝推广路径 |\n| wx_promotion | String[] |  | 微信推广路径 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/ele/kbact",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "ele",
+                "kbact"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "sid",
+                  "value": "123456",
+                  "description": "String | required: 是 | 自定义字段，只允许 数字、字母和_，限制长度为40",
+                  "disabled": false
+                },
+                {
+                  "key": "activity_id",
+                  "value": "1",
+                  "description": "String | required: 是 | 活动id",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-3 美团券包活动转链接口",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/3\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n美团外卖活动取链\n\n### 原始请求方式\nGET\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| type | int | 是 | 1 | 活动类型 15-美团券包 默认1 |\n| sid | String | 是 | 123456 | 渠道标识，自定义参数跟单，长度不超过30位 |\n| actId | String | 否 |  | 活动id，超值券包专用 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| h5 | String |  | H5 领券（优选没有h5短连接，仅支持在小程序内推广） |\n| deeplink | String |  | Deeplink领券 |\n| short_h5 | String |  | H5 领券短链接（优选没有） |\n| we_app_info | OBJECT |  | 小程序信息 |\n| L app_id | String |  | 小程序ID |\n| L page_path | String |  | 小程序路径 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/Meituan/act",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "Meituan",
+                "act"
+              ],
+              "query": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "type",
+                  "value": "1",
+                  "description": "int | required: 是 | 活动类型 15-美团券包 默认1",
+                  "disabled": false
+                },
+                {
+                  "key": "sid",
+                  "value": "123456",
+                  "description": "String | required: 是 | 渠道标识，自定义参数跟单，长度不超过30位",
+                  "disabled": false
+                },
+                {
+                  "key": "actId",
+                  "value": "1",
+                  "description": "String | required: 否 | 活动id，超值券包专用",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-118 美团券包接口",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/118\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n美团券包列表接口\n\n### 原始请求方式\nPOST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| page | Number | 否 | 1 | 页码 |\n| pageSize | Number | 否 | 10 | 每页显示数量 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| icon | String |  | 图标 |\n| xcx_short_title | String |  | 小标题 |\n| title | String |  | 大标题 |\n| bg_images | String |  | 图片 |\n| coupon_id | String |  | 活动id，转链需要传的id |\n| commission_rate_des | String |  | 佣金说明 |\n| activity_date | String |  | 活动到期时间 |\n| poster | String |  | 海报 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/Meituan/coupon_ad_list",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "Meituan",
+                "coupon_ad_list"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10",
+                  "description": "Number | required: 否 | 每页显示数量",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-75 滴滴打车/加油/货运/花小猪/代驾订单接口 [GET]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/75\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n滴滴打车、加油、货运推广\n\n### 原始请求方式\nGET/POST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| start_time | String | 否 |  | 开始时间,格式yyyy-MM-dd HH:mm:ss |\n| end_time | String | 否 |  | 结束时间,格式yyyy-MM-dd HH:mm:ss |\n| query_type | Number | 否 | 1 | 1-支付时间 2-最后更新时间 默认1 |\n| order_no | String | 否 |  | 订单号 |\n| order_status | Number | 否 |  | 订单状态 2:已付款 8:已退款 |\n| sid | String | 否 |  | 自定义参数跟单 |\n| page | Number | 否 |  | 页码 默认 1 |\n| pageSize | Number | 否 |  | 每页显示多少 默认 20 最大 100 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| sid | String |  | 自定义跟单参数 |\n| order_no | String |  | 订单号 |\n| jtk_share_rate | String |  | 佣金比例，0.1 则代表10% （实际佣金比率 = 比例x100） |\n| jtk_share_fee | String |  | 佣金金额（元） |\n| pay_time | String |  | 付款时间 |\n| order_status | Number |  | 订单状态 2:已付款 8:已退款 |\n| pay_price | String |  | 付款金额 |\n| title | String |  | 标题 |\n| status | Number |  | 1.已预估归因 2.预估订单已推送 3.预估订单推送失败 4.结算提交 5.结算提交中 6.结算取消 7.结算成功 8.结算失败 |\n| is_risk | Number |  | 是否被风控 0-否 1-是 |\n| modify_time | String |  | 最后更新时间 |\n| payoff | Number | 0 | 结算状态 0: 未结算 1：已结算 |\n| payoff_time | String |  | 结算时间 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/didi/orders",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "didi",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "start_time",
+                  "value": "2021-06-05 00:00:00",
+                  "description": "String | required: 否 | 开始时间,格式yyyy-MM-dd HH:mm:ss",
+                  "disabled": true
+                },
+                {
+                  "key": "end_time",
+                  "value": "2021-06-05 00:00:00",
+                  "description": "String | required: 否 | 结束时间,格式yyyy-MM-dd HH:mm:ss",
+                  "disabled": true
+                },
+                {
+                  "key": "query_type",
+                  "value": "1",
+                  "description": "Number | required: 否 | 1-支付时间 2-最后更新时间 默认1",
+                  "disabled": true
+                },
+                {
+                  "key": "order_no",
+                  "value": "",
+                  "description": "String | required: 否 | 订单号",
+                  "disabled": true
+                },
+                {
+                  "key": "order_status",
+                  "value": "",
+                  "description": "Number | required: 否 | 订单状态 2:已付款 8:已退款",
+                  "disabled": true
+                },
+                {
+                  "key": "sid",
+                  "value": "test_sid",
+                  "description": "String | required: 否 | 自定义参数跟单",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码 默认 1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Number | required: 否 | 每页显示多少 默认 20 最大 100",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-75 滴滴打车/加油/货运/花小猪/代驾订单接口 [POST]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/75\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n滴滴打车、加油、货运推广\n\n### 原始请求方式\nGET/POST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| start_time | String | 否 |  | 开始时间,格式yyyy-MM-dd HH:mm:ss |\n| end_time | String | 否 |  | 结束时间,格式yyyy-MM-dd HH:mm:ss |\n| query_type | Number | 否 | 1 | 1-支付时间 2-最后更新时间 默认1 |\n| order_no | String | 否 |  | 订单号 |\n| order_status | Number | 否 |  | 订单状态 2:已付款 8:已退款 |\n| sid | String | 否 |  | 自定义参数跟单 |\n| page | Number | 否 |  | 页码 默认 1 |\n| pageSize | Number | 否 |  | 每页显示多少 默认 20 最大 100 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| sid | String |  | 自定义跟单参数 |\n| order_no | String |  | 订单号 |\n| jtk_share_rate | String |  | 佣金比例，0.1 则代表10% （实际佣金比率 = 比例x100） |\n| jtk_share_fee | String |  | 佣金金额（元） |\n| pay_time | String |  | 付款时间 |\n| order_status | Number |  | 订单状态 2:已付款 8:已退款 |\n| pay_price | String |  | 付款金额 |\n| title | String |  | 标题 |\n| status | Number |  | 1.已预估归因 2.预估订单已推送 3.预估订单推送失败 4.结算提交 5.结算提交中 6.结算取消 7.结算成功 8.结算失败 |\n| is_risk | Number |  | 是否被风控 0-否 1-是 |\n| modify_time | String |  | 最后更新时间 |\n| payoff | Number | 0 | 结算状态 0: 未结算 1：已结算 |\n| payoff_time | String |  | 结算时间 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/didi/orders",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "didi",
+                "orders"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "start_time",
+                  "value": "2021-06-05 00:00:00",
+                  "description": "String | required: 否 | 开始时间,格式yyyy-MM-dd HH:mm:ss",
+                  "disabled": true
+                },
+                {
+                  "key": "end_time",
+                  "value": "2021-06-05 00:00:00",
+                  "description": "String | required: 否 | 结束时间,格式yyyy-MM-dd HH:mm:ss",
+                  "disabled": true
+                },
+                {
+                  "key": "query_type",
+                  "value": "1",
+                  "description": "Number | required: 否 | 1-支付时间 2-最后更新时间 默认1",
+                  "disabled": true
+                },
+                {
+                  "key": "order_no",
+                  "value": "",
+                  "description": "String | required: 否 | 订单号",
+                  "disabled": true
+                },
+                {
+                  "key": "order_status",
+                  "value": "",
+                  "description": "Number | required: 否 | 订单状态 2:已付款 8:已退款",
+                  "disabled": true
+                },
+                {
+                  "key": "sid",
+                  "value": "test_sid",
+                  "description": "String | required: 否 | 自定义参数跟单",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码 默认 1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Number | required: 否 | 每页显示多少 默认 20 最大 100",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-116 电影票小程序/插件订单接口",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/116\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n获取电影票小程序或电影票插件下产生的订单数据，包含未支付订单，实时获取交易状态。\n\n### 原始请求方式\nPOST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| orderStatus | Number | 否 |  | 订单状态：0-未支付，2-受理中，3-待出票，4-已出票待结算，5-已结算，10-订单关闭/退款 |\n| sid | String | 否 |  | 渠道id |\n| channel | String | 否 |  | 渠道扩展参数，插件专属 |\n| start_time | Datetime | 否 |  | 开始时间, 默认查下单时间 |\n| end_time | Datetime | 否 |  | 结束时间, 默认查下单时间 |\n| query_type | Number | 否 |  | 时间查询类型，1：支付时间、2：更新时间、3、下单时间 |\n| page | Number | 否 | 1 | 页码，默认1 |\n| pageSize | Number | 否 | 20 | 页大小，默认20，最大100 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| orderNo | String |  | 订单号 |\n| shareRate | String |  | 佣金比率，百分比，0.1 代表1% |\n| shareFee | String |  | 佣金 |\n| pub_id | Number |  | 聚推客联盟id |\n| orderStatus | Number |  | 订单状态：0-未支付，2-受理中，3-待出票，4-已出票待结算，5-已结算，10-订单关闭/退款 |\n| payTime | Datetime |  | 付款时间 |\n| payPrice | String |  | 付款金额 |\n| isSoon | Number | 0 | 0: 特惠出票 1：快速出票 |\n| orderNum | Number | 1 | 购票数量 |\n| closeCause | String |  | 订单关闭说明 |\n| pic | String |  | 电影封面图 |\n| hallName | String |  | 影厅 |\n| filmName | String |  | 电影名称 |\n| cinemaName | String |  | 影城名称 |\n| language | String |  | 语言 |\n| showTime | Datetime |  | 开场时间 |\n| createTime | Datetime |  | 下单时间 |\n| ticketCode | String[] |  | 出票码 |\n| updateTime | Datetime |  | 订单更新时间 |\n| refundTime | Datetime |  | 退款时间 |\n| refundPrice | Datetime |  | 退款金额 |\n| payoff | Number |  | 结算状态 0: 未结算 1：已结算 |\n| payoff_time | String |  | 结算时间 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/stmovie/orders",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "stmovie",
+                "orders"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "orderStatus",
+                  "value": "",
+                  "description": "Number | required: 否 | 订单状态：0-未支付，2-受理中，3-待出票，4-已出票待结算，5-已结算，10-订单关闭/退款",
+                  "disabled": true
+                },
+                {
+                  "key": "sid",
+                  "value": "test_sid",
+                  "description": "String | required: 否 | 渠道id",
+                  "disabled": true
+                },
+                {
+                  "key": "channel",
+                  "value": "test_sid",
+                  "description": "String | required: 否 | 渠道扩展参数，插件专属",
+                  "disabled": true
+                },
+                {
+                  "key": "start_time",
+                  "value": "2021-06-05 00:00:00",
+                  "description": "Datetime | required: 否 | 开始时间, 默认查下单时间",
+                  "disabled": true
+                },
+                {
+                  "key": "end_time",
+                  "value": "2021-06-05 00:00:00",
+                  "description": "Datetime | required: 否 | 结束时间, 默认查下单时间",
+                  "disabled": true
+                },
+                {
+                  "key": "query_type",
+                  "value": "",
+                  "description": "Number | required: 否 | 时间查询类型，1：支付时间、2：更新时间、3、下单时间",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码，默认1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Number | required: 否 | 页大小，默认20，最大100",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-87 获取某个小程序/公众号下订单数据 [GET]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/87\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n获取小程序或者公众号下的订单数据，支持时间、状态、用户等查询\n\n### 原始请求方式\nGET/POST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| start_time | String | 否 | 2021-04-27 08:00:00 | 开始时间 |\n| end_time | String | 否 | 2021-04-27 10:00:00 | 结束时间 |\n| query_type | Number | 否 | 1 | 1-付款时间 2-更新时间 3-创建时间 默认3 |\n| app_user_id | String | 否 | 123456 | 订单归属用户id |\n| open_appid | String | 是 |  | 开放平台id |\n| pid | Number | 否 | 1 | 上级id |\n| ppid | Number | 否 | 2 | 上上级id |\n| order_sn | String | 否 |  | 订单号 |\n| status | Number | 否 |  | 商品统一状态，0：未付款 1：已付款 2：待完成 3：已完成 4：无效订单 默认全部 |\n| act_id | Number | 否 |  | 活动id |\n| page | Number | 否 | 1 | 页码 默认 1 |\n| pageSize | Number | 否 | 20 | 每页多少数据，最大20条 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| user_id | String |  | 订单所属id |\n| act_name | String |  | 活动名称 |\n| act_id | Number |  | 活动id |\n| order_sn | String |  | 订单号 |\n| order_title | String |  | 订单名称 |\n| sid | String |  | 推广位 |\n| profit | String |  | 订单原始佣金 |\n| share_rate | String |  | 佣金比率 |\n| share_fee | String |  | 佣金收益 |\n| level1_user_id | Number |  | 一级受益人id |\n| level1_share_rate | String |  | 一级受益人佣金比率 |\n| level1_share_fee | String |  | 一级受益人佣金 |\n| level2_user_id | String |  | 二级受益人id |\n| level2_share_rate | String |  | 二级受益人佣金比率 |\n| level2_share_fee | String |  | 二级受益人佣金 |\n| create_time | String |  | 下单时间 |\n| pay_time | String |  | 支付时间 |\n| modified_time | String |  | 更新时间 |\n| pay_price | String |  | 支付金额 |\n| status | Number |  | 商品统一状态，0：未付款 1：已付款 2：待完成 3：已完成 4：无效订单 |\n| status_desc | String |  | 状态描述 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/user/app_order",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "user",
+                "app_order"
+              ],
+              "query": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "start_time",
+                  "value": "2021-04-27 08:00:00",
+                  "description": "String | required: 否 | 开始时间",
+                  "disabled": true
+                },
+                {
+                  "key": "end_time",
+                  "value": "2021-04-27 10:00:00",
+                  "description": "String | required: 否 | 结束时间",
+                  "disabled": true
+                },
+                {
+                  "key": "query_type",
+                  "value": "1",
+                  "description": "Number | required: 否 | 1-付款时间 2-更新时间 3-创建时间 默认3",
+                  "disabled": true
+                },
+                {
+                  "key": "app_user_id",
+                  "value": "123456",
+                  "description": "String | required: 否 | 订单归属用户id",
+                  "disabled": true
+                },
+                {
+                  "key": "open_appid",
+                  "value": "1",
+                  "description": "String | required: 是 | 开放平台id",
+                  "disabled": false
+                },
+                {
+                  "key": "pid",
+                  "value": "1",
+                  "description": "Number | required: 否 | 上级id",
+                  "disabled": true
+                },
+                {
+                  "key": "ppid",
+                  "value": "2",
+                  "description": "Number | required: 否 | 上上级id",
+                  "disabled": true
+                },
+                {
+                  "key": "order_sn",
+                  "value": "",
+                  "description": "String | required: 否 | 订单号",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Number | required: 否 | 商品统一状态，0：未付款 1：已付款 2：待完成 3：已完成 4：无效订单 默认全部",
+                  "disabled": true
+                },
+                {
+                  "key": "act_id",
+                  "value": "1",
+                  "description": "Number | required: 否 | 活动id",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码 默认 1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Number | required: 否 | 每页多少数据，最大20条",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-87 获取某个小程序/公众号下订单数据 [POST]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/87\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n获取小程序或者公众号下的订单数据，支持时间、状态、用户等查询\n\n### 原始请求方式\nGET/POST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| start_time | String | 否 | 2021-04-27 08:00:00 | 开始时间 |\n| end_time | String | 否 | 2021-04-27 10:00:00 | 结束时间 |\n| query_type | Number | 否 | 1 | 1-付款时间 2-更新时间 3-创建时间 默认3 |\n| app_user_id | String | 否 | 123456 | 订单归属用户id |\n| open_appid | String | 是 |  | 开放平台id |\n| pid | Number | 否 | 1 | 上级id |\n| ppid | Number | 否 | 2 | 上上级id |\n| order_sn | String | 否 |  | 订单号 |\n| status | Number | 否 |  | 商品统一状态，0：未付款 1：已付款 2：待完成 3：已完成 4：无效订单 默认全部 |\n| act_id | Number | 否 |  | 活动id |\n| page | Number | 否 | 1 | 页码 默认 1 |\n| pageSize | Number | 否 | 20 | 每页多少数据，最大20条 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| user_id | String |  | 订单所属id |\n| act_name | String |  | 活动名称 |\n| act_id | Number |  | 活动id |\n| order_sn | String |  | 订单号 |\n| order_title | String |  | 订单名称 |\n| sid | String |  | 推广位 |\n| profit | String |  | 订单原始佣金 |\n| share_rate | String |  | 佣金比率 |\n| share_fee | String |  | 佣金收益 |\n| level1_user_id | Number |  | 一级受益人id |\n| level1_share_rate | String |  | 一级受益人佣金比率 |\n| level1_share_fee | String |  | 一级受益人佣金 |\n| level2_user_id | String |  | 二级受益人id |\n| level2_share_rate | String |  | 二级受益人佣金比率 |\n| level2_share_fee | String |  | 二级受益人佣金 |\n| create_time | String |  | 下单时间 |\n| pay_time | String |  | 支付时间 |\n| modified_time | String |  | 更新时间 |\n| pay_price | String |  | 支付金额 |\n| status | Number |  | 商品统一状态，0：未付款 1：已付款 2：待完成 3：已完成 4：无效订单 |\n| status_desc | String |  | 状态描述 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/user/app_order",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "user",
+                "app_order"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "start_time",
+                  "value": "2021-04-27 08:00:00",
+                  "description": "String | required: 否 | 开始时间",
+                  "disabled": true
+                },
+                {
+                  "key": "end_time",
+                  "value": "2021-04-27 10:00:00",
+                  "description": "String | required: 否 | 结束时间",
+                  "disabled": true
+                },
+                {
+                  "key": "query_type",
+                  "value": "1",
+                  "description": "Number | required: 否 | 1-付款时间 2-更新时间 3-创建时间 默认3",
+                  "disabled": true
+                },
+                {
+                  "key": "app_user_id",
+                  "value": "123456",
+                  "description": "String | required: 否 | 订单归属用户id",
+                  "disabled": true
+                },
+                {
+                  "key": "open_appid",
+                  "value": "1",
+                  "description": "String | required: 是 | 开放平台id",
+                  "disabled": false
+                },
+                {
+                  "key": "pid",
+                  "value": "1",
+                  "description": "Number | required: 否 | 上级id",
+                  "disabled": true
+                },
+                {
+                  "key": "ppid",
+                  "value": "2",
+                  "description": "Number | required: 否 | 上上级id",
+                  "disabled": true
+                },
+                {
+                  "key": "order_sn",
+                  "value": "",
+                  "description": "String | required: 否 | 订单号",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Number | required: 否 | 商品统一状态，0：未付款 1：已付款 2：待完成 3：已完成 4：无效订单 默认全部",
+                  "disabled": true
+                },
+                {
+                  "key": "act_id",
+                  "value": "1",
+                  "description": "Number | required: 否 | 活动id",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码 默认 1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Number | required: 否 | 每页多少数据，最大20条",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-88 获取某个小程序/公众号下用户一、二级好友 [GET]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/88\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n获取某个小程序/公众号下某个用户一、二级好友\n\n### 原始请求方式\nGET/POST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| pid | Number | 否 |  | 上级id |\n| ppid | Number | 否 |  | 上上级id |\n| page | Number | 否 | 1 | 页码 |\n| pageSize | Number | 否 | 20 | 每页多少数据，最大20条 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| id | Number |  | 用户id |\n| rank | Number |  | 会员等级 1：高级会员 2：合伙人 |\n| create_time | String |  | 创建时间 |\n| friend_num | Number |  | 好友人数 |\n| orders_num | Number |  | 有效订单数 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/user/app_friend",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "user",
+                "app_friend"
+              ],
+              "query": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "pid",
+                  "value": "1",
+                  "description": "Number | required: 否 | 上级id",
+                  "disabled": true
+                },
+                {
+                  "key": "ppid",
+                  "value": "1",
+                  "description": "Number | required: 否 | 上上级id",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Number | required: 否 | 每页多少数据，最大20条",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-88 获取某个小程序/公众号下用户一、二级好友 [POST]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/88\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n获取某个小程序/公众号下某个用户一、二级好友\n\n### 原始请求方式\nGET/POST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| pid | Number | 否 |  | 上级id |\n| ppid | Number | 否 |  | 上上级id |\n| page | Number | 否 | 1 | 页码 |\n| pageSize | Number | 否 | 20 | 每页多少数据，最大20条 |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| id | Number |  | 用户id |\n| rank | Number |  | 会员等级 1：高级会员 2：合伙人 |\n| create_time | String |  | 创建时间 |\n| friend_num | Number |  | 好友人数 |\n| orders_num | Number |  | 有效订单数 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/user/app_friend",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "user",
+                "app_friend"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "pid",
+                  "value": "1",
+                  "description": "Number | required: 否 | 上级id",
+                  "disabled": true
+                },
+                {
+                  "key": "ppid",
+                  "value": "1",
+                  "description": "Number | required: 否 | 上上级id",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Number | required: 否 | 每页多少数据，最大20条",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-89 获取某个小程序/公众号下所有用户 [GET]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/89\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n获取某个小程序/公众号下所有用户\n\n### 原始请求方式\nGET/POST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| appid | String | 是 |  | 小程序/公众号appid |\n| page | Number | 否 | 1 | 页码 |\n| pageSize | Number | 否 | 20 | 每页显示多少，默认20 |\n| xcx_user_id | Number | 否 | 1 | 用户id |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| user_id | String |  | 用户id |\n| nickname | String |  | 昵称 |\n| headimgurl | String |  | 头像 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/user/app_list",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "user",
+                "app_list"
+              ],
+              "query": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "appid",
+                  "value": "",
+                  "description": "String | required: 是 | 小程序/公众号appid",
+                  "disabled": false
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Number | required: 否 | 每页显示多少，默认20",
+                  "disabled": true
+                },
+                {
+                  "key": "xcx_user_id",
+                  "value": "1",
+                  "description": "Number | required: 否 | 用户id",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "doc-89 获取某个小程序/公众号下所有用户 [POST]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "### 来源接口文档\nhttps://www.jutuike.com/doc/89\n\n### 用户指定抓取页\n- https://www.jutuike.com/doc/37\n- https://www.jutuike.com/doc/48\n- https://www.jutuike.com/doc/125\n- https://www.jutuike.com/doc/115\n\n### 说明\n获取某个小程序/公众号下所有用户\n\n### 原始请求方式\nGET/POST\n\n### 请求参数\n| 名称 | 类型 | 必填 | 示例 | 备注 |\n|---|---|---|---|---|\n| apikey | string | 是 |  | 接口秘钥，请登录 个人中心 获取 |\n| appid | String | 是 |  | 小程序/公众号appid |\n| page | Number | 否 | 1 | 页码 |\n| pageSize | Number | 否 | 20 | 每页显示多少，默认20 |\n| xcx_user_id | Number | 否 | 1 | 用户id |\n\n### 返回参数\n| 名称 | 类型 | 示例 | 说明 |\n|---|---|---|---|\n| user_id | String |  | 用户id |\n| nickname | String |  | 昵称 |\n| headimgurl | String |  | 头像 |",
+            "url": {
+              "raw": "http://{{jutuikeHost}}/user/app_list",
+              "protocol": "http",
+              "host": [
+                "{{jutuikeHost}}"
+              ],
+              "path": [
+                "user",
+                "app_list"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "apikey",
+                  "value": "{{jutuikeApikey}}",
+                  "description": "string | required: 是 | 接口秘钥，请登录 个人中心 获取",
+                  "disabled": false
+                },
+                {
+                  "key": "appid",
+                  "value": "",
+                  "description": "String | required: 是 | 小程序/公众号appid",
+                  "disabled": false
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Number | required: 否 | 页码",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Number | required: 否 | 每页显示多少，默认20",
+                  "disabled": true
+                },
+                {
+                  "key": "xcx_user_id",
+                  "value": "1",
+                  "description": "Number | required: 否 | 用户id",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "jutuikeHost",
+      "value": "api.jutuike.com",
+      "type": "string"
+    },
+    {
+      "key": "jutuikeApikey",
+      "value": "YOUR_APIKEY",
+      "type": "string"
+    }
+  ]
+}
