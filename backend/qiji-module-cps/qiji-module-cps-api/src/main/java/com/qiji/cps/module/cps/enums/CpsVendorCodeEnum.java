@@ -19,6 +19,7 @@ public enum CpsVendorCodeEnum implements ArrayValuable<String> {
 
     DATAOKE("dataoke", "大淘客", "aggregator"),
     HAODANKU("haodanku", "好单库", "aggregator"),
+    JUTUIKE("jutuike", "聚推客", "aggregator"),
     MIAOYOUQUAN("miaoyouquan", "喵有卷", "aggregator"),
     SHIHUIZHU("shihuizhu", "实惠猪", "aggregator"),
     OFFICIAL("official", "官方API", "official"),

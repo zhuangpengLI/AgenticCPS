@@ -6,11 +6,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class CpsRebateActivitySyncRequest {
 
+    private String vendorCode;
     private String platformCode;
     private String keyword;
     private Integer pageSize;

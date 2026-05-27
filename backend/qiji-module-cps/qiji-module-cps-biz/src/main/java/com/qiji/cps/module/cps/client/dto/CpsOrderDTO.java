@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * CPS 订单 DTO（平台无关，同步订单时使用）
@@ -118,5 +119,15 @@ public class CpsOrderDTO {
      * 翻页游标（下一次查询使用）
      */
     private String nextPositionIndex;
+
+    /**
+     * 供应商特有扩展字段，保留标准对象未覆盖的信息。
+     */
+    private Map<String, Object> extraFields;
+
+    /**
+     * 供应商原始响应片段，便于排查真实接口差异。
+     */
+    private String rawPayload;
 
 }

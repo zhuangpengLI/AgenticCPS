@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * CPS 推广链接生成结果 DTO（平台无关）
@@ -53,5 +54,15 @@ public class CpsPromotionLinkResult {
      * 优惠券信息描述
      */
     private String couponInfo;
+
+    /**
+     * 供应商特有扩展字段，保留标准对象未覆盖的信息。
+     */
+    private Map<String, Object> extraFields;
+
+    /**
+     * 供应商原始响应片段，便于排查真实接口差异。
+     */
+    private String rawPayload;
 
 }

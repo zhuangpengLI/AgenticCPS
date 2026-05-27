@@ -2,7 +2,7 @@
 
 > 生成日期：2026-05-26  
 > 范围：将现有 CPS 返利与导购系统升级为 CPS 主导型 CPX 综合联盟平台，统一承载 CPS、CPA、CPL、CPM、CPC、oCPA、oCPC 等推广方式，并补充资讯发布、平台对接资料库和任务发布能力。  
-> 约束：保持 AgenticCPS 在生态中的职责边界，不接管 aitoken-platform 的 Token 主账本，也不接管 AgenticAIoT 的设备数据与规则引擎。
+> 约束：保持 AgenticCPS 在生态中的职责边界，不接管 AgenticTokenHub 的 Token 主账本，也不接管 AgenticAIoT 的设备数据与规则引擎。
 
 > 当前进展：已落地 CPX 任务中心、资讯中心、平台对接中心和 CPX 看板的后端骨架与后台页面，并在 CPX OpenAPI 接口上补齐 HMAC 签名校验与幂等键透传；后台任务、资讯、平台档案已具备基础创建、查询、更新能力；后续继续补充结算、审核、统计明细和更多前端交互。
 

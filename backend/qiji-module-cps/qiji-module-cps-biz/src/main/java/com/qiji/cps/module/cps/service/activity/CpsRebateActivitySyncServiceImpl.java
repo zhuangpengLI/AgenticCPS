@@ -1,21 +1,33 @@
 package com.qiji.cps.module.cps.service.activity;
 
+import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.CpsThirdPartyActivityVendorClient;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityCategory;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityClient;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityItem;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityListRequest;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityPage;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkSecondaryCategory;
+import com.qiji.cps.module.cps.client.haodanku.activity.HaodankuActivityVendorClient;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivity;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivityRequest;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyPage;
+import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
+import com.qiji.cps.module.cps.client.jutuike.JutuikeUnionVendorClient;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
 import com.qiji.cps.module.cps.dal.mysql.activity.CpsRebateActivityMapper;
+import com.qiji.cps.module.cps.enums.CpsVendorCodeEnum;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 public class CpsRebateActivitySyncServiceImpl {
 
@@ -25,6 +37,15 @@ public class CpsRebateActivitySyncServiceImpl {
 
     @Resource
     private HdkActivityClient hdkActivityClient;
+
+    @Resource
+    private HaodankuActivityVendorClient haodankuActivityVendorClient;
+
+    @Resource
+    private JutuikeUnionVendorClient jutuikeUnionVendorClient;
+
+    @Resource
+    private CpsPlatformClientFactory platformClientFactory;
 
     @Resource
     private CpsRebateActivityMapper activityMapper;
@@ -41,6 +62,49 @@ public class CpsRebateActivitySyncServiceImpl {
             }
             for (HdkSecondaryCategory secondaryCategory : secondaryCategories) {
                 syncCategoryPage(request, result, category, secondaryCategory, maxPages);
+            }
+        }
+        return result;
+    }
+
+    public CpsRebateActivitySyncResult syncThirdPartyActivities(CpsRebateActivitySyncRequest request) {
+        CpsRebateActivitySyncResult result = CpsRebateActivitySyncResult.builder().build();
+        CpsThirdPartyActivityVendorClient vendorClient = resolveThirdPartyActivityClient(request.getVendorCode());
+        if (vendorClient == null) {
+            result.setSkippedCount(1);
+            return result;
+        }
+        CpsVendorConfig config = platformClientFactory.getVendorConfig(vendorClient.getVendorCode(),
+                vendorClient.getPlatformCode());
+        if (config == null && CpsVendorCodeEnum.JUTUIKE.getCode().equalsIgnoreCase(vendorClient.getVendorCode())) {
+            result.setSkippedCount(1);
+            return result;
+        }
+        int maxPages = request.getMaxPages() == null || request.getMaxPages() <= 0 ? 1 : request.getMaxPages();
+        int pageSize = request.getPageSize() == null || request.getPageSize() <= 0 ? 20 : request.getPageSize();
+        for (int pageNo = 1; pageNo <= maxPages; pageNo++) {
+            CpsThirdPartyActivityRequest activityRequest = CpsThirdPartyActivityRequest.builder()
+                    .vendorCode(request.getVendorCode())
+                    .platformCode(request.getPlatformCode())
+                    .keyword(request.getKeyword())
+                    .pageNo(pageNo)
+                    .pageSize(pageSize)
+                    .categoryName(request.getKeyword())
+                    .build();
+            CpsThirdPartyPage<CpsThirdPartyActivity> page;
+            try {
+                page = vendorClient.fetchActivities(activityRequest, config);
+            } catch (Exception e) {
+                log.warn("[CpsRebateActivitySyncService] 第三方活动拉取失败: vendorCode={}, pageNo={}",
+                        vendorClient.getVendorCode(), pageNo, e);
+                result.setSkippedCount(result.getSkippedCount() + 1);
+                continue;
+            }
+            if (page == null || page.getList() == null || page.getList().isEmpty()) {
+                continue;
+            }
+            for (CpsThirdPartyActivity item : page.getList()) {
+                upsertThirdPartyActivity(request, result, item);
             }
         }
         return result;
@@ -68,13 +132,36 @@ public class CpsRebateActivitySyncServiceImpl {
     private void upsertActivity(CpsRebateActivitySyncRequest request, CpsRebateActivitySyncResult result,
                                 HdkActivityCategory category, HdkSecondaryCategory secondaryCategory,
                                 HdkActivityItem item) {
-        String externalActivityId = HDK_EXTERNAL_PREFIX + firstText(item.getActivityId(), item.getId());
+        String externalIdValue = firstText(item.getActivityId(), item.getId());
+        if (!StringUtils.hasText(externalIdValue)) {
+            result.setSkippedCount(result.getSkippedCount() + 1);
+            return;
+        }
+        String externalActivityId = HDK_EXTERNAL_PREFIX + externalIdValue;
+        CpsRebateActivityDO activity = toActivity(request, category, secondaryCategory, item, externalActivityId);
+        CpsRebateActivityDO existing = activityMapper.selectBySourceTypeAndExternalActivityId(SOURCE_HAODANKU,
+                externalActivityId);
+        if (existing == null) {
+            activityMapper.insert(activity);
+            result.setInsertedCount(result.getInsertedCount() + 1);
+            return;
+        }
+        activity.setId(existing.getId());
+        activityMapper.updateById(activity);
+        result.setUpdatedCount(result.getUpdatedCount() + 1);
+    }
+
+    private void upsertThirdPartyActivity(CpsRebateActivitySyncRequest request, CpsRebateActivitySyncResult result,
+                                         CpsThirdPartyActivity item) {
+        String sourceType = firstText(item.getSourceType(), request.getVendorCode(),
+                CpsVendorCodeEnum.HAODANKU.getCode());
+        String externalActivityId = item.getExternalActivityId();
         if (!StringUtils.hasText(externalActivityId)) {
             result.setSkippedCount(result.getSkippedCount() + 1);
             return;
         }
-        CpsRebateActivityDO activity = toActivity(request, category, secondaryCategory, item, externalActivityId);
-        CpsRebateActivityDO existing = activityMapper.selectBySourceTypeAndExternalActivityId(SOURCE_HAODANKU,
+        CpsRebateActivityDO activity = toActivity(request, item);
+        CpsRebateActivityDO existing = activityMapper.selectBySourceTypeAndExternalActivityId(sourceType,
                 externalActivityId);
         if (existing == null) {
             activityMapper.insert(activity);
@@ -111,6 +198,30 @@ public class CpsRebateActivitySyncServiceImpl {
                 .status(1)
                 .startTime(parseTime(item.getStartTime()))
                 .endTime(parseTime(item.getEndTime()))
+                .build();
+    }
+
+    private CpsRebateActivityDO toActivity(CpsRebateActivitySyncRequest request, CpsThirdPartyActivity item) {
+        return CpsRebateActivityDO.builder()
+                .activityName(item.getActivityName())
+                .activityType(item.getActivityType())
+                .platformCode(firstText(item.getPlatformCode(), request.getPlatformCode()))
+                .mainPic(item.getMainPic())
+                .shortDesc(item.getShortDesc())
+                .rebateDesc(item.getRebateDesc())
+                .billingType(firstText(item.getBillingType(), "CPS"))
+                .promotionCount(item.getPromotionCount() == null ? 0 : item.getPromotionCount())
+                .sourceType(firstText(item.getSourceType(), request.getVendorCode(),
+                        CpsVendorCodeEnum.HAODANKU.getCode()))
+                .externalActivityId(item.getExternalActivityId())
+                .tagText(firstText(item.getTagText(), item.getActivityType()))
+                .jumpType(firstText(item.getJumpType(), StringUtils.hasText(item.getJumpUrl()) ? "url" : "search"))
+                .jumpUrl(item.getJumpUrl())
+                .searchKeyword(firstText(item.getSearchKeyword(), item.getActivityName()))
+                .startTime(item.getStartTime())
+                .endTime(item.getEndTime())
+                .sort(0)
+                .status(1)
                 .build();
     }
 
@@ -164,6 +275,19 @@ public class CpsRebateActivitySyncServiceImpl {
                 return value;
             }
         }
-        return "";
+        return null;
+    }
+
+    private CpsThirdPartyActivityVendorClient resolveThirdPartyActivityClient(String vendorCode) {
+        String normalizedVendorCode = StringUtils.hasText(vendorCode)
+                ? vendorCode
+                : CpsVendorCodeEnum.HAODANKU.getCode();
+        if (CpsVendorCodeEnum.HAODANKU.getCode().equalsIgnoreCase(normalizedVendorCode)) {
+            return haodankuActivityVendorClient;
+        }
+        if (CpsVendorCodeEnum.JUTUIKE.getCode().equalsIgnoreCase(normalizedVendorCode)) {
+            return jutuikeUnionVendorClient;
+        }
+        return null;
     }
 }

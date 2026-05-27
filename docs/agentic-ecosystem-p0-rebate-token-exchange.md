@@ -3,7 +3,7 @@
 ## 已落地范围
 
 - AgenticCPS 负责返利余额、冻结、解冻、确认扣减和本地兑换订单。
-- aitoken-platform `billing-service` 负责兑换预估、兑换提交、Token 入账和兑换订单查询。
+- AgenticTokenHub `billing-service` 负责兑换预估、兑换提交、Token 入账和兑换订单查询。
 - AgenticAIoT 本轮不改业务代码，只预留 `sourceSystem`、`tenantId`、`sceneCode`、`businessId` 等生态字段。
 
 ## 统一签名

@@ -1,0 +1,192 @@
+package com.qiji.cps.module.cps.client.haodanku.activity;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.qiji.cps.module.cps.client.CpsThirdPartyActivityVendorClient;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivity;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivityRequest;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyApiCategory;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyPage;
+import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
+import com.qiji.cps.module.cps.enums.CpsVendorCodeEnum;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+import jakarta.annotation.Resource;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 好单库活动统一适配器。
+ */
+@Component
+public class HaodankuActivityVendorClient implements CpsThirdPartyActivityVendorClient {
+
+    private static final String SOURCE_HAODANKU = "haodanku";
+    private static final String EXTERNAL_PREFIX = "hdk:";
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    @Resource
+    private HdkActivityClient hdkActivityClient;
+
+    @Override
+    public String getVendorCode() {
+        return CpsVendorCodeEnum.HAODANKU.getCode();
+    }
+
+    @Override
+    public String getPlatformCode() {
+        return "activity";
+    }
+
+    @Override
+    public CpsThirdPartyPage<CpsThirdPartyActivity> fetchActivities(CpsThirdPartyActivityRequest request,
+                                                                    CpsVendorConfig config) {
+        int pageNo = defaultInt(request.getPageNo(), 1);
+        List<CpsThirdPartyActivity> activities = new ArrayList<>();
+        List<HdkActivityCategory> categories = hdkActivityClient.fetchCategories();
+        for (HdkActivityCategory category : categories) {
+            List<HdkSecondaryCategory> secondaryCategories = category.getSecondaryCategories();
+            if (secondaryCategories == null || secondaryCategories.isEmpty()) {
+                activities.addAll(fetchActivitiesByCategory(request, category, null, pageNo));
+                continue;
+            }
+            for (HdkSecondaryCategory secondaryCategory : secondaryCategories) {
+                activities.addAll(fetchActivitiesByCategory(request, category, secondaryCategory, pageNo));
+            }
+        }
+        return CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                .category(CpsThirdPartyApiCategory.ACTIVITY_PULL)
+                .list(activities)
+                .total((long) activities.size())
+                .pageNo(pageNo)
+                .pageSize(defaultInt(request.getPageSize(), 20))
+                .nextPageId(String.valueOf(pageNo + 1))
+                .build();
+    }
+
+    private List<CpsThirdPartyActivity> fetchActivitiesByCategory(CpsThirdPartyActivityRequest request,
+                                                                  HdkActivityCategory category,
+                                                                  HdkSecondaryCategory secondaryCategory,
+                                                                  int pageNo) {
+        HdkActivityPage page = hdkActivityClient.fetchActivities(HdkActivityListRequest.builder()
+                .pageNo(pageNo)
+                .keyword(firstText(request.getKeyword(), request.getCategoryName()))
+                .catId(category.getCatId())
+                .secondaryCatId(secondaryCategory == null ? null : secondaryCategory.getSecondaryCatId())
+                .order(1)
+                .build());
+        if (page == null || page.getItems() == null || page.getItems().isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<CpsThirdPartyActivity> activities = new ArrayList<>();
+        String activityType = secondaryCategory == null ? category.getName() : secondaryCategory.getName();
+        for (HdkActivityItem item : page.getItems()) {
+            String externalIdValue = firstText(item.getActivityId(), item.getId());
+            if (!StringUtils.hasText(externalIdValue)) {
+                continue;
+            }
+            activities.add(CpsThirdPartyActivity.builder()
+                    .sourceType(SOURCE_HAODANKU)
+                    .externalActivityId(EXTERNAL_PREFIX + externalIdValue)
+                    .activityName(firstText(item.getActivityName(), activityType))
+                    .activityType(activityType)
+                    .platformCode(firstText(request.getPlatformCode(), item.getPlatform()))
+                    .mainPic(item.getActivityPic())
+                    .shortDesc(sanitizeDescription(item.getDescribe()))
+                    .rebateDesc(item.getCommissionRate())
+                    .billingType(resolveBillingType(item.getPromotionType()))
+                    .promotionCount(parseInt(item.getPromotionNum()))
+                    .tagText(firstText(item.getActivityLabel(), activityType))
+                    .jumpType(StringUtils.hasText(item.getActivityUrl()) ? "url" : "search")
+                    .jumpUrl(item.getActivityUrl())
+                    .searchKeyword(firstText(item.getActivityName(), activityType))
+                    .startTime(parseTime(item.getStartTime()))
+                    .endTime(parseTime(item.getEndTime()))
+                    .extraFields(buildExtraFields(category, secondaryCategory, item))
+                    .rawPayload(null)
+                    .build());
+        }
+        return activities;
+    }
+
+    private String resolveBillingType(String promotionType) {
+        if ("2".equals(promotionType)) {
+            return "CPA";
+        }
+        if ("3".equals(promotionType)) {
+            return "CPS+CPA";
+        }
+        return "CPS";
+    }
+
+    private String sanitizeDescription(String value) {
+        if (!StringUtils.hasText(value)) {
+            return value;
+        }
+        String normalized = value.replace("<br/>", "</br>").replace("<br>", "</br>");
+        int splitIndex = normalized.lastIndexOf("</br>");
+        if (splitIndex >= 0) {
+            normalized = normalized.substring(splitIndex + "</br>".length());
+        }
+        return normalized.replaceAll("<[^>]+>", "").trim();
+    }
+
+    private LocalDateTime parseTime(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(value, DATE_TIME_FORMATTER);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Integer parseInt(String value) {
+        if (!StringUtils.hasText(value)) {
+            return 0;
+        }
+        try {
+            return Integer.valueOf(value);
+        } catch (Exception ignored) {
+            return 0;
+        }
+    }
+
+    private Map<String, Object> buildExtraFields(HdkActivityCategory category, HdkSecondaryCategory secondaryCategory,
+                                                 HdkActivityItem item) {
+        Map<String, Object> extraFields = new LinkedHashMap<>();
+        extraFields.put("category_id", category.getCatId());
+        extraFields.put("category_name", category.getName());
+        if (secondaryCategory != null) {
+            extraFields.put("secondary_category_id", secondaryCategory.getSecondaryCatId());
+            extraFields.put("secondary_category_name", secondaryCategory.getName());
+        }
+        extraFields.put("activity_label", item.getActivityLabel());
+        extraFields.put("platform", item.getPlatform());
+        extraFields.put("describe", item.getDescribe());
+        extraFields.put("commission_rate", item.getCommissionRate());
+        extraFields.put("promotion_type", item.getPromotionType());
+        extraFields.put("activity_date", item.getActivityDate());
+        extraFields.put("is_channel", item.getIsChannel());
+        return extraFields;
+    }
+
+    private String firstText(String... values) {
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private Integer defaultInt(Integer value, int defaultValue) {
+        return value == null || value <= 0 ? defaultValue : value;
+    }
+}

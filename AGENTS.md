@@ -63,7 +63,7 @@ AgenticCPS is one service in a three-project Agentic ecosystem. Future features 
 
 Current ecosystem capability baseline:
 
-- `aitoken-platform` already has a multi-model gateway, Token billing, membership plans, credit/points transfer, and payment capabilities. It is the ecosystem's AI capability and Token settlement foundation.
+- `AgenticTokenHub` already has a multi-model gateway, Token billing, membership plans, credit/points transfer, and payment capabilities. It is the ecosystem's AI capability and Token settlement foundation.
 - `AgenticCPS` already plans and implements activity-center operations, rebate toolbox operations, selection-theme libraries, product search, price comparison, promotion link generation, order tracking, rebate summary, and MCP tools. It is the ecosystem's CPS rebate asset and product recommendation service.
 - `AgenticAIoT` is positioned as a device access, data flow, rule engine, AI operations, and multi-protocol IoT platform. It is the ecosystem's enterprise device data and AI operations scenario entry.
 
@@ -72,7 +72,7 @@ The missing ecosystem integration is **account interoperability, asset conversio
 | Project | Path | Role | Owns | Must Not Own |
 |---------|------|------|------|--------------|
 | AgenticCPS | `F:\ai\AgenticCPS` | CPS rebate and product recommendation service | Activity-center operations, rebate toolbox operations, selection-theme libraries and item snapshots, CPS platform adapters, goods search, price comparison, promotion links, batch transfer, content parsing, order tracking, rebate settlement, rebate freeze/deduct, CPS MCP tools, AIoT scene-based product recommendation | Model gateway, Token master ledger, IoT device ingestion, IoT rule engine |
-| aitoken-platform | `F:\ai\ai-token-platform` | AI Token and model billing foundation | Multi-model gateway, Token wallet/quota, membership plans, external rebate-to-Token exchange, API Key quota, AI usage cost accounting, Token MCP tools | CPS orders, CPS rebate settlement, product recommendation, IoT devices |
+| AgenticTokenHub | `F:\ai\AgenticTokenHub` | AI Token and model billing foundation | Multi-model gateway, Token wallet/quota, membership plans, external rebate-to-Token exchange, API Key quota, AI usage cost accounting, Token MCP tools | CPS orders, CPS rebate settlement, product recommendation, IoT devices |
 | AgenticAIoT | `F:\ai\AgenticAIoT` | Enterprise AIoT data and operations scenario service | Device access, metrics, alerts, rules, AI analysis tasks, purchase-need generation, CPS recommendation trigger, AIoT MCP tools | Token wallet master ledger, CPS rebate accounting, ecommerce platform adapters |
 
 The ecosystem direction is:
@@ -89,7 +89,7 @@ The implemented P0 business loop is:
 ```text
 AgenticCPS AVAILABLE rebate
         -> freeze / idempotency / reconciliation
-        -> aitoken-platform Token exchange submit
+        -> AgenticTokenHub Token exchange submit
         -> new-api user.quota credit
         -> CPS confirm deduct or unfreeze on failure
 ```
@@ -102,8 +102,8 @@ Relevant local documentation:
 ### Development Boundary Rules
 
 - When adding CPS-facing features, keep CPS money movement inside AgenticCPS: rebate balance, freeze, unfreeze, deduct, refund/debt, and exchange order state.
-- When adding AI Token features, keep Token balance and model usage accounting inside aitoken-platform. AgenticCPS may call aitoken OpenAPI but must not create a parallel Token ledger.
-- When adding AIoT features, AgenticAIoT should generate structured analysis and purchase needs, then call AgenticCPS for product recommendation and aitoken-platform for model invocation/Token billing.
+- When adding AI Token features, keep Token balance and model usage accounting inside AgenticTokenHub. AgenticCPS may call aitoken OpenAPI but must not create a parallel Token ledger.
+- When adding AIoT features, AgenticAIoT should generate structured analysis and purchase needs, then call AgenticCPS for product recommendation and AgenticTokenHub for model invocation/Token billing.
 - Service-to-service calls must use the shared OpenAPI headers: `X-App-Id`, `X-Tenant-Id`, `X-Timestamp`, `X-Nonce`, `X-Signature`, `X-Idempotency-Key`.
 - Any money or Token mutation must be idempotent and auditable. Required evidence fields are source system, source order id, tenant id, user/member id, idempotency key, status, failure reason, and timestamps.
 - Never trust request-body `memberId` or `userId` for member assets in user-facing APIs. Use login context or a verified service signature.

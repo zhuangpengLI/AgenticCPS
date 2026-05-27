@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * CPS 商品信息 DTO（平台无关，搜索结果的单条商品）
@@ -123,5 +124,15 @@ public class CpsGoodsItem {
      * 商品卖点文案
      */
     private String sellingPoint;
+
+    /**
+     * 供应商特有扩展字段，保留标准对象未覆盖的信息。
+     */
+    private Map<String, Object> extraFields;
+
+    /**
+     * 供应商原始响应片段，便于排查真实接口差异。
+     */
+    private String rawPayload;
 
 }
