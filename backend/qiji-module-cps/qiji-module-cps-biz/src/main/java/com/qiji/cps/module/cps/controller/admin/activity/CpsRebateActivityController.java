@@ -8,8 +8,13 @@ import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCen
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivitySaveReqVO;
+import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivitySyncReqVO;
+import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivitySyncRespVO;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
 import com.qiji.cps.module.cps.service.activity.CpsRebateActivityService;
+import com.qiji.cps.module.cps.service.activity.CpsRebateActivitySyncRequest;
+import com.qiji.cps.module.cps.service.activity.CpsRebateActivitySyncResult;
+import com.qiji.cps.module.cps.service.activity.CpsRebateActivitySyncServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,6 +43,9 @@ public class CpsRebateActivityController {
 
     @Resource
     private CpsRebateActivityService activityService;
+
+    @Resource
+    private CpsRebateActivitySyncServiceImpl activitySyncService;
 
     @PostMapping("/create")
     @Operation(summary = "创建返利活动")
@@ -95,6 +103,16 @@ public class CpsRebateActivityController {
     public CommonResult<CpsRebateActivityCenterRespVO> getActivityCenter(
             @Valid CpsRebateActivityCenterReqVO reqVO) {
         return success(activityService.getActivityCenter(reqVO));
+    }
+
+    @PostMapping("/sync")
+    @Operation(summary = "同步第三方返利活动")
+    @PreAuthorize("@ss.hasPermission('cps:rebate-activity:update')")
+    public CommonResult<CpsRebateActivitySyncRespVO> syncActivities(
+            @Valid @RequestBody CpsRebateActivitySyncReqVO reqVO) {
+        CpsRebateActivitySyncRequest request = BeanUtils.toBean(reqVO, CpsRebateActivitySyncRequest.class);
+        CpsRebateActivitySyncResult result = activitySyncService.syncThirdPartyActivities(request);
+        return success(BeanUtils.toBean(result, CpsRebateActivitySyncRespVO.class));
     }
 
 }

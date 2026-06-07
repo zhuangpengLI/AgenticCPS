@@ -2,11 +2,6 @@ package com.qiji.cps.module.cps.service.selection;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.qiji.cps.module.ai.dal.dataobject.model.AiModelDO;
-import com.qiji.cps.module.ai.enums.model.AiModelTypeEnum;
-import com.qiji.cps.module.ai.enums.model.AiPlatformEnum;
-import com.qiji.cps.module.ai.service.model.AiModelService;
-import com.qiji.cps.module.ai.util.AiUtils;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsRespVO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
 import jakarta.annotation.Resource;
@@ -21,11 +16,15 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.context.ApplicationContext;
+import org.springframework.util.ClassUtils;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -43,7 +42,7 @@ public class CpsSelectionAiRecommendService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Resource
-    private AiModelService aiModelService;
+    private ApplicationContext applicationContext;
 
     public List<RecommendedGoods> recommend(CpsSelectionThemeDO theme, List<CpsGoodsSquareGoodsRespVO> candidates,
                                             Integer limit) {
@@ -124,12 +123,14 @@ public class CpsSelectionAiRecommendService {
     }
 
     private Map<String, String> buildLlmReasons(CpsSelectionThemeDO theme, List<RecommendedGoods> ranked) {
+        Object aiModelService = resolveAiModelService();
         if (aiModelService == null || ranked.isEmpty()) {
             return Map.of();
         }
         try {
-            AiModelDO model = aiModelService.getRequiredDefaultModel(AiModelTypeEnum.CHAT.getType());
-            ChatModel chatModel = aiModelService.getChatModel(model.getId());
+            Object model = invoke(aiModelService, "getRequiredDefaultModel", new Class<?>[]{Integer.class}, 1);
+            ChatModel chatModel = (ChatModel) invoke(aiModelService, "getChatModel", new Class<?>[]{Long.class},
+                    getProperty(model, "getId"));
             ChatResponse response = chatModel.call(buildPrompt(theme, ranked, model));
             String content = response == null || response.getResult() == null || response.getResult().getOutput() == null
                     ? null : response.getResult().getOutput().getText();
@@ -144,13 +145,62 @@ public class CpsSelectionAiRecommendService {
         }
     }
 
-    private Prompt buildPrompt(CpsSelectionThemeDO theme, List<RecommendedGoods> ranked, AiModelDO model) {
+    private Prompt buildPrompt(CpsSelectionThemeDO theme, List<RecommendedGoods> ranked, Object model) {
         List<Message> messages = new ArrayList<>();
         messages.add(new SystemMessage("你是 CPS 选品运营助手。只能基于输入商品事实生成中文推荐理由，禁止修改商品 ID、价格、佣金、销量等事实字段。输出必须是 JSON 对象，key 为 goodsId，value 为 30 字以内推荐理由。"));
         messages.add(new UserMessage(buildLlmUserMessage(theme, ranked)));
-        AiPlatformEnum platform = AiPlatformEnum.validatePlatform(model.getPlatform());
-        ChatOptions options = AiUtils.buildChatOptions(platform, model.getModel(), model.getTemperature(), model.getMaxTokens());
-        return new Prompt(messages, options);
+        ChatOptions options = buildChatOptions(model);
+        return options == null ? new Prompt(messages) : new Prompt(messages, options);
+    }
+
+    private Object resolveAiModelService() {
+        if (applicationContext == null) {
+            return null;
+        }
+        try {
+            Class<?> serviceClass = ClassUtils.forName("com.qiji.cps.module.ai.service.model.AiModelService",
+                    getClass().getClassLoader());
+            return applicationContext.getBean(serviceClass);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private ChatOptions buildChatOptions(Object model) {
+        try {
+            ClassLoader classLoader = getClass().getClassLoader();
+            Class<?> platformEnumClass = ClassUtils.forName("com.qiji.cps.module.ai.enums.model.AiPlatformEnum",
+                    classLoader);
+            Method validatePlatform = ReflectionUtils.findMethod(platformEnumClass, "validatePlatform", String.class);
+            Object platform = invoke(validatePlatform, null, getProperty(model, "getPlatform"));
+            Class<?> aiUtilsClass = ClassUtils.forName("com.qiji.cps.module.ai.util.AiUtils", classLoader);
+            Method buildChatOptions = ReflectionUtils.findMethod(aiUtilsClass, "buildChatOptions", platformEnumClass,
+                    String.class, Double.class, Integer.class);
+            return (ChatOptions) invoke(buildChatOptions, null, platform, getProperty(model, "getModel"),
+                    getProperty(model, "getTemperature"), getProperty(model, "getMaxTokens"));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Object invoke(Object target, String methodName, Class<?>[] parameterTypes, Object... args) {
+        Method method = ReflectionUtils.findMethod(target.getClass(), methodName, parameterTypes);
+        return invoke(method, target, args);
+    }
+
+    private Object invoke(Method method, Object target, Object... args) {
+        if (method == null) {
+            return null;
+        }
+        ReflectionUtils.makeAccessible(method);
+        return ReflectionUtils.invokeMethod(method, target, args);
+    }
+
+    private Object getProperty(Object target, String getterName) {
+        if (target == null) {
+            return null;
+        }
+        return invoke(target, getterName, new Class<?>[0]);
     }
 
     private String buildLlmUserMessage(CpsSelectionThemeDO theme, List<RecommendedGoods> ranked) {

@@ -53,8 +53,8 @@ public class CpxTaskServiceImpl implements CpxTaskService {
     private CpxEventMapper eventMapper;
     @Resource
     private CpxConversionMapper conversionMapper;
-    @Resource
-    private CpxArticleMapper articleMapper;
+    @Resource(name = "cpxArticleMapper")
+    private CpxArticleMapper cpxArticleMapper;
     @Resource
     private CpxPlatformProfileMapper platformProfileMapper;
     @Resource
@@ -165,7 +165,7 @@ public class CpxTaskServiceImpl implements CpxTaskService {
                 : null);
         article.setStatus(createReqVO.getStatus() == null ? CpxTaskConstants.STATUS_DRAFT : createReqVO.getStatus());
         article.setPublishTime(createReqVO.getPublishTime() == null ? LocalDateTime.now() : createReqVO.getPublishTime());
-        articleMapper.insert(article);
+        cpxArticleMapper.insert(article);
         return article.getId();
     }
 
@@ -175,18 +175,18 @@ public class CpxTaskServiceImpl implements CpxTaskService {
         article.setPromotionMethod(StringUtils.hasText(updateReqVO.getPromotionMethod())
                 ? CpxPromotionMethodEnum.of(updateReqVO.getPromotionMethod()).name()
                 : null);
-        articleMapper.updateById(article);
+        cpxArticleMapper.updateById(article);
     }
 
     @Override
     public CpxArticleDO getArticle(Long id) {
-        return articleMapper.selectById(id);
+        return cpxArticleMapper.selectById(id);
     }
 
     @Override
     public List<CpxArticleDO> listAdminArticles(String keyword, String category, String promotionMethod, Integer limit) {
         String method = StringUtils.hasText(promotionMethod) ? CpxPromotionMethodEnum.of(promotionMethod).name() : null;
-        return articleMapper.selectAdminList(keyword, category, method).stream()
+        return cpxArticleMapper.selectAdminList(keyword, category, method).stream()
                 .limit(normalizeLimit(limit))
                 .toList();
     }
@@ -194,7 +194,7 @@ public class CpxTaskServiceImpl implements CpxTaskService {
     @Override
     public List<CpxArticleDO> searchArticles(String keyword, String category, String promotionMethod, Integer limit) {
         String method = StringUtils.hasText(promotionMethod) ? CpxPromotionMethodEnum.of(promotionMethod).name() : null;
-        return articleMapper.selectPublishedList(keyword, category, method).stream()
+        return cpxArticleMapper.selectPublishedList(keyword, category, method).stream()
                 .limit(normalizeLimit(limit))
                 .toList();
     }

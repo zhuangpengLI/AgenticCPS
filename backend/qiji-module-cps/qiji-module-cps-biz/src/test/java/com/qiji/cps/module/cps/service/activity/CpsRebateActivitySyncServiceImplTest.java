@@ -1,10 +1,18 @@
 package com.qiji.cps.module.cps.service.activity;
 
+import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivity;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivityRequest;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyPage;
+import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
+import com.qiji.cps.module.cps.client.haodanku.activity.HaodankuActivityVendorClient;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityCategory;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityClient;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityItem;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityPage;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkSecondaryCategory;
+import com.qiji.cps.module.cps.client.jutuike.JutuikeUnionVendorClient;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
 import com.qiji.cps.module.cps.dal.mysql.activity.CpsRebateActivityMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +28,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,6 +41,18 @@ class CpsRebateActivitySyncServiceImplTest {
 
     @Mock
     private HdkActivityClient hdkActivityClient;
+
+    @Mock
+    private HaodankuActivityVendorClient haodankuActivityVendorClient;
+
+    @Mock
+    private JutuikeUnionVendorClient jutuikeUnionVendorClient;
+
+    @Mock
+    private DtkActivityVendorClient dtkActivityVendorClient;
+
+    @Mock
+    private CpsPlatformClientFactory platformClientFactory;
 
     @Mock
     private CpsRebateActivityMapper activityMapper;
@@ -142,6 +163,63 @@ class CpsRebateActivitySyncServiceImplTest {
         assertEquals("douyin", updated.getPlatformCode());
         assertEquals("CPS+CPA", updated.getBillingType());
         assertEquals("search", updated.getJumpType());
+    }
+
+    @Test
+    @DisplayName("syncThirdPartyActivities - 大淘客活动按外部活动 ID 幂等落表")
+    void syncThirdPartyActivities_insertsDataokeActivity() {
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .vendorCode("dataoke")
+                .platformCode("taobao")
+                .appKey("app-key")
+                .appSecret("app-secret")
+                .apiBaseUrl("https://openapi.dataoke.com/api")
+                .build();
+        when(dtkActivityVendorClient.getVendorCode()).thenReturn("dataoke");
+        when(dtkActivityVendorClient.getPlatformCode()).thenReturn("taobao");
+        when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(config);
+        when(dtkActivityVendorClient.fetchActivities(any(CpsThirdPartyActivityRequest.class), eq(config)))
+                .thenReturn(CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                        .list(List.of(CpsThirdPartyActivity.builder()
+                                .sourceType("dataoke")
+                                .externalActivityId("dtk:10001")
+                                .activityName("大淘客618会场")
+                                .activityType("淘宝会场")
+                                .platformCode("taobao")
+                                .mainPic("https://img.example/dtk.jpg")
+                                .shortDesc("官方热门活动")
+                                .rebateDesc("以实际转链佣金为准")
+                                .billingType("CPS")
+                                .promotionCount(120)
+                                .tagText("大淘客")
+                                .jumpType("search")
+                                .searchKeyword("618")
+                                .startTime(LocalDateTime.of(2026, 6, 1, 0, 0))
+                                .endTime(LocalDateTime.of(2026, 6, 30, 23, 59))
+                                .build()))
+                        .build());
+        when(activityMapper.selectBySourceTypeAndExternalActivityId("dataoke", "dtk:10001")).thenReturn(null);
+
+        CpsRebateActivitySyncResult result = service.syncThirdPartyActivities(CpsRebateActivitySyncRequest.builder()
+                .vendorCode("dataoke")
+                .platformCode("taobao")
+                .keyword("618")
+                .maxPages(1)
+                .pageSize(20)
+                .build());
+
+        ArgumentCaptor<CpsRebateActivityDO> captor = ArgumentCaptor.forClass(CpsRebateActivityDO.class);
+        verify(activityMapper).insert(captor.capture());
+        CpsRebateActivityDO saved = captor.getValue();
+        assertEquals(1, result.getInsertedCount());
+        assertEquals("大淘客618会场", saved.getActivityName());
+        assertEquals("淘宝会场", saved.getActivityType());
+        assertEquals("taobao", saved.getPlatformCode());
+        assertEquals("dataoke", saved.getSourceType());
+        assertEquals("dtk:10001", saved.getExternalActivityId());
+        assertEquals("search", saved.getJumpType());
+        assertEquals("618", saved.getSearchKeyword());
+        assertEquals(LocalDateTime.of(2026, 6, 1, 0, 0), saved.getStartTime());
     }
 
 }

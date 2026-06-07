@@ -2,6 +2,7 @@ package com.qiji.cps.module.cps.service.activity;
 
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.CpsThirdPartyActivityVendorClient;
+import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityCategory;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityClient;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityItem;
@@ -45,6 +46,9 @@ public class CpsRebateActivitySyncServiceImpl {
     private JutuikeUnionVendorClient jutuikeUnionVendorClient;
 
     @Resource
+    private DtkActivityVendorClient dtkActivityVendorClient;
+
+    @Resource
     private CpsPlatformClientFactory platformClientFactory;
 
     @Resource
@@ -76,7 +80,7 @@ public class CpsRebateActivitySyncServiceImpl {
         }
         CpsVendorConfig config = platformClientFactory.getVendorConfig(vendorClient.getVendorCode(),
                 vendorClient.getPlatformCode());
-        if (config == null && CpsVendorCodeEnum.JUTUIKE.getCode().equalsIgnoreCase(vendorClient.getVendorCode())) {
+        if (config == null && requiresVendorConfig(vendorClient)) {
             result.setSkippedCount(1);
             return result;
         }
@@ -285,9 +289,17 @@ public class CpsRebateActivitySyncServiceImpl {
         if (CpsVendorCodeEnum.HAODANKU.getCode().equalsIgnoreCase(normalizedVendorCode)) {
             return haodankuActivityVendorClient;
         }
+        if (CpsVendorCodeEnum.DATAOKE.getCode().equalsIgnoreCase(normalizedVendorCode)) {
+            return dtkActivityVendorClient;
+        }
         if (CpsVendorCodeEnum.JUTUIKE.getCode().equalsIgnoreCase(normalizedVendorCode)) {
             return jutuikeUnionVendorClient;
         }
         return null;
+    }
+
+    private boolean requiresVendorConfig(CpsThirdPartyActivityVendorClient vendorClient) {
+        return CpsVendorCodeEnum.DATAOKE.getCode().equalsIgnoreCase(vendorClient.getVendorCode())
+                || CpsVendorCodeEnum.JUTUIKE.getCode().equalsIgnoreCase(vendorClient.getVendorCode());
     }
 }

@@ -28,7 +28,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import java.lang.reflect.Proxy;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -56,11 +58,45 @@ class CpxTaskServiceImplTest {
     @Mock
     private CpxConversionMapper conversionMapper;
     @Mock
-    private CpxArticleMapper articleMapper;
+    private CpxArticleMapper cpxArticleMapper;
     @Mock
     private CpxPlatformProfileMapper platformProfileMapper;
     @Mock
     private CpxSettlementRecordMapper settlementRecordMapper;
+
+    @Test
+    @DisplayName("spring injection - avoids promotion articleMapper name collision")
+    void springInjection_usesCpxArticleMapperWhenArticleMapperBeanNameExists() {
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+            context.registerBean(CpxTaskServiceImpl.class);
+            context.registerBean("taskMapper", CpxTaskMapper.class, () -> org.mockito.Mockito.mock(CpxTaskMapper.class));
+            context.registerBean("trackingLinkMapper", CpxTrackingLinkMapper.class, () -> org.mockito.Mockito.mock(CpxTrackingLinkMapper.class));
+            context.registerBean("eventMapper", CpxEventMapper.class, () -> org.mockito.Mockito.mock(CpxEventMapper.class));
+            context.registerBean("conversionMapper", CpxConversionMapper.class, () -> org.mockito.Mockito.mock(CpxConversionMapper.class));
+            context.registerBean("cpxArticleMapper", CpxArticleMapper.class, () -> org.mockito.Mockito.mock(CpxArticleMapper.class));
+            context.registerBean("platformProfileMapper", CpxPlatformProfileMapper.class, () -> org.mockito.Mockito.mock(CpxPlatformProfileMapper.class));
+            context.registerBean("settlementRecordMapper", CpxSettlementRecordMapper.class, () -> org.mockito.Mockito.mock(CpxSettlementRecordMapper.class));
+            context.registerBean("articleMapper", Runnable.class, () -> (Runnable) Proxy.newProxyInstance(
+                    getClass().getClassLoader(),
+                    new Class<?>[]{Runnable.class},
+                    (proxy, method, args) -> {
+                        if (method.getDeclaringClass() == Object.class && "hashCode".equals(method.getName())) {
+                            return System.identityHashCode(proxy);
+                        }
+                        if (method.getDeclaringClass() == Object.class && "equals".equals(method.getName())) {
+                            return proxy == args[0];
+                        }
+                        if (method.getDeclaringClass() == Object.class && "toString".equals(method.getName())) {
+                            return "wrongArticleMapperProxy";
+                        }
+                        return null;
+                    }));
+
+            context.refresh();
+
+            assertNotNull(context.getBean(CpxTaskServiceImpl.class));
+        }
+    }
 
     @Test
     @DisplayName("createTask - 非 CPS 点击类任务默认关闭会员奖励并保留 CPS 优先级语义")
@@ -186,7 +222,7 @@ class CpxTaskServiceImplTest {
         taskService.updateArticle(request);
 
         ArgumentCaptor<CpxArticleDO> captor = ArgumentCaptor.forClass(CpxArticleDO.class);
-        verify(articleMapper).updateById(captor.capture());
+        verify(cpxArticleMapper).updateById(captor.capture());
         assertEquals(40L, captor.getValue().getId());
         assertEquals(CpxPromotionMethodEnum.OCPA.name(), captor.getValue().getPromotionMethod());
     }
