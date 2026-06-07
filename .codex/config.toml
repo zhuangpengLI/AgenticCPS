@@ -1,0 +1,6 @@
+[mcp_servers.agenticcps]
+type = "stdio"
+command = "cmd"
+args = ["/c", "npx", "-y", "mcp-remote@latest", "http://127.0.0.1:48080/sse", "--transport", "sse-only"]
+startup_timeout_sec = 30
+enabled = true
