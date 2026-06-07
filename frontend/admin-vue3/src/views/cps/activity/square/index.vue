@@ -7,9 +7,31 @@
           覆盖主流电商 / 餐饮外卖 / 本地服务 / 生活特权全场景，实时更新全网活动
         </div>
       </div>
-      <el-button type="primary" class="hero-action" @click="openForm('create')">
-        <Icon icon="ep:plus" class="mr-5px" /> 新增活动
-      </el-button>
+      <div class="hero-actions">
+        <el-select v-model="syncForm.vendorCode" class="sync-vendor" size="large">
+          <el-option label="大淘客" value="dataoke" />
+          <el-option label="好单库" value="haodanku" />
+        </el-select>
+        <el-input-number
+          v-model="syncForm.maxPages"
+          :min="1"
+          :max="5"
+          size="large"
+          controls-position="right"
+          class="sync-pages"
+        />
+        <el-button
+          type="primary"
+          class="hero-action"
+          :loading="syncLoading"
+          @click="handleSyncActivities"
+        >
+          <Icon icon="ep:refresh" class="mr-5px" /> 同步活动
+        </el-button>
+        <el-button type="primary" class="hero-action" @click="openForm('create')">
+          <Icon icon="ep:plus" class="mr-5px" /> 新增活动
+        </el-button>
+      </div>
     </section>
 
     <ContentWrap class="tab-wrap">
@@ -284,7 +306,8 @@ import {
   CpsRebateActivityApi,
   type CpsRebateActivityCenterCardVO,
   type CpsRebateActivityCenterRespVO,
-  type CpsRebateActivitySaveVO
+  type CpsRebateActivitySaveVO,
+  type CpsRebateActivitySyncReqVO
 } from '@/api/cps/rebateActivity'
 
 defineOptions({ name: 'CpsRebateActivitySquare' })
@@ -308,6 +331,13 @@ const queryParams = reactive({
   billingType: 'all',
   keyword: '',
   sortMode: 'hot'
+})
+const syncLoading = ref(false)
+const syncForm = reactive<CpsRebateActivitySyncReqVO>({
+  vendorCode: 'dataoke',
+  platformCode: 'taobao',
+  pageSize: 20,
+  maxPages: 1
 })
 
 const formRef = ref<FormInstance>()
@@ -412,6 +442,29 @@ const handleSubmit = async () => {
   }
 }
 
+const handleSyncActivities = async () => {
+  syncLoading.value = true
+  try {
+    const currentPlatform =
+      queryParams.platformCode === 'hot'
+        ? syncForm.vendorCode === 'dataoke'
+          ? 'taobao'
+          : undefined
+        : queryParams.platformCode
+    const result = await CpsRebateActivityApi.syncActivities({
+      ...syncForm,
+      platformCode: currentPlatform,
+      keyword: queryParams.keyword || undefined
+    })
+    message.success(
+      `同步完成：新增 ${result.insertedCount || 0}，更新 ${result.updatedCount || 0}，跳过 ${result.skippedCount || 0}`
+    )
+    await getCenter()
+  } finally {
+    syncLoading.value = false
+  }
+}
+
 const handleDelete = async (id: number) => {
   await message.delConfirm()
   await CpsRebateActivityApi.deleteActivity(id)
@@ -443,9 +496,26 @@ const formatWindow = (item: CpsRebateActivityCenterCardVO) => {
   return `${formatDateText(item.startTime)}~${formatDateText(item.endTime)}`
 }
 
-const formatDateText = (value?: Date | string) => {
+const formatDateText = (value?: Date | string | number) => {
   if (!value) return ''
-  return String(value).replace('T', ' ').slice(0, 10)
+  if (typeof value === 'number') {
+    return formatLocalDate(new Date(value))
+  }
+  const text = String(value)
+  if (/^\d{13}$/.test(text)) {
+    return formatLocalDate(new Date(Number(text)))
+  }
+  if (/^\d{10}$/.test(text)) {
+    return formatLocalDate(new Date(Number(text) * 1000))
+  }
+  return text.replace('T', ' ').slice(0, 10)
+}
+
+const formatLocalDate = (date: Date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 const platformLabel = (platformCode?: string) => {
@@ -548,10 +618,25 @@ onMounted(getCenter)
   line-height: 1.7;
 }
 
-.hero-action {
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
   margin-top: 8px;
+}
+
+.hero-action {
   border-color: rgba(255, 255, 255, 0.36);
   background: rgba(255, 255, 255, 0.16);
+}
+
+.sync-vendor {
+  width: 132px;
+}
+
+.sync-pages {
+  width: 118px;
 }
 
 .tab-wrap {

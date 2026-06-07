@@ -18,8 +18,8 @@ export interface CpsRebateActivityVO {
   searchKeyword?: string
   sort: number
   status: number
-  startTime?: Date
-  endTime?: Date
+  startTime?: Date | string | number
+  endTime?: Date | string | number
   remark?: string
   createTime?: Date
 }
@@ -42,8 +42,8 @@ export interface CpsRebateActivitySaveVO {
   searchKeyword?: string
   sort: number
   status: number
-  startTime?: Date | string
-  endTime?: Date | string
+  startTime?: Date | string | number
+  endTime?: Date | string | number
   remark?: string
 }
 
@@ -118,8 +118,8 @@ export interface CpsRebateActivityCenterCardVO {
   jumpType: string
   jumpUrl?: string
   searchKeyword?: string
-  startTime?: Date | string
-  endTime?: Date | string
+  startTime?: Date | string | number
+  endTime?: Date | string | number
 }
 
 export interface CpsRebateActivityCenterRespVO {
@@ -129,6 +129,20 @@ export interface CpsRebateActivityCenterRespVO {
   total: number
   pageNo: number
   pageSize: number
+}
+
+export interface CpsRebateActivitySyncReqVO {
+  vendorCode: string
+  platformCode?: string
+  keyword?: string
+  pageSize?: number
+  maxPages?: number
+}
+
+export interface CpsRebateActivitySyncRespVO {
+  insertedCount: number
+  updatedCount: number
+  skippedCount: number
 }
 
 export const CpsRebateActivityApi = {
@@ -154,5 +168,8 @@ export const CpsRebateActivityApi = {
     request.get<CpsRebateActivityVO[]>({ url: '/cps/rebate-activity/list-enabled' }),
 
   getActivityCenter: (params: CpsRebateActivityCenterReqVO) =>
-    request.get<CpsRebateActivityCenterRespVO>({ url: '/cps/rebate-activity/center', params })
+    request.get<CpsRebateActivityCenterRespVO>({ url: '/cps/rebate-activity/center', params }),
+
+  syncActivities: (data: CpsRebateActivitySyncReqVO) =>
+    request.post<CpsRebateActivitySyncRespVO>({ url: '/cps/rebate-activity/sync', data })
 }
