@@ -310,6 +310,10 @@ public interface CpsPlatformClient {
 
 To add a new platform (e.g., Weibo), implement this interface and register as a Spring Bean. No core logic changes required. Platform registration is managed by `CpsPlatformClientFactory`.
 
+### Haodanku OpenAPI Docs
+
+开发好单库相关功能时，先读取 `haodanku-openapi-docs/AI使用说明.md` 和 `haodanku-openapi-docs/接口目录.md`，按意图路由到对应分类文档再编码。
+
 ### Activity Center / Rebate Activity Cards
 
 The admin activity center is backed by `cps_rebate_activity` and `CpsRebateActivityService`. It is an operations-configured source of truth with optional vendor metadata enhancement only; do not add external SDK dependencies just to populate activity cards.
