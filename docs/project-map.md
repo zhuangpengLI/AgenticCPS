@@ -121,13 +121,22 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
   -> CpsRebateActivityService.getActivityCenter()
   -> cps_rebate_activity + 启用平台配置
   -> 返回 tabs / billingTypeOptions / cards / pagination
+
+运营人员点击同步
+  -> POST /admin-api/cps/rebate-activity/sync
+  -> CpsRebateActivitySyncServiceImpl.syncThirdPartyActivities()
+  -> HaodankuActivityVendorClient / DtkActivityVendorClient
+  -> cps_rebate_activity upsert 后刷新活动中心
 ```
 
 关键证据：
 
 - `CpsRebateActivityController`：`GET /cps/rebate-activity/center` 聚合活动中心卡片；CRUD 权限沿用 `cps:rebate-activity:query/create/update/delete`。
+- `CpsRebateActivityController`：`POST /cps/rebate-activity/sync` 暴露管理端手动同步入口，复用 `cps:rebate-activity:update` 权限，返回新增、更新、跳过数量。
+- `CpsRebateActivitySyncServiceImpl`：统一同步第三方活动并落库；当前支持好单库与大淘客活动源，大淘客通过 `DtkActivityVendorClient` 拉取淘宝活动会场。
 - `CpsRebateActivityServiceImpl`：只返回启用且在有效时间窗口内的活动，支持平台、`CPS` / `CPA` / `CPS+CPA`、关键词、热门/最新排序和分页。
 - `cps_rebate_activity`：活动运营配置表，新增 `billing_type`、`promotion_count`、`source_type`、`external_activity_id`、`tag_text`，并补充活动中心查询索引。
+- 前端活动中心页提供同步来源选择、同步页数与同步按钮；同步完成后重新请求活动中心，页面展示仍以落库后的活动卡片为准。
 - 前端活动中心卡片 `search` 跳转到商品广场并带入 `platformCode`、`keyword`、`activityTag`；`url` 新窗口打开；`none` 仅展示。
 - 平台 tabs 优先来自活动数据与启用平台配置，兜底包含热门、美团、饿了么、抖音、本地生活、飞猪、拼多多、淘宝、京东。
 
