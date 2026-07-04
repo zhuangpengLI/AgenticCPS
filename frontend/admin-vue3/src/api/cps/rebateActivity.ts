@@ -145,6 +145,25 @@ export interface CpsRebateActivitySyncRespVO {
   skippedCount: number
 }
 
+export interface CpsRebateActivityPromotionReqVO {
+  activityId: number
+  adzoneId?: string
+  channelTag?: string
+  landingBaseUrl?: string
+}
+
+export interface CpsRebateActivityPromotionRespVO {
+  linkStatus: string
+  linkMessage?: string
+  activityId: number
+  activityName: string
+  platformCode: string
+  adzoneId?: string
+  channelTag?: string
+  promotionUrl?: string
+  promotionContent?: string
+}
+
 export const CpsRebateActivityApi = {
   createActivity: (data: CpsRebateActivitySaveVO) =>
     request.post({ url: '/cps/rebate-activity/create', data }),
@@ -169,6 +188,12 @@ export const CpsRebateActivityApi = {
 
   getActivityCenter: (params: CpsRebateActivityCenterReqVO) =>
     request.get<CpsRebateActivityCenterRespVO>({ url: '/cps/rebate-activity/center', params }),
+
+  generatePromotion: (data: CpsRebateActivityPromotionReqVO) =>
+    request.post<CpsRebateActivityPromotionRespVO>({
+      url: '/cps/rebate-activity/promotion',
+      data
+    }),
 
   syncActivities: (data: CpsRebateActivitySyncReqVO) =>
     request.post<CpsRebateActivitySyncRespVO>({ url: '/cps/rebate-activity/sync', data })

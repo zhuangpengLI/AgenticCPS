@@ -4,6 +4,8 @@ import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCenterReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCenterRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPageReqVO;
+import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionReqVO;
+import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivitySaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
 import jakarta.validation.Valid;
@@ -25,5 +27,7 @@ public interface CpsRebateActivityService {
     List<CpsRebateActivityDO> getEnabledActivityList();
 
     CpsRebateActivityCenterRespVO getActivityCenter(CpsRebateActivityCenterReqVO reqVO);
+
+    CpsRebateActivityPromotionRespVO generatePromotionContent(@Valid CpsRebateActivityPromotionReqVO reqVO);
 
 }

@@ -9,6 +9,9 @@
           </div>
         </div>
         <div class="toolbar-actions">
+          <el-button :loading="dataokeSyncLoading" @click="openDataokeSyncDialog">
+            <Icon icon="ep:connection" class="mr-5px" /> 大淘客同步
+          </el-button>
           <el-button @click="loadTemplates">
             <Icon icon="ep:present" class="mr-5px" /> 大促模板
           </el-button>
@@ -572,6 +575,43 @@
       </div>
     </el-dialog>
 
+    <el-dialog v-model="dataokeSyncVisible" title="同步大淘客主题" width="520px">
+      <el-form label-position="top">
+        <el-form-item label="关键词">
+          <el-input v-model="dataokeSyncForm.keyword" placeholder="可选，按大淘客主题关键词过滤" clearable />
+        </el-form-item>
+        <el-row :gutter="12">
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="同步页数">
+              <el-input-number v-model="dataokeSyncForm.maxPages" :min="1" :max="20" class="w-full" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="每页主题数">
+              <el-input-number v-model="dataokeSyncForm.pageSize" :min="1" :max="100" class="w-full" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="同步主题商品">
+          <el-switch v-model="dataokeSyncForm.syncGoods" />
+        </el-form-item>
+        <el-form-item v-if="dataokeSyncForm.syncGoods" label="每主题商品数">
+          <el-input-number
+            v-model="dataokeSyncForm.goodsPullCount"
+            :min="1"
+            :max="100"
+            class="w-full"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dataokeSyncVisible = false">取消</el-button>
+        <el-button type="primary" :loading="dataokeSyncLoading" @click="submitDataokeSync">
+          同步
+        </el-button>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="importVisible" title="人工添加商品快照" width="640px">
       <el-form label-position="top">
         <el-form-item label="商品 JSON 数组">
@@ -605,6 +645,7 @@ import {
   type CpsSelectionThemeImportItemVO,
   type CpsSelectionThemeItemVO,
   type CpsSelectionThemeSaveVO,
+  type CpsSelectionThemeSyncReqVO,
   type CpsSelectionThemeTemplateVO,
   type CpsSelectionThemeVO,
   type SelectionThemeItemStatus,
@@ -712,6 +753,16 @@ const operateTitle = computed(() => (operateMode.value === 'ai' ? 'AI 推荐' : 
 const templateVisible = ref(false)
 const templateLoading = ref(false)
 const templates = ref<CpsSelectionThemeTemplateVO[]>([])
+
+const dataokeSyncVisible = ref(false)
+const dataokeSyncLoading = ref(false)
+const dataokeSyncForm = reactive<CpsSelectionThemeSyncReqVO>({
+  keyword: '',
+  maxPages: 1,
+  pageSize: 20,
+  syncGoods: true,
+  goodsPullCount: 20
+})
 
 const importVisible = ref(false)
 const manualImportLoading = ref(false)
@@ -887,6 +938,28 @@ const createThemeFromTemplate = async (template: CpsSelectionThemeTemplateVO) =>
   templateVisible.value = false
   ElMessage.success('已创建主题草稿')
   await getThemePage()
+}
+
+const openDataokeSyncDialog = () => {
+  dataokeSyncVisible.value = true
+}
+
+const submitDataokeSync = async () => {
+  dataokeSyncLoading.value = true
+  try {
+    const data = await CpsSelectionThemeApi.syncDataokeThemes({
+      ...dataokeSyncForm,
+      keyword: dataokeSyncForm.keyword?.trim() || undefined
+    })
+    dataokeSyncVisible.value = false
+    ElMessage.success(data.message || '大淘客主题同步完成')
+    await getThemePage()
+    if (selectedThemeId.value) {
+      await getItems()
+    }
+  } finally {
+    dataokeSyncLoading.value = false
+  }
 }
 
 const openImportDialog = () => {

@@ -119,11 +119,19 @@ export interface CpsSelectionThemeImportItemVO {
 }
 
 export interface CpsSelectionThemeOperationRespVO {
-  themeId: number
+  themeId?: number
   status: string
   pulledCount?: number
   importedCount?: number
   message?: string
+}
+
+export interface CpsSelectionThemeSyncReqVO {
+  keyword?: string
+  maxPages?: number
+  pageSize?: number
+  syncGoods?: boolean
+  goodsPullCount?: number
 }
 
 export interface CpsSelectionThemeTemplateVO {
@@ -188,6 +196,12 @@ export const CpsSelectionThemeApi = {
   vendorPull: (data: { themeId: number; ruleJson?: string }) =>
     request.post<CpsSelectionThemeOperationRespVO>({
       url: '/cps/selection-theme/vendor-pull',
+      data
+    }),
+
+  syncDataokeThemes: (data: CpsSelectionThemeSyncReqVO) =>
+    request.post<CpsSelectionThemeOperationRespVO>({
+      url: '/cps/selection-theme/dataoke-theme-sync',
       data
     }),
 

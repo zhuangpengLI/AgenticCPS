@@ -6,6 +6,8 @@ import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCenterReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCenterRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPageReqVO;
+import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionReqVO;
+import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivitySaveReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivitySyncReqVO;
@@ -103,6 +105,14 @@ public class CpsRebateActivityController {
     public CommonResult<CpsRebateActivityCenterRespVO> getActivityCenter(
             @Valid CpsRebateActivityCenterReqVO reqVO) {
         return success(activityService.getActivityCenter(reqVO));
+    }
+
+    @PostMapping("/promotion")
+    @Operation(summary = "生成活动推广链接和文案")
+    @PreAuthorize("@ss.hasPermission('cps:rebate-activity:query')")
+    public CommonResult<CpsRebateActivityPromotionRespVO> generatePromotionContent(
+            @Valid @RequestBody CpsRebateActivityPromotionReqVO reqVO) {
+        return success(activityService.generatePromotionContent(reqVO));
     }
 
     @PostMapping("/sync")

@@ -8,6 +8,7 @@ import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeIt
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeOperationRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemePageReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSaveReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSyncReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTemplateCreateReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTemplateRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeVendorPullReqVO;
@@ -48,6 +49,8 @@ public interface CpsSelectionThemeService {
     void deleteItem(Long id);
 
     CpsSelectionThemeOperationRespVO vendorPull(@Valid CpsSelectionThemeVendorPullReqVO reqVO);
+
+    CpsSelectionThemeOperationRespVO syncDataokeThemes(@Valid CpsSelectionThemeSyncReqVO reqVO);
 
     CpsSelectionThemeOperationRespVO aiRecommend(@Valid CpsSelectionThemeAiRecommendReqVO reqVO);
 

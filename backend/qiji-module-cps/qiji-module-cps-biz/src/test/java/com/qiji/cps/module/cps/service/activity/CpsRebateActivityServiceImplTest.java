@@ -1,6 +1,8 @@
 package com.qiji.cps.module.cps.service.activity;
 
 import com.qiji.cps.framework.common.exception.ServiceException;
+import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionReqVO;
+import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCenterReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCenterRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivitySaveReqVO;
@@ -20,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -123,6 +126,61 @@ class CpsRebateActivityServiceImplTest {
     }
 
     @Test
+    @DisplayName("getActivityCenter - 归一化历史好单库数字平台码")
+    void getActivityCenter_normalizesLegacyHaodankuNumericPlatformCodes() {
+        CpsRebateActivityDO jdActivity = buildActivity(1L, "京东外卖", "2", "CPS", 11, 1);
+        when(activityMapper.selectEnabledList(any(LocalDateTime.class))).thenReturn(List.of(jdActivity));
+        when(platformService.getEnabledPlatformList()).thenReturn(List.of(
+                CpsPlatformDO.builder().platformCode("jd").platformName("京东").platformLogo("jd.png").sort(1).build()));
+
+        CpsRebateActivityCenterReqVO reqVO = new CpsRebateActivityCenterReqVO();
+        reqVO.setPlatformCode("jd");
+        reqVO.setBillingType("all");
+        reqVO.setPageNo(1);
+        reqVO.setPageSize(10);
+
+        CpsRebateActivityCenterRespVO result = service.getActivityCenter(reqVO);
+
+        assertEquals(1L, result.getTotal());
+        assertEquals("jd", result.getCards().get(0).getPlatformCode());
+        assertEquals("京东", result.getCards().get(0).getPlatformName());
+        assertEquals(1, result.getTabs().stream()
+                .filter(tab -> "jd".equals(tab.getPlatformCode()))
+                .findFirst()
+                .orElseThrow()
+                .getActivityCount());
+        assertTrue(result.getTabs().stream().noneMatch(tab -> "2".equals(tab.getPlatformCode())));
+    }
+
+    @Test
+    @DisplayName("getActivityCenter - 点击美团时返回好单库历史数字平台码活动")
+    void getActivityCenter_matchesLegacyHaodankuMeituanPlatformCode() {
+        CpsRebateActivityDO meituanActivity = buildActivity(1L, "美团外卖品牌活动", "6", "CPS", 21, 1);
+        when(activityMapper.selectEnabledList(any(LocalDateTime.class))).thenReturn(List.of(meituanActivity));
+        when(platformService.getEnabledPlatformList()).thenReturn(List.of(
+                CpsPlatformDO.builder().platformCode("meituan").platformName("美团").platformLogo("meituan.png").sort(1).build()));
+
+        CpsRebateActivityCenterReqVO reqVO = new CpsRebateActivityCenterReqVO();
+        reqVO.setPlatformCode("meituan");
+        reqVO.setBillingType("all");
+        reqVO.setPageNo(1);
+        reqVO.setPageSize(10);
+
+        CpsRebateActivityCenterRespVO result = service.getActivityCenter(reqVO);
+
+        assertEquals(1L, result.getTotal());
+        assertEquals(1, result.getCards().size());
+        assertEquals("meituan", result.getCards().get(0).getPlatformCode());
+        assertEquals("美团", result.getCards().get(0).getPlatformName());
+        assertEquals(1, result.getTabs().stream()
+                .filter(tab -> "meituan".equals(tab.getPlatformCode()))
+                .findFirst()
+                .orElseThrow()
+                .getActivityCount());
+        assertTrue(result.getTabs().stream().noneMatch(tab -> "6".equals(tab.getPlatformCode())));
+    }
+
+    @Test
     @DisplayName("getActivityCenter - 最新模式按上线时间优先返回，并保留 url 跳转字段")
     void getActivityCenter_sortsLatestAndKeepsUrlJump() {
         CpsRebateActivityDO older = buildActivity(1L, "旧活动", "taobao", "CPS", 100, 1);
@@ -147,6 +205,54 @@ class CpsRebateActivityServiceImplTest {
         assertEquals("CPS+CPA", result.getCards().get(0).getBillingType());
         assertEquals("url", result.getCards().get(0).getJumpType());
         assertEquals("https://example.com/latest", result.getCards().get(0).getJumpUrl());
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - url 活动生成可复制活动推广文案")
+    void generatePromotionContent_usesExternalUrlActivityLanding() {
+        CpsRebateActivityDO activity = buildActivity(10L, "品牌U享礼金专场", "taobao", "CPS", 320, 1);
+        activity.setJumpType("url");
+        activity.setJumpUrl("https://uland.taobao.com/coupon/edetail?activityId=abc");
+        activity.setShortDesc("每日10点抢百万单品红包");
+        activity.setRebateDesc("最高返利78%");
+        when(activityMapper.selectById(10L)).thenReturn(activity);
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(10L);
+        reqVO.setAdzoneId("mm_123_456_789");
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
+
+        assertEquals("SUCCESS", result.getLinkStatus());
+        assertEquals("https://uland.taobao.com/coupon/edetail?activityId=abc", result.getPromotionUrl());
+        assertEquals("mm_123_456_789", result.getAdzoneId());
+        assertTrue(result.getPromotionContent().contains("品牌U享礼金专场"));
+        assertTrue(result.getPromotionContent().contains("最高返利78%"));
+        assertTrue(result.getPromotionContent().contains("https://uland.taobao.com/coupon/edetail?activityId=abc"));
+        assertTrue(result.getPromotionContent().contains("推广位：mm_123_456_789"));
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - search 活动生成商品广场落地链接")
+    void generatePromotionContent_buildsGoodsSquareLandingForSearchActivity() {
+        CpsRebateActivityDO activity = buildActivity(11L, "飞猪酒店特惠", "fliggy", "CPS", 120, 1);
+        activity.setJumpType("search");
+        activity.setSearchKeyword("酒店红包");
+        activity.setTagText("天天特惠");
+        when(activityMapper.selectById(11L)).thenReturn(activity);
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(11L);
+        reqVO.setLandingBaseUrl("https://admin.example.com");
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
+
+        assertEquals("SUCCESS", result.getLinkStatus());
+        assertEquals("https://admin.example.com/cps/goods/square?platformCode=fliggy&keyword=%E9%85%92%E5%BA%97%E7%BA%A2%E5%8C%85&activityTag=%E5%A4%A9%E5%A4%A9%E7%89%B9%E6%83%A0",
+                result.getPromotionUrl());
+        assertTrue(result.getPromotionContent().contains("飞猪酒店特惠"));
+        assertTrue(result.getPromotionContent().contains("酒店红包"));
+        assertTrue(result.getPromotionContent().contains(result.getPromotionUrl()));
     }
 
     private CpsRebateActivitySaveReqVO buildReqVO() {

@@ -12,6 +12,7 @@ import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeOp
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemePageReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSaveReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSyncReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTemplateCreateReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTemplateRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeVendorPullReqVO;
@@ -119,6 +120,14 @@ public class CpsSelectionThemeController {
     public CommonResult<CpsSelectionThemeOperationRespVO> vendorPull(
             @Valid @RequestBody CpsSelectionThemeVendorPullReqVO reqVO) {
         return success(selectionThemeService.vendorPull(reqVO));
+    }
+
+    @PostMapping("/dataoke-theme-sync")
+    @Operation(summary = "同步大淘客主题和主题商品")
+    @PreAuthorize("@ss.hasPermission('cps:selection-theme:update')")
+    public CommonResult<CpsSelectionThemeOperationRespVO> syncDataokeThemes(
+            @Valid @RequestBody CpsSelectionThemeSyncReqVO reqVO) {
+        return success(selectionThemeService.syncDataokeThemes(reqVO));
     }
 
     @GetMapping("/items/list")

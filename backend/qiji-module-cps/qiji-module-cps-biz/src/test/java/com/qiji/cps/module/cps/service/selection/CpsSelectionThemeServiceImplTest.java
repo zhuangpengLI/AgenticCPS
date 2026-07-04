@@ -1,11 +1,17 @@
 package com.qiji.cps.module.cps.service.selection;
 
 import com.qiji.cps.framework.common.exception.ServiceException;
+import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivity;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyPage;
+import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsRespVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemImportReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemSortReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSaveReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSyncReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeVendorPullReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeItemDO;
@@ -49,6 +55,12 @@ class CpsSelectionThemeServiceImplTest {
 
     @Mock
     private CpsSelectionAiRecommendService aiRecommendService;
+
+    @Mock
+    private DtkActivityVendorClient dtkActivityVendorClient;
+
+    @Mock
+    private CpsPlatformClientFactory platformClientFactory;
 
     @Test
     @DisplayName("createTheme - 主题编码租户内唯一并默认草稿")
@@ -152,6 +164,75 @@ class CpsSelectionThemeServiceImplTest {
         assertEquals("dataoke", searchCaptor.getValue().getVendorCode());
         assertEquals(new BigDecimal("20"), searchCaptor.getValue().getMinCommissionRate());
         assertEquals(1, searchCaptor.getValue().getHasCoupon());
+        verify(itemMapper, times(2)).insert(any(CpsSelectionThemeItemDO.class));
+    }
+
+    @Test
+    @DisplayName("syncDataokeThemes - 同步大淘客主题并拉取主题商品快照")
+    void syncDataokeThemes_upsertsThemesAndImportsGoodsSnapshots() {
+        when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(CpsVendorConfig.builder()
+                .vendorCode("dataoke")
+                .platformCode("taobao")
+                .appKey("app-key")
+                .appSecret("app-secret")
+                .apiBaseUrl("https://openapi.dataoke.com/api")
+                .build());
+        when(dtkActivityVendorClient.fetchActivities(any(), any())).thenReturn(CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                .list(List.of(
+                        CpsThirdPartyActivity.builder()
+                                .sourceType("dataoke")
+                                .externalActivityId("dtk:618")
+                                .activityName("618爆品会场")
+                                .activityType("618")
+                                .platformCode("taobao")
+                                .mainPic("https://img.example/618.png")
+                                .shortDesc("大淘客618主题")
+                                .promotionCount(2)
+                                .tagText("大促")
+                                .searchKeyword("618爆品")
+                                .build(),
+                        CpsThirdPartyActivity.builder()
+                                .sourceType("dataoke")
+                                .externalActivityId("dtk:summer")
+                                .activityName("夏季清凉")
+                                .activityType("夏季")
+                                .platformCode("taobao")
+                                .searchKeyword("防晒霜")
+                                .build()))
+                .total(2L)
+                .pageNo(1)
+                .pageSize(20)
+                .build());
+        when(themeMapper.selectByThemeCode("DTK_618")).thenReturn(null);
+        when(themeMapper.insert(any(CpsSelectionThemeDO.class))).thenAnswer(invocation -> {
+            CpsSelectionThemeDO theme = invocation.getArgument(0);
+            theme.setId(100L);
+            return 1;
+        });
+        when(themeMapper.selectByThemeCode("DTK_SUMMER")).thenReturn(CpsSelectionThemeDO.builder()
+                .id(200L)
+                .themeCode("DTK_SUMMER")
+                .build());
+        when(goodsSquareService.searchGoods(any())).thenReturn(CpsGoodsSquareSearchRespVO.builder()
+                .list(List.of(buildPulledGoods("taobao", "goods-1")))
+                .total(1L)
+                .build());
+
+        CpsSelectionThemeSyncReqVO reqVO = new CpsSelectionThemeSyncReqVO();
+        reqVO.setSyncGoods(true);
+        reqVO.setGoodsPullCount(1);
+        var result = service.syncDataokeThemes(reqVO);
+
+        assertEquals(2, result.getPulledCount());
+        assertEquals(2, result.getImportedCount());
+        ArgumentCaptor<CpsSelectionThemeDO> insertCaptor = ArgumentCaptor.forClass(CpsSelectionThemeDO.class);
+        verify(themeMapper).insert(insertCaptor.capture());
+        assertEquals("DTK_618", insertCaptor.getValue().getThemeCode());
+        assertEquals("618爆品会场", insertCaptor.getValue().getThemeName());
+        assertEquals("PROMOTION", insertCaptor.getValue().getThemeType());
+        assertEquals("dataoke", insertCaptor.getValue().getVendorCode());
+        assertEquals(CpsSelectionConstants.ThemeStatus.DRAFT, insertCaptor.getValue().getStatus());
+        verify(themeMapper, times(5)).updateById(any(CpsSelectionThemeDO.class));
         verify(itemMapper, times(2)).insert(any(CpsSelectionThemeItemDO.class));
     }
 

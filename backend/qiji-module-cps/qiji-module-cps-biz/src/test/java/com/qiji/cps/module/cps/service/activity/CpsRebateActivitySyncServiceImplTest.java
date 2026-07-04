@@ -28,8 +28,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -166,6 +168,65 @@ class CpsRebateActivitySyncServiceImplTest {
     }
 
     @Test
+    @DisplayName("syncThirdPartyActivities - all 同时同步大淘客和好单库并汇总结果")
+    void syncThirdPartyActivities_allAggregatesDataokeAndHaodanku() {
+        CpsVendorConfig dataokeConfig = CpsVendorConfig.builder()
+                .vendorCode("dataoke")
+                .platformCode("taobao")
+                .appKey("app-key")
+                .appSecret("app-secret")
+                .apiBaseUrl("https://openapi.dataoke.com/api")
+                .build();
+        when(dtkActivityVendorClient.getVendorCode()).thenReturn("dataoke");
+        when(dtkActivityVendorClient.getPlatformCode()).thenReturn("taobao");
+        when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(dataokeConfig);
+        when(dtkActivityVendorClient.fetchActivities(any(CpsThirdPartyActivityRequest.class), eq(dataokeConfig)))
+                .thenReturn(CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                        .list(List.of(CpsThirdPartyActivity.builder()
+                                .sourceType("dataoke")
+                                .externalActivityId("dtk:10001")
+                                .activityName("大淘客618会场")
+                                .activityType("淘宝会场")
+                                .platformCode("taobao")
+                                .billingType("CPS")
+                                .jumpType("search")
+                                .searchKeyword("618")
+                                .build()))
+                        .build());
+        when(activityMapper.selectBySourceTypeAndExternalActivityId("dataoke", "dtk:10001")).thenReturn(null);
+
+        when(haodankuActivityVendorClient.getVendorCode()).thenReturn("haodanku");
+        when(haodankuActivityVendorClient.fetchActivities(any(CpsThirdPartyActivityRequest.class), eq(null)))
+                .thenReturn(CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                        .list(List.of(CpsThirdPartyActivity.builder()
+                                .sourceType("haodanku")
+                                .externalActivityId("hdk:7")
+                                .activityName("好单库外卖活动")
+                                .activityType("外卖")
+                                .platformCode("meituan")
+                                .billingType("CPS")
+                                .jumpType("url")
+                                .jumpUrl("https://example.com/hdk")
+                                .build()))
+                        .build());
+        when(activityMapper.selectBySourceTypeAndExternalActivityId("haodanku", "hdk:7")).thenReturn(null);
+
+        CpsRebateActivitySyncResult result = service.syncThirdPartyActivities(CpsRebateActivitySyncRequest.builder()
+                .vendorCode("all")
+                .platformCode("taobao")
+                .keyword("618")
+                .maxPages(1)
+                .pageSize(20)
+                .build());
+
+        assertEquals(2, result.getInsertedCount());
+        assertEquals(0, result.getUpdatedCount());
+        assertEquals(0, result.getSkippedCount());
+        verify(dtkActivityVendorClient).fetchActivities(any(CpsThirdPartyActivityRequest.class), eq(dataokeConfig));
+        verify(haodankuActivityVendorClient).fetchActivities(any(CpsThirdPartyActivityRequest.class), eq(null));
+    }
+
+    @Test
     @DisplayName("syncThirdPartyActivities - 大淘客活动按外部活动 ID 幂等落表")
     void syncThirdPartyActivities_insertsDataokeActivity() {
         CpsVendorConfig config = CpsVendorConfig.builder()
@@ -220,6 +281,58 @@ class CpsRebateActivitySyncServiceImplTest {
         assertEquals("search", saved.getJumpType());
         assertEquals("618", saved.getSearchKeyword());
         assertEquals(LocalDateTime.of(2026, 6, 1, 0, 0), saved.getStartTime());
+    }
+
+    @Test
+    @DisplayName("syncThirdPartyActivities - 不传最大页数时同步到第三方最后一页")
+    void syncThirdPartyActivities_withoutMaxPagesFetchesUntilLastPage() {
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .vendorCode("dataoke")
+                .platformCode("taobao")
+                .appKey("app-key")
+                .appSecret("app-secret")
+                .apiBaseUrl("https://openapi.dataoke.com/api")
+                .build();
+        when(dtkActivityVendorClient.getVendorCode()).thenReturn("dataoke");
+        when(dtkActivityVendorClient.getPlatformCode()).thenReturn("taobao");
+        when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(config);
+        when(dtkActivityVendorClient.fetchActivities(any(CpsThirdPartyActivityRequest.class), eq(config)))
+                .thenReturn(CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                        .total(2L)
+                        .pageNo(1)
+                        .pageSize(1)
+                        .list(List.of(CpsThirdPartyActivity.builder()
+                                .sourceType("dataoke")
+                                .externalActivityId("dtk:page-1")
+                                .activityName("第一页活动")
+                                .activityType("淘宝会场")
+                                .platformCode("taobao")
+                                .billingType("CPS")
+                                .build()))
+                        .build())
+                .thenReturn(CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                        .total(2L)
+                        .pageNo(2)
+                        .pageSize(1)
+                        .list(List.of(CpsThirdPartyActivity.builder()
+                                .sourceType("dataoke")
+                                .externalActivityId("dtk:page-2")
+                                .activityName("第二页活动")
+                                .activityType("淘宝会场")
+                                .platformCode("taobao")
+                                .billingType("CPS")
+                                .build()))
+                        .build());
+        when(activityMapper.selectBySourceTypeAndExternalActivityId(anyString(), anyString())).thenReturn(null);
+
+        CpsRebateActivitySyncResult result = service.syncThirdPartyActivities(CpsRebateActivitySyncRequest.builder()
+                .vendorCode("dataoke")
+                .platformCode("taobao")
+                .pageSize(1)
+                .build());
+
+        assertEquals(2, result.getInsertedCount());
+        verify(dtkActivityVendorClient, times(2)).fetchActivities(any(CpsThirdPartyActivityRequest.class), eq(config));
     }
 
 }

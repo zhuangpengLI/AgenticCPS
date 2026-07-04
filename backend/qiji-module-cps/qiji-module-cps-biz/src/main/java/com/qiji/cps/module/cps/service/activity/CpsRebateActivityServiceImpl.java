@@ -5,7 +5,10 @@ import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCenterReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCenterRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPageReqVO;
+import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionReqVO;
+import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivitySaveReqVO;
+import com.qiji.cps.module.cps.client.haodanku.activity.HaodankuActivityVendorClient;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import com.qiji.cps.module.cps.dal.mysql.activity.CpsRebateActivityMapper;
@@ -15,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -40,6 +45,7 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
     private static final String BILLING_TYPE_CPA = "CPA";
     private static final String BILLING_TYPE_CPS_CPA = "CPS+CPA";
     private static final String SOURCE_CONFIGURED = "configured";
+    private static final String LINK_STATUS_SUCCESS = "SUCCESS";
 
     @Resource
     private CpsRebateActivityMapper activityMapper;
@@ -115,10 +121,102 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 .build();
     }
 
+    @Override
+    public CpsRebateActivityPromotionRespVO generatePromotionContent(CpsRebateActivityPromotionReqVO reqVO) {
+        CpsRebateActivityDO activity = getActivity(reqVO.getActivityId());
+        if (activity == null) {
+            throw exception(REBATE_ACTIVITY_NOT_EXISTS);
+        }
+        String promotionUrl = buildPromotionUrl(activity, reqVO);
+        return CpsRebateActivityPromotionRespVO.builder()
+                .linkStatus(LINK_STATUS_SUCCESS)
+                .linkMessage("活动推广内容已生成")
+                .activityId(activity.getId())
+                .activityName(activity.getActivityName())
+                .platformCode(activity.getPlatformCode())
+                .adzoneId(reqVO.getAdzoneId())
+                .channelTag(reqVO.getChannelTag())
+                .promotionUrl(promotionUrl)
+                .promotionContent(buildPromotionContent(activity, reqVO, promotionUrl))
+                .build();
+    }
+
     private void validateActivityExists(Long id) {
         if (activityMapper.selectById(id) == null) {
             throw exception(REBATE_ACTIVITY_NOT_EXISTS);
         }
+    }
+
+    private String buildPromotionUrl(CpsRebateActivityDO activity, CpsRebateActivityPromotionReqVO reqVO) {
+        if ("url".equals(activity.getJumpType()) && StringUtils.hasText(activity.getJumpUrl())) {
+            return replaceUrlPlaceholders(activity.getJumpUrl(), reqVO);
+        }
+        String keyword = firstText(activity.getSearchKeyword(), activity.getActivityName());
+        String activityTag = firstText(activity.getTagText(), activity.getExternalActivityId(), activity.getActivityName());
+        String path = "/cps/goods/square?platformCode=" + encode(activity.getPlatformCode())
+                + "&keyword=" + encode(keyword)
+                + "&activityTag=" + encode(activityTag);
+        String baseUrl = trimTrailingSlash(reqVO.getLandingBaseUrl());
+        return StringUtils.hasText(baseUrl) ? baseUrl + path : path;
+    }
+
+    private String replaceUrlPlaceholders(String url, CpsRebateActivityPromotionReqVO reqVO) {
+        return url.replace("{adzoneId}", encode(firstText(reqVO.getAdzoneId(), "")))
+                .replace("{channelTag}", encode(firstText(reqVO.getChannelTag(), "")));
+    }
+
+    private String buildPromotionContent(CpsRebateActivityDO activity, CpsRebateActivityPromotionReqVO reqVO,
+                                         String promotionUrl) {
+        StringBuilder builder = new StringBuilder();
+        appendLine(builder, activity.getActivityName());
+        appendLine(builder, activity.getShortDesc());
+        appendLine(builder, activity.getRebateDesc());
+        if ("search".equals(activity.getJumpType()) && StringUtils.hasText(activity.getSearchKeyword())) {
+            appendLine(builder, "搜索词：" + activity.getSearchKeyword());
+        }
+        appendLine(builder, buildActivityWindowText(activity));
+        appendLine(builder, promotionUrl);
+        if (StringUtils.hasText(reqVO.getAdzoneId())) {
+            appendLine(builder, "推广位：" + reqVO.getAdzoneId());
+        }
+        if (StringUtils.hasText(reqVO.getChannelTag())) {
+            appendLine(builder, "渠道：" + reqVO.getChannelTag());
+        }
+        return builder.toString().trim();
+    }
+
+    private String buildActivityWindowText(CpsRebateActivityDO activity) {
+        if (activity.getStartTime() == null && activity.getEndTime() == null) {
+            return null;
+        }
+        if (activity.getStartTime() == null) {
+            return "活动时间：截至" + activity.getEndTime();
+        }
+        if (activity.getEndTime() == null) {
+            return "活动时间：" + activity.getStartTime() + "起";
+        }
+        return "活动时间：" + activity.getStartTime() + " 至 " + activity.getEndTime();
+    }
+
+    private void appendLine(StringBuilder builder, String value) {
+        if (StringUtils.hasText(value)) {
+            builder.append(value).append('\n');
+        }
+    }
+
+    private String trimTrailingSlash(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String trimmed = value.trim();
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed;
+    }
+
+    private String encode(String value) {
+        return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
     }
 
     private List<CpsPlatformDO> loadEnabledPlatforms() {
@@ -133,7 +231,7 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
     private boolean matchPlatform(CpsRebateActivityDO activity, String platformCode) {
         return !StringUtils.hasText(platformCode)
                 || PLATFORM_HOT.equals(platformCode)
-                || platformCode.equals(activity.getPlatformCode());
+                || platformCode.equals(normalizePlatformCode(activity.getPlatformCode()));
     }
 
     private boolean matchBillingType(CpsRebateActivityDO activity, String billingType) {
@@ -209,12 +307,13 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 .forEach(platform -> metas.put(platform.getPlatformCode(), PlatformMeta.from(platform)));
         activities.stream()
                 .map(CpsRebateActivityDO::getPlatformCode)
+                .map(this::normalizePlatformCode)
                 .filter(StringUtils::hasText)
                 .forEach(platformCode -> metas.putIfAbsent(platformCode, fallbackMeta(platformCode)));
 
         Map<String, Integer> countMap = activities.stream()
                 .filter(activity -> StringUtils.hasText(activity.getPlatformCode()))
-                .collect(Collectors.groupingBy(CpsRebateActivityDO::getPlatformCode, Collectors.collectingAndThen(
+                .collect(Collectors.groupingBy(activity -> normalizePlatformCode(activity.getPlatformCode()), Collectors.collectingAndThen(
                         Collectors.counting(), Long::intValue)));
         countMap.put(PLATFORM_HOT, activities.size());
 
@@ -266,13 +365,14 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
 
     private CpsRebateActivityCenterRespVO.Card toCard(CpsRebateActivityDO activity,
                                                       Map<String, CpsPlatformDO> platformMap) {
-        CpsPlatformDO platform = platformMap.get(activity.getPlatformCode());
-        PlatformMeta fallback = fallbackMeta(activity.getPlatformCode());
+        String platformCode = normalizePlatformCode(activity.getPlatformCode());
+        CpsPlatformDO platform = platformMap.get(platformCode);
+        PlatformMeta fallback = fallbackMeta(platformCode);
         return CpsRebateActivityCenterRespVO.Card.builder()
                 .id(activity.getId())
                 .activityName(activity.getActivityName())
                 .activityType(activity.getActivityType())
-                .platformCode(activity.getPlatformCode())
+                .platformCode(platformCode)
                 .platformName(platform != null ? firstText(platform.getPlatformName(), fallback.platformName()) : fallback.platformName())
                 .platformLogo(platform != null ? platform.getPlatformLogo() : fallback.platformLogo())
                 .mainPic(activity.getMainPic())
@@ -305,6 +405,10 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
             case "vip" -> new PlatformMeta("vip", "唯品会", null);
             default -> new PlatformMeta(platformCode, StringUtils.hasText(platformCode) ? platformCode : "-", null);
         };
+    }
+
+    private String normalizePlatformCode(String platformCode) {
+        return HaodankuActivityVendorClient.normalizeActivityPlatformCode(platformCode);
     }
 
     private String firstText(String... values) {

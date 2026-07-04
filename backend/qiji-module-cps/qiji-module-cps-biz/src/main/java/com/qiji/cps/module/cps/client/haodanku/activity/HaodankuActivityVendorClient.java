@@ -7,6 +7,7 @@ import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivityRequest;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyApiCategory;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyPage;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
+import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import com.qiji.cps.module.cps.enums.CpsVendorCodeEnum;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -95,7 +96,7 @@ public class HaodankuActivityVendorClient implements CpsThirdPartyActivityVendor
                     .externalActivityId(EXTERNAL_PREFIX + externalIdValue)
                     .activityName(firstText(item.getActivityName(), activityType))
                     .activityType(activityType)
-                    .platformCode(firstText(request.getPlatformCode(), item.getPlatform()))
+                    .platformCode(normalizeActivityPlatformCode(item.getPlatform()))
                     .mainPic(item.getActivityPic())
                     .shortDesc(sanitizeDescription(item.getDescribe()))
                     .rebateDesc(item.getCommissionRate())
@@ -159,7 +160,7 @@ public class HaodankuActivityVendorClient implements CpsThirdPartyActivityVendor
     }
 
     private Map<String, Object> buildExtraFields(HdkActivityCategory category, HdkSecondaryCategory secondaryCategory,
-                                                 HdkActivityItem item) {
+                                                  HdkActivityItem item) {
         Map<String, Object> extraFields = new LinkedHashMap<>();
         extraFields.put("category_id", category.getCatId());
         extraFields.put("category_name", category.getName());
@@ -175,6 +176,20 @@ public class HaodankuActivityVendorClient implements CpsThirdPartyActivityVendor
         extraFields.put("activity_date", item.getActivityDate());
         extraFields.put("is_channel", item.getIsChannel());
         return extraFields;
+    }
+
+    public static String normalizeActivityPlatformCode(String platform) {
+        return switch (platform == null ? "" : platform) {
+            case "1", "15" -> CpsPlatformCodeEnum.TAOBAO.getCode();
+            case "2" -> CpsPlatformCodeEnum.JD.getCode();
+            case "3" -> CpsPlatformCodeEnum.PDD.getCode();
+            case "4", "9", "88" -> CpsPlatformCodeEnum.DOUYIN.getCode();
+            case "6" -> CpsPlatformCodeEnum.MEITUAN.getCode();
+            case "7" -> "eleme";
+            case "8", "10", "12", "13", "99" -> "local_life";
+            case "16" -> "fliggy";
+            default -> platform;
+        };
     }
 
     private String firstText(String... values) {

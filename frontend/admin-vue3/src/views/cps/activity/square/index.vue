@@ -8,18 +8,14 @@
         </div>
       </div>
       <div class="hero-actions">
-        <el-select v-model="syncForm.vendorCode" class="sync-vendor" size="large">
-          <el-option label="大淘客" value="dataoke" />
-          <el-option label="好单库" value="haodanku" />
-        </el-select>
-        <el-input-number
-          v-model="syncForm.maxPages"
-          :min="1"
-          :max="5"
-          size="large"
-          controls-position="right"
-          class="sync-pages"
-        />
+        <div class="sync-field">
+          <span class="sync-label">同步来源</span>
+          <el-select v-model="syncForm.vendorCode" class="sync-vendor" size="large">
+            <el-option label="全部" value="all" />
+            <el-option label="大淘客" value="dataoke" />
+            <el-option label="好单库" value="haodanku" />
+          </el-select>
+        </div>
         <el-button
           type="primary"
           class="hero-action"
@@ -37,7 +33,7 @@
     <ContentWrap class="tab-wrap">
       <div class="platform-tabs">
         <button
-          v-for="item in centerData.tabs"
+          v-for="item in visiblePlatformTabs"
           :key="item.platformCode"
           class="platform-tab"
           :class="{ active: queryParams.platformCode === item.platformCode }"
@@ -135,6 +131,9 @@
               <div class="card-actions">
                 <el-button link type="primary" @click.stop="openForm('update', item)">
                   编辑
+                </el-button>
+                <el-button link type="primary" @click.stop="openPromotionDialog(item)">
+                  推广
                 </el-button>
                 <el-button link type="danger" @click.stop="handleDelete(item.id)">
                   删除
@@ -294,11 +293,93 @@
         <el-button type="primary" :loading="formLoading" @click="handleSubmit">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="promotionVisible" title="生成活动推广内容" width="720px">
+      <el-form :model="promotionForm" label-width="100px">
+        <el-form-item label="活动">
+          <div class="min-w-0">
+            <div class="font-600">{{ selectedActivity?.activityName || '-' }}</div>
+            <div class="mt-4px text-12px text-gray-500">
+              {{ platformLabel(selectedActivity?.platformCode) }} ·
+              {{ selectedActivity?.billingType || 'CPS' }} ·
+              {{ selectedActivity?.tagText || selectedActivity?.externalActivityId || '活动推广' }}
+            </div>
+          </div>
+        </el-form-item>
+        <el-form-item label="推广位">
+          <el-select
+            v-model="promotionForm.adzoneId"
+            placeholder="默认推广位 / 可输入 PID"
+            clearable
+            filterable
+            allow-create
+            default-first-option
+            class="w-full"
+            :loading="adzoneLoading"
+          >
+            <el-option
+              v-for="item in adzoneOptions"
+              :key="item.adzoneId"
+              :label="formatAdzoneLabel(item)"
+              :value="item.adzoneId"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="渠道标识">
+          <el-input v-model="promotionForm.channelTag" clearable placeholder="可选，如 wechat_group_a" />
+        </el-form-item>
+      </el-form>
+
+      <el-alert
+        v-if="promotionResult"
+        class="mt-16px"
+        :type="promotionResult.linkStatus === 'SUCCESS' ? 'success' : 'warning'"
+        :title="promotionResult.linkMessage || promotionResult.linkStatus"
+        show-icon
+        :closable="false"
+      />
+      <el-table
+        v-if="promotionResult?.linkStatus === 'SUCCESS'"
+        :data="promotionRows"
+        class="mt-16px"
+        border
+      >
+        <el-table-column label="类型" prop="label" width="110" />
+        <el-table-column label="内容" min-width="320">
+          <template #default="{ row }">
+            <el-input v-model="row.value" readonly />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="88" align="center">
+          <template #default="{ row }">
+            <el-tooltip content="复制" placement="top">
+              <el-button :disabled="!row.value" @click="handleCopy(row.value)">
+                <Icon icon="ep:copy-document" />
+              </el-button>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <el-button @click="promotionVisible = false">关闭</el-button>
+        <el-button
+          v-if="promotionResult?.promotionContent"
+          @click="handleCopy(promotionResult.promotionContent)"
+        >
+          <Icon icon="ep:copy-document" class="mr-5px" /> 复制推广文案
+        </el-button>
+        <el-button type="primary" :loading="promotionLoading" @click="handleGeneratePromotion">
+          生成链接
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useClipboard } from '@vueuse/core'
 import type { FormInstance, FormRules } from 'element-plus'
+import { CpsAdzoneApi, type CpsAdzoneVO } from '@/api/cps/adzone'
 import {
   ACTIVITY_BILLING_TYPE_OPTIONS,
   ACTIVITY_JUMP_TYPE_OPTIONS,
@@ -306,6 +387,8 @@ import {
   CpsRebateActivityApi,
   type CpsRebateActivityCenterCardVO,
   type CpsRebateActivityCenterRespVO,
+  type CpsRebateActivityPromotionReqVO,
+  type CpsRebateActivityPromotionRespVO,
   type CpsRebateActivitySaveVO,
   type CpsRebateActivitySyncReqVO
 } from '@/api/cps/rebateActivity'
@@ -314,6 +397,7 @@ defineOptions({ name: 'CpsRebateActivitySquare' })
 
 const message = useMessage()
 const router = useRouter()
+const { copy } = useClipboard()
 
 const loading = ref(false)
 const centerData = reactive<CpsRebateActivityCenterRespVO>({
@@ -322,11 +406,11 @@ const centerData = reactive<CpsRebateActivityCenterRespVO>({
   cards: [],
   total: 0,
   pageNo: 1,
-  pageSize: 12
+  pageSize: 10
 })
 const queryParams = reactive({
   pageNo: 1,
-  pageSize: 12,
+  pageSize: 10,
   platformCode: 'hot',
   billingType: 'all',
   keyword: '',
@@ -334,10 +418,9 @@ const queryParams = reactive({
 })
 const syncLoading = ref(false)
 const syncForm = reactive<CpsRebateActivitySyncReqVO>({
-  vendorCode: 'dataoke',
+  vendorCode: 'all',
   platformCode: 'taobao',
-  pageSize: 20,
-  maxPages: 1
+  pageSize: 20
 })
 
 const formRef = ref<FormInstance>()
@@ -346,10 +429,54 @@ const formLoading = ref(false)
 const formType = ref<'create' | 'update'>('create')
 const formTitle = computed(() => (formType.value === 'create' ? '新增活动卡片' : '编辑活动卡片'))
 const formData = reactive<CpsRebateActivitySaveVO>(buildDefaultForm())
+const promotionVisible = ref(false)
+const promotionLoading = ref(false)
+const selectedActivity = ref<CpsRebateActivityCenterCardVO>()
+const promotionResult = ref<CpsRebateActivityPromotionRespVO>()
+const adzoneLoading = ref(false)
+const adzoneOptions = ref<CpsAdzoneVO[]>([])
+const promotionForm = reactive<CpsRebateActivityPromotionReqVO>({
+  activityId: undefined as unknown as number,
+  adzoneId: undefined,
+  channelTag: '',
+  landingBaseUrl: ''
+})
 const sortOptions = [
   { label: '热门', value: 'hot' },
   { label: '最新', value: 'latest' }
 ]
+const platformLabelMap: Record<string, string> = {
+  hot: '热门',
+  meituan: '美团',
+  eleme: '饿了么',
+  douyin: '抖音',
+  local_life: '本地生活',
+  fliggy: '飞猪旅行',
+  pdd: '拼多多',
+  taobao: '淘宝',
+  jd: '京东',
+  vip: '唯品会'
+}
+const supportedPlatformCodes = new Set(Object.keys(platformLabelMap))
+const legacyPlatformCodeMap: Record<string, string[]> = {
+  taobao: ['1', '15'],
+  jd: ['2'],
+  pdd: ['3'],
+  douyin: ['4', '9', '88'],
+  meituan: ['6'],
+  eleme: ['7'],
+  local_life: ['8', '10', '12', '13', '99'],
+  fliggy: ['16']
+}
+const normalizedPlatformCodeMap = Object.entries(legacyPlatformCodeMap).reduce<Record<string, string>>(
+  (map, [platformCode, legacyCodes]) => {
+    legacyCodes.forEach((legacyCode) => {
+      map[legacyCode] = platformCode
+    })
+    return map
+  },
+  {}
+)
 const formRules = reactive<FormRules>({
   activityName: [{ required: true, message: '请输入活动名称', trigger: 'blur' }],
   activityType: [{ required: true, message: '请选择专题类型', trigger: 'change' }],
@@ -376,19 +503,43 @@ const billingSegmentOptions = computed(() => {
 })
 
 const pageCount = computed(() => Math.max(1, Math.ceil(centerData.total / queryParams.pageSize)))
+const visiblePlatformTabs = computed(() =>
+  normalizePlatformTabs(centerData.tabs || [])
+)
+const promotionRows = computed(() => [
+  { label: '活动链接', value: promotionResult.value?.promotionUrl || '' },
+  { label: '推广位', value: promotionResult.value?.adzoneId || '' },
+  { label: '渠道标识', value: promotionResult.value?.channelTag || '' },
+  { label: '推广文案', value: promotionResult.value?.promotionContent || '' }
+])
 
 const getCenter = async () => {
   loading.value = true
   try {
-    const data = await CpsRebateActivityApi.getActivityCenter({ ...queryParams })
+    let data = await CpsRebateActivityApi.getActivityCenter({ ...queryParams })
+    if (shouldFallbackLegacyPlatform(data)) {
+      const legacyData = await getLegacyPlatformCenter()
+      if ((legacyData?.total || 0) > 0 || (legacyData?.cards || []).length > 0) {
+        data = {
+          ...data,
+          cards: legacyData.cards || [],
+          total: legacyData.total || 0,
+          pageNo: legacyData.pageNo || queryParams.pageNo,
+          pageSize: legacyData.pageSize || queryParams.pageSize
+        }
+      }
+    }
     Object.assign(centerData, {
-      tabs: data.tabs || [],
+      tabs: normalizePlatformTabs(data.tabs || []),
       billingTypeOptions: data.billingTypeOptions || [],
-      cards: data.cards || [],
+      cards: normalizeActivityCards(data.cards || []),
       total: data.total || 0,
       pageNo: data.pageNo || queryParams.pageNo,
       pageSize: data.pageSize || queryParams.pageSize
     })
+    if (!supportedPlatformCodes.has(queryParams.platformCode)) {
+      queryParams.platformCode = 'hot'
+    }
   } finally {
     loading.value = false
   }
@@ -447,7 +598,7 @@ const handleSyncActivities = async () => {
   try {
     const currentPlatform =
       queryParams.platformCode === 'hot'
-        ? syncForm.vendorCode === 'dataoke'
+        ? syncForm.vendorCode === 'dataoke' || syncForm.vendorCode === 'all'
           ? 'taobao'
           : undefined
         : queryParams.platformCode
@@ -470,6 +621,140 @@ const handleDelete = async (id: number) => {
   await CpsRebateActivityApi.deleteActivity(id)
   message.success('删除成功')
   await getCenter()
+}
+
+const normalizePlatformCode = (platformCode?: string) => {
+  if (!platformCode) {
+    return platformCode
+  }
+  return normalizedPlatformCodeMap[platformCode] || platformCode
+}
+
+const normalizeActivityCards = (cards: CpsRebateActivityCenterCardVO[]) =>
+  cards.map((card) => {
+    const platformCode = normalizePlatformCode(card.platformCode)
+    return {
+      ...card,
+      platformCode: platformCode || card.platformCode,
+      platformName: platformCode ? platformLabel(platformCode) : card.platformName
+    }
+  })
+
+const normalizePlatformTabs = (tabs: CpsRebateActivityCenterRespVO['tabs']) => {
+  const tabMap = new Map<string, CpsRebateActivityCenterRespVO['tabs'][number]>()
+  for (const tab of tabs) {
+    const platformCode = normalizePlatformCode(tab.platformCode)
+    if (!platformCode || !supportedPlatformCodes.has(platformCode)) {
+      continue
+    }
+    const existing = tabMap.get(platformCode)
+    if (existing) {
+      existing.activityCount = (existing.activityCount || 0) + (tab.activityCount || 0)
+      existing.platformLogo = existing.platformLogo || tab.platformLogo
+    } else {
+      tabMap.set(platformCode, {
+        ...tab,
+        platformCode,
+        platformName: platformLabel(platformCode)
+      })
+    }
+  }
+  return Array.from(tabMap.values())
+}
+
+const openPromotionDialog = async (item: CpsRebateActivityCenterCardVO) => {
+  selectedActivity.value = item
+  promotionResult.value = undefined
+  Object.assign(promotionForm, {
+    activityId: item.id,
+    adzoneId: undefined,
+    channelTag: '',
+    landingBaseUrl: window.location.origin
+  })
+  promotionVisible.value = true
+  await loadAdzoneOptions(item.platformCode)
+}
+
+const handleGeneratePromotion = async () => {
+  if (!promotionForm.activityId) return
+  promotionLoading.value = true
+  try {
+    promotionResult.value = buildLocalPromotionResult()
+    message.success('推广内容已生成')
+  } finally {
+    promotionLoading.value = false
+  }
+}
+
+const shouldFallbackLegacyPlatform = (data: CpsRebateActivityCenterRespVO) => {
+  if (!queryParams.platformCode || queryParams.platformCode === 'hot') {
+    return false
+  }
+  if ((data.total || 0) > 0 || (data.cards || []).length > 0) {
+    return false
+  }
+  const legacyCodes = legacyPlatformCodeMap[queryParams.platformCode] || []
+  return (data.tabs || []).some(
+    (tab) => legacyCodes.includes(tab.platformCode) && (tab.activityCount || 0) > 0
+  )
+}
+
+const getLegacyPlatformCenter = async () => {
+  const legacyCodes = legacyPlatformCodeMap[queryParams.platformCode] || []
+  for (const legacyCode of legacyCodes) {
+    const data = await CpsRebateActivityApi.getActivityCenter({
+      ...queryParams,
+      platformCode: legacyCode
+    })
+    if ((data.total || 0) > 0 || (data.cards || []).length > 0) {
+      return data
+    }
+  }
+  return undefined
+}
+
+const buildLocalPromotionResult = (): CpsRebateActivityPromotionRespVO => {
+  const activity = selectedActivity.value
+  const promotionUrl = buildPromotionUrl(activity)
+  return {
+    linkStatus: 'SUCCESS',
+    linkMessage: '活动推广内容已生成',
+    activityId: promotionForm.activityId,
+    activityName: activity?.activityName || '',
+    platformCode: activity?.platformCode || '',
+    adzoneId: promotionForm.adzoneId || undefined,
+    channelTag: promotionForm.channelTag || undefined,
+    promotionUrl,
+    promotionContent: buildPromotionContent(activity, promotionUrl)
+  }
+}
+
+const buildPromotionUrl = (activity?: CpsRebateActivityCenterCardVO) => {
+  if (activity?.jumpType === 'url' && activity.jumpUrl) {
+    return activity.jumpUrl
+      .replace('{adzoneId}', encodeURIComponent(promotionForm.adzoneId || ''))
+      .replace('{channelTag}', encodeURIComponent(promotionForm.channelTag || ''))
+  }
+  const params = new URLSearchParams({
+    platformCode: activity?.platformCode || '',
+    keyword: activity?.searchKeyword || activity?.activityName || '',
+    activityTag: activity?.tagText || activity?.externalActivityId || activity?.activityName || ''
+  })
+  return `${window.location.origin}/cps/goods/square?${params.toString()}`
+}
+
+const buildPromotionContent = (activity: CpsRebateActivityCenterCardVO | undefined, promotionUrl: string) => {
+  const lines = [
+    activity?.activityName,
+    activity?.shortDesc,
+    activity?.rebateDesc,
+    activity?.jumpType === 'search' && activity.searchKeyword ? `搜索词：${activity.searchKeyword}` : undefined,
+    `活动时间：${activity ? formatWindow(activity) : '长期'}`,
+    promotionUrl,
+    promotionForm.adzoneId ? `推广位：${promotionForm.adzoneId}` : undefined,
+    promotionForm.channelTag ? `渠道：${promotionForm.channelTag}` : undefined
+  ]
+  return lines.filter(Boolean).join('\n')
 }
 
 const handleCardClick = (item: CpsRebateActivityCenterCardVO) => {
@@ -519,19 +804,7 @@ const formatLocalDate = (date: Date) => {
 }
 
 const platformLabel = (platformCode?: string) => {
-  const map: Record<string, string> = {
-    hot: '热门',
-    meituan: '美团',
-    eleme: '饿了么',
-    douyin: '抖音',
-    local_life: '本地生活',
-    fliggy: '飞猪旅行',
-    pdd: '拼多多',
-    taobao: '淘宝',
-    jd: '京东',
-    vip: '唯品会'
-  }
-  return platformCode ? map[platformCode] || platformCode : '-'
+  return platformCode ? platformLabelMap[platformCode] || platformCode : '-'
 }
 
 const platformIcon = (platformCode?: string) => {
@@ -547,6 +820,25 @@ const platformIcon = (platformCode?: string) => {
     jd: 'ep:van'
   }
   return platformCode ? map[platformCode] || 'ep:collection-tag' : 'ep:collection-tag'
+}
+
+const loadAdzoneOptions = async (platformCode: string) => {
+  adzoneLoading.value = true
+  try {
+    adzoneOptions.value = await CpsAdzoneApi.getAdzoneListByPlatform(platformCode)
+  } finally {
+    adzoneLoading.value = false
+  }
+}
+
+const formatAdzoneLabel = (item: CpsAdzoneVO) => {
+  return item.adzoneName ? `${item.adzoneName}（${item.adzoneId}）` : item.adzoneId
+}
+
+const handleCopy = async (text?: string) => {
+  if (!text) return
+  await copy(text)
+  message.success('复制成功')
 }
 
 const platformTheme = (platformCode?: string) => {
@@ -621,9 +913,24 @@ onMounted(getCenter)
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
   gap: 10px;
   margin-top: 8px;
+}
+
+.sync-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sync-label {
+  flex: none;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .hero-action {
@@ -633,10 +940,6 @@ onMounted(getCenter)
 
 .sync-vendor {
   width: 132px;
-}
-
-.sync-pages {
-  width: 118px;
 }
 
 .tab-wrap {
@@ -712,8 +1015,8 @@ onMounted(getCenter)
 
 .activity-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .activity-card {
@@ -896,6 +1199,30 @@ onMounted(getCenter)
   .filter-search {
     min-width: 100%;
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 1360px) {
+  .activity-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1080px) {
+  .activity-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .activity-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .activity-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

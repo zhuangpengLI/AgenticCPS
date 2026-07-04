@@ -17,6 +17,7 @@ import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.client.jutuike.JutuikeUnionVendorClient;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
 import com.qiji.cps.module.cps.dal.mysql.activity.CpsRebateActivityMapper;
+import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import com.qiji.cps.module.cps.enums.CpsVendorCodeEnum;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,8 @@ public class CpsRebateActivitySyncServiceImpl {
 
     private static final String SOURCE_HAODANKU = "haodanku";
     private static final String HDK_EXTERNAL_PREFIX = "hdk:";
+    private static final String VENDOR_ALL = "all";
+    private static final int DEFAULT_MAX_SYNC_PAGES = 100;
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Resource
@@ -57,7 +60,7 @@ public class CpsRebateActivitySyncServiceImpl {
     public CpsRebateActivitySyncResult syncHaodankuActivities(CpsRebateActivitySyncRequest request) {
         CpsRebateActivitySyncResult result = CpsRebateActivitySyncResult.builder().build();
         List<HdkActivityCategory> categories = hdkActivityClient.fetchCategories();
-        int maxPages = request.getMaxPages() == null || request.getMaxPages() <= 0 ? 1 : request.getMaxPages();
+        int maxPages = resolveMaxPages(request);
         for (HdkActivityCategory category : categories) {
             List<HdkSecondaryCategory> secondaryCategories = category.getSecondaryCategories();
             if (secondaryCategories == null || secondaryCategories.isEmpty()) {
@@ -72,6 +75,9 @@ public class CpsRebateActivitySyncServiceImpl {
     }
 
     public CpsRebateActivitySyncResult syncThirdPartyActivities(CpsRebateActivitySyncRequest request) {
+        if (isSyncAllVendors(request)) {
+            return syncAllSupportedActivities(request);
+        }
         CpsRebateActivitySyncResult result = CpsRebateActivitySyncResult.builder().build();
         CpsThirdPartyActivityVendorClient vendorClient = resolveThirdPartyActivityClient(request.getVendorCode());
         if (vendorClient == null) {
@@ -84,7 +90,7 @@ public class CpsRebateActivitySyncServiceImpl {
             result.setSkippedCount(1);
             return result;
         }
-        int maxPages = request.getMaxPages() == null || request.getMaxPages() <= 0 ? 1 : request.getMaxPages();
+        int maxPages = resolveMaxPages(request);
         int pageSize = request.getPageSize() == null || request.getPageSize() <= 0 ? 20 : request.getPageSize();
         for (int pageNo = 1; pageNo <= maxPages; pageNo++) {
             CpsThirdPartyActivityRequest activityRequest = CpsThirdPartyActivityRequest.builder()
@@ -105,13 +111,42 @@ public class CpsRebateActivitySyncServiceImpl {
                 continue;
             }
             if (page == null || page.getList() == null || page.getList().isEmpty()) {
-                continue;
+                break;
             }
             for (CpsThirdPartyActivity item : page.getList()) {
                 upsertThirdPartyActivity(request, result, item);
             }
+            if (isLastThirdPartyPage(page, pageNo, pageSize)) {
+                break;
+            }
         }
         return result;
+    }
+
+    private boolean isSyncAllVendors(CpsRebateActivitySyncRequest request) {
+        return request != null && VENDOR_ALL.equalsIgnoreCase(request.getVendorCode());
+    }
+
+    private CpsRebateActivitySyncResult syncAllSupportedActivities(CpsRebateActivitySyncRequest request) {
+        CpsRebateActivitySyncResult aggregate = CpsRebateActivitySyncResult.builder().build();
+        mergeResult(aggregate, syncThirdPartyActivities(request.toBuilder()
+                .vendorCode(CpsVendorCodeEnum.DATAOKE.getCode())
+                .platformCode(CpsPlatformCodeEnum.TAOBAO.getCode())
+                .build()));
+        mergeResult(aggregate, syncThirdPartyActivities(request.toBuilder()
+                .vendorCode(CpsVendorCodeEnum.HAODANKU.getCode())
+                .platformCode(null)
+                .build()));
+        return aggregate;
+    }
+
+    private void mergeResult(CpsRebateActivitySyncResult aggregate, CpsRebateActivitySyncResult item) {
+        if (item == null) {
+            return;
+        }
+        aggregate.setInsertedCount(aggregate.getInsertedCount() + item.getInsertedCount());
+        aggregate.setUpdatedCount(aggregate.getUpdatedCount() + item.getUpdatedCount());
+        aggregate.setSkippedCount(aggregate.getSkippedCount() + item.getSkippedCount());
     }
 
     private void syncCategoryPage(CpsRebateActivitySyncRequest request, CpsRebateActivitySyncResult result,
@@ -125,12 +160,28 @@ public class CpsRebateActivitySyncServiceImpl {
                     .order(1)
                     .build());
             if (page == null || page.getItems() == null || page.getItems().isEmpty()) {
-                continue;
+                break;
             }
             for (HdkActivityItem item : page.getItems()) {
                 upsertActivity(request, result, category, secondaryCategory, item);
             }
+            if (page.getCountPage() != null && pageNo >= page.getCountPage()) {
+                break;
+            }
         }
+    }
+
+    private int resolveMaxPages(CpsRebateActivitySyncRequest request) {
+        return request.getMaxPages() == null || request.getMaxPages() <= 0
+                ? DEFAULT_MAX_SYNC_PAGES
+                : request.getMaxPages();
+    }
+
+    private boolean isLastThirdPartyPage(CpsThirdPartyPage<CpsThirdPartyActivity> page, int pageNo, int pageSize) {
+        if (page.getTotal() != null && page.getTotal() >= 0) {
+            return (long) pageNo * pageSize >= page.getTotal();
+        }
+        return page.getList().size() < pageSize;
     }
 
     private void upsertActivity(CpsRebateActivitySyncRequest request, CpsRebateActivitySyncResult result,
@@ -186,7 +237,7 @@ public class CpsRebateActivitySyncServiceImpl {
         return CpsRebateActivityDO.builder()
                 .activityName(activityName)
                 .activityType(activityType)
-                .platformCode(firstText(request.getPlatformCode(), item.getPlatform()))
+                .platformCode(HaodankuActivityVendorClient.normalizeActivityPlatformCode(item.getPlatform()))
                 .mainPic(item.getActivityPic())
                 .shortDesc(shortDesc)
                 .rebateDesc(item.getCommissionRate())
