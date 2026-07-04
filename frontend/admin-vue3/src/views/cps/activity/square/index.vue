@@ -508,6 +508,8 @@ const visiblePlatformTabs = computed(() =>
 )
 const promotionRows = computed(() => [
   { label: '活动链接', value: promotionResult.value?.promotionUrl || '' },
+  { label: '淘口令', value: promotionResult.value?.tpwd || '' },
+  { label: '长淘口令', value: promotionResult.value?.longTpwd || '' },
   { label: '推广位', value: promotionResult.value?.adzoneId || '' },
   { label: '渠道标识', value: promotionResult.value?.channelTag || '' },
   { label: '推广文案', value: promotionResult.value?.promotionContent || '' }
@@ -679,11 +681,25 @@ const handleGeneratePromotion = async () => {
   if (!promotionForm.activityId) return
   promotionLoading.value = true
   try {
-    promotionResult.value = buildLocalPromotionResult()
-    message.success('推广内容已生成')
+    try {
+      promotionResult.value = await CpsRebateActivityApi.generatePromotion({ ...promotionForm })
+    } catch (error) {
+      if (!isPromotionApiMissing(error)) {
+        throw error
+      }
+      promotionResult.value = buildLocalPromotionResult()
+    }
+    if (promotionResult.value?.linkStatus === 'SUCCESS') {
+      message.success('推广内容已生成')
+    }
   } finally {
     promotionLoading.value = false
   }
+}
+
+const isPromotionApiMissing = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error || '')
+  return message === 'error' || message.includes('请求地址不存在') || message.includes('404')
 }
 
 const shouldFallbackLegacyPlatform = (data: CpsRebateActivityCenterRespVO) => {
@@ -725,6 +741,8 @@ const buildLocalPromotionResult = (): CpsRebateActivityPromotionRespVO => {
     adzoneId: promotionForm.adzoneId || undefined,
     channelTag: promotionForm.channelTag || undefined,
     promotionUrl,
+    tpwd: undefined,
+    longTpwd: undefined,
     promotionContent: buildPromotionContent(activity, promotionUrl)
   }
 }

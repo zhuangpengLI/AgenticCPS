@@ -161,6 +161,8 @@ export interface CpsRebateActivityPromotionRespVO {
   adzoneId?: string
   channelTag?: string
   promotionUrl?: string
+  tpwd?: string
+  longTpwd?: string
   promotionContent?: string
 }
 

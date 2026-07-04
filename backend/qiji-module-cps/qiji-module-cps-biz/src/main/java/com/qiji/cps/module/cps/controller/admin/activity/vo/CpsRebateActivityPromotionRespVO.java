@@ -33,6 +33,12 @@ public class CpsRebateActivityPromotionRespVO {
     @Schema(description = "可投放活动链接")
     private String promotionUrl;
 
+    @Schema(description = "淘口令")
+    private String tpwd;
+
+    @Schema(description = "长淘口令")
+    private String longTpwd;
+
     @Schema(description = "可复制推广文案")
     private String promotionContent;
 

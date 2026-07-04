@@ -8,6 +8,11 @@ import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPag
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivitySaveReqVO;
+import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
+import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
+import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
+import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.client.haodanku.activity.HaodankuActivityVendorClient;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
@@ -45,6 +50,10 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
     private static final String BILLING_TYPE_CPA = "CPA";
     private static final String BILLING_TYPE_CPS_CPA = "CPS+CPA";
     private static final String SOURCE_CONFIGURED = "configured";
+    private static final String SOURCE_DATAOKE = "dataoke";
+    private static final String VENDOR_DATAOKE = "dataoke";
+    private static final String PLATFORM_TAOBAO = "taobao";
+    private static final String DTK_EXTERNAL_PREFIX = "dtk:";
     private static final String LINK_STATUS_SUCCESS = "SUCCESS";
 
     @Resource
@@ -52,6 +61,12 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
 
     @Resource
     private CpsPlatformService platformService;
+
+    @Resource
+    private CpsPlatformClientFactory platformClientFactory;
+
+    @Resource
+    private DtkActivityVendorClient dtkActivityVendorClient;
 
     @Override
     public Long createActivity(CpsRebateActivitySaveReqVO createReqVO) {
@@ -127,6 +142,10 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         if (activity == null) {
             throw exception(REBATE_ACTIVITY_NOT_EXISTS);
         }
+        CpsRebateActivityPromotionRespVO dtkResult = tryGenerateDtkActivityLink(activity, reqVO);
+        if (dtkResult != null) {
+            return dtkResult;
+        }
         String promotionUrl = buildPromotionUrl(activity, reqVO);
         return CpsRebateActivityPromotionRespVO.builder()
                 .linkStatus(LINK_STATUS_SUCCESS)
@@ -137,8 +156,86 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 .adzoneId(reqVO.getAdzoneId())
                 .channelTag(reqVO.getChannelTag())
                 .promotionUrl(promotionUrl)
-                .promotionContent(buildPromotionContent(activity, reqVO, promotionUrl))
+                .promotionContent(buildPromotionContent(activity, reqVO, promotionUrl, null, reqVO.getAdzoneId()))
                 .build();
+    }
+
+    private CpsRebateActivityPromotionRespVO tryGenerateDtkActivityLink(CpsRebateActivityDO activity,
+                                                                        CpsRebateActivityPromotionReqVO reqVO) {
+        String promotionSceneId = parseDtkPromotionSceneId(activity);
+        if (!StringUtils.hasText(promotionSceneId)) {
+            return null;
+        }
+        CpsVendorConfig config = platformClientFactory.getVendorConfig(VENDOR_DATAOKE, PLATFORM_TAOBAO);
+        if (config == null) {
+            return buildFallbackPromotion(activity, reqVO, reqVO.getAdzoneId(),
+                    "未配置大淘客淘宝供应商，已生成活动落地页推广文案");
+        }
+
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsId(promotionSceneId);
+        String actualAdzoneId = firstText(reqVO.getAdzoneId(), config.getDefaultAdzoneId());
+        request.setAdzoneId(actualAdzoneId);
+        request.setExternalId(reqVO.getChannelTag());
+        CpsPromotionLinkResult linkResult = dtkActivityVendorClient.generateActivityLink(request, config);
+        if (linkResult == null) {
+            return buildFallbackPromotion(activity, reqVO, actualAdzoneId,
+                    "大淘客官方活动转链暂不可用，已生成活动落地页推广文案");
+        }
+        String promotionUrl = firstText(linkResult.getShortUrl(), linkResult.getLongUrl());
+        if (!StringUtils.hasText(promotionUrl)) {
+            return buildFallbackPromotion(activity, reqVO, actualAdzoneId,
+                    "大淘客官方活动转链暂不可用，已生成活动落地页推广文案");
+        }
+
+        String longTpwd = null;
+        if (linkResult.getExtraFields() != null) {
+            Object value = linkResult.getExtraFields().get("longTpwd");
+            longTpwd = value == null ? null : String.valueOf(value);
+        }
+        return CpsRebateActivityPromotionRespVO.builder()
+                .linkStatus(LINK_STATUS_SUCCESS)
+                .linkMessage("大淘客官方活动推广链接已生成")
+                .activityId(activity.getId())
+                .activityName(activity.getActivityName())
+                .platformCode(normalizePlatformCode(activity.getPlatformCode()))
+                .adzoneId(actualAdzoneId)
+                .channelTag(reqVO.getChannelTag())
+                .promotionUrl(promotionUrl)
+                .tpwd(linkResult.getTpwd())
+                .longTpwd(longTpwd)
+                .promotionContent(buildPromotionContent(activity, reqVO, promotionUrl, linkResult.getTpwd(), actualAdzoneId))
+                .build();
+    }
+
+    private CpsRebateActivityPromotionRespVO buildFallbackPromotion(CpsRebateActivityDO activity,
+                                                                    CpsRebateActivityPromotionReqVO reqVO,
+                                                                    String actualAdzoneId,
+                                                                    String message) {
+        String promotionUrl = buildPromotionUrl(activity, reqVO);
+        return CpsRebateActivityPromotionRespVO.builder()
+                .linkStatus(LINK_STATUS_SUCCESS)
+                .linkMessage(message)
+                .activityId(activity.getId())
+                .activityName(activity.getActivityName())
+                .platformCode(normalizePlatformCode(activity.getPlatformCode()))
+                .adzoneId(actualAdzoneId)
+                .channelTag(reqVO.getChannelTag())
+                .promotionUrl(promotionUrl)
+                .promotionContent(buildPromotionContent(activity, reqVO, promotionUrl, null, actualAdzoneId))
+                .build();
+    }
+
+    private String parseDtkPromotionSceneId(CpsRebateActivityDO activity) {
+        if (!SOURCE_DATAOKE.equalsIgnoreCase(firstText(activity.getSourceType(), ""))) {
+            return null;
+        }
+        String externalActivityId = activity.getExternalActivityId();
+        if (!StringUtils.hasText(externalActivityId) || !externalActivityId.startsWith(DTK_EXTERNAL_PREFIX)) {
+            return null;
+        }
+        String promotionSceneId = externalActivityId.substring(DTK_EXTERNAL_PREFIX.length());
+        return StringUtils.hasText(promotionSceneId) ? promotionSceneId : null;
     }
 
     private void validateActivityExists(Long id) {
@@ -166,7 +263,7 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
     }
 
     private String buildPromotionContent(CpsRebateActivityDO activity, CpsRebateActivityPromotionReqVO reqVO,
-                                         String promotionUrl) {
+                                         String promotionUrl, String tpwd, String actualAdzoneId) {
         StringBuilder builder = new StringBuilder();
         appendLine(builder, activity.getActivityName());
         appendLine(builder, activity.getShortDesc());
@@ -176,8 +273,11 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         }
         appendLine(builder, buildActivityWindowText(activity));
         appendLine(builder, promotionUrl);
-        if (StringUtils.hasText(reqVO.getAdzoneId())) {
-            appendLine(builder, "推广位：" + reqVO.getAdzoneId());
+        if (StringUtils.hasText(tpwd)) {
+            appendLine(builder, "淘口令：" + tpwd);
+        }
+        if (StringUtils.hasText(actualAdzoneId)) {
+            appendLine(builder, "推广位：" + actualAdzoneId);
         }
         if (StringUtils.hasText(reqVO.getChannelTag())) {
             appendLine(builder, "渠道：" + reqVO.getChannelTag());

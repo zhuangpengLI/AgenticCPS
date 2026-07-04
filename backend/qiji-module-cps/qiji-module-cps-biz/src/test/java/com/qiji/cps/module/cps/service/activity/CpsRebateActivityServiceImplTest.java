@@ -1,6 +1,11 @@
 package com.qiji.cps.module.cps.service.activity;
 
 import com.qiji.cps.framework.common.exception.ServiceException;
+import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
+import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
+import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
+import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCenterReqVO;
@@ -25,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,6 +46,12 @@ class CpsRebateActivityServiceImplTest {
 
     @Mock
     private CpsPlatformService platformService;
+
+    @Mock
+    private CpsPlatformClientFactory platformClientFactory;
+
+    @Mock
+    private DtkActivityVendorClient dtkActivityVendorClient;
 
     @Test
     @DisplayName("createActivity - 保存运营配置活动卡片")
@@ -253,6 +265,83 @@ class CpsRebateActivityServiceImplTest {
         assertTrue(result.getPromotionContent().contains("飞猪酒店特惠"));
         assertTrue(result.getPromotionContent().contains("酒店红包"));
         assertTrue(result.getPromotionContent().contains(result.getPromotionUrl()));
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 大淘客活动使用官方活动会场转链")
+    void generatePromotionContent_usesDtkOfficialActivityLink() {
+        CpsRebateActivityDO activity = buildActivity(12L, "淘宝官方补贴", "taobao", "CPS", 88, 1);
+        activity.setSourceType("dataoke");
+        activity.setExternalActivityId("dtk:10001");
+        activity.setJumpType("url");
+        activity.setJumpUrl("https://uland.taobao.com/");
+        when(activityMapper.selectById(12L)).thenReturn(activity);
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .vendorCode("dataoke")
+                .platformCode("taobao")
+                .apiBaseUrl("https://openapi.dataoke.com/api")
+                .defaultAdzoneId("mm_default")
+                .build();
+        when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(config);
+        when(dtkActivityVendorClient.generateActivityLink(any(CpsPromotionLinkRequest.class), eq(config)))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .shortUrl("https://s.click.taobao.com/abc")
+                        .longUrl("https://s.click.taobao.com/abc-long")
+                        .tpwd("￥ABC123￥")
+                        .build());
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(12L);
+        reqVO.setAdzoneId("mm_1_2_3");
+        reqVO.setChannelTag("wechat_a");
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
+
+        ArgumentCaptor<CpsPromotionLinkRequest> captor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
+        verify(dtkActivityVendorClient).generateActivityLink(captor.capture(), eq(config));
+        assertEquals("10001", captor.getValue().getGoodsId());
+        assertEquals("mm_1_2_3", captor.getValue().getAdzoneId());
+        assertEquals("wechat_a", captor.getValue().getExternalId());
+        assertEquals("SUCCESS", result.getLinkStatus());
+        assertEquals("https://s.click.taobao.com/abc", result.getPromotionUrl());
+        assertEquals("￥ABC123￥", result.getTpwd());
+        assertTrue(result.getPromotionContent().contains("https://s.click.taobao.com/abc"));
+        assertTrue(result.getPromotionContent().contains("淘口令：￥ABC123￥"));
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 大淘客官方转链超时后回退活动落地链接")
+    void generatePromotionContent_fallsBackToActivityLandingWhenDtkLinkUnavailable() {
+        CpsRebateActivityDO activity = buildActivity(13L, "淘宝官方补贴", "taobao", "CPS", 88, 1);
+        activity.setSourceType("dataoke");
+        activity.setExternalActivityId("dtk:10001");
+        activity.setJumpType("url");
+        activity.setJumpUrl("https://uland.taobao.com/coupon/edetail?activityId=abc");
+        when(activityMapper.selectById(13L)).thenReturn(activity);
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .vendorCode("dataoke")
+                .platformCode("taobao")
+                .apiBaseUrl("https://openapi.dataoke.com/api")
+                .defaultAdzoneId("mm_default")
+                .build();
+        when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(config);
+        when(dtkActivityVendorClient.generateActivityLink(any(CpsPromotionLinkRequest.class), eq(config)))
+                .thenReturn(null);
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(13L);
+        reqVO.setAdzoneId("mm_1_2_3");
+        reqVO.setChannelTag("wechat_a");
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
+
+        assertEquals("SUCCESS", result.getLinkStatus());
+        assertEquals("https://uland.taobao.com/coupon/edetail?activityId=abc", result.getPromotionUrl());
+        assertEquals("mm_1_2_3", result.getAdzoneId());
+        assertEquals("wechat_a", result.getChannelTag());
+        assertTrue(result.getLinkMessage().contains("官方活动转链暂不可用"));
+        assertTrue(result.getPromotionContent().contains("https://uland.taobao.com/coupon/edetail?activityId=abc"));
+        assertTrue(result.getPromotionContent().contains("推广位：mm_1_2_3"));
     }
 
     private CpsRebateActivitySaveReqVO buildReqVO() {

@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qiji.cps.module.cps.client.CpsThirdPartyActivityVendorClient;
+import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
+import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivity;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivityRequest;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyApiCategory;
@@ -41,9 +43,11 @@ import java.util.Random;
 public class DtkActivityVendorClient implements CpsThirdPartyActivityVendorClient {
 
     private static final int HTTP_TIMEOUT = 5000;
+    private static final int ACTIVITY_LINK_HTTP_TIMEOUT = 10000;
     private static final String SOURCE_DATAOKE = "dataoke";
     private static final String EXTERNAL_PREFIX = "dtk:";
-    private static final String ACTIVITY_CATALOGUE_PATH = "/goods/activity/catalogue";
+    private static final String OFFICIAL_ACTIVITY_PATH = "/category/get-tb-topic-list";
+    private static final String ACTIVITY_LINK_PATH = "/tb-service/activity-link";
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -72,9 +76,11 @@ public class DtkActivityVendorClient implements CpsThirdPartyActivityVendorClien
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("pageId", pageNo);
         params.put("pageSize", pageSize);
+        params.put("type", 0);
+        params.put("channelId", "0");
         params.put("version", "v1.2.0");
 
-        JsonNode response = executeRequest(ACTIVITY_CATALOGUE_PATH, params, config);
+        JsonNode response = executeRequest(OFFICIAL_ACTIVITY_PATH, params, config);
         if (response == null || !isSuccessResponse(response)) {
             return CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
                     .category(CpsThirdPartyApiCategory.ACTIVITY_PULL)
@@ -108,6 +114,38 @@ public class DtkActivityVendorClient implements CpsThirdPartyActivityVendorClien
                 .build();
     }
 
+    public CpsPromotionLinkResult generateActivityLink(CpsPromotionLinkRequest request, CpsVendorConfig config) {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("promotionSceneId", request.getGoodsId());
+        params.put("version", "v1.0.0");
+        params.put("pid", firstText(request.getAdzoneId(), config.getDefaultAdzoneId()));
+        params.put("relationId", request.getChannelId());
+        params.put("unionId", request.getExternalId());
+
+        JsonNode response = executeRequest(ACTIVITY_LINK_PATH, params, config);
+        if (response == null || !isSuccessResponse(response)) {
+            return CpsPromotionLinkResult.builder()
+                    .rawPayload(toRawPayload(response))
+                    .build();
+        }
+
+        JsonNode data = response.path("data");
+        String clickUrl = firstText(data, "click_url", "clickUrl");
+        Map<String, Object> extraFields = new LinkedHashMap<>();
+        putIfHasText(extraFields, "longTpwd", firstText(data, "longTpwd", "long_tpwd"));
+        putIfHasText(extraFields, "pageName", firstText(data, "page_name", "pageName"));
+        putIfHasText(extraFields, "terminalType", firstText(data, "terminal_type", "terminalType"));
+        putIfHasText(extraFields, "pageStartTime", firstText(data, "page_start_time", "pageStartTime"));
+        putIfHasText(extraFields, "pageEndTime", firstText(data, "page_end_time", "pageEndTime"));
+        return CpsPromotionLinkResult.builder()
+                .shortUrl(clickUrl)
+                .longUrl(clickUrl)
+                .tpwd(firstText(data, "Tpwd", "tpwd"))
+                .extraFields(extraFields)
+                .rawPayload(toRawPayload(data))
+                .build();
+    }
+
     protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
         Map<String, Object> allParams = new LinkedHashMap<>(params);
         injectSignParams(allParams, config);
@@ -115,7 +153,7 @@ public class DtkActivityVendorClient implements CpsThirdPartyActivityVendorClien
 
         String fullUrl = buildUrlWithParams(config.getApiBaseUrl() + path, allParams);
         try {
-            HttpResponse response = HttpRequest.get(fullUrl).timeout(HTTP_TIMEOUT).execute();
+            HttpResponse response = HttpRequest.get(fullUrl).timeout(resolveTimeout(path)).execute();
             String body = response.body();
             log.debug("[{}:{}] 活动请求: {} 响应: {}", getVendorCode(), getPlatformCode(), path, body);
             return unwrapResponse(objectMapper.readTree(body));
@@ -123,6 +161,10 @@ public class DtkActivityVendorClient implements CpsThirdPartyActivityVendorClien
             log.warn("[{}:{}] 活动请求异常: path={}", getVendorCode(), getPlatformCode(), path, e);
             return null;
         }
+    }
+
+    protected int resolveTimeout(String path) {
+        return ACTIVITY_LINK_PATH.equals(path) ? ACTIVITY_LINK_HTTP_TIMEOUT : HTTP_TIMEOUT;
     }
 
     private void injectSignParams(Map<String, Object> params, CpsVendorConfig config) {
@@ -149,21 +191,29 @@ public class DtkActivityVendorClient implements CpsThirdPartyActivityVendorClien
     }
 
     private CpsThirdPartyActivity parseActivity(JsonNode item, CpsThirdPartyActivityRequest request) {
-        String activityId = firstText(item, "activityId", "activityIdStr", "activity_id", "id");
-        if (!StringUtils.hasText(activityId)) {
+        String promotionSceneId = firstText(item, "promotionSceneId", "promotion_scene_id",
+                "promotionSceneID", "promotion_sceneId");
+        if (!StringUtils.hasText(promotionSceneId)) {
             return null;
         }
-        String activityName = firstText(item, "activityName", "name", "title", "activity_title");
+        String vendorActivityId = firstText(item, "id", "activityId", "activityIdStr", "activity_id");
+        String activityName = firstText(item, "activityName", "activityInfo", "name", "title", "activity_title");
         String activityType = firstText(item, "activityType", "activityLabel", "type", "tag", "label", "categoryName");
         String jumpUrl = firstText(item, "activityUrl", "activityLink", "url", "link", "h5");
+        Map<String, Object> extraFields = toMap(item, "id", "activityId", "activityType", "activityLabel",
+                "goodsCount", "activityGoodsNum");
+        if (StringUtils.hasText(vendorActivityId)) {
+            extraFields.put("legacyExternalActivityId", EXTERNAL_PREFIX + vendorActivityId);
+        }
         return CpsThirdPartyActivity.builder()
                 .sourceType(SOURCE_DATAOKE)
-                .externalActivityId(EXTERNAL_PREFIX + activityId)
+                .externalActivityId(EXTERNAL_PREFIX + promotionSceneId)
                 .activityName(activityName)
                 .activityType(firstText(activityType, "淘宝会场"))
                 .platformCode(firstText(request.getPlatformCode(), CpsPlatformCodeEnum.TAOBAO.getCode()))
-                .mainPic(firstText(item, "activityPic", "activityImg", "activityImage", "mainPic", "banner", "image"))
-                .shortDesc(firstText(item, "activityDesc", "desc", "description", "introduce"))
+                .mainPic(firstText(item, "materialLink", "activityPic", "activityImg", "activityImage",
+                        "mainPic", "banner", "image"))
+                .shortDesc(firstText(item, "activityInfo", "activityDesc", "desc", "description", "introduce"))
                 .rebateDesc(firstText(firstText(item, "rebateDesc", "commissionDesc", "commissionRate"), "以实际转链佣金为准"))
                 .billingType("CPS")
                 .promotionCount(firstInt(item, "goodsCount", "goodsNum", "promotionCount", "activityGoodsNum"))
@@ -173,7 +223,7 @@ public class DtkActivityVendorClient implements CpsThirdPartyActivityVendorClien
                 .searchKeyword(firstText(activityName, request.getKeyword(), activityType))
                 .startTime(parseTime(firstText(item, "startTime", "activityStartTime", "start_time")))
                 .endTime(parseTime(firstText(item, "endTime", "activityEndTime", "end_time")))
-                .extraFields(toMap(item, "activityType", "activityLabel", "goodsCount", "activityGoodsNum"))
+                .extraFields(extraFields)
                 .rawPayload(toRawPayload(item))
                 .build();
     }
@@ -262,6 +312,12 @@ public class DtkActivityVendorClient implements CpsThirdPartyActivityVendorClien
             }
         }
         return map;
+    }
+
+    private void putIfHasText(Map<String, Object> map, String key, String value) {
+        if (StringUtils.hasText(value)) {
+            map.put(key, value);
+        }
     }
 
     private String toRawPayload(JsonNode node) {

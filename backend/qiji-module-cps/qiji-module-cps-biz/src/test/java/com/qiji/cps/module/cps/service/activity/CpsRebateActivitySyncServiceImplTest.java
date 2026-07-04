@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -281,6 +282,59 @@ class CpsRebateActivitySyncServiceImplTest {
         assertEquals("search", saved.getJumpType());
         assertEquals("618", saved.getSearchKeyword());
         assertEquals(LocalDateTime.of(2026, 6, 1, 0, 0), saved.getStartTime());
+    }
+
+    @Test
+    @DisplayName("syncThirdPartyActivities - 大淘客同步用 legacyExternalActivityId 修正旧的错误拓展 ID")
+    void syncThirdPartyActivities_updatesLegacyDataokeActivityId() {
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .vendorCode("dataoke")
+                .platformCode("taobao")
+                .appKey("app-key")
+                .appSecret("app-secret")
+                .apiBaseUrl("https://openapi.dataoke.com/api")
+                .build();
+        CpsRebateActivityDO legacy = CpsRebateActivityDO.builder()
+                .id(88L)
+                .sourceType("dataoke")
+                .externalActivityId("dtk:119")
+                .activityName("旧活动")
+                .build();
+        when(dtkActivityVendorClient.getVendorCode()).thenReturn("dataoke");
+        when(dtkActivityVendorClient.getPlatformCode()).thenReturn("taobao");
+        when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(config);
+        when(dtkActivityVendorClient.fetchActivities(any(CpsThirdPartyActivityRequest.class), eq(config)))
+                .thenReturn(CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                        .list(List.of(CpsThirdPartyActivity.builder()
+                                .sourceType("dataoke")
+                                .externalActivityId("dtk:20150318020023228")
+                                .activityName("淘宝秒杀")
+                                .activityType("淘宝会场")
+                                .platformCode("taobao")
+                                .billingType("CPS")
+                                .extraFields(Map.of("legacyExternalActivityId", "dtk:119"))
+                                .build()))
+                        .build());
+        when(activityMapper.selectBySourceTypeAndExternalActivityId("dataoke", "dtk:20150318020023228"))
+                .thenReturn(null);
+        when(activityMapper.selectBySourceTypeAndExternalActivityId("dataoke", "dtk:119"))
+                .thenReturn(legacy);
+
+        CpsRebateActivitySyncResult result = service.syncThirdPartyActivities(CpsRebateActivitySyncRequest.builder()
+                .vendorCode("dataoke")
+                .platformCode("taobao")
+                .maxPages(1)
+                .pageSize(20)
+                .build());
+
+        ArgumentCaptor<CpsRebateActivityDO> captor = ArgumentCaptor.forClass(CpsRebateActivityDO.class);
+        verify(activityMapper).updateById(captor.capture());
+        verify(activityMapper, never()).insert(any(CpsRebateActivityDO.class));
+        CpsRebateActivityDO updated = captor.getValue();
+        assertEquals(0, result.getInsertedCount());
+        assertEquals(1, result.getUpdatedCount());
+        assertEquals(88L, updated.getId());
+        assertEquals("dtk:20150318020023228", updated.getExternalActivityId());
     }
 
     @Test

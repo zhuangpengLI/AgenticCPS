@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -216,8 +217,7 @@ public class CpsRebateActivitySyncServiceImpl {
             return;
         }
         CpsRebateActivityDO activity = toActivity(request, item);
-        CpsRebateActivityDO existing = activityMapper.selectBySourceTypeAndExternalActivityId(sourceType,
-                externalActivityId);
+        CpsRebateActivityDO existing = findExistingThirdPartyActivity(sourceType, externalActivityId, item);
         if (existing == null) {
             activityMapper.insert(activity);
             result.setInsertedCount(result.getInsertedCount() + 1);
@@ -226,6 +226,29 @@ public class CpsRebateActivitySyncServiceImpl {
         activity.setId(existing.getId());
         activityMapper.updateById(activity);
         result.setUpdatedCount(result.getUpdatedCount() + 1);
+    }
+
+    private CpsRebateActivityDO findExistingThirdPartyActivity(String sourceType, String externalActivityId,
+                                                               CpsThirdPartyActivity item) {
+        CpsRebateActivityDO existing = activityMapper.selectBySourceTypeAndExternalActivityId(sourceType,
+                externalActivityId);
+        if (existing != null) {
+            return existing;
+        }
+        String legacyExternalActivityId = getLegacyExternalActivityId(item);
+        if (!StringUtils.hasText(legacyExternalActivityId) || externalActivityId.equals(legacyExternalActivityId)) {
+            return null;
+        }
+        return activityMapper.selectBySourceTypeAndExternalActivityId(sourceType, legacyExternalActivityId);
+    }
+
+    private String getLegacyExternalActivityId(CpsThirdPartyActivity item) {
+        Map<String, Object> extraFields = item.getExtraFields();
+        if (extraFields == null) {
+            return null;
+        }
+        Object value = extraFields.get("legacyExternalActivityId");
+        return value == null ? null : String.valueOf(value);
     }
 
     private CpsRebateActivityDO toActivity(CpsRebateActivitySyncRequest request, HdkActivityCategory category,
