@@ -65,6 +65,19 @@ export interface CpsSelectionThemePageReqVO {
   status?: SelectionThemeStatus | ''
 }
 
+export interface CpsSelectionThemeStatsVO {
+  total: number
+  draft: number
+  published: number
+  offline: number
+}
+
+export interface CpsSelectionThemeItemPageReqVO {
+  pageNo: number
+  pageSize: number
+  themeId: number
+}
+
 export interface CpsSelectionThemeItemVO {
   id: number
   themeId: number
@@ -176,6 +189,12 @@ export const CpsSelectionThemeApi = {
       params
     }),
 
+  getThemeStats: (params: CpsSelectionThemePageReqVO) =>
+    request.get<CpsSelectionThemeStatsVO>({
+      url: '/cps/selection-theme/stats',
+      params
+    }),
+
   getTheme: (id: number) =>
     request.get<CpsSelectionThemeVO>({ url: '/cps/selection-theme/get', params: { id } }),
 
@@ -187,6 +206,12 @@ export const CpsSelectionThemeApi = {
 
   deleteTheme: (id: number) =>
     request.delete<boolean>({ url: '/cps/selection-theme/delete', params: { id } }),
+
+  deleteThemeList: (ids: number[]) =>
+    request.delete<boolean>({
+      url: '/cps/selection-theme/delete-list',
+      params: { ids: ids.join(',') }
+    }),
 
   publishTheme: (id: number) =>
     request.put<boolean>({ url: '/cps/selection-theme/publish', params: { id } }),
@@ -222,6 +247,12 @@ export const CpsSelectionThemeApi = {
     request.get<CpsSelectionThemeItemVO[]>({
       url: '/cps/selection-theme/items/list',
       params: { themeId }
+    }),
+
+  getItemPage: (params: CpsSelectionThemeItemPageReqVO) =>
+    request.get<{ list: CpsSelectionThemeItemVO[]; total: number }>({
+      url: '/cps/selection-theme/items/page',
+      params
     }),
 
   importItems: (data: {

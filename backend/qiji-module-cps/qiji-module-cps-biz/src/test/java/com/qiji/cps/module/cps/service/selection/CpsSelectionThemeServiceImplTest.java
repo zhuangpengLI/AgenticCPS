@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.service.selection;
 
 import com.qiji.cps.framework.common.exception.ServiceException;
+import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
 import com.qiji.cps.module.cps.client.dataoke.DtkSelectionLibraryClient;
@@ -12,8 +13,11 @@ import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsResp
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemImportReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemSortReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemePageReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSaveReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeStatsRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSyncReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeVendorPullReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
@@ -102,6 +106,56 @@ class CpsSelectionThemeServiceImplTest {
         assertThrows(ServiceException.class, () -> service.createTheme(reqVO));
 
         verify(themeMapper, never()).insert(any(CpsSelectionThemeDO.class));
+    }
+
+    @Test
+    @DisplayName("getThemeStats - 按当前筛选统计全量主题状态")
+    void getThemeStats_countsAllMatchingThemesByStatus() {
+        CpsSelectionThemePageReqVO reqVO = new CpsSelectionThemePageReqVO();
+        reqVO.setVendorCode("dataoke");
+        reqVO.setStatus(CpsSelectionConstants.ThemeStatus.PUBLISHED);
+        when(themeMapper.countByStatus(reqVO, null)).thenReturn(88L);
+        when(themeMapper.countByStatus(reqVO, CpsSelectionConstants.ThemeStatus.PUBLISHED)).thenReturn(88L);
+        when(themeMapper.countByStatus(reqVO, CpsSelectionConstants.ThemeStatus.DRAFT)).thenReturn(0L);
+        when(themeMapper.countByStatus(reqVO, CpsSelectionConstants.ThemeStatus.OFFLINE)).thenReturn(0L);
+
+        CpsSelectionThemeStatsRespVO stats = service.getThemeStats(reqVO);
+
+        assertEquals(88L, stats.getTotal());
+        assertEquals(88L, stats.getPublished());
+        assertEquals(0L, stats.getDraft());
+        assertEquals(0L, stats.getOffline());
+    }
+
+    @Test
+    @DisplayName("deleteThemeList - 批量删除主题时逐个校验存在")
+    void deleteThemeList_validatesAndDeletesEachTheme() {
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder().id(100L).build());
+        when(themeMapper.selectById(200L)).thenReturn(CpsSelectionThemeDO.builder().id(200L).build());
+
+        service.deleteThemeList(List.of(100L, 200L));
+
+        verify(themeMapper).deleteById(100L);
+        verify(themeMapper).deleteById(200L);
+    }
+
+    @Test
+    @DisplayName("getItemPage - 商品快照按主题分页查询")
+    void getItemPage_returnsPagedSnapshotsForTheme() {
+        CpsSelectionThemeItemPageReqVO reqVO = new CpsSelectionThemeItemPageReqVO();
+        reqVO.setThemeId(100L);
+        reqVO.setPageNo(2);
+        reqVO.setPageSize(8);
+        PageResult<CpsSelectionThemeItemDO> pageResult = new PageResult<>(
+                List.of(CpsSelectionThemeItemDO.builder().id(11L).themeId(100L).build()), 21L);
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder().id(100L).build());
+        when(itemMapper.selectPage(reqVO)).thenReturn(pageResult);
+
+        PageResult<CpsSelectionThemeItemDO> result = service.getItemPage(reqVO);
+
+        assertEquals(21L, result.getTotal());
+        assertEquals(11L, result.getList().get(0).getId());
+        verify(itemMapper).selectPage(reqVO);
     }
 
     @Test

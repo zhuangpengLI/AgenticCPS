@@ -16,16 +16,28 @@ import java.util.List;
 public interface CpsSelectionThemeMapper extends BaseMapperX<CpsSelectionThemeDO> {
 
     default PageResult<CpsSelectionThemeDO> selectPage(CpsSelectionThemePageReqVO reqVO) {
-        return selectPage(reqVO, new LambdaQueryWrapperX<CpsSelectionThemeDO>()
+        return selectPage(reqVO, buildPageFilter(reqVO, null)
+                .orderByAsc(CpsSelectionThemeDO::getSort)
+                .orderByDesc(CpsSelectionThemeDO::getId));
+    }
+
+    default Long countByStatus(CpsSelectionThemePageReqVO reqVO, String status) {
+        if (StringUtils.hasText(status) && StringUtils.hasText(reqVO.getStatus())
+                && !status.equals(reqVO.getStatus())) {
+            return 0L;
+        }
+        return selectCount(buildPageFilter(reqVO, status));
+    }
+
+    private LambdaQueryWrapperX<CpsSelectionThemeDO> buildPageFilter(CpsSelectionThemePageReqVO reqVO, String status) {
+        return new LambdaQueryWrapperX<CpsSelectionThemeDO>()
                 .likeIfPresent(CpsSelectionThemeDO::getThemeName, reqVO.getThemeName())
                 .eqIfPresent(CpsSelectionThemeDO::getThemeCode, reqVO.getThemeCode())
                 .eqIfPresent(CpsSelectionThemeDO::getThemeType, reqVO.getThemeType())
                 .eqIfPresent(CpsSelectionThemeDO::getPromotionEvent, reqVO.getPromotionEvent())
-                .eqIfPresent(CpsSelectionThemeDO::getStatus, reqVO.getStatus())
+                .eqIfPresent(CpsSelectionThemeDO::getStatus, StringUtils.hasText(status) ? status : reqVO.getStatus())
                 .likeIfPresent(CpsSelectionThemeDO::getPlatformCodes, reqVO.getPlatformCode())
-                .eqIfPresent(CpsSelectionThemeDO::getVendorCode, reqVO.getVendorCode())
-                .orderByAsc(CpsSelectionThemeDO::getSort)
-                .orderByDesc(CpsSelectionThemeDO::getId));
+                .eqIfPresent(CpsSelectionThemeDO::getVendorCode, reqVO.getVendorCode());
     }
 
     default CpsSelectionThemeDO selectByThemeCode(String themeCode) {

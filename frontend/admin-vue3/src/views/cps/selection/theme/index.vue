@@ -125,7 +125,18 @@
       <ContentWrap class="theme-pane">
         <div class="pane-head">
           <span>主题列表</span>
-          <el-tag effect="plain">{{ themeTotal }}</el-tag>
+          <div class="pane-actions">
+            <el-tag effect="plain">{{ themeTotal }}</el-tag>
+            <el-button
+              size="small"
+              type="danger"
+              plain
+              :disabled="selectedThemeIds.length === 0"
+              @click="handleBatchDeleteThemes"
+            >
+              <Icon icon="ep:delete" class="mr-5px" /> 批量删除
+            </el-button>
+          </div>
         </div>
         <div class="quick-filters">
           <el-check-tag
@@ -139,39 +150,52 @@
         </div>
         <el-empty v-if="!themeLoading && themeList.length === 0" description="暂无主题" />
         <div v-else v-loading="themeLoading" class="theme-list">
-          <button
+          <div
             v-for="item in themeList"
             :key="item.id"
             class="theme-item"
             :class="{ active: isSelectedTheme(item) }"
+            role="button"
+            tabindex="0"
             @click="selectTheme(item)"
+            @keydown.enter="selectTheme(item)"
           >
-            <div class="theme-line">
-              <span>{{ item.themeName }}</span>
-              <el-tag size="small" :type="themeStatusMeta(item.status).type" effect="plain">
-                {{ themeStatusMeta(item.status).label }}
-              </el-tag>
+            <el-checkbox
+              :model-value="isThemeChecked(item)"
+              class="theme-check"
+              @click.stop
+              @change="(checked) => toggleThemeChecked(item, checked)"
+            />
+            <div class="theme-item-body">
+              <div class="theme-line">
+                <span>{{ item.themeName }}</span>
+                <el-tag size="small" :type="themeStatusMeta(item.status).type" effect="plain">
+                  {{ themeStatusMeta(item.status).label }}
+                </el-tag>
+              </div>
+              <div class="theme-meta">
+                {{ item.themeCode }} · {{ item.platformCodes || '全平台' }}
+              </div>
+              <div v-if="item.description" class="theme-desc">{{ item.description }}</div>
+              <div class="theme-tags">
+                <el-tag v-if="item.promotionEvent" size="small" type="danger" effect="plain">
+                  {{ item.promotionEvent }}
+                </el-tag>
+                <el-tag v-if="item.themeType" size="small" effect="plain">
+                  {{ themeTypeLabel(item.themeType) }}
+                </el-tag>
+                <el-tag v-if="item.refreshStatus" size="small" effect="plain">
+                  {{ refreshStatusLabel(item.refreshStatus) }}
+                </el-tag>
+              </div>
             </div>
-            <div class="theme-meta">
-              {{ item.themeCode }} · {{ item.platformCodes || '全平台' }}
-            </div>
-            <div v-if="item.description" class="theme-desc">{{ item.description }}</div>
-            <div class="theme-tags">
-              <el-tag v-if="item.promotionEvent" size="small" type="danger" effect="plain">
-                {{ item.promotionEvent }}
-              </el-tag>
-              <el-tag v-if="item.themeType" size="small" effect="plain">
-                {{ themeTypeLabel(item.themeType) }}
-              </el-tag>
-              <el-tag v-if="item.refreshStatus" size="small" effect="plain">
-                {{ refreshStatusLabel(item.refreshStatus) }}
-              </el-tag>
-            </div>
-          </button>
+          </div>
         </div>
         <Pagination
+          class="theme-pagination"
           v-model:limit="queryParams.pageSize"
           v-model:page="queryParams.pageNo"
+          :pager-count="5"
           :total="themeTotal"
           small
           @pagination="getThemePage"
@@ -243,7 +267,7 @@
           </div>
           <div>
             <span>商品快照</span>
-            <b>{{ itemStats.total }}</b>
+            <b>{{ itemTotal }}</b>
           </div>
           <div>
             <span>推荐均分</span>
@@ -430,6 +454,16 @@
               description="该主题还没有商品快照"
             />
           </div>
+          <Pagination
+            v-if="itemTotal > 0"
+            class="item-pagination"
+            v-model:limit="itemPageParams.pageSize"
+            v-model:page="itemPageParams.pageNo"
+            :pager-count="5"
+            :total="itemTotal"
+            small
+            @pagination="getItems"
+          />
         </template>
       </ContentWrap>
     </div>
@@ -719,8 +753,10 @@ import {
   SELECTION_THEME_ITEM_STATUS_OPTIONS,
   SELECTION_THEME_STATUS_OPTIONS,
   type CpsSelectionThemeImportItemVO,
+  type CpsSelectionThemeItemPageReqVO,
   type CpsSelectionThemeItemVO,
   type CpsSelectionThemeSaveVO,
+  type CpsSelectionThemeStatsVO,
   type CpsSelectionThemeSyncReqVO,
   type CpsSelectionThemeTemplateVO,
   type CpsSelectionThemeVO,
@@ -736,8 +772,10 @@ const itemLoading = ref(false)
 const themeList = ref<CpsSelectionThemeVO[]>([])
 const itemList = ref<CpsSelectionThemeItemVO[]>([])
 const themeTotal = ref(0)
+const itemTotal = ref(0)
 const selectedThemeId = ref<number | string>()
 const selectedThemeSnapshot = ref<CpsSelectionThemeVO>()
+const selectedThemeIds = ref<number[]>([])
 const selectedItemIds = ref<number[]>([])
 const viewMode = ref<'table' | 'card'>('table')
 const viewOptions = [
@@ -754,6 +792,12 @@ const queryParams = reactive({
   platformCode: '',
   vendorCode: '',
   status: '' as SelectionThemeStatus | ''
+})
+
+const itemPageParams = reactive<CpsSelectionThemeItemPageReqVO>({
+  pageNo: 1,
+  pageSize: 12,
+  themeId: 0
 })
 
 const selectedTheme = computed(
@@ -799,13 +843,14 @@ const activeThemeSourceKey = computed(
         item.vendorCode === queryParams.vendorCode && item.themeType === queryParams.themeType
     )?.key || 'all'
 )
-const themeStats = computed(() => ({
-  draft: themeList.value.filter((item) => item.status === 'DRAFT').length,
-  published: themeList.value.filter((item) => item.status === 'PUBLISHED').length,
-  offline: themeList.value.filter((item) => item.status === 'OFFLINE').length
-}))
+const themeStats = reactive<CpsSelectionThemeStatsVO>({
+  total: 0,
+  draft: 0,
+  published: 0,
+  offline: 0
+})
 const itemStats = computed(() => ({
-  total: itemList.value.length,
+  total: itemTotal.value,
   enabled: itemList.value.filter((item) => item.status === 'ENABLED').length,
   disabled: itemList.value.filter((item) => item.status === 'DISABLED').length
 }))
@@ -1088,17 +1133,28 @@ const manualImportJson = ref(defaultManualImportJson())
 const getThemePage = async () => {
   themeLoading.value = true
   try {
-    const data = await CpsSelectionThemeApi.getThemePage(queryParams)
+    const [data, stats] = await Promise.all([
+      CpsSelectionThemeApi.getThemePage(queryParams),
+      CpsSelectionThemeApi.getThemeStats(queryParams)
+    ])
     themeList.value = data.list || []
     themeTotal.value = data.total || 0
+    Object.assign(themeStats, {
+      total: stats.total || 0,
+      draft: stats.draft || 0,
+      published: stats.published || 0,
+      offline: stats.offline || 0
+    })
     if (selectedThemeId.value == null && themeList.value.length > 0) {
       setSelectedTheme(themeList.value[0])
+      itemPageParams.pageNo = 1
       await getItems()
     } else if (
       selectedThemeId.value != null &&
       !themeList.value.some((item) => isSelectedTheme(item))
     ) {
       setSelectedTheme(themeList.value[0])
+      itemPageParams.pageNo = 1
       await getItems()
     } else if (selectedThemeId.value != null) {
       selectedThemeSnapshot.value =
@@ -1113,11 +1169,15 @@ const getItems = async () => {
   const themeId = selectedThemeIdNumber()
   if (themeId == null) {
     itemList.value = []
+    itemTotal.value = 0
     return
   }
+  itemPageParams.themeId = themeId
   itemLoading.value = true
   try {
-    itemList.value = await CpsSelectionThemeApi.listItems(themeId)
+    const data = await CpsSelectionThemeApi.getItemPage(itemPageParams)
+    itemList.value = data.list || []
+    itemTotal.value = data.total || 0
   } finally {
     itemLoading.value = false
   }
@@ -1153,8 +1213,24 @@ const setThemeSource = (key: string) => {
 
 const selectTheme = async (theme: CpsSelectionThemeVO) => {
   setSelectedTheme(theme)
+  itemPageParams.pageNo = 1
   selectedItemIds.value = []
   await getItems()
+}
+
+const isThemeChecked = (theme: Pick<CpsSelectionThemeVO, 'id'>) =>
+  selectedThemeIds.value.includes(Number(theme.id))
+
+const toggleThemeChecked = (theme: Pick<CpsSelectionThemeVO, 'id'>, checked: string | number | boolean) => {
+  const id = Number(theme.id)
+  if (!Number.isFinite(id)) return
+  if (Boolean(checked)) {
+    if (!selectedThemeIds.value.includes(id)) {
+      selectedThemeIds.value = [...selectedThemeIds.value, id]
+    }
+    return
+  }
+  selectedThemeIds.value = selectedThemeIds.value.filter((item) => item !== id)
 }
 
 const openThemeForm = (type: 'create' | 'update') => {
@@ -1219,6 +1295,25 @@ const handleDeleteTheme = async () => {
   await getThemePage()
 }
 
+const handleBatchDeleteThemes = async () => {
+  const ids = [...selectedThemeIds.value]
+  if (ids.length === 0) return
+  await ElMessageBox.confirm(`确认删除选中的 ${ids.length} 个主题？`, '批量删除主题', {
+    type: 'warning'
+  })
+  await CpsSelectionThemeApi.deleteThemeList(ids)
+  ElMessage.success('批量删除成功')
+  const currentThemeId = selectedThemeIdNumber()
+  if (currentThemeId != null && ids.includes(currentThemeId)) {
+    selectedThemeId.value = undefined
+    selectedThemeSnapshot.value = undefined
+    itemList.value = []
+    itemTotal.value = 0
+  }
+  selectedThemeIds.value = []
+  await getThemePage()
+}
+
 const openAiDrawer = () => {
   operateMode.value = 'ai'
   operateObjective.value = selectedTheme.value?.aiPrompt || ''
@@ -1252,6 +1347,7 @@ const submitOperate = async () => {
           })
     ElMessage.success(data.message || '操作完成')
     operateDrawerVisible.value = false
+    itemPageParams.pageNo = 1
     await getThemePage()
     await getItems()
   } finally {
@@ -1302,6 +1398,7 @@ const submitDataokeSync = async () => {
     queryParams.status = 'PUBLISHED'
     queryParams.pageNo = 1
     ElMessage.success(data.message || `${vendorLabel(dataokeSyncForm.vendorCode)}主题同步完成`)
+    itemPageParams.pageNo = 1
     await getThemePage()
     if (selectedThemeId.value != null) {
       await getItems()
@@ -1349,6 +1446,7 @@ const submitManualImport = async () => {
     })
     ElMessage.success('导入成功')
     importVisible.value = false
+    itemPageParams.pageNo = 1
     await getItems()
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '商品 JSON 格式不正确')
@@ -1392,6 +1490,10 @@ const deleteItem = async (row: CpsSelectionThemeItemVO) => {
   await CpsSelectionThemeApi.deleteItem(row.id)
   ElMessage.success('删除成功')
   await getItems()
+  if (itemList.value.length === 0 && itemTotal.value > 0 && itemPageParams.pageNo > 1) {
+    itemPageParams.pageNo -= 1
+    await getItems()
+  }
 }
 
 function buildDefaultThemeForm(): CpsSelectionThemeSaveVO {
@@ -1667,6 +1769,21 @@ onMounted(() => {
   min-width: 0;
 }
 
+.content-pane {
+  overflow-x: auto;
+}
+
+.content-pane :deep(.el-table) {
+  min-width: 980px;
+}
+
+.pane-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .theme-list {
   display: flex;
   flex-direction: column;
@@ -1688,6 +1805,9 @@ onMounted(() => {
 }
 
 .theme-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   width: 100%;
   padding: 12px;
   border: 1px solid var(--el-border-color-light);
@@ -1695,6 +1815,16 @@ onMounted(() => {
   background: var(--el-bg-color);
   text-align: left;
   cursor: pointer;
+}
+
+.theme-check {
+  flex: none;
+  margin-top: 2px;
+}
+
+.theme-item-body {
+  min-width: 0;
+  flex: 1;
 }
 
 .theme-item.active {
@@ -1708,6 +1838,23 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.theme-pagination {
+  width: 100%;
+  overflow-x: auto;
+}
+
+:deep(.theme-pagination.el-pagination) {
+  float: none;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  min-width: max-content;
+}
+
+:deep(.theme-pagination .el-pagination__total),
+:deep(.theme-pagination .el-pagination__sizes) {
+  display: none;
 }
 
 .theme-line span,

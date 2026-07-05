@@ -17,11 +17,13 @@ import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchReq
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeAiRecommendReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemImportReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemSortReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemStatusReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeOperationRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemePageReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSaveReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeStatsRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSyncReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTemplateCreateReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTemplateRespVO;
@@ -125,6 +127,14 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteThemeList(List<Long> ids) {
+        for (Long id : ids) {
+            deleteTheme(id);
+        }
+    }
+
+    @Override
     public void publishTheme(Long id) {
         CpsSelectionThemeDO theme = validateThemeExists(id);
         validateTimeWindow(theme.getStartTime(), theme.getEndTime());
@@ -155,6 +165,16 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
     }
 
     @Override
+    public CpsSelectionThemeStatsRespVO getThemeStats(CpsSelectionThemePageReqVO pageReqVO) {
+        return CpsSelectionThemeStatsRespVO.builder()
+                .total(themeMapper.countByStatus(pageReqVO, null))
+                .draft(themeMapper.countByStatus(pageReqVO, CpsSelectionConstants.ThemeStatus.DRAFT))
+                .published(themeMapper.countByStatus(pageReqVO, CpsSelectionConstants.ThemeStatus.PUBLISHED))
+                .offline(themeMapper.countByStatus(pageReqVO, CpsSelectionConstants.ThemeStatus.OFFLINE))
+                .build();
+    }
+
+    @Override
     public List<CpsSelectionThemeDO> listPublishedThemes(String keyword, String promotionEvent) {
         return themeMapper.selectPublishedList(keyword, promotionEvent);
     }
@@ -163,6 +183,12 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
     public List<CpsSelectionThemeItemDO> listItems(Long themeId) {
         validateThemeExists(themeId);
         return itemMapper.selectListByThemeId(themeId);
+    }
+
+    @Override
+    public PageResult<CpsSelectionThemeItemDO> getItemPage(CpsSelectionThemeItemPageReqVO pageReqVO) {
+        validateThemeExists(pageReqVO.getThemeId());
+        return itemMapper.selectPage(pageReqVO);
     }
 
     @Override

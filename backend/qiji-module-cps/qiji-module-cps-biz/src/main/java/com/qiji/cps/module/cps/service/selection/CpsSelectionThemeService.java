@@ -3,11 +3,13 @@ package com.qiji.cps.module.cps.service.selection;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeAiRecommendReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemImportReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemSortReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemStatusReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeOperationRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemePageReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSaveReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeStatsRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSyncReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTemplateCreateReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTemplateRespVO;
@@ -26,6 +28,8 @@ public interface CpsSelectionThemeService {
 
     void deleteTheme(Long id);
 
+    void deleteThemeList(List<Long> ids);
+
     void publishTheme(Long id);
 
     void offlineTheme(Long id);
@@ -34,9 +38,13 @@ public interface CpsSelectionThemeService {
 
     PageResult<CpsSelectionThemeDO> getThemePage(CpsSelectionThemePageReqVO pageReqVO);
 
+    CpsSelectionThemeStatsRespVO getThemeStats(CpsSelectionThemePageReqVO pageReqVO);
+
     List<CpsSelectionThemeDO> listPublishedThemes(String keyword, String promotionEvent);
 
     List<CpsSelectionThemeItemDO> listItems(Long themeId);
+
+    PageResult<CpsSelectionThemeItemDO> getItemPage(CpsSelectionThemeItemPageReqVO pageReqVO);
 
     List<CpsSelectionThemeItemDO> listEnabledItems(Long themeId);
 

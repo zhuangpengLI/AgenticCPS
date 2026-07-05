@@ -5,6 +5,7 @@ import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeAiRecommendReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemImportReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemSortReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemStatusReqVO;
@@ -12,6 +13,7 @@ import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeOp
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemePageReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSaveReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeStatsRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeSyncReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTemplateCreateReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTemplateRespVO;
@@ -72,6 +74,15 @@ public class CpsSelectionThemeController {
         return success(true);
     }
 
+    @DeleteMapping("/delete-list")
+    @Operation(summary = "批量删除选品主题")
+    @Parameter(name = "ids", description = "主题ID列表", required = true)
+    @PreAuthorize("@ss.hasPermission('cps:selection-theme:delete')")
+    public CommonResult<Boolean> deleteThemeList(@RequestParam("ids") List<Long> ids) {
+        selectionThemeService.deleteThemeList(ids);
+        return success(true);
+    }
+
     @GetMapping("/get")
     @Operation(summary = "获得选品主题")
     @Parameter(name = "id", description = "主题ID", required = true)
@@ -88,6 +99,14 @@ public class CpsSelectionThemeController {
             @Valid CpsSelectionThemePageReqVO pageReqVO) {
         PageResult<CpsSelectionThemeDO> pageResult = selectionThemeService.getThemePage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, CpsSelectionThemeRespVO.class));
+    }
+
+    @GetMapping("/stats")
+    @Operation(summary = "选品主题统计")
+    @PreAuthorize("@ss.hasPermission('cps:selection-theme:query')")
+    public CommonResult<CpsSelectionThemeStatsRespVO> getThemeStats(
+            @Valid CpsSelectionThemePageReqVO pageReqVO) {
+        return success(selectionThemeService.getThemeStats(pageReqVO));
     }
 
     @PutMapping("/publish")
@@ -144,6 +163,15 @@ public class CpsSelectionThemeController {
     public CommonResult<List<CpsSelectionThemeItemRespVO>> listItems(@RequestParam("themeId") Long themeId) {
         List<CpsSelectionThemeItemDO> list = selectionThemeService.listItems(themeId);
         return success(BeanUtils.toBean(list, CpsSelectionThemeItemRespVO.class));
+    }
+
+    @GetMapping("/items/page")
+    @Operation(summary = "分页查询主题商品快照")
+    @PreAuthorize("@ss.hasPermission('cps:selection-theme:query')")
+    public CommonResult<PageResult<CpsSelectionThemeItemRespVO>> getItemPage(
+            @Valid CpsSelectionThemeItemPageReqVO pageReqVO) {
+        PageResult<CpsSelectionThemeItemDO> pageResult = selectionThemeService.getItemPage(pageReqVO);
+        return success(BeanUtils.toBean(pageResult, CpsSelectionThemeItemRespVO.class));
     }
 
     @PostMapping("/items/import")
