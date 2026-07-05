@@ -29,4 +29,11 @@ public class CpsSelectionRule {
     private String sortBy;
     private Integer pullCount;
     private Map<String, BigDecimal> platformWeights;
+    private String vendorThemeSource;
+    private String externalThemeId;
+    private String externalThemeName;
+    private String themeListUrl;
+    private Map<String, Object> themeListParams;
+    private String goodsListUrl;
+    private Map<String, Object> goodsListParams;
 }

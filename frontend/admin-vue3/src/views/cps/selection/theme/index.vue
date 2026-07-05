@@ -587,7 +587,7 @@
       </div>
     </el-dialog>
 
-    <el-dialog v-model="dataokeSyncVisible" :title="vendorSyncTitle" width="520px">
+    <el-dialog v-model="dataokeSyncVisible" :title="vendorSyncTitle" width="760px">
       <el-form label-position="top">
         <el-form-item label="主题来源">
           <el-select v-model="dataokeSyncForm.vendorCode" class="w-full">
@@ -595,6 +595,64 @@
             <el-option label="好单库特色栏目" value="haodanku" />
           </el-select>
         </el-form-item>
+        <template v-if="dataokeSyncForm.vendorCode === 'dataoke'">
+          <el-form-item label="大淘客选品源">
+            <el-select
+              v-model="dataokeSyncForm.sourceCode"
+              class="w-full"
+              @change="applyDataokeSourcePreset"
+            >
+              <el-option
+                v-for="item in dataokeSelectionSourceOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </el-form-item>
+          <el-row :gutter="12">
+            <el-col :xs="24" :sm="8">
+              <el-form-item label="主题名前缀">
+                <el-input v-model="dataokeSyncForm.themeNamePrefix" placeholder="爆品商品" />
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="8">
+              <el-form-item label="主题列表接口">
+                <el-input v-model="dataokeSyncForm.themeListUrl" placeholder="/open-api/scene-pallet" />
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="8">
+              <el-form-item label="商品列表接口">
+                <el-input
+                  v-model="dataokeSyncForm.goodsListUrl"
+                  placeholder="/open-api/goods/scene-pallet"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="12">
+            <el-col :xs="24" :sm="12">
+              <el-form-item label="主题列表参数 JSON">
+                <el-input
+                  v-model="dataokeSyncForm.themeListParamsJson"
+                  type="textarea"
+                  :rows="4"
+                  placeholder='{"version":"v1.0.0"}'
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="12">
+              <el-form-item label="商品列表参数 JSON">
+                <el-input
+                  v-model="dataokeSyncForm.goodsListParamsJson"
+                  type="textarea"
+                  :rows="4"
+                  placeholder='{"version":"v1.0.0","sortType":4}'
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </template>
         <el-form-item label="关键词">
           <el-input v-model="dataokeSyncForm.keyword" :placeholder="vendorSyncKeywordPlaceholder" clearable />
         </el-form-item>
@@ -729,7 +787,7 @@ const quickStatusFilters = [
 ]
 const themeSourceTabs = [
   { key: 'all', label: '全部主题', vendorCode: '', themeType: '' },
-  { key: 'dataoke', label: '大淘客主题', vendorCode: 'dataoke', themeType: '' },
+  { key: 'dataoke', label: '大淘客选品库', vendorCode: 'dataoke', themeType: '' },
   { key: 'haodanku', label: '好单库特色栏目', vendorCode: 'haodanku', themeType: '' },
   { key: 'promotion', label: '大促主题', vendorCode: '', themeType: 'PROMOTION' },
   { key: 'vendor-column', label: '特色栏目', vendorCode: '', themeType: 'VENDOR_COLUMN' }
@@ -811,8 +869,205 @@ const templates = ref<CpsSelectionThemeTemplateVO[]>([])
 
 const dataokeSyncVisible = ref(false)
 const dataokeSyncLoading = ref(false)
+const dataokeSelectionSourceOptions = [
+  {
+    label: '爆品商品列表',
+    value: 'SCENE_PALLET',
+    themeNamePrefix: '爆品商品',
+    themeListUrl: '/open-api/scene-pallet',
+    themeListParamsJson: '{\n  "version": "v1.0.0"\n}',
+    goodsListUrl: '/open-api/goods/scene-pallet',
+    goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "sortType": 4\n}'
+  },
+  {
+    label: '采集群列表 / 采集群商品列表',
+    value: 'COLLECT_GROUP',
+    themeNamePrefix: '采集群',
+    themeListUrl: '/api/collect-group',
+    themeListParamsJson: '{\n  "version": "v1.0.0",\n  "platform": 0,\n  "sort": 0\n}',
+    goodsListUrl: '/api/group-goods',
+    goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "sort": 0\n}'
+  },
+  {
+    label: '热门活动 / 活动商品',
+    value: 'HOT_ACTIVITY',
+    themeNamePrefix: '热门活动',
+    themeListUrl: '/api/goods/activity/catalogue',
+    themeListParamsJson: '{\n  "version": "v1.0.0"\n}',
+    goodsListUrl: '/api/goods/activity/goods-list',
+    goodsListParamsJson: '{\n  "version": "v1.0.0"\n}'
+  },
+  {
+    label: '专辑列表 / 单个专辑商品列表',
+    value: 'ALBUM',
+    themeNamePrefix: '专辑',
+    themeListUrl: '/api/album/album-list',
+    themeListParamsJson: '{\n  "version": "v1.0.0",\n  "albumType": 0,\n  "sort": 0\n}',
+    goodsListUrl: '/api/album/goods-list',
+    goodsListParamsJson: '{\n  "version": "v1.0.0"\n}'
+  },
+  {
+    label: '品牌栏目 / 单个品牌详情',
+    value: 'BRAND_COLUMN',
+    themeNamePrefix: '品牌',
+    themeListUrl: '/api/delanys/brand/get-column-list',
+    themeListParamsJson: '{\n  "version": "v1.0.0",\n  "cid": 1\n}',
+    goodsListUrl: '/api/delanys/brand/get-goods-list',
+    goodsListParamsJson: '{\n  "version": "v1.0.0"\n}'
+  },
+  {
+    label: '细分类目合集 / 细分类目榜',
+    value: 'SUBDIVISION',
+    themeNamePrefix: '细分类目',
+    themeListUrl: '/api/subdivision/get-list',
+    themeListParamsJson: '{\n  "version": "v1.0.0",\n  "cid": 6\n}',
+    goodsListUrl: '/api/subdivision/get-rank-list',
+    goodsListParamsJson: '{\n  "version": "v1.0.0"\n}'
+  },
+  {
+    label: '高佣精选',
+    value: 'HIGH_COMMISSION',
+    themeNamePrefix: '高佣精选',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/api/goods/singlePage/list-height-commission',
+    goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "sort": 3\n}'
+  },
+  {
+    label: '线报',
+    value: 'TIP_OFF',
+    themeNamePrefix: '线报',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/api/dels/spider/list-tip-off',
+    goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "platform": 0\n}'
+  },
+  {
+    label: '热门主播力荐商品',
+    value: 'LIVE_RECOMMEND',
+    themeNamePrefix: '热门主播力荐商品',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/api/live/goods-list',
+    goodsListParamsJson: '{\n  "version": "v1.0.0"\n}'
+  },
+  {
+    label: '折上折',
+    value: 'SUPER_DISCOUNT',
+    themeNamePrefix: '折上折',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/api/goods/super-discount-goods',
+    goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "sort": 0\n}'
+  },
+  {
+    label: '每日低价抢购',
+    value: 'HALF_PRICE_DAY',
+    themeNamePrefix: '每日低价抢购',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/api/goods/get-half-price-day',
+    goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "sessions": 1\n}'
+  },
+  {
+    label: '每日爆品推荐',
+    value: 'DAILY_EXPLOSIVE',
+    themeNamePrefix: '每日爆品推荐',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/api/goods/explosive-goods-list',
+    goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "PriceCid": 1\n}'
+  },
+  {
+    label: '历史新低商品合集',
+    value: 'HISTORY_LOW_PRICE',
+    themeNamePrefix: '历史新低商品合集',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/api/goods/get-history-low-price-list',
+    goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "sort": 0\n}'
+  },
+  {
+    label: '9.9包邮精选',
+    value: 'NINE_NINE',
+    themeNamePrefix: '9.9包邮精选',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/api/goods/nine/op-goods-list',
+    goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "nineCid": -1\n}'
+  },
+  {
+    label: '咚咚抢',
+    value: 'DDQ',
+    themeNamePrefix: '咚咚抢',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/api/category/ddq-goods-list',
+    goodsListParamsJson: '{\n  "version": "v1.0.0"\n}'
+  },
+  {
+    label: '各大榜单',
+    value: 'RANKING',
+    themeNamePrefix: '各大榜单',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/api/goods/get-ranking-list',
+    goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "rankType": 1\n}'
+  },
+  {
+    label: '朋友圈素材',
+    value: 'FRIENDS_CIRCLE',
+    themeNamePrefix: '朋友圈素材',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/api/goods/friends-circle-list',
+    goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "sort": 0\n}'
+  },
+  {
+    label: '特色货盘',
+    value: 'FEATURE_GOODS',
+    themeNamePrefix: '特色货盘',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/open-api/goods/get-feature-goods',
+    goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "pallet_type": 1\n}'
+  },
+  {
+    label: '采集爆品商品列表',
+    value: 'COLLECT_EXPLOSIVE',
+    themeNamePrefix: '采集爆品商品列表',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/open-api/goods/get-explosive-goods',
+    goodsListParamsJson: '{\n  "version": "v1.0.0"\n}'
+  },
+  {
+    label: '爆品雷达',
+    value: 'EXPLOSIVE_RADAR',
+    themeNamePrefix: '爆品雷达',
+    themeListUrl: '',
+    themeListParamsJson: '{}',
+    goodsListUrl: '/open-api/goods/radar',
+    goodsListParamsJson: '{\n  "version": "v1.0.0"\n}'
+  },
+  {
+    label: '自定义接口',
+    value: 'CUSTOM',
+    themeNamePrefix: '自定义货盘',
+    themeListUrl: '/open-api/scene-pallet',
+    themeListParamsJson: '{\n  "version": "v1.0.0"\n}',
+    goodsListUrl: '/open-api/goods/scene-pallet',
+    goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "sortType": 4\n}'
+  }
+] as const
 const dataokeSyncForm = reactive<CpsSelectionThemeSyncReqVO>({
   vendorCode: 'dataoke',
+  sourceCode: 'SCENE_PALLET',
+  themeNamePrefix: '爆品商品',
+  themeListUrl: '/open-api/scene-pallet',
+  themeListParamsJson: '{\n  "version": "v1.0.0"\n}',
+  goodsListUrl: '/open-api/goods/scene-pallet',
+  goodsListParamsJson: '{\n  "version": "v1.0.0",\n  "sortType": 4\n}',
   keyword: '',
   maxPages: 1,
   pageSize: 20,
@@ -823,7 +1078,7 @@ const vendorSyncTitle = computed(() => `商品库同步 - ${vendorLabel(dataokeS
 const vendorSyncKeywordPlaceholder = computed(() =>
   dataokeSyncForm.vendorCode === 'haodanku'
     ? '可选，按好单库特色栏目关键词过滤'
-    : '可选，按大淘客主题关键词过滤'
+    : '可选，按大淘客选品库二级主题名过滤'
 )
 
 const importVisible = ref(false)
@@ -1024,10 +1279,17 @@ const createThemeFromTemplate = async (template: CpsSelectionThemeTemplateVO) =>
 
 const openDataokeSyncDialog = () => {
   dataokeSyncForm.vendorCode = queryParams.vendorCode || dataokeSyncForm.vendorCode || 'dataoke'
+  if (dataokeSyncForm.vendorCode === 'dataoke') {
+    applyDataokeSourcePreset(dataokeSyncForm.sourceCode || 'SCENE_PALLET')
+  }
   dataokeSyncVisible.value = true
 }
 
 const submitDataokeSync = async () => {
+  if (dataokeSyncForm.vendorCode === 'dataoke') {
+    if (!validateJsonObject(dataokeSyncForm.themeListParamsJson, '主题列表参数 JSON')) return
+    if (!validateJsonObject(dataokeSyncForm.goodsListParamsJson, '商品列表参数 JSON')) return
+  }
   dataokeSyncLoading.value = true
   try {
     const data = await CpsSelectionThemeApi.syncVendorThemes({
@@ -1047,6 +1309,18 @@ const submitDataokeSync = async () => {
   } finally {
     dataokeSyncLoading.value = false
   }
+}
+
+const applyDataokeSourcePreset = (sourceCode?: string) => {
+  const preset =
+    dataokeSelectionSourceOptions.find((item) => item.value === sourceCode) ||
+    dataokeSelectionSourceOptions[0]
+  dataokeSyncForm.sourceCode = preset.value
+  dataokeSyncForm.themeNamePrefix = preset.themeNamePrefix
+  dataokeSyncForm.themeListUrl = preset.themeListUrl
+  dataokeSyncForm.themeListParamsJson = preset.themeListParamsJson
+  dataokeSyncForm.goodsListUrl = preset.goodsListUrl
+  dataokeSyncForm.goodsListParamsJson = preset.goodsListParamsJson
 }
 
 const openImportDialog = () => {

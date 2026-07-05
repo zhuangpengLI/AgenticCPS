@@ -128,6 +128,12 @@ export interface CpsSelectionThemeOperationRespVO {
 
 export interface CpsSelectionThemeSyncReqVO {
   vendorCode?: string
+  sourceCode?: string
+  themeNamePrefix?: string
+  themeListUrl?: string
+  themeListParamsJson?: string
+  goodsListUrl?: string
+  goodsListParamsJson?: string
   keyword?: string
   maxPages?: number
   pageSize?: number

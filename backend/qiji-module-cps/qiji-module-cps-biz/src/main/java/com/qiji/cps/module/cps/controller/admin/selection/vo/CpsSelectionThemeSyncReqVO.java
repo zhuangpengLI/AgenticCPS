@@ -12,6 +12,24 @@ public class CpsSelectionThemeSyncReqVO {
     @Schema(description = "供应商编码，默认 dataoke", example = "haodanku")
     private String vendorCode;
 
+    @Schema(description = "选品库同步源编码，默认 SCENE_PALLET", example = "SCENE_PALLET")
+    private String sourceCode;
+
+    @Schema(description = "主题名前缀，最终主题名为 前缀_列表主题名", example = "爆品商品")
+    private String themeNamePrefix;
+
+    @Schema(description = "主题列表请求 URL 或路径", example = "/open-api/scene-pallet")
+    private String themeListUrl;
+
+    @Schema(description = "主题列表请求可选参数 JSON", example = "{\"version\":\"v1.0.0\"}")
+    private String themeListParamsJson;
+
+    @Schema(description = "主题商品列表请求 URL 或路径", example = "/open-api/goods/scene-pallet")
+    private String goodsListUrl;
+
+    @Schema(description = "主题商品列表请求可选参数 JSON", example = "{\"sortType\":4}")
+    private String goodsListParamsJson;
+
     @Schema(description = "关键词过滤")
     private String keyword;
 

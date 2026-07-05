@@ -3,6 +3,7 @@ package com.qiji.cps.module.cps.service.selection;
 import com.qiji.cps.framework.common.exception.ServiceException;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
+import com.qiji.cps.module.cps.client.dataoke.DtkSelectionLibraryClient;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivity;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyPage;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
@@ -61,6 +62,9 @@ class CpsSelectionThemeServiceImplTest {
 
     @Mock
     private DtkActivityVendorClient dtkActivityVendorClient;
+
+    @Mock
+    private DtkSelectionLibraryClient dtkSelectionLibraryClient;
 
     @Mock
     private HaodankuActivityVendorClient haodankuActivityVendorClient;
@@ -234,7 +238,7 @@ class CpsSelectionThemeServiceImplTest {
     }
 
     @Test
-    @DisplayName("syncDataokeThemes - 同步大淘客主题并拉取主题商品快照")
+    @DisplayName("syncDataokeThemes - 按选品库清单同步大淘客主题并通过主题商品接口拉快照")
     void syncDataokeThemes_upsertsThemesAndImportsGoodsSnapshots() {
         when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(CpsVendorConfig.builder()
                 .vendorCode("dataoke")
@@ -243,49 +247,68 @@ class CpsSelectionThemeServiceImplTest {
                 .appSecret("app-secret")
                 .apiBaseUrl("https://openapi.dataoke.com/api")
                 .build());
-        when(dtkActivityVendorClient.fetchActivities(any(), any())).thenReturn(CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+        when(dtkSelectionLibraryClient.fetchThemes(any(), any(), any())).thenReturn(CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
                 .list(List.of(
                         CpsThirdPartyActivity.builder()
                                 .sourceType("dataoke")
-                                .externalActivityId("dtk:618")
-                                .activityName("618爆品会场")
-                                .activityType("618")
+                                .externalActivityId("dtk:scene_pallet:2")
+                                .activityName("爆品商品_淘金币玩法")
+                                .activityType("爆品商品")
                                 .platformCode("taobao")
-                                .mainPic("https://img.example/618.png")
-                                .shortDesc("大淘客618主题")
+                                .mainPic("https://img.example/coin.png")
+                                .shortDesc("大淘客爆品商品清单")
                                 .promotionCount(2)
-                                .tagText("大促")
-                                .searchKeyword("618爆品")
+                                .tagText("爆品商品")
+                                .searchKeyword("淘金币玩法")
+                                .extraFields(java.util.Map.of(
+                                        "vendorThemeSource", "SCENE_PALLET",
+                                        "externalThemeId", "2",
+                                        "externalThemeName", "淘金币玩法",
+                                        "themeListUrl", "/open-api/scene-pallet",
+                                        "themeListParams", java.util.Map.of("version", "v1.0.0"),
+                                        "goodsListUrl", "/open-api/goods/scene-pallet",
+                                        "goodsListParams", java.util.Map.of("version", "v1.0.0", "id", 2, "sortType", 4)
+                                ))
                                 .build(),
                         CpsThirdPartyActivity.builder()
                                 .sourceType("dataoke")
-                                .externalActivityId("dtk:summer")
-                                .activityName("夏季清凉")
-                                .activityType("夏季")
+                                .externalActivityId("dtk:scene_pallet:3")
+                                .activityName("爆品商品_红包签到")
+                                .activityType("爆品商品")
                                 .platformCode("taobao")
-                                .searchKeyword("防晒霜")
+                                .searchKeyword("红包签到")
+                                .extraFields(java.util.Map.of(
+                                        "vendorThemeSource", "SCENE_PALLET",
+                                        "externalThemeId", "3",
+                                        "externalThemeName", "红包签到",
+                                        "themeListUrl", "/open-api/scene-pallet",
+                                        "themeListParams", java.util.Map.of("version", "v1.0.0"),
+                                        "goodsListUrl", "/open-api/goods/scene-pallet",
+                                        "goodsListParams", java.util.Map.of("version", "v1.0.0", "id", 3, "sortType", 4)
+                                ))
                                 .build()))
                 .total(2L)
                 .pageNo(1)
                 .pageSize(20)
                 .build());
-        when(themeMapper.selectByThemeCode("DTK_618")).thenReturn(null);
+        when(themeMapper.selectByThemeCode("DTK_SCENE_PALLET_2")).thenReturn(null);
         when(themeMapper.insert(any(CpsSelectionThemeDO.class))).thenAnswer(invocation -> {
             CpsSelectionThemeDO theme = invocation.getArgument(0);
             theme.setId(100L);
             return 1;
         });
-        when(themeMapper.selectByThemeCode("DTK_SUMMER")).thenReturn(CpsSelectionThemeDO.builder()
+        when(themeMapper.selectByThemeCode("DTK_SCENE_PALLET_3")).thenReturn(CpsSelectionThemeDO.builder()
                 .id(200L)
-                .themeCode("DTK_SUMMER")
+                .themeCode("DTK_SCENE_PALLET_3")
                 .status(CpsSelectionConstants.ThemeStatus.DRAFT)
                 .build());
-        when(goodsSquareService.searchGoods(any())).thenReturn(CpsGoodsSquareSearchRespVO.builder()
-                .list(List.of(buildPulledGoods("taobao", "goods-1")))
-                .total(1L)
-                .build());
+        when(dtkSelectionLibraryClient.fetchThemeGoods(any(), eq(1), any()))
+                .thenReturn(List.of(buildPulledGoods("taobao", "goods-1")))
+                .thenReturn(List.of(buildPulledGoods("taobao", "goods-2")));
 
         CpsSelectionThemeSyncReqVO reqVO = new CpsSelectionThemeSyncReqVO();
+        reqVO.setSourceCode("SCENE_PALLET");
+        reqVO.setThemeNamePrefix("爆品商品");
         reqVO.setSyncGoods(true);
         reqVO.setGoodsPullCount(1);
         var result = service.syncDataokeThemes(reqVO);
@@ -294,11 +317,13 @@ class CpsSelectionThemeServiceImplTest {
         assertEquals(2, result.getImportedCount());
         ArgumentCaptor<CpsSelectionThemeDO> insertCaptor = ArgumentCaptor.forClass(CpsSelectionThemeDO.class);
         verify(themeMapper).insert(insertCaptor.capture());
-        assertEquals("DTK_618", insertCaptor.getValue().getThemeCode());
-        assertEquals("618爆品会场", insertCaptor.getValue().getThemeName());
-        assertEquals("PROMOTION", insertCaptor.getValue().getThemeType());
+        assertEquals("DTK_SCENE_PALLET_2", insertCaptor.getValue().getThemeCode());
+        assertEquals("爆品商品_淘金币玩法", insertCaptor.getValue().getThemeName());
+        assertEquals("VENDOR_COLUMN", insertCaptor.getValue().getThemeType());
         assertEquals("dataoke", insertCaptor.getValue().getVendorCode());
         assertEquals(CpsSelectionConstants.ThemeStatus.PUBLISHED, insertCaptor.getValue().getStatus());
+        assertEquals(true, insertCaptor.getValue().getRuleJson().contains("/open-api/goods/scene-pallet"));
+        assertEquals(true, insertCaptor.getValue().getRuleJson().contains("\"id\":2"));
         ArgumentCaptor<CpsSelectionThemeDO> updateCaptor = ArgumentCaptor.forClass(CpsSelectionThemeDO.class);
         verify(themeMapper, times(5)).updateById(updateCaptor.capture());
         assertEquals(CpsSelectionConstants.ThemeStatus.PUBLISHED, updateCaptor.getAllValues().stream()
@@ -307,6 +332,8 @@ class CpsSelectionThemeServiceImplTest {
                 .orElseThrow()
                 .getStatus());
         verify(itemMapper, times(2)).insert(any(CpsSelectionThemeItemDO.class));
+        verify(dtkActivityVendorClient, never()).fetchActivities(any(), any());
+        verify(goodsSquareService, never()).searchGoods(any());
     }
 
     @Test
