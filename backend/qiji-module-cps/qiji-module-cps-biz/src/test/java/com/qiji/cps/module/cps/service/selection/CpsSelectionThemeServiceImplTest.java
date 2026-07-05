@@ -6,7 +6,9 @@ import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivity;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyPage;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
+import com.qiji.cps.module.cps.client.haodanku.activity.HaodankuActivityVendorClient;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsRespVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemImportReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemSortReqVO;
@@ -30,6 +32,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -58,6 +61,9 @@ class CpsSelectionThemeServiceImplTest {
 
     @Mock
     private DtkActivityVendorClient dtkActivityVendorClient;
+
+    @Mock
+    private HaodankuActivityVendorClient haodankuActivityVendorClient;
 
     @Mock
     private CpsPlatformClientFactory platformClientFactory;
@@ -110,6 +116,30 @@ class CpsSelectionThemeServiceImplTest {
         ArgumentCaptor<CpsSelectionThemeDO> captor = ArgumentCaptor.forClass(CpsSelectionThemeDO.class);
         verify(themeMapper).updateById(captor.capture());
         assertEquals(100L, captor.getValue().getId());
+        assertEquals(CpsSelectionConstants.ThemeStatus.PUBLISHED, captor.getValue().getStatus());
+    }
+
+    @Test
+    @DisplayName("updateTheme - 草稿编辑时可改为已发布并复用发布校验")
+    void updateTheme_allowsDraftToPublishedWhenEnabledItemsExist() {
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder()
+                .id(100L)
+                .themeCode("618_PRE")
+                .status(CpsSelectionConstants.ThemeStatus.DRAFT)
+                .build());
+        when(itemMapper.selectEnabledListByThemeId(100L)).thenReturn(List.of(
+                CpsSelectionThemeItemDO.builder().id(1L).status(CpsSelectionConstants.ItemStatus.ENABLED).build()));
+        CpsSelectionThemeSaveReqVO reqVO = buildThemeReq();
+        reqVO.setId(100L);
+        reqVO.setThemeName("618抢先购精选");
+        reqVO.setStatus(CpsSelectionConstants.ThemeStatus.PUBLISHED);
+
+        service.updateTheme(reqVO);
+
+        ArgumentCaptor<CpsSelectionThemeDO> captor = ArgumentCaptor.forClass(CpsSelectionThemeDO.class);
+        verify(themeMapper).updateById(captor.capture());
+        assertEquals(100L, captor.getValue().getId());
+        assertEquals("618抢先购精选", captor.getValue().getThemeName());
         assertEquals(CpsSelectionConstants.ThemeStatus.PUBLISHED, captor.getValue().getStatus());
     }
 
@@ -168,6 +198,42 @@ class CpsSelectionThemeServiceImplTest {
     }
 
     @Test
+    @DisplayName("vendorPull - 活动标题搜索为空时提炼商品词并放宽条件重试")
+    void vendorPull_fallsBackToDerivedGoodsKeywordsWhenActivityTitleReturnsEmpty() {
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder()
+                .id(100L)
+                .themeCode("DTK_GLOBAL")
+                .themeName("天猫国际自营优惠福利攻略")
+                .platformCodes("taobao")
+                .vendorCode("dataoke")
+                .ruleJson("{\"keywords\":[\"天猫国际自营优惠福利攻略\"],\"pullCount\":2,\"onlyCoupon\":true}")
+                .build());
+        when(goodsSquareService.searchGoods(any()))
+                .thenReturn(CpsGoodsSquareSearchRespVO.builder().list(List.of()).total(0L).build())
+                .thenReturn(CpsGoodsSquareSearchRespVO.builder().list(List.of()).total(0L).build())
+                .thenReturn(CpsGoodsSquareSearchRespVO.builder()
+                        .list(List.of(buildPulledGoods("taobao", "import-goods-1")))
+                        .total(1L)
+                        .build());
+
+        CpsSelectionThemeVendorPullReqVO reqVO = new CpsSelectionThemeVendorPullReqVO();
+        reqVO.setThemeId(100L);
+        var result = service.vendorPull(reqVO);
+
+        assertEquals(1, result.getImportedCount());
+        ArgumentCaptor<CpsGoodsSquareSearchReqVO> searchCaptor =
+                ArgumentCaptor.forClass(CpsGoodsSquareSearchReqVO.class);
+        verify(goodsSquareService, times(3)).searchGoods(searchCaptor.capture());
+        assertEquals("天猫国际自营优惠福利攻略", searchCaptor.getAllValues().get(0).getKeyword());
+        assertEquals(1, searchCaptor.getAllValues().get(0).getHasCoupon());
+        assertEquals("天猫国际", searchCaptor.getAllValues().get(1).getKeyword());
+        assertNull(searchCaptor.getAllValues().get(1).getHasCoupon());
+        assertEquals("进口", searchCaptor.getAllValues().get(2).getKeyword());
+        assertNull(searchCaptor.getAllValues().get(2).getActivityTag());
+        verify(itemMapper).insert(any(CpsSelectionThemeItemDO.class));
+    }
+
+    @Test
     @DisplayName("syncDataokeThemes - 同步大淘客主题并拉取主题商品快照")
     void syncDataokeThemes_upsertsThemesAndImportsGoodsSnapshots() {
         when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(CpsVendorConfig.builder()
@@ -212,6 +278,7 @@ class CpsSelectionThemeServiceImplTest {
         when(themeMapper.selectByThemeCode("DTK_SUMMER")).thenReturn(CpsSelectionThemeDO.builder()
                 .id(200L)
                 .themeCode("DTK_SUMMER")
+                .status(CpsSelectionConstants.ThemeStatus.DRAFT)
                 .build());
         when(goodsSquareService.searchGoods(any())).thenReturn(CpsGoodsSquareSearchRespVO.builder()
                 .list(List.of(buildPulledGoods("taobao", "goods-1")))
@@ -231,9 +298,70 @@ class CpsSelectionThemeServiceImplTest {
         assertEquals("618爆品会场", insertCaptor.getValue().getThemeName());
         assertEquals("PROMOTION", insertCaptor.getValue().getThemeType());
         assertEquals("dataoke", insertCaptor.getValue().getVendorCode());
-        assertEquals(CpsSelectionConstants.ThemeStatus.DRAFT, insertCaptor.getValue().getStatus());
-        verify(themeMapper, times(5)).updateById(any(CpsSelectionThemeDO.class));
+        assertEquals(CpsSelectionConstants.ThemeStatus.PUBLISHED, insertCaptor.getValue().getStatus());
+        ArgumentCaptor<CpsSelectionThemeDO> updateCaptor = ArgumentCaptor.forClass(CpsSelectionThemeDO.class);
+        verify(themeMapper, times(5)).updateById(updateCaptor.capture());
+        assertEquals(CpsSelectionConstants.ThemeStatus.PUBLISHED, updateCaptor.getAllValues().stream()
+                .filter(item -> Long.valueOf(200L).equals(item.getId()))
+                .findFirst()
+                .orElseThrow()
+                .getStatus());
         verify(itemMapper, times(2)).insert(any(CpsSelectionThemeItemDO.class));
+    }
+
+    @Test
+    @DisplayName("syncVendorThemes - 兼容好单库特色栏目主题并按主题规则导入商品")
+    void syncVendorThemes_supportsHaodankuColumnThemes() {
+        when(haodankuActivityVendorClient.fetchActivities(any(), any())).thenReturn(
+                CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                        .list(List.of(
+                                CpsThirdPartyActivity.builder()
+                                        .sourceType("haodanku")
+                                        .externalActivityId("hdk:featured")
+                                        .activityName("精选活动")
+                                        .activityType("特色栏目")
+                                        .platformCode("taobao")
+                                        .mainPic("https://img.example/featured.png")
+                                        .shortDesc("好单库首页人工选品专题页数据")
+                                        .promotionCount(20)
+                                        .tagText("人工选品")
+                                        .searchKeyword("精选活动")
+                                        .build()))
+                        .total(1L)
+                        .pageNo(1)
+                        .pageSize(20)
+                        .build());
+        when(themeMapper.selectByThemeCode("HDK_FEATURED")).thenReturn(null);
+        when(themeMapper.insert(any(CpsSelectionThemeDO.class))).thenAnswer(invocation -> {
+            CpsSelectionThemeDO theme = invocation.getArgument(0);
+            theme.setId(300L);
+            return 1;
+        });
+        when(goodsSquareService.searchGoods(any())).thenReturn(CpsGoodsSquareSearchRespVO.builder()
+                .list(List.of(buildPulledGoods("taobao", "hdk-goods-1")))
+                .total(1L)
+                .build());
+
+        CpsSelectionThemeSyncReqVO reqVO = new CpsSelectionThemeSyncReqVO();
+        reqVO.setVendorCode("haodanku");
+        reqVO.setSyncGoods(true);
+        reqVO.setGoodsPullCount(1);
+        var result = service.syncVendorThemes(reqVO);
+
+        assertEquals(1, result.getPulledCount());
+        assertEquals(1, result.getImportedCount());
+        ArgumentCaptor<CpsSelectionThemeDO> themeCaptor = ArgumentCaptor.forClass(CpsSelectionThemeDO.class);
+        verify(themeMapper).insert(themeCaptor.capture());
+        assertEquals("HDK_FEATURED", themeCaptor.getValue().getThemeCode());
+        assertEquals("haodanku", themeCaptor.getValue().getVendorCode());
+        assertEquals("VENDOR_COLUMN", themeCaptor.getValue().getThemeType());
+        assertEquals(CpsSelectionConstants.ThemeStatus.PUBLISHED, themeCaptor.getValue().getStatus());
+        ArgumentCaptor<CpsGoodsSquareSearchReqVO> searchCaptor =
+                ArgumentCaptor.forClass(CpsGoodsSquareSearchReqVO.class);
+        verify(goodsSquareService).searchGoods(searchCaptor.capture());
+        assertEquals("精选活动", searchCaptor.getValue().getKeyword());
+        assertEquals("taobao", searchCaptor.getValue().getPlatformCode());
+        assertEquals("haodanku", searchCaptor.getValue().getVendorCode());
     }
 
     @Test

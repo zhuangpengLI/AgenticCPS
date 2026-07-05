@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.CpsThirdPartyActivityVendorClient;
 import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivity;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivityRequest;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyPage;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
+import com.qiji.cps.module.cps.client.haodanku.activity.HaodankuActivityVendorClient;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsRespVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
@@ -39,8 +41,10 @@ import org.springframework.validation.annotation.Validated;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.SELECTION_THEME_CODE_DUPLICATE;
@@ -75,6 +79,9 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
     private DtkActivityVendorClient dtkActivityVendorClient;
 
     @Resource
+    private HaodankuActivityVendorClient haodankuActivityVendorClient;
+
+    @Resource
     private CpsPlatformClientFactory platformClientFactory;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -100,6 +107,9 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
         validateTimeWindow(updateReqVO.getStartTime(), updateReqVO.getEndTime());
         CpsSelectionThemeDO updateObj = BeanUtils.toBean(updateReqVO, CpsSelectionThemeDO.class);
         updateObj.setStatus(firstText(updateReqVO.getStatus(), existing.getStatus(), CpsSelectionConstants.ThemeStatus.DRAFT));
+        if (CpsSelectionConstants.ThemeStatus.PUBLISHED.equals(updateObj.getStatus())) {
+            validateThemeHasEnabledItems(updateReqVO.getId());
+        }
         themeMapper.updateById(updateObj);
     }
 
@@ -113,9 +123,7 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
     public void publishTheme(Long id) {
         CpsSelectionThemeDO theme = validateThemeExists(id);
         validateTimeWindow(theme.getStartTime(), theme.getEndTime());
-        if (itemMapper.selectEnabledListByThemeId(id).isEmpty()) {
-            throw exception(SELECTION_THEME_STATUS_INVALID, "发布前至少需要一个启用商品");
-        }
+        validateThemeHasEnabledItems(id);
         themeMapper.updateById(CpsSelectionThemeDO.builder()
                 .id(id)
                 .status(CpsSelectionConstants.ThemeStatus.PUBLISHED)
@@ -239,10 +247,22 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
     @Transactional(rollbackFor = Exception.class)
     public CpsSelectionThemeOperationRespVO syncDataokeThemes(CpsSelectionThemeSyncReqVO reqVO) {
         CpsSelectionThemeSyncReqVO effectiveReqVO = reqVO == null ? new CpsSelectionThemeSyncReqVO() : reqVO;
-        String vendorCode = CpsVendorCodeEnum.DATAOKE.getCode();
-        String platformCode = CpsPlatformCodeEnum.TAOBAO.getCode();
+        effectiveReqVO.setVendorCode(CpsVendorCodeEnum.DATAOKE.getCode());
+        return syncVendorThemes(effectiveReqVO);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CpsSelectionThemeOperationRespVO syncVendorThemes(CpsSelectionThemeSyncReqVO reqVO) {
+        CpsSelectionThemeSyncReqVO effectiveReqVO = reqVO == null ? new CpsSelectionThemeSyncReqVO() : reqVO;
+        String vendorCode = firstText(effectiveReqVO.getVendorCode(), CpsVendorCodeEnum.DATAOKE.getCode());
+        String platformCode = resolveThemeSyncPlatformCode(vendorCode);
+        CpsThirdPartyActivityVendorClient activityClient = resolveThemeActivityClient(vendorCode);
+        if (activityClient == null) {
+            throw exception(SELECTION_THEME_STATUS_INVALID, vendorName(vendorCode) + "选品主题同步暂未接入");
+        }
         CpsVendorConfig config = platformClientFactory.getVendorConfig(vendorCode, platformCode);
-        if (config == null) {
+        if (config == null && CpsVendorCodeEnum.DATAOKE.getCode().equals(vendorCode)) {
             throw exception(SELECTION_THEME_STATUS_INVALID, "大淘客供应商配置不存在");
         }
         int maxPages = clamp(effectiveReqVO.getMaxPages(), DEFAULT_SYNC_MAX_PAGES, 1, 20);
@@ -256,7 +276,7 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
         int skippedThemes = 0;
         int importedGoods = 0;
         for (int pageNo = 1; pageNo <= maxPages; pageNo++) {
-            CpsThirdPartyPage<CpsThirdPartyActivity> page = dtkActivityVendorClient.fetchActivities(
+            CpsThirdPartyPage<CpsThirdPartyActivity> page = activityClient.fetchActivities(
                     CpsThirdPartyActivityRequest.builder()
                             .vendorCode(vendorCode)
                             .platformCode(platformCode)
@@ -269,7 +289,7 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
                 break;
             }
             for (CpsThirdPartyActivity activity : page.getList()) {
-                CpsSelectionThemeDO theme = toDataokeTheme(activity, goodsPullCount);
+                CpsSelectionThemeDO theme = toVendorTheme(activity, vendorCode, goodsPullCount);
                 if (theme == null) {
                     skippedThemes++;
                     continue;
@@ -281,7 +301,7 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
                     insertedThemes++;
                 } else {
                     theme.setId(existing.getId());
-                    theme.setStatus(firstText(existing.getStatus(), CpsSelectionConstants.ThemeStatus.DRAFT));
+                    theme.setStatus(resolveSyncedThemeStatus(existing.getStatus()));
                     themeMapper.updateById(theme);
                     updatedThemes++;
                 }
@@ -299,7 +319,7 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
                 .status(status)
                 .pulledCount(pulledThemes)
                 .importedCount(importedGoods)
-                .message("大淘客主题同步完成，新建 " + insertedThemes + " 个，更新 " + updatedThemes
+                .message(vendorName(vendorCode) + "主题同步完成，新建 " + insertedThemes + " 个，更新 " + updatedThemes
                         + " 个，跳过 " + skippedThemes + " 个，导入商品 " + importedGoods + " 个")
                 .build();
     }
@@ -356,27 +376,28 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
         return createTheme(saveReqVO);
     }
 
-    private CpsSelectionThemeDO toDataokeTheme(CpsThirdPartyActivity activity, int goodsPullCount) {
+    private CpsSelectionThemeDO toVendorTheme(CpsThirdPartyActivity activity, String vendorCode, int goodsPullCount) {
         if (activity == null || !StringUtils.hasText(activity.getExternalActivityId())) {
             return null;
         }
-        String themeCode = toDataokeThemeCode(activity.getExternalActivityId());
+        String themeCode = toVendorThemeCode(vendorCode, activity.getExternalActivityId());
         String themeName = firstText(activity.getActivityName(), activity.getSearchKeyword(), themeCode);
         String platformCode = firstText(activity.getPlatformCode(), CpsPlatformCodeEnum.TAOBAO.getCode());
-        String tagText = firstText(activity.getTagText(), activity.getActivityType(), "大淘客");
+        String displayName = vendorName(vendorCode);
+        String tagText = firstText(activity.getTagText(), activity.getActivityType(), displayName);
         return CpsSelectionThemeDO.builder()
                 .themeCode(themeCode)
                 .themeName(trimToMax(themeName, 128))
-                .themeType("PROMOTION")
+                .themeType(resolveThemeType(vendorCode))
                 .promotionEvent(trimToMax(firstText(activity.getActivityType(), tagText), 64))
                 .platformCodes(platformCode)
-                .vendorCode(CpsVendorCodeEnum.DATAOKE.getCode())
+                .vendorCode(vendorCode)
                 .coverPic(activity.getMainPic())
                 .description(trimToMax(activity.getShortDesc(), 512))
-                .tags(trimToMax("大淘客," + tagText, 255))
-                .ruleJson(buildDataokeRuleJson(activity, platformCode, goodsPullCount))
-                .aiPrompt("围绕大淘客主题“" + themeName + "”筛选高券、高佣、高转化商品，排序以佣金、券额和销量为主。")
-                .status(CpsSelectionConstants.ThemeStatus.DRAFT)
+                .tags(trimToMax(displayName + "," + tagText, 255))
+                .ruleJson(buildVendorRuleJson(activity, vendorCode, platformCode, goodsPullCount))
+                .aiPrompt("围绕" + displayName + "主题“" + themeName + "”筛选高券、高佣、高转化商品，排序以佣金、券额和销量为主。")
+                .status(CpsSelectionConstants.ThemeStatus.PUBLISHED)
                 .startTime(activity.getStartTime())
                 .endTime(activity.getEndTime())
                 .refreshStatus(CpsSelectionConstants.ImportTaskStatus.SUCCESS)
@@ -384,6 +405,13 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
                 .sort(0)
                 .remark(trimToMax(activity.getExternalActivityId(), 500))
                 .build();
+    }
+
+    private String resolveSyncedThemeStatus(String existingStatus) {
+        if (!StringUtils.hasText(existingStatus) || CpsSelectionConstants.ThemeStatus.DRAFT.equals(existingStatus)) {
+            return CpsSelectionConstants.ThemeStatus.PUBLISHED;
+        }
+        return existingStatus;
     }
 
     private int syncThemeGoods(CpsSelectionThemeDO theme, int goodsPullCount) {
@@ -414,20 +442,21 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
         }
     }
 
-    private String buildDataokeRuleJson(CpsThirdPartyActivity activity, String platformCode, int goodsPullCount) {
+    private String buildVendorRuleJson(CpsThirdPartyActivity activity, String vendorCode, String platformCode,
+                                       int goodsPullCount) {
         CpsSelectionRule rule = new CpsSelectionRule();
         rule.setKeywords(List.of(firstText(activity.getSearchKeyword(), activity.getActivityName(), "今日精选")));
         rule.setPlatforms(List.of(platformCode));
-        rule.setVendorCode(CpsVendorCodeEnum.DATAOKE.getCode());
-        rule.setActivityTags(List.of(firstText(activity.getTagText(), activity.getActivityType(), "大淘客")));
+        rule.setVendorCode(vendorCode);
+        rule.setActivityTags(List.of(firstText(activity.getTagText(), activity.getActivityType(), vendorName(vendorCode))));
         rule.setOnlyCoupon(true);
         rule.setSortType(0);
         rule.setPullCount(goodsPullCount);
         return toJson(rule);
     }
 
-    private String toDataokeThemeCode(String externalActivityId) {
-        String normalized = externalActivityId.replaceFirst("(?i)^dtk:", "")
+    private String toVendorThemeCode(String vendorCode, String externalActivityId) {
+        String normalized = externalActivityId.replaceFirst("(?i)^(dtk|hdk):", "")
                 .toUpperCase(Locale.ROOT)
                 .replaceAll("[^A-Z0-9]+", "_")
                 .replaceAll("^_+|_+$", "");
@@ -437,7 +466,44 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
         if (normalized.length() > 60) {
             normalized = normalized.substring(0, 60);
         }
-        return "DTK_" + normalized;
+        return vendorThemeCodePrefix(vendorCode) + "_" + normalized;
+    }
+
+    private CpsThirdPartyActivityVendorClient resolveThemeActivityClient(String vendorCode) {
+        if (CpsVendorCodeEnum.DATAOKE.getCode().equals(vendorCode)) {
+            return dtkActivityVendorClient;
+        }
+        if (CpsVendorCodeEnum.HAODANKU.getCode().equals(vendorCode)) {
+            return haodankuActivityVendorClient;
+        }
+        return null;
+    }
+
+    private String resolveThemeSyncPlatformCode(String vendorCode) {
+        if (CpsVendorCodeEnum.HAODANKU.getCode().equals(vendorCode)) {
+            return "activity";
+        }
+        return CpsPlatformCodeEnum.TAOBAO.getCode();
+    }
+
+    private String resolveThemeType(String vendorCode) {
+        return CpsVendorCodeEnum.HAODANKU.getCode().equals(vendorCode) ? "VENDOR_COLUMN" : "PROMOTION";
+    }
+
+    private String vendorThemeCodePrefix(String vendorCode) {
+        if (CpsVendorCodeEnum.HAODANKU.getCode().equals(vendorCode)) {
+            return "HDK";
+        }
+        if (CpsVendorCodeEnum.DATAOKE.getCode().equals(vendorCode)) {
+            return "DTK";
+        }
+        String normalized = vendorCode.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]+", "_");
+        return StringUtils.hasText(normalized) ? normalized : "VENDOR";
+    }
+
+    private String vendorName(String vendorCode) {
+        CpsVendorCodeEnum vendor = CpsVendorCodeEnum.getByCode(vendorCode);
+        return vendor == null ? vendorCode : vendor.getName();
     }
 
     private boolean isLastPage(CpsThirdPartyPage<?> page, int pageNo, int pageSize) {
@@ -448,9 +514,26 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
     }
 
     private List<CpsGoodsSquareGoodsRespVO> searchCandidates(CpsSelectionThemeDO theme, CpsSelectionRule rule) {
+        int pullCount = clamp(rule.getPullCount(), DEFAULT_PULL_COUNT, 1, MAX_PULL_COUNT);
         CpsGoodsSquareSearchReqVO searchReqVO = buildSearchReqVO(theme, rule);
+        searchReqVO.setPageSize(pullCount);
         CpsGoodsSquareSearchRespVO response = goodsSquareService.searchGoods(searchReqVO);
-        return response == null || response.getList() == null ? List.of() : response.getList();
+        List<CpsGoodsSquareGoodsRespVO> exactMatched = distinctGoods(response, pullCount);
+        if (!exactMatched.isEmpty()) {
+            return exactMatched;
+        }
+
+        List<CpsGoodsSquareGoodsRespVO> fallbackMatched = new ArrayList<>();
+        Set<String> existingKeys = new LinkedHashSet<>();
+        for (String keyword : resolveFallbackKeywords(theme, rule, searchReqVO.getKeyword())) {
+            CpsGoodsSquareSearchReqVO fallbackReqVO = buildRelaxedSearchReqVO(theme, rule, keyword, pullCount);
+            CpsGoodsSquareSearchRespVO fallbackResponse = goodsSquareService.searchGoods(fallbackReqVO);
+            appendDistinctGoods(fallbackMatched, existingKeys, fallbackResponse, pullCount);
+            if (!fallbackMatched.isEmpty()) {
+                break;
+            }
+        }
+        return fallbackMatched;
     }
 
     private CpsGoodsSquareSearchReqVO buildSearchReqVO(CpsSelectionThemeDO theme, CpsSelectionRule rule) {
@@ -474,6 +557,144 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
         reqVO.setActivityTag(rule.getActivityTags() == null || rule.getActivityTags().isEmpty()
                 ? null : rule.getActivityTags().get(0));
         return reqVO;
+    }
+
+    private CpsGoodsSquareSearchReqVO buildRelaxedSearchReqVO(CpsSelectionThemeDO theme, CpsSelectionRule rule,
+                                                              String keyword, int pullCount) {
+        CpsGoodsSquareSearchReqVO reqVO = buildSearchReqVO(theme, rule);
+        reqVO.setKeyword(keyword);
+        reqVO.setPageSize(pullCount);
+        reqVO.setPriceLowerLimit(null);
+        reqVO.setPriceUpperLimit(null);
+        reqVO.setHasCoupon(null);
+        reqVO.setCategoryId(null);
+        reqVO.setChannelCode(null);
+        reqVO.setMinCommissionRate(null);
+        reqVO.setMinCommissionAmount(null);
+        reqVO.setMinMonthSales(null);
+        reqVO.setCouponAmountMin(null);
+        reqVO.setActivityTag(null);
+        return reqVO;
+    }
+
+    private List<CpsGoodsSquareGoodsRespVO> distinctGoods(CpsGoodsSquareSearchRespVO response, int limit) {
+        List<CpsGoodsSquareGoodsRespVO> result = new ArrayList<>();
+        appendDistinctGoods(result, new LinkedHashSet<>(), response, limit);
+        return result;
+    }
+
+    private void appendDistinctGoods(List<CpsGoodsSquareGoodsRespVO> result, Set<String> existingKeys,
+                                     CpsGoodsSquareSearchRespVO response, int limit) {
+        if (response == null || response.getList() == null || response.getList().isEmpty()) {
+            return;
+        }
+        for (CpsGoodsSquareGoodsRespVO goods : response.getList()) {
+            if (goods == null) {
+                continue;
+            }
+            if (existingKeys.add(goodsKey(goods))) {
+                result.add(goods);
+            }
+            if (result.size() >= limit) {
+                return;
+            }
+        }
+    }
+
+    private String goodsKey(CpsGoodsSquareGoodsRespVO goods) {
+        return firstText(goods.getPlatformCode(), "") + "|"
+                + firstText(goods.getVendorCode(), "") + "|"
+                + firstText(goods.getGoodsId(), "") + "|"
+                + firstText(goods.getGoodsSign(), "") + "|"
+                + firstText(goods.getTitle(), "");
+    }
+
+    private List<String> resolveFallbackKeywords(CpsSelectionThemeDO theme, CpsSelectionRule rule, String exactKeyword) {
+        List<String> keywords = new ArrayList<>();
+        collectKeywordCandidates(keywords, exactKeyword);
+        if (rule.getKeywords() != null) {
+            rule.getKeywords().forEach(keyword -> collectKeywordCandidates(keywords, keyword));
+        }
+        collectKeywordCandidates(keywords, theme.getThemeName());
+        collectKeywordCandidates(keywords, theme.getPromotionEvent());
+        collectKeywordCandidates(keywords, theme.getTags());
+        if (rule.getActivityTags() != null) {
+            rule.getActivityTags().forEach(keyword -> collectKeywordCandidates(keywords, keyword));
+        }
+        addUniqueKeyword(keywords, "领券");
+        addUniqueKeyword(keywords, "热卖");
+        keywords.removeIf(keyword -> keyword.equals(exactKeyword));
+        return keywords;
+    }
+
+    private void collectKeywordCandidates(List<String> keywords, String rawKeyword) {
+        if (!StringUtils.hasText(rawKeyword)) {
+            return;
+        }
+        for (String segment : rawKeyword.split("[,，、/|\\s]+")) {
+            addExpandedKeyword(keywords, segment);
+        }
+    }
+
+    private void addExpandedKeyword(List<String> keywords, String rawKeyword) {
+        if (!StringUtils.hasText(rawKeyword)) {
+            return;
+        }
+        String keyword = rawKeyword.trim();
+        addUniqueKeyword(keywords, keyword);
+        String normalized = keyword
+                .replace("自营", "")
+                .replace("优惠", "")
+                .replace("福利", "")
+                .replace("攻略", "")
+                .replace("会场", "")
+                .replace("专场", "")
+                .replace("主题", "")
+                .replace("活动", "")
+                .replace("中心", "")
+                .replace("首页", "")
+                .replace("频道", "")
+                .replace("入口", "")
+                .replace("商品库", "")
+                .replace("商品列表", "")
+                .trim();
+        addUniqueKeyword(keywords, normalized);
+        if (keyword.contains("天猫国际") || keyword.contains("进口") || keyword.toLowerCase(Locale.ROOT).contains("global")) {
+            addUniqueKeyword(keywords, "进口");
+        }
+        if (keyword.contains("领券") || keyword.contains("优惠券") || keyword.contains("满减")) {
+            addUniqueKeyword(keywords, "领券");
+        }
+        if (keyword.contains("品牌")) {
+            addUniqueKeyword(keywords, "品牌");
+        }
+        if (keyword.contains("热") || keyword.contains("爆")) {
+            addUniqueKeyword(keywords, "热卖");
+        }
+        if (keyword.contains("天猫超市") || keyword.contains("超市")) {
+            addUniqueKeyword(keywords, "天猫超市");
+        }
+        if (keyword.contains("淘金币")) {
+            addUniqueKeyword(keywords, "淘金币");
+        }
+        if (keyword.contains("美妆")) {
+            addUniqueKeyword(keywords, "美妆");
+        }
+        if (keyword.contains("家居")) {
+            addUniqueKeyword(keywords, "家居");
+        }
+        if (keyword.contains("母婴")) {
+            addUniqueKeyword(keywords, "母婴");
+        }
+        if (keyword.contains("零食") || keyword.contains("美食") || keyword.contains("食品")) {
+            addUniqueKeyword(keywords, "零食");
+        }
+    }
+
+    private void addUniqueKeyword(List<String> keywords, String keyword) {
+        if (StringUtils.hasText(keyword) && !keywords.contains(keyword)) {
+            keywords.add(keyword);
+        }
     }
 
     private int importRecommendedGoods(CpsSelectionThemeDO theme, List<CpsGoodsSquareGoodsRespVO> goodsList,
@@ -552,6 +773,12 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
     private void validateTimeWindow(LocalDateTime startTime, LocalDateTime endTime) {
         if (startTime != null && endTime != null && startTime.isAfter(endTime)) {
             throw exception(SELECTION_THEME_STATUS_INVALID, "上线时间不能晚于下线时间");
+        }
+    }
+
+    private void validateThemeHasEnabledItems(Long themeId) {
+        if (itemMapper.selectEnabledListByThemeId(themeId).isEmpty()) {
+            throw exception(SELECTION_THEME_STATUS_INVALID, "发布前至少需要一个启用商品");
         }
     }
 

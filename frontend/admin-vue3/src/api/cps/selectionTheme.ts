@@ -127,6 +127,7 @@ export interface CpsSelectionThemeOperationRespVO {
 }
 
 export interface CpsSelectionThemeSyncReqVO {
+  vendorCode?: string
   keyword?: string
   maxPages?: number
   pageSize?: number
@@ -202,6 +203,12 @@ export const CpsSelectionThemeApi = {
   syncDataokeThemes: (data: CpsSelectionThemeSyncReqVO) =>
     request.post<CpsSelectionThemeOperationRespVO>({
       url: '/cps/selection-theme/dataoke-theme-sync',
+      data
+    }),
+
+  syncVendorThemes: (data: CpsSelectionThemeSyncReqVO) =>
+    request.post<CpsSelectionThemeOperationRespVO>({
+      url: '/cps/selection-theme/vendor-theme-sync',
       data
     }),
 

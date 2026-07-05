@@ -9,6 +9,9 @@ import lombok.Data;
 @Data
 public class CpsSelectionThemeSyncReqVO {
 
+    @Schema(description = "供应商编码，默认 dataoke", example = "haodanku")
+    private String vendorCode;
+
     @Schema(description = "关键词过滤")
     private String keyword;
 

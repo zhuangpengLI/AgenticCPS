@@ -130,6 +130,14 @@ public class CpsSelectionThemeController {
         return success(selectionThemeService.syncDataokeThemes(reqVO));
     }
 
+    @PostMapping("/vendor-theme-sync")
+    @Operation(summary = "同步供应商选品主题和主题商品")
+    @PreAuthorize("@ss.hasPermission('cps:selection-theme:update')")
+    public CommonResult<CpsSelectionThemeOperationRespVO> syncVendorThemes(
+            @Valid @RequestBody CpsSelectionThemeSyncReqVO reqVO) {
+        return success(selectionThemeService.syncVendorThemes(reqVO));
+    }
+
     @GetMapping("/items/list")
     @Operation(summary = "查询主题商品快照")
     @PreAuthorize("@ss.hasPermission('cps:selection-theme:query')")

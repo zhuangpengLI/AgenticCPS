@@ -10,7 +10,7 @@
         </div>
         <div class="toolbar-actions">
           <el-button :loading="dataokeSyncLoading" @click="openDataokeSyncDialog">
-            <Icon icon="ep:connection" class="mr-5px" /> 大淘客同步
+            <Icon icon="ep:connection" class="mr-5px" /> 商品库同步
           </el-button>
           <el-button @click="loadTemplates">
             <Icon icon="ep:present" class="mr-5px" /> 大促模板
@@ -85,6 +85,18 @@
         </el-row>
       </el-form>
 
+      <div class="theme-source-tabs">
+        <span>主题入口</span>
+        <el-check-tag
+          v-for="item in themeSourceTabs"
+          :key="item.key"
+          :checked="activeThemeSourceKey === item.key"
+          @change="setThemeSource(item.key)"
+        >
+          {{ item.label }}
+        </el-check-tag>
+      </div>
+
       <div class="stat-strip">
         <div class="stat-card">
           <span>主题总数</span>
@@ -131,7 +143,7 @@
             v-for="item in themeList"
             :key="item.id"
             class="theme-item"
-            :class="{ active: selectedThemeId === item.id }"
+            :class="{ active: isSelectedTheme(item) }"
             @click="selectTheme(item)"
           >
             <div class="theme-line">
@@ -206,7 +218,7 @@
               <Icon icon="ep:refresh" />
             </el-button>
             <el-button :disabled="!selectedTheme" @click="openThemeForm('update')">
-              <Icon icon="ep:edit" />
+              <Icon icon="ep:edit" class="mr-5px" /> 编辑主题
             </el-button>
             <el-button type="danger" plain :disabled="!selectedTheme" @click="handleDeleteTheme">
               <Icon icon="ep:delete" />
@@ -575,10 +587,16 @@
       </div>
     </el-dialog>
 
-    <el-dialog v-model="dataokeSyncVisible" title="同步大淘客主题" width="520px">
+    <el-dialog v-model="dataokeSyncVisible" :title="vendorSyncTitle" width="520px">
       <el-form label-position="top">
+        <el-form-item label="主题来源">
+          <el-select v-model="dataokeSyncForm.vendorCode" class="w-full">
+            <el-option label="大淘客选品库" value="dataoke" />
+            <el-option label="好单库特色栏目" value="haodanku" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="关键词">
-          <el-input v-model="dataokeSyncForm.keyword" placeholder="可选，按大淘客主题关键词过滤" clearable />
+          <el-input v-model="dataokeSyncForm.keyword" :placeholder="vendorSyncKeywordPlaceholder" clearable />
         </el-form-item>
         <el-row :gutter="12">
           <el-col :xs="24" :sm="12">
@@ -660,7 +678,8 @@ const itemLoading = ref(false)
 const themeList = ref<CpsSelectionThemeVO[]>([])
 const itemList = ref<CpsSelectionThemeItemVO[]>([])
 const themeTotal = ref(0)
-const selectedThemeId = ref<number>()
+const selectedThemeId = ref<number | string>()
+const selectedThemeSnapshot = ref<CpsSelectionThemeVO>()
 const selectedItemIds = ref<number[]>([])
 const viewMode = ref<'table' | 'card'>('table')
 const viewOptions = [
@@ -672,20 +691,56 @@ const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
   themeName: '',
+  themeType: '',
   promotionEvent: '',
   platformCode: '',
+  vendorCode: '',
   status: '' as SelectionThemeStatus | ''
 })
 
-const selectedTheme = computed(() =>
-  themeList.value.find((item) => item.id === selectedThemeId.value)
+const selectedTheme = computed(
+  () => themeList.value.find((item) => isSelectedTheme(item)) || selectedThemeSnapshot.value
 )
+
+const themeIdKey = (id?: number | string) => (id == null ? '' : String(id))
+
+const setSelectedThemeId = (id?: number | string) => {
+  selectedThemeId.value = id
+}
+
+const setSelectedTheme = (theme?: CpsSelectionThemeVO) => {
+  selectedThemeSnapshot.value = theme
+  setSelectedThemeId(theme?.id)
+}
+
+const isSelectedTheme = (theme: Pick<CpsSelectionThemeVO, 'id'>) =>
+  themeIdKey(theme.id) === themeIdKey(selectedThemeId.value)
+
+const selectedThemeIdNumber = () => {
+  if (selectedThemeId.value == null) return undefined
+  const value = Number(selectedThemeId.value)
+  return Number.isFinite(value) ? value : undefined
+}
 const quickStatusFilters = [
   { label: '全部', value: '' as SelectionThemeStatus | '' },
   { label: '草稿', value: 'DRAFT' as SelectionThemeStatus },
   { label: '已发布', value: 'PUBLISHED' as SelectionThemeStatus },
   { label: '已下线', value: 'OFFLINE' as SelectionThemeStatus }
 ]
+const themeSourceTabs = [
+  { key: 'all', label: '全部主题', vendorCode: '', themeType: '' },
+  { key: 'dataoke', label: '大淘客主题', vendorCode: 'dataoke', themeType: '' },
+  { key: 'haodanku', label: '好单库特色栏目', vendorCode: 'haodanku', themeType: '' },
+  { key: 'promotion', label: '大促主题', vendorCode: '', themeType: 'PROMOTION' },
+  { key: 'vendor-column', label: '特色栏目', vendorCode: '', themeType: 'VENDOR_COLUMN' }
+]
+const activeThemeSourceKey = computed(
+  () =>
+    themeSourceTabs.find(
+      (item) =>
+        item.vendorCode === queryParams.vendorCode && item.themeType === queryParams.themeType
+    )?.key || 'all'
+)
 const themeStats = computed(() => ({
   draft: themeList.value.filter((item) => item.status === 'DRAFT').length,
   published: themeList.value.filter((item) => item.status === 'PUBLISHED').length,
@@ -757,12 +812,19 @@ const templates = ref<CpsSelectionThemeTemplateVO[]>([])
 const dataokeSyncVisible = ref(false)
 const dataokeSyncLoading = ref(false)
 const dataokeSyncForm = reactive<CpsSelectionThemeSyncReqVO>({
+  vendorCode: 'dataoke',
   keyword: '',
   maxPages: 1,
   pageSize: 20,
   syncGoods: true,
   goodsPullCount: 20
 })
+const vendorSyncTitle = computed(() => `商品库同步 - ${vendorLabel(dataokeSyncForm.vendorCode)}`)
+const vendorSyncKeywordPlaceholder = computed(() =>
+  dataokeSyncForm.vendorCode === 'haodanku'
+    ? '可选，按好单库特色栏目关键词过滤'
+    : '可选，按大淘客主题关键词过滤'
+)
 
 const importVisible = ref(false)
 const manualImportLoading = ref(false)
@@ -774,15 +836,18 @@ const getThemePage = async () => {
     const data = await CpsSelectionThemeApi.getThemePage(queryParams)
     themeList.value = data.list || []
     themeTotal.value = data.total || 0
-    if (!selectedThemeId.value && themeList.value.length > 0) {
-      selectedThemeId.value = themeList.value[0].id
+    if (selectedThemeId.value == null && themeList.value.length > 0) {
+      setSelectedTheme(themeList.value[0])
       await getItems()
     } else if (
-      selectedThemeId.value &&
-      !themeList.value.some((item) => item.id === selectedThemeId.value)
+      selectedThemeId.value != null &&
+      !themeList.value.some((item) => isSelectedTheme(item))
     ) {
-      selectedThemeId.value = themeList.value[0]?.id
+      setSelectedTheme(themeList.value[0])
       await getItems()
+    } else if (selectedThemeId.value != null) {
+      selectedThemeSnapshot.value =
+        themeList.value.find((item) => isSelectedTheme(item)) || selectedThemeSnapshot.value
     }
   } finally {
     themeLoading.value = false
@@ -790,13 +855,14 @@ const getThemePage = async () => {
 }
 
 const getItems = async () => {
-  if (!selectedThemeId.value) {
+  const themeId = selectedThemeIdNumber()
+  if (themeId == null) {
     itemList.value = []
     return
   }
   itemLoading.value = true
   try {
-    itemList.value = await CpsSelectionThemeApi.listItems(selectedThemeId.value)
+    itemList.value = await CpsSelectionThemeApi.listItems(themeId)
   } finally {
     itemLoading.value = false
   }
@@ -810,8 +876,10 @@ const handleQuery = () => {
 const resetQuery = () => {
   queryParams.pageNo = 1
   queryParams.themeName = ''
+  queryParams.themeType = ''
   queryParams.promotionEvent = ''
   queryParams.platformCode = ''
+  queryParams.vendorCode = ''
   queryParams.status = ''
   getThemePage()
 }
@@ -821,8 +889,15 @@ const setQuickStatus = (status: SelectionThemeStatus | '') => {
   handleQuery()
 }
 
+const setThemeSource = (key: string) => {
+  const tab = themeSourceTabs.find((item) => item.key === key) || themeSourceTabs[0]
+  queryParams.vendorCode = tab.vendorCode
+  queryParams.themeType = tab.themeType
+  handleQuery()
+}
+
 const selectTheme = async (theme: CpsSelectionThemeVO) => {
-  selectedThemeId.value = theme.id
+  setSelectedTheme(theme)
   selectedItemIds.value = []
   await getItems()
 }
@@ -843,7 +918,7 @@ const submitThemeForm = async () => {
   themeFormLoading.value = true
   try {
     if (themeFormType.value === 'create') {
-      selectedThemeId.value = await CpsSelectionThemeApi.createTheme(themeForm)
+      setSelectedThemeId(await CpsSelectionThemeApi.createTheme(themeForm))
     } else {
       await CpsSelectionThemeApi.updateTheme(themeForm)
     }
@@ -856,29 +931,35 @@ const submitThemeForm = async () => {
 }
 
 const handlePublish = async () => {
-  if (!selectedThemeId.value) return
+  const themeId = selectedThemeIdNumber()
+  if (themeId == null) return
   await ElMessageBox.confirm('发布后 MCP 可查询该主题，确认发布？', '发布主题', { type: 'warning' })
-  await CpsSelectionThemeApi.publishTheme(selectedThemeId.value)
+  await CpsSelectionThemeApi.publishTheme(themeId)
+  queryParams.status = 'PUBLISHED'
+  queryParams.pageNo = 1
   ElMessage.success('发布成功')
   await getThemePage()
 }
 
 const handleOffline = async () => {
-  if (!selectedThemeId.value) return
+  const themeId = selectedThemeIdNumber()
+  if (themeId == null) return
   await ElMessageBox.confirm('下线后 MCP 不再返回该主题，确认下线？', '下线主题', {
     type: 'warning'
   })
-  await CpsSelectionThemeApi.offlineTheme(selectedThemeId.value)
+  await CpsSelectionThemeApi.offlineTheme(themeId)
   ElMessage.success('已下线')
   await getThemePage()
 }
 
 const handleDeleteTheme = async () => {
-  if (!selectedThemeId.value) return
+  const themeId = selectedThemeIdNumber()
+  if (themeId == null) return
   await ElMessageBox.confirm('删除主题会移除主题配置，确认删除？', '删除主题', { type: 'warning' })
-  await CpsSelectionThemeApi.deleteTheme(selectedThemeId.value)
+  await CpsSelectionThemeApi.deleteTheme(themeId)
   ElMessage.success('删除成功')
   selectedThemeId.value = undefined
+  selectedThemeSnapshot.value = undefined
   itemList.value = []
   await getThemePage()
 }
@@ -898,19 +979,20 @@ const openVendorDrawer = () => {
 }
 
 const submitOperate = async () => {
-  if (!selectedThemeId.value) return
+  const themeId = selectedThemeIdNumber()
+  if (themeId == null) return
   if (!validateJsonObject(operateRuleJson.value, '本次规则 JSON')) return
   operateLoading.value = true
   try {
     const data =
       operateMode.value === 'ai'
         ? await CpsSelectionThemeApi.aiRecommend({
-            themeId: selectedThemeId.value,
+            themeId,
             objective: operateObjective.value,
             ruleJson: operateRuleJson.value
           })
         : await CpsSelectionThemeApi.vendorPull({
-            themeId: selectedThemeId.value,
+            themeId,
             ruleJson: operateRuleJson.value
           })
     ElMessage.success(data.message || '操作完成')
@@ -934,27 +1016,32 @@ const loadTemplates = async () => {
 
 const createThemeFromTemplate = async (template: CpsSelectionThemeTemplateVO) => {
   const id = await CpsSelectionThemeApi.createFromTemplate({ templateCode: template.templateCode })
-  selectedThemeId.value = id
+  setSelectedThemeId(id)
   templateVisible.value = false
   ElMessage.success('已创建主题草稿')
   await getThemePage()
 }
 
 const openDataokeSyncDialog = () => {
+  dataokeSyncForm.vendorCode = queryParams.vendorCode || dataokeSyncForm.vendorCode || 'dataoke'
   dataokeSyncVisible.value = true
 }
 
 const submitDataokeSync = async () => {
   dataokeSyncLoading.value = true
   try {
-    const data = await CpsSelectionThemeApi.syncDataokeThemes({
+    const data = await CpsSelectionThemeApi.syncVendorThemes({
       ...dataokeSyncForm,
       keyword: dataokeSyncForm.keyword?.trim() || undefined
     })
     dataokeSyncVisible.value = false
-    ElMessage.success(data.message || '大淘客主题同步完成')
+    queryParams.vendorCode = dataokeSyncForm.vendorCode || ''
+    queryParams.themeType = ''
+    queryParams.status = 'PUBLISHED'
+    queryParams.pageNo = 1
+    ElMessage.success(data.message || `${vendorLabel(dataokeSyncForm.vendorCode)}主题同步完成`)
     await getThemePage()
-    if (selectedThemeId.value) {
+    if (selectedThemeId.value != null) {
       await getItems()
     }
   } finally {
@@ -968,7 +1055,8 @@ const openImportDialog = () => {
 }
 
 const submitManualImport = async () => {
-  if (!selectedThemeId.value) return
+  const themeId = selectedThemeIdNumber()
+  if (themeId == null) return
   manualImportLoading.value = true
   try {
     const items = JSON.parse(manualImportJson.value) as CpsSelectionThemeImportItemVO[]
@@ -981,7 +1069,7 @@ const submitManualImport = async () => {
       }
     })
     await CpsSelectionThemeApi.importItems({
-      themeId: selectedThemeId.value,
+      themeId,
       sourceType: 'MANUAL',
       items
     })
@@ -1016,9 +1104,10 @@ const toggleItemStatus = async (row: CpsSelectionThemeItemVO) => {
 }
 
 const toggleTop = async (row: CpsSelectionThemeItemVO) => {
-  if (!selectedThemeId.value) return
+  const themeId = selectedThemeIdNumber()
+  if (themeId == null) return
   await CpsSelectionThemeApi.updateItemSort({
-    themeId: selectedThemeId.value,
+    themeId,
     items: [{ id: row.id, sort: row.sort || 0, topFlag: row.topFlag === 1 ? 0 : 1 }]
   })
   await getItems()
@@ -1109,10 +1198,19 @@ const sourceLabel = (source?: SelectionThemeSourceType) =>
 const themeTypeLabel = (type?: string) => {
   const map: Record<string, string> = {
     PROMOTION: '大促',
+    VENDOR_COLUMN: '特色栏目',
     CUSTOM: '自定义',
     CATEGORY: '类目'
   }
   return type ? map[type] || type : '-'
+}
+
+const vendorLabel = (vendorCode?: string) => {
+  const map: Record<string, string> = {
+    dataoke: '大淘客',
+    haodanku: '好单库'
+  }
+  return vendorCode ? map[vendorCode] || vendorCode : '供应商'
 }
 
 const refreshStatusLabel = (status?: string) => {
@@ -1130,15 +1228,38 @@ const platformLabel = (platformCode?: string) => {
     taobao: '淘宝',
     jd: '京东',
     pdd: '拼多多',
-    douyin: '抖音'
+    douyin: '抖音',
+    meituan: '美团',
+    eleme: '饿了么',
+    local_life: '本地生活',
+    fliggy: '飞猪'
   }
   return platformCode ? map[platformCode] || platformCode : '-'
 }
 
+type DateTimeValue = string | number | number[] | Date | null | undefined
+
 const formatMoney = (value?: number) => (value == null ? '-' : `¥${Number(value).toFixed(2)}`)
 const formatPercent = (value?: number) => (value == null ? '-' : `${Number(value).toFixed(2)}%`)
 const normalizeScore = (value?: number) => Math.max(0, Math.min(100, Number(value || 0)))
-const formatDateTime = (value?: string) => (value ? value.replace('T', ' ').slice(0, 16) : '-')
+const padDatePart = (value: number) => String(value).padStart(2, '0')
+const formatDateTime = (value?: DateTimeValue) => {
+  if (value == null || value === '') return '-'
+  if (Array.isArray(value)) {
+    const [year, month, day, hour = 0, minute = 0] = value
+    if (!year || !month || !day) return '-'
+    return `${year}-${padDatePart(month)}-${padDatePart(day)} ${padDatePart(hour)}:${padDatePart(minute)}`
+  }
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return '-'
+    return `${value.getFullYear()}-${padDatePart(value.getMonth() + 1)}-${padDatePart(value.getDate())} ${padDatePart(value.getHours())}:${padDatePart(value.getMinutes())}`
+  }
+  if (typeof value === 'number') {
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? '-' : formatDateTime(date)
+  }
+  return String(value).replace('T', ' ').slice(0, 16)
+}
 
 function splitTextList(value?: string) {
   return (value || '')
@@ -1199,6 +1320,19 @@ onMounted(() => {
 .action-panel {
   flex-wrap: wrap;
   justify-content: flex-start;
+}
+
+.theme-source-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.theme-source-tabs span {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
 }
 
 .stat-strip {

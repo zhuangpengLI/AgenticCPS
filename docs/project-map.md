@@ -180,7 +180,7 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 
 关键证据：
 
-- `CpsSelectionThemeController`：提供主题 CRUD、发布/下线、AI 推荐、第三方拉取、商品导入、排序、状态切换接口；`POST /admin-api/cps/selection-theme/dataoke-theme-sync` 可按大淘客活动目录同步选品主题，并可同步主题下商品快照。
+- `CpsSelectionThemeController`：提供主题 CRUD、发布/下线、AI 推荐、第三方拉取、商品导入、排序、状态切换接口；`POST /admin-api/cps/selection-theme/vendor-theme-sync` 可按供应商同步选品主题（`dataoke` 大淘客选品库、`haodanku` 好单库特色栏目），同步生成主题默认发布，旧 `POST /admin-api/cps/selection-theme/dataoke-theme-sync` 保持兼容，并可同步主题下商品快照。
 - `CpsSelectionThemeServiceImpl`：保存主题规则 JSON 与商品快照，发布前校验启用商品，导入时按 `themeId + platformCode + vendorCode + goodsId + goodsSign` 去重更新。
 - `CpsSelectionAiRecommendService`：规则评分决定排序，LLM/文案能力不可用时仍可返回稳定推荐；文案不得覆盖商品 ID、价格、佣金等第三方事实字段。
 - `cps_selection_theme` / `cps_selection_theme_item`：选品主题主表与主题商品快照表，均带租户、软删、状态与排序索引。

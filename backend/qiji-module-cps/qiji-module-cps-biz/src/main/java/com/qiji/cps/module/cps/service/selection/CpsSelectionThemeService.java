@@ -50,6 +50,8 @@ public interface CpsSelectionThemeService {
 
     CpsSelectionThemeOperationRespVO vendorPull(@Valid CpsSelectionThemeVendorPullReqVO reqVO);
 
+    CpsSelectionThemeOperationRespVO syncVendorThemes(@Valid CpsSelectionThemeSyncReqVO reqVO);
+
     CpsSelectionThemeOperationRespVO syncDataokeThemes(@Valid CpsSelectionThemeSyncReqVO reqVO);
 
     CpsSelectionThemeOperationRespVO aiRecommend(@Valid CpsSelectionThemeAiRecommendReqVO reqVO);
