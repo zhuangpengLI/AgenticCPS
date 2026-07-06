@@ -9,6 +9,7 @@
               filterable
               class="w-full"
               placeholder="请选择平台"
+              :disabled="platformLocked"
               @change="handlePlatformChange"
             >
               <el-option
@@ -189,6 +190,47 @@
             {{ statusText(row.status) }}
           </el-tag>
         </template>
+      </el-table-column>
+      <el-table-column label="原始内容" prop="originalContent" min-width="220" show-overflow-tooltip />
+      <el-table-column label="商品" min-width="220" show-overflow-tooltip>
+        <template #default="{ row }">
+          {{ row.goods?.title || '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="券后价" width="100" align="right">
+        <template #default="{ row }">
+          {{ formatMoney(row.goods?.actualPrice) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="返利" width="100" align="right">
+        <template #default="{ row }">
+          {{ formatMoney(row.rebate?.estimateRebateAmount || row.rebate?.commissionAmount) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="说明" prop="message" min-width="180" show-overflow-tooltip />
+      <el-table-column label="操作" width="170" fixed="right" align="center">
+        <template #default="{ row }">
+          <el-button
+            link
+            type="primary"
+            :disabled="row.status !== 'SUCCESS'"
+            @click="sendToEditor(row)"
+          >
+            发到文案区
+          </el-button>
+          <el-button
+            link
+            type="primary"
+            :disabled="row.status !== 'SUCCESS'"
+            @click="handleCopy(buildOutputText(row))"
+          >
+            复制
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+  </div>
+</template>
 
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
@@ -210,6 +252,7 @@ interface TransferDraft {
 
 const props = defineProps<{
   draft?: TransferDraft | null
+  lockedPlatformCode?: string
 }>()
 
 const emit = defineEmits<{
@@ -230,9 +273,10 @@ const memberOptions = ref<UserVO[]>([])
 const resultRows = ref<CpsGoodsBatchTransferItemVO[]>([])
 const formatOptions = ref(['promotionContent', 'shortUrl', 'tpwd'])
 const taobaoPlayMode = ref<'normal' | 'super_red' | 'taojinbi'>('normal')
+const platformLocked = computed(() => Boolean(props.lockedPlatformCode))
 
 const formData = reactive({
-  platformCode: 'taobao',
+  platformCode: props.lockedPlatformCode || 'taobao',
   memberId: undefined as number | undefined,
   vendorCode: undefined as string | undefined,
   adzoneId: undefined as string | undefined,
@@ -249,6 +293,7 @@ const fallbackPlatformOptions: CpsPlatformVO[] = [
   { id: 0, platformCode: 'taobao', platformName: '淘宝', status: 1, createTime: new Date() },
   { id: 0, platformCode: 'jd', platformName: '京东', status: 1, createTime: new Date() },
   { id: 0, platformCode: 'pdd', platformName: '拼多多', status: 1, createTime: new Date() },
+  { id: 0, platformCode: 'meituan', platformName: '美团', status: 1, createTime: new Date() },
   { id: 0, platformCode: 'douyin', platformName: '抖音', status: 1, createTime: new Date() }
 ]
 
@@ -286,8 +331,9 @@ watch(
   () => props.draft,
   async (draft) => {
     if (!draft) return
-    if (draft.platformCode) {
-      formData.platformCode = draft.platformCode
+    const nextPlatformCode = props.lockedPlatformCode || draft.platformCode
+    if (nextPlatformCode) {
+      formData.platformCode = nextPlatformCode
       await handlePlatformChange()
     }
     if (draft.vendorCode) {
@@ -298,6 +344,16 @@ watch(
         ? `${formData.originalText.trim()}\n${draft.originalContent}`
         : draft.originalContent
     }
+  }
+)
+
+watch(
+  () => props.lockedPlatformCode,
+  async (platformCode) => {
+    if (!platformCode) return
+    formData.platformCode = platformCode
+    platformOptions.value = ensurePlatformOption(platformOptions.value, platformCode)
+    await handlePlatformChange()
   }
 )
 
@@ -337,6 +393,7 @@ const handleSubsidySubmit = async () => {
 }
 
 const handleReset = () => {
+  formData.platformCode = props.lockedPlatformCode || formData.platformCode
   formData.vendorCode = undefined
   formData.adzoneId = undefined
   formData.originalText = ''
@@ -354,9 +411,9 @@ const handlePlatformChange = async () => {
 const loadPlatformOptions = async () => {
   try {
     const data = await CpsPlatformApi.getEnabledPlatformList()
-    platformOptions.value = data?.length ? data : fallbackPlatformOptions
+    platformOptions.value = ensurePlatformOption(data?.length ? data : fallbackPlatformOptions, props.lockedPlatformCode)
   } catch {
-    platformOptions.value = fallbackPlatformOptions
+    platformOptions.value = ensurePlatformOption(fallbackPlatformOptions, props.lockedPlatformCode)
   }
 }
 
@@ -429,7 +486,23 @@ const buildOutputText = (row: CpsGoodsBatchTransferItemVO) => {
 const platformLabel = (platformCode?: string) => {
   const platform = platformOptions.value.find((item) => item.platformCode === platformCode)
   if (platform?.platformName) return platform.platformName
-  return ({ taobao: '淘宝', jd: '京东', pdd: '拼多多', douyin: '抖音' }[platformCode || ''] || platformCode || '-')
+  return ({ taobao: '淘宝', jd: '京东', pdd: '拼多多', meituan: '美团', douyin: '抖音' }[platformCode || ''] || platformCode || '-')
+}
+
+const ensurePlatformOption = (options: CpsPlatformVO[], platformCode?: string): CpsPlatformVO[] => {
+  if (!platformCode || options.some((item) => item.platformCode === platformCode)) {
+    return options
+  }
+  return [
+    ...options,
+    {
+      id: 0,
+      platformCode,
+      platformName: platformLabel(platformCode),
+      status: 1,
+      createTime: new Date()
+    }
+  ]
 }
 
 const vendorLabel = (vendorCode?: string) => {
@@ -459,6 +532,9 @@ const formatMoney = (value?: number) =>
   value === undefined || value === null ? '-' : `￥${Number(value).toFixed(2)}`
 
 onMounted(async () => {
+  if (props.lockedPlatformCode) {
+    formData.platformCode = props.lockedPlatformCode
+  }
   await loadPlatformOptions()
   await handlePlatformChange()
 })

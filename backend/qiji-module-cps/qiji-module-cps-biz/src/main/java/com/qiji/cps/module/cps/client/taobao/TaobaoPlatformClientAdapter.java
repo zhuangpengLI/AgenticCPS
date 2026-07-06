@@ -57,6 +57,17 @@ public class TaobaoPlatformClientAdapter implements CpsPlatformClient {
     }
 
     @Override
+    public CpsContentParseResult parseContent(CpsContentParseRequest request) {
+        CpsApiVendorClient vendor = factory.getActiveVendorClient(getPlatformCode());
+        CpsVendorConfig config = factory.getActiveVendorConfig(getPlatformCode());
+        if (vendor == null || config == null) {
+            log.warn("[淘宝适配器] 未找到激活的供应商或配置");
+            return CpsContentParseResult.unsupported("PARSE_VENDOR_UNAVAILABLE", "淘宝解析供应商暂不可用");
+        }
+        return vendor.parseContent(request, config);
+    }
+
+    @Override
     public List<CpsOrderDTO> queryOrders(CpsOrderQueryRequest request) {
         CpsApiVendorClient vendor = factory.getActiveVendorClient(getPlatformCode());
         CpsVendorConfig config = factory.getActiveVendorConfig(getPlatformCode());

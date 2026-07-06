@@ -1,9 +1,11 @@
 package com.qiji.cps.module.cps.client.dataoke;
 
 import cn.hutool.crypto.digest.DigestUtil;
+import com.qiji.cps.module.cps.client.dto.CpsContentParseRequest;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -217,6 +219,54 @@ class AbstractDtkVendorClientTest {
         assertEquals(new BigDecimal("5"), params.get("couponPriceLowerLimit"));
         assertEquals(1, params.get("tmall"));
         assertEquals(1, params.get("brand"));
+    }
+
+    @Test
+    @DisplayName("淘宝万能解析应调用大淘客 parse-content 并映射商品信息")
+    void testTaobaoParseContent() throws Exception {
+        class CapturingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {
+            private String requestedPath;
+            private Map<String, Object> requestedParams;
+
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                this.requestedPath = path;
+                this.requestedParams = params;
+                try {
+                    return new ObjectMapper().readTree("""
+                            {
+                              "code": 0,
+                              "msg": "成功",
+                              "data": {
+                                "goodsId": "625171500599",
+                                "originUrl": "https://m.tb.cn/h.RyYoJdn",
+                                "originType": "商品链接",
+                                "originInfo": {
+                                  "title": "测试商品标题",
+                                  "image": "https://img.alicdn.com/test.jpg"
+                                }
+                              }
+                            }
+                            """);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        CapturingDtkTaobaoVendorClient client = new CapturingDtkTaobaoVendorClient();
+        CpsContentParseRequest request = new CpsContentParseRequest();
+        request.setPlatformCode("taobao");
+        request.setOriginalContent("https://m.tb.cn/h.RyYoJdn");
+
+        var result = client.parseContent(request, CpsVendorConfig.builder().build());
+
+        assertEquals("/tb-service/parse-content", client.requestedPath);
+        assertEquals("v1.0.0", client.requestedParams.get("version"));
+        assertEquals("https://m.tb.cn/h.RyYoJdn", client.requestedParams.get("content"));
+        assertTrue(result.getSupported());
+        assertEquals("625171500599", result.getGoodsId());
+        assertEquals("https://m.tb.cn/h.RyYoJdn", result.getItemLink());
+        assertEquals("测试商品标题", result.getTitle());
     }
 
 }

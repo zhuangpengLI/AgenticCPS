@@ -21,6 +21,8 @@ import java.util.*;
 @Component
 public class DtkTaobaoVendorClient extends AbstractDtkVendorClient implements CpsTaobaoSelectionVendorClient {
 
+    private static final String PARSE_CONTENT_PATH = "/tb-service/parse-content";
+
     @Override
     public String getPlatformCode() {
         return CpsPlatformCodeEnum.TAOBAO.getCode();
@@ -126,6 +128,36 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient implements Cp
                 .couponInfo(data.path("couponInfo").asText(null))
                 .commissionRate(parseDecimal(data, "maxCommissionRate"))
                 .actualPrice(parseDecimal(data, "actualPrice"))
+                .build();
+    }
+
+    @Override
+    public CpsContentParseResult parseContent(CpsContentParseRequest request, CpsVendorConfig config) {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("version", "v1.0.0");
+        params.put("content", request.getOriginalContent());
+        if (hasText(config.getDefaultAdzoneId())) {
+            params.put("pid", config.getDefaultAdzoneId());
+        }
+
+        JsonNode response = executeRequest(PARSE_CONTENT_PATH, params, config);
+        if (response == null || !isSuccessResponse(response)) {
+            return CpsContentParseResult.unsupported("PARSE_FAILED", "大淘客万能解析失败，请检查口令或链接是否有效");
+        }
+
+        JsonNode data = response.path("data");
+        String goodsId = firstText(data, "goodsId", "itemId");
+        if (!hasText(goodsId)) {
+            return CpsContentParseResult.unsupported("PARSE_NO_GOODS_ID", "大淘客未解析出商品ID");
+        }
+        JsonNode originInfo = data.path("originInfo");
+        String title = firstNonBlank(firstText(data, "itemName", "title", "dtitle", "name", "goodsName"),
+                originInfo.path("title").asText(null));
+        return CpsContentParseResult.builder()
+                .supported(true)
+                .goodsId(goodsId)
+                .itemLink(firstText(data, "originUrl", "itemLink"))
+                .title(title)
                 .build();
     }
 
@@ -282,6 +314,15 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient implements Cp
     private String firstText(JsonNode node, String... fieldNames) {
         for (String fieldName : fieldNames) {
             String value = node.path(fieldName).asText(null);
+            if (hasText(value)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
             if (hasText(value)) {
                 return value;
             }

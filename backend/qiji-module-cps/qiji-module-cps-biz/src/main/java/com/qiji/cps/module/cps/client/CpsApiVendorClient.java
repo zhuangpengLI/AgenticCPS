@@ -64,6 +64,17 @@ public interface CpsApiVendorClient {
     CpsPromotionLinkResult generatePromotionLink(CpsPromotionLinkRequest request, CpsVendorConfig config);
 
     /**
+     * 解析商品链接或平台口令.
+     *
+     * @param request 解析请求
+     * @param config  供应商配置
+     * @return 解析结果
+     */
+    default CpsContentParseResult parseContent(CpsContentParseRequest request, CpsVendorConfig config) {
+        return CpsContentParseResult.unsupported("COMMAND_UNSUPPORTED", "暂不支持该渠道口令自动解析，请粘贴商品链接或商品ID");
+    }
+
+    /**
      * 查询平台订单（用于定时同步）
      *
      * @param request 订单查询请求
