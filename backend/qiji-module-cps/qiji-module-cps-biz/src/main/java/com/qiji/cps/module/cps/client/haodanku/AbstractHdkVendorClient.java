@@ -6,10 +6,12 @@ import com.qiji.cps.module.cps.enums.CpsVendorCodeEnum;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -95,6 +97,95 @@ public abstract class AbstractHdkVendorClient extends AbstractAggregatorVendorCl
             }
         }
         return null;
+    }
+
+    protected String firstText(JsonNode node, String... fieldNames) {
+        if (node == null || fieldNames == null) {
+            return null;
+        }
+        for (String fieldName : fieldNames) {
+            JsonNode field = node.path(fieldName);
+            if (!field.isMissingNode() && !field.isNull()) {
+                String value = field.asText(null);
+                if (value != null && !value.isBlank()) {
+                    return value;
+                }
+            }
+        }
+        return null;
+    }
+
+    protected BigDecimal firstDecimal(JsonNode node, String... fieldNames) {
+        if (fieldNames == null) {
+            return null;
+        }
+        for (String fieldName : fieldNames) {
+            BigDecimal value = parseDecimal(node, fieldName);
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    protected BigDecimal firstNonZeroDecimal(JsonNode node, String... fieldNames) {
+        BigDecimal firstValue = null;
+        if (fieldNames == null) {
+            return null;
+        }
+        for (String fieldName : fieldNames) {
+            BigDecimal value = parseDecimal(node, fieldName);
+            if (value == null) {
+                continue;
+            }
+            if (firstValue == null) {
+                firstValue = value;
+            }
+            if (BigDecimal.ZERO.compareTo(value) != 0) {
+                return value;
+            }
+        }
+        return firstValue;
+    }
+
+    protected Integer firstInt(JsonNode node, String... fieldNames) {
+        if (node == null || fieldNames == null) {
+            return null;
+        }
+        for (String fieldName : fieldNames) {
+            JsonNode field = node.path(fieldName);
+            if (!field.isMissingNode() && !field.isNull()) {
+                return field.asInt();
+            }
+        }
+        return null;
+    }
+
+    protected Map<String, Object> selectedFields(JsonNode node, String... fieldNames) {
+        Map<String, Object> fields = new LinkedHashMap<>();
+        if (node == null || fieldNames == null) {
+            return fields;
+        }
+        for (String fieldName : fieldNames) {
+            JsonNode field = node.path(fieldName);
+            if (!field.isMissingNode() && !field.isNull()) {
+                fields.put(fieldName, field.asText());
+            }
+        }
+        return fields;
+    }
+
+    protected Integer mapHdkOrderStatus(Integer status) {
+        if (status == null) {
+            return null;
+        }
+        return switch (status) {
+            case 1 -> 1;
+            case 2 -> 3;
+            case 3 -> -1;
+            case 4 -> 4;
+            default -> status;
+        };
     }
 
     protected String toHdkUnixSeconds(String value) {

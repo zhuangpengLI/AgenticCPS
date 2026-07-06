@@ -3,6 +3,7 @@ package com.qiji.cps.module.cps.client.dataoke;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.qiji.cps.module.cps.client.dto.CpsContentParseRequest;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
+import com.qiji.cps.module.cps.client.dto.CpsOrderQueryRequest;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -347,6 +348,135 @@ class AbstractDtkVendorClientTest {
         assertEquals(new BigDecimal("59"), result.getCouponConditions());
         assertEquals(93000L, result.getCouponRemainNum());
         assertEquals("2026-07-31 23:59:59", result.getCouponEndTime());
+    }
+
+    @Test
+    @DisplayName("淘宝订单查询应映射大淘客订单状态、归因和状态时间")
+    void testTaobaoQueryOrdersMapsDataokeOrderFields() {
+        class CapturingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {
+            private String requestedPath;
+            private Map<String, Object> requestedParams;
+
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                this.requestedPath = path;
+                this.requestedParams = params;
+                try {
+                    return new ObjectMapper().readTree("""
+                            {
+                              "code": 0,
+                              "msg": "success",
+                              "data": {
+                                "positionIndex": "NEXT_1",
+                                "results": {
+                                  "publisher_order_dto": [
+                                    {
+                                      "trade_id": "1234567890",
+                                      "trade_parent_id": "P1234567890",
+                                      "item_id": "625171500599",
+                                      "item_title": "测试订单商品",
+                                      "item_img": "https://img.alicdn.com/test.jpg",
+                                      "item_price": "100.00",
+                                      "pay_price": "80.00",
+                                      "total_commission_rate": "20.00",
+                                      "pub_share_fee": "12.34",
+                                      "item_num": 2,
+                                      "tk_status": 3,
+                                      "tk_create_time": "2026-07-06 10:00:00",
+                                      "tk_paid_time": "2026-07-06 10:05:00",
+                                      "tk_earning_time": "2026-07-10 12:00:00",
+                                      "tb_deposit_time": "2026-07-08 12:00:00",
+                                      "adzone_id": "mm_111_222_333",
+                                      "special_id": "1002",
+                                      "relation_id": "2002",
+                                      "refund_tag": 0
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                            """);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        CapturingDtkTaobaoVendorClient client = new CapturingDtkTaobaoVendorClient();
+        CpsOrderQueryRequest request = new CpsOrderQueryRequest();
+        request.setQueryType(4);
+        request.setStartTime("2026-07-06 00:00:00");
+        request.setEndTime("2026-07-06 12:00:00");
+        request.setPageSize(50);
+
+        var orders = client.queryOrders(request, CpsVendorConfig.builder().build());
+
+        assertEquals("/tb-service/get-order-details", client.requestedPath);
+        assertEquals(4, client.requestedParams.get("queryType"));
+        assertEquals("2026-07-06 00:00:00", client.requestedParams.get("startTime"));
+        assertEquals("v1.0.0", client.requestedParams.get("version"));
+        assertEquals(1, orders.size());
+        var order = orders.get(0);
+        assertEquals("1234567890", order.getPlatformOrderId());
+        assertEquals("1002", order.getExternalId());
+        assertEquals(3, order.getPlatformStatus());
+        assertEquals("2026-07-08 12:00:00", order.getReceiveTime());
+        assertEquals("2026-07-10 12:00:00", order.getSettleTime());
+        assertEquals("NEXT_1", order.getNextPositionIndex());
+        assertEquals("2002", order.getExtraFields().get("relationId"));
+    }
+
+    @Test
+    @DisplayName("淘宝订单查询应兼容联盟付款金额和预估佣金字段")
+    void testTaobaoQueryOrdersMapsOfficialPaymentAndCommissionFields() {
+        class CapturingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                try {
+                    return new ObjectMapper().readTree("""
+                            {
+                              "code": 0,
+                              "msg": "success",
+                              "data": {
+                                "results": {
+                                  "publisher_order_dto": [
+                                    {
+                                      "trade_id": "3311060703815126366",
+                                      "trade_parent_id": "3311060703815126366",
+                                      "item_id": "839050000001",
+                                      "item_title": "旗舰婴儿推车",
+                                      "item_price": "999.00",
+                                      "alipay_total_price": "399.00",
+                                      "pub_share_rate": "4.5",
+                                      "pub_share_pre_fee": "17.96",
+                                      "tk_status": 12,
+                                      "tk_create_time": "2026-07-06 18:02:08",
+                                      "tk_paid_time": "2026-07-06 18:02:38",
+                                      "adzone_id": "mm_111_222_333",
+                                      "special_id": "1002",
+                                      "refund_tag": 0
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                            """);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+
+        var orders = new CapturingDtkTaobaoVendorClient().queryOrders(
+                new CpsOrderQueryRequest(), CpsVendorConfig.builder().build());
+
+        assertEquals(1, orders.size());
+        var order = orders.get(0);
+        assertEquals(new BigDecimal("999.00"), order.getItemPrice());
+        assertEquals(new BigDecimal("399.00"), order.getFinalPrice());
+        assertEquals(new BigDecimal("4.5"), order.getCommissionRate());
+        assertEquals(new BigDecimal("17.96"), order.getCommissionAmount());
+        assertEquals("1002", order.getExternalId());
+        assertEquals(1, order.getPlatformStatus());
     }
 
 }

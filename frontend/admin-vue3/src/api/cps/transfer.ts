@@ -4,6 +4,7 @@ import request from '@/config/axios'
 export interface CpsTransferRecordVO {
   id: number
   memberId: number
+  memberName?: string
   platformCode: string
   itemId?: string
   itemTitle?: string

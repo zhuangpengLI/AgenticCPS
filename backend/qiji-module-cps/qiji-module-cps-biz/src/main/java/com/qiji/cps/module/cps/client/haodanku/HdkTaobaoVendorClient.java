@@ -209,16 +209,30 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient implements Cp
         JsonNode data = response.path("data");
         if (data.isArray()) {
             for (JsonNode item : data) {
+                Integer tkStatus = firstInt(item, "tk_status");
+                Integer rawStatus = tkStatus != null ? tkStatus : firstInt(item, "order_status");
                 orders.add(CpsOrderDTO.builder()
                         .platformCode(getPlatformCode())
-                        .platformOrderId(item.path("trade_id").asText(null))
-                        .itemId(item.path("item_id").asText(null))
-                        .itemTitle(item.path("item_title").asText(null))
-                        .finalPrice(parseDecimal(item, "pay_price"))
-                        .commissionRate(parseDecimal(item, "commission_rate"))
-                        .commissionAmount(parseDecimal(item, "commission"))
-                        .platformStatus(item.path("order_status").asInt(-1))
-                        .orderTime(item.path("create_time").asText(null))
+                        .platformOrderId(firstText(item, "trade_id", "tradeId", "order_id", "orderId"))
+                        .parentOrderId(firstText(item, "trade_parent_id", "tradeParentId", "parent_order_id", "parentOrderId"))
+                        .itemId(firstText(item, "item_id", "itemId", "goods_id", "goodsId"))
+                        .itemTitle(firstText(item, "item_title", "itemTitle", "goods_name", "goodsName", "title"))
+                        .itemPic(firstText(item, "item_img", "itemImg", "itempic", "item_pic"))
+                        .itemPrice(firstDecimal(item, "item_price", "itemPrice", "auction_price", "auctionPrice"))
+                        .finalPrice(firstNonZeroDecimal(item, "pay_price", "alipay_total_price", "payPrice", "alipayTotalPrice", "order_amount", "orderAmount"))
+                        .commissionRate(firstNonZeroDecimal(item, "commission_rate", "pub_share_rate", "pubShareRate", "total_commission_rate", "totalCommissionRate"))
+                        .commissionAmount(firstNonZeroDecimal(item, "commission", "predict_money", "actual_money", "pub_share_fee", "pub_share_pre_fee", "pubShareFee", "pubSharePreFee"))
+                        .platformStatus(tkStatus != null ? mapTaobaoTkStatus(rawStatus) : mapHdkOrderStatus(rawStatus))
+                        .orderTime(firstText(item, "create_time", "tk_create_time", "order_time", "orderTime"))
+                        .payTime(firstText(item, "paid_time", "pay_time", "tk_paid_time", "tb_paid_time"))
+                        .receiveTime(firstText(item, "receive_time", "confirm_receipt_time", "tk_deposit_time", "tb_deposit_time"))
+                        .settleTime(firstText(item, "earning_time", "settle_time", "settled_at", "tk_earning_time"))
+                        .adzoneId(firstText(item, "adzone_id", "adzoneId", "pid", "position_id"))
+                        .externalId(firstText(item, "special_id", "specialId", "relation_id", "relationId",
+                                "channel_code", "external_id", "externalId", "sid"))
+                        .extraFields(selectedFields(item, "order_status", "tk_status", "settled_status", "special_id",
+                                "relation_id", "channel_code", "sub_union_id", "refund_time", "fail_reason"))
+                        .rawPayload(item.toString())
                         .build());
             }
         }
@@ -392,25 +406,25 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient implements Cp
         return null;
     }
 
-    private String firstText(JsonNode node, String... fieldNames) {
-        if (node == null) {
-            return null;
-        }
-        for (String fieldName : fieldNames) {
-            String value = node.path(fieldName).asText(null);
-            if (hasText(value)) {
-                return value;
-            }
-        }
-        return null;
-    }
-
     private Integer parseInteger(String value) {
         try {
             return Integer.valueOf(value);
         } catch (Exception ignored) {
             return null;
         }
+    }
+
+    private Integer mapTaobaoTkStatus(Integer status) {
+        if (status == null) {
+            return null;
+        }
+        return switch (status) {
+            case 12 -> 1;
+            case 14 -> 2;
+            case 3 -> 3;
+            case 13 -> -1;
+            default -> status;
+        };
     }
 
     private String categoryName(String fqcat) {

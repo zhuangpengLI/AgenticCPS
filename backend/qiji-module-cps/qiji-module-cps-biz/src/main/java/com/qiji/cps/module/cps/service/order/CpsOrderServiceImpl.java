@@ -96,18 +96,34 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             // 已有订单：判断是否需要更新
             String newStatus = resolveNextOrderStatus(existing, orderDTO);
             if (Objects.equals(existing.getOrderStatus(), newStatus)
-                    && Objects.equals(existing.getCommissionAmount(), orderDTO.getCommissionAmount())) {
-                // 状态和佣金均无变化，跳过
+                    && !hasOrderSnapshotChanged(existing, orderDTO)) {
+                // 状态和订单快照均无变化，跳过
                 return 0;
             }
             // 更新字段
             CpsOrderDO updateDO = CpsOrderDO.builder()
                     .id(existing.getId())
+                    .parentOrderId(orderDTO.getParentOrderId())
+                    .itemId(orderDTO.getItemId())
+                    .itemTitle(orderDTO.getItemTitle())
+                    .itemPic(orderDTO.getItemPic())
+                    .itemPrice(orderDTO.getItemPrice())
+                    .finalPrice(orderDTO.getFinalPrice())
+                    .couponAmount(orderDTO.getCouponAmount())
                     .orderStatus(newStatus)
                     .commissionRate(orderDTO.getCommissionRate())
                     .commissionAmount(orderDTO.getCommissionAmount())
+                    .adzoneId(orderDTO.getAdzoneId())
+                    .externalInfo(orderDTO.getExternalId())
                     .syncTime(LocalDateTime.now())
                     .build();
+            if (orderDTO.getCommissionAmount() != null) {
+                updateDO.setEstimateRebate(calculateEstimateRebate(orderDTO));
+            }
+            Long attributedMemberId = parseMemberId(orderDTO.getExternalId());
+            if (existing.getMemberId() == null && attributedMemberId != null) {
+                updateDO.setMemberId(attributedMemberId);
+            }
             // 收货时间
             if (orderDTO.getReceiveTime() != null && existing.getConfirmReceiptTime() == null) {
                 updateDO.setConfirmReceiptTime(parseDateTime(orderDTO.getReceiveTime()));
@@ -156,14 +172,20 @@ public class CpsOrderServiceImpl implements CpsOrderService {
 
     @Override
     public String manualSync(String platformCode, Integer hours) {
+        return manualSync(platformCode, hours, 1);
+    }
+
+    @Override
+    public String manualSync(String platformCode, Integer hours, Integer queryType) {
         int effectiveHours = (hours == null || hours <= 0) ? 2 : hours;
+        int effectiveQueryType = normalizeQueryType(queryType);
         LocalDateTime endTime = LocalDateTime.now();
         LocalDateTime startTime = endTime.minusHours(effectiveHours);
 
         CpsOrderSyncLogDO syncLog = CpsOrderSyncLogDO.builder()
                 .platformCode(platformCode)
                 .syncType(2) // 全量补偿
-                .queryType(1)
+                .queryType(effectiveQueryType)
                 .queryStartTime(startTime)
                 .queryEndTime(endTime)
                 .syncStartTime(LocalDateTime.now())
@@ -175,7 +197,7 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
 
             CpsOrderQueryRequest req = new CpsOrderQueryRequest();
-            req.setQueryType(1);
+            req.setQueryType(effectiveQueryType);
             req.setStartTime(startTime.format(DTF));
             req.setEndTime(endTime.format(DTF));
             req.setPageSize(50);
@@ -208,6 +230,13 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     }
 
     // ==================== 私有辅助方法 ====================
+
+    private int normalizeQueryType(Integer queryType) {
+        if (queryType == null || queryType < 1 || queryType > 4) {
+            return 1;
+        }
+        return queryType;
+    }
 
     /**
      * 将平台 DTO 转换为 CpsOrderDO
@@ -252,6 +281,48 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         }
 
         return order;
+    }
+
+    private boolean hasOrderSnapshotChanged(CpsOrderDO existing, CpsOrderDTO dto) {
+        return changedIfPresent(existing.getParentOrderId(), dto.getParentOrderId())
+                || changedIfPresent(existing.getItemId(), dto.getItemId())
+                || changedIfPresent(existing.getItemTitle(), dto.getItemTitle())
+                || changedIfPresent(existing.getItemPic(), dto.getItemPic())
+                || amountChangedIfPresent(existing.getItemPrice(), dto.getItemPrice())
+                || amountChangedIfPresent(existing.getFinalPrice(), dto.getFinalPrice())
+                || amountChangedIfPresent(existing.getCouponAmount(), dto.getCouponAmount())
+                || amountChangedIfPresent(existing.getCommissionRate(), dto.getCommissionRate())
+                || amountChangedIfPresent(existing.getCommissionAmount(), dto.getCommissionAmount())
+                || (dto.getCommissionAmount() != null
+                        && amountChangedIfPresent(existing.getEstimateRebate(), calculateEstimateRebate(dto)))
+                || changedIfPresent(existing.getAdzoneId(), dto.getAdzoneId())
+                || changedIfPresent(existing.getExternalInfo(), dto.getExternalId())
+                || (existing.getMemberId() == null && parseMemberId(dto.getExternalId()) != null);
+    }
+
+    private boolean changedIfPresent(String existingValue, String incomingValue) {
+        return incomingValue != null && !Objects.equals(existingValue, incomingValue);
+    }
+
+    private boolean amountChangedIfPresent(BigDecimal existingValue, BigDecimal incomingValue) {
+        if (incomingValue == null) {
+            return false;
+        }
+        if (existingValue == null) {
+            return true;
+        }
+        return existingValue.compareTo(incomingValue) != 0;
+    }
+
+    private Long parseMemberId(String externalId) {
+        if (externalId == null || externalId.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(externalId);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /**

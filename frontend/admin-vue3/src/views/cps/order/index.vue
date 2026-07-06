@@ -90,6 +90,7 @@
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="taobao">同步淘宝</el-dropdown-item>
+              <el-dropdown-item command="taobao-status">同步淘宝状态</el-dropdown-item>
               <el-dropdown-item command="jd">同步京东</el-dropdown-item>
               <el-dropdown-item command="pdd">同步拼多多</el-dropdown-item>
               <el-dropdown-item command="douyin">同步抖音</el-dropdown-item>
@@ -254,10 +255,12 @@ const platformLabel = (code: string) => {
 /** 订单状态 */
 const orderStatusTagType = (status: string) => {
   const map: Record<string, string> = {
+    created: 'info',
     ordered: 'info',
     paid: 'primary',
     received: 'warning',
     settled: 'success',
+    rebate_received: 'success',
     credited: 'success',
     refunded: 'danger',
     invalid: 'info'
@@ -266,10 +269,12 @@ const orderStatusTagType = (status: string) => {
 }
 const orderStatusLabel = (status: string) => {
   const map: Record<string, string> = {
+    created: '已下单',
     ordered: '已下单',
     paid: '已付款',
     received: '已收货',
     settled: '已结算',
+    rebate_received: '已到账',
     credited: '已到账',
     refunded: '已退款',
     invalid: '已失效'
@@ -314,10 +319,15 @@ const resetQuery = () => {
 }
 
 /** 手动同步 */
-const handleSync = async (platformCode: string) => {
+const handleSync = async (command: string) => {
+  const statusSync = command.endsWith('-status')
+  const platformCode = statusSync ? command.replace('-status', '') : command
+  const queryType = statusSync ? 4 : 1
+  const hours = statusSync ? 24 : 2
+  const actionText = statusSync ? '状态' : '订单'
   try {
-    await message.confirm(`确认同步 ${platformLabel(platformCode)} 最近2小时订单？`)
-    const result = await OrderApi.syncCpsOrders(platformCode, 2)
+    await message.confirm(`确认同步 ${platformLabel(platformCode)} 最近${hours}小时${actionText}？`)
+    const result = await OrderApi.syncCpsOrders(platformCode, hours, queryType)
     message.success(result || '同步任务已触发')
     await getList()
   } catch {}

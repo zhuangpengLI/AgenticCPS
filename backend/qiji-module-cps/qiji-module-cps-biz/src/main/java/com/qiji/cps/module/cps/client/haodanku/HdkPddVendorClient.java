@@ -134,16 +134,29 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
         JsonNode data = response.path("data");
         if (data.isArray()) {
             for (JsonNode item : data) {
+                Integer rawStatus = firstInt(item, "order_status", "orderStatus");
                 orders.add(CpsOrderDTO.builder()
                         .platformCode(getPlatformCode())
-                        .platformOrderId(item.path("order_sn").asText(null))
-                        .itemId(item.path("goods_sign").asText(null))
-                        .itemTitle(item.path("goods_name").asText(null))
-                        .finalPrice(parseDecimal(item, "order_amount"))
-                        .commissionRate(parseDecimal(item, "promotion_rate"))
-                        .commissionAmount(parseDecimal(item, "promotion_amount"))
-                        .platformStatus(item.path("order_status").asInt(-1))
-                        .orderTime(item.path("order_create_time").asText(null))
+                        .platformOrderId(firstText(item, "trade_id", "order_sn", "orderSn", "order_id", "orderId"))
+                        .parentOrderId(firstText(item, "trade_parent_id", "parent_order_sn", "parentOrderSn"))
+                        .itemId(firstText(item, "goods_sign", "goods_id", "goodsId", "item_id", "itemId"))
+                        .itemTitle(firstText(item, "item_title", "goods_name", "goodsName", "title"))
+                        .itemPic(firstText(item, "item_img", "goods_thumbnail_url", "goods_image_url", "itempic"))
+                        .itemPrice(firstDecimal(item, "goods_price", "goods_price_amount", "min_group_price", "item_price"))
+                        .finalPrice(firstNonZeroDecimal(item, "pay_price", "order_amount", "orderAmount", "order_pay_amount"))
+                        .commissionRate(firstNonZeroDecimal(item, "commission_rate", "promotion_rate", "promotionRate"))
+                        .commissionAmount(firstNonZeroDecimal(item, "actual_money", "predict_money", "promotion_amount", "promotionAmount"))
+                        .platformStatus(mapHdkOrderStatus(rawStatus))
+                        .refundTag(Integer.valueOf(3).equals(rawStatus) ? 1 : 0)
+                        .orderTime(firstText(item, "create_time", "order_create_time", "orderCreateTime"))
+                        .payTime(firstText(item, "paid_time", "order_pay_time", "orderPayTime"))
+                        .receiveTime(firstText(item, "order_receive_time", "receive_time", "confirm_time"))
+                        .settleTime(firstText(item, "earning_time", "settled_at", "settle_time"))
+                        .externalId(firstText(item, "channel_code", "custom_parameters", "customParameters",
+                                "channel", "external_id", "externalId", "sid"))
+                        .extraFields(selectedFields(item, "order_status", "settled_status", "channel_code",
+                                "custom_parameters", "customParameters", "refund_time", "fail_reason", "price_compare_status"))
+                        .rawPayload(item.toString())
                         .build());
             }
         }

@@ -56,4 +56,14 @@ public interface CpsOrderService {
      */
     String manualSync(String platformCode, Integer hours);
 
+    /**
+     * 手动触发单个平台订单同步（管理端操作）
+     *
+     * @param platformCode 平台编码
+     * @param hours        向前追溯小时数（默认 2 小时）
+     * @param queryType    查询时间维度（1=下单时间，2=付款时间，3=结算时间，4=更新时间）
+     * @return 同步统计信息描述
+     */
+    String manualSync(String platformCode, Integer hours, Integer queryType);
+
 }

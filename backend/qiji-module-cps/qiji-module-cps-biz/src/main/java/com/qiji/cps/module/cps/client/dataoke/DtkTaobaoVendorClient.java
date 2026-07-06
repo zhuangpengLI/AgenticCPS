@@ -284,6 +284,10 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
 
     private CpsOrderDTO parseTaobaoOrder(JsonNode item, String nextPositionIndex) {
         int tkStatus = item.path("tk_status").asInt(-1);
+        Map<String, Object> extraFields = new LinkedHashMap<>();
+        putIfHasText(extraFields, "specialId", firstText(item, "special_id", "specialId"));
+        putIfHasText(extraFields, "relationId", firstText(item, "relation_id", "relationId"));
+        putIfHasText(extraFields, "rawTkStatus", String.valueOf(tkStatus));
         return CpsOrderDTO.builder()
                 .platformCode(getPlatformCode())
                 .platformOrderId(item.path("trade_id").asText(null))
@@ -291,18 +295,65 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
                 .itemId(item.path("item_id").asText(null))
                 .itemTitle(item.path("item_title").asText(null))
                 .itemPic(item.path("item_img").asText(null))
-                .itemPrice(parseDecimal(item, "item_price"))
-                .finalPrice(parseDecimal(item, "pay_price"))
-                .commissionRate(parseDecimal(item, "total_commission_rate"))
-                .commissionAmount(parseDecimal(item, "pub_share_fee"))
+                .itemPrice(firstDecimal(item, "item_price", "auction_price", "itemPrice"))
+                .finalPrice(firstNonZeroDecimal(item, "pay_price", "alipay_total_price", "payPrice", "alipayTotalPrice"))
+                .commissionRate(firstNonZeroDecimal(item, "total_commission_rate", "pub_share_rate", "commission_rate", "pubShareRate"))
+                .commissionAmount(firstNonZeroDecimal(item, "pub_share_fee", "pub_share_pre_fee", "pubShareFee", "pubSharePreFee", "commission"))
                 .quantity(item.path("item_num").asInt(1))
-                .platformStatus(tkStatus)
+                .platformStatus(mapTaobaoTkStatus(tkStatus))
                 .orderTime(item.path("tk_create_time").asText(null))
                 .payTime(item.path("tk_paid_time").asText(null))
+                .receiveTime(firstText(item, "tb_deposit_time", "tk_deposit_time", "confirm_receipt_time"))
+                .settleTime(firstText(item, "tk_earning_time", "earning_time", "settle_time"))
                 .adzoneId(item.path("adzone_id").asText(null))
+                .externalId(firstText(item, "special_id", "specialId", "relation_id", "relationId", "external_id", "externalId"))
                 .refundTag(item.path("refund_tag").asInt(0))
                 .nextPositionIndex(nextPositionIndex)
+                .extraFields(extraFields)
                 .build();
+    }
+
+    private int mapTaobaoTkStatus(int tkStatus) {
+        return switch (tkStatus) {
+            case 12 -> 1; // 已付款
+            case 14 -> 2; // 已收货/订单成功
+            case 3 -> 3;  // 已结算
+            case 13 -> -1; // 已失效
+            default -> tkStatus;
+        };
+    }
+
+    private BigDecimal firstNonZeroDecimal(JsonNode item, String... fieldNames) {
+        BigDecimal first = null;
+        for (String fieldName : fieldNames) {
+            BigDecimal value = parseDecimal(item, fieldName);
+            if (value == null) {
+                continue;
+            }
+            if (first == null) {
+                first = value;
+            }
+            if (value.compareTo(BigDecimal.ZERO) > 0) {
+                return value;
+            }
+        }
+        return first;
+    }
+
+    private BigDecimal firstDecimal(JsonNode item, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            BigDecimal value = parseDecimal(item, fieldName);
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private void putIfHasText(Map<String, Object> target, String key, String value) {
+        if (hasText(value)) {
+            target.put(key, value);
+        }
     }
 
     private String convertSortType(Integer sortType) {

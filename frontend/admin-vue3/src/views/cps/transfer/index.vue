@@ -76,10 +76,14 @@
   <ContentWrap>
     <el-table v-loading="loading" :data="list">
       <el-table-column label="ID" align="center" prop="id" width="80" />
-      <el-table-column label="会员ID" align="center" prop="memberId" width="100" />
-      <el-table-column label="平台" align="center" prop="platformCode" width="100">
+      <el-table-column label="会员名" align="center" prop="memberName" width="120" show-overflow-tooltip>
         <template #default="scope">
-          <el-tag>{{ scope.row.platformCode }}</el-tag>
+          <span>{{ scope.row.memberName || scope.row.memberId || '-' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="平台" align="center" prop="platformCode" width="72">
+        <template #default="scope">
+          <el-tag size="small">{{ scope.row.platformCode }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="商品标题" align="center" prop="itemTitle" min-width="180" show-overflow-tooltip />
@@ -91,7 +95,11 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="淘口令" align="center" prop="taoCommand" width="120" show-overflow-tooltip />
+      <el-table-column label="淘口令" align="center" prop="taoCommand" min-width="260">
+        <template #default="scope">
+          <span class="tao-command-text">{{ scope.row.taoCommand || '-' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="关联订单号" align="center" prop="platformOrderId" width="160" show-overflow-tooltip />
       <el-table-column label="失效时间" align="center" prop="expireTime" width="160">
         <template #default="scope">
@@ -171,3 +179,13 @@ onMounted(() => {
   getList()
 })
 </script>
+
+<style scoped>
+.tao-command-text {
+  display: inline-block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 18px;
+}
+</style>

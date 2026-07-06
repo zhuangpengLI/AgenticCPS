@@ -20,6 +20,9 @@ public class CpsTransferRecordRespVO {
     @Schema(description = "会员ID")
     private Long memberId;
 
+    @Schema(description = "会员名")
+    private String memberName;
+
     @Schema(description = "平台编码")
     private String platformCode;
 

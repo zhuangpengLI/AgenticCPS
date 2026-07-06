@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -180,6 +181,115 @@ class AbstractHdkVendorClientTest {
         assertEquals(1, pddParams.get("state"));
         assertEquals("1704038400", jdParams.get("start_date"));
         assertEquals("1704042000", pddParams.get("end_date"));
+    }
+
+    @Test
+    @DisplayName("淘宝订单同步应兼容好单库与淘宝官方字段")
+    void testTaobaoOrderResponseMapsOfficialAndHdkFields() throws Exception {
+        HdkTaobaoVendorClient taobaoClient = new HdkTaobaoVendorClient();
+
+        List<CpsOrderDTO> orders = taobaoClient.parseOrderQueryResponse(OBJECT_MAPPER.readTree("""
+                {"code":200,"data":[{
+                  "trade_id":"3311060703815126366",
+                  "trade_parent_id":"3311060703815126366",
+                  "item_id":"TB-ITEM-1",
+                  "item_title":"测试商品",
+                  "item_img":"https://img.example/tb.jpg",
+                  "item_price":"999.00",
+                  "pay_price":"0.00",
+                  "alipay_total_price":"399.00",
+                  "commission_rate":"0",
+                  "pub_share_rate":"4.5",
+                  "commission":"0.00",
+                  "pub_share_pre_fee":"17.96",
+                  "tk_status":12,
+                  "create_time":"2026-07-06 18:02:08",
+                  "tk_paid_time":"2026-07-06 18:03:08",
+                  "special_id":"1002",
+                  "adzone_id":"mm_1_2_3"
+                }]}
+                """));
+
+        CpsOrderDTO order = orders.get(0);
+        assertEquals("3311060703815126366", order.getPlatformOrderId());
+        assertEquals("TB-ITEM-1", order.getItemId());
+        assertEquals(new BigDecimal("999.00"), order.getItemPrice());
+        assertEquals(new BigDecimal("399.00"), order.getFinalPrice());
+        assertEquals(new BigDecimal("4.5"), order.getCommissionRate());
+        assertEquals(new BigDecimal("17.96"), order.getCommissionAmount());
+        assertEquals(1, order.getPlatformStatus());
+        assertEquals("1002", order.getExternalId());
+        assertEquals("mm_1_2_3", order.getAdzoneId());
+        assertEquals("2026-07-06 18:03:08", order.getPayTime());
+    }
+
+    @Test
+    @DisplayName("京东订单同步应按好单库文档字段映射佣金和渠道")
+    void testJdOrderResponseMapsHdkFields() throws Exception {
+        HdkJdVendorClient jdClient = new HdkJdVendorClient();
+
+        List<CpsOrderDTO> orders = jdClient.parseOrderQueryResponse(OBJECT_MAPPER.readTree("""
+                {"code":200,"data":[{
+                  "trade_id":"JD-ORDER-1",
+                  "trade_parent_id":"JD-PARENT-1",
+                  "item_id":"JD-SKU-1",
+                  "item_title":"京东测试商品",
+                  "item_img":"https://img.example/jd.jpg",
+                  "pay_price":"4599.00",
+                  "predict_money":"195.46",
+                  "actual_money":"188.00",
+                  "commission_rate":"4.25",
+                  "order_status":1,
+                  "create_time":"2026-07-06 18:02:08",
+                  "paid_time":"2026-07-06 18:04:08",
+                  "sub_union_id":"1002"
+                }]}
+                """));
+
+        CpsOrderDTO order = orders.get(0);
+        assertEquals("JD-ORDER-1", order.getPlatformOrderId());
+        assertEquals("JD-PARENT-1", order.getParentOrderId());
+        assertEquals("JD-SKU-1", order.getItemId());
+        assertEquals(new BigDecimal("4599.00"), order.getFinalPrice());
+        assertEquals(new BigDecimal("4.25"), order.getCommissionRate());
+        assertEquals(new BigDecimal("188.00"), order.getCommissionAmount());
+        assertEquals(1, order.getPlatformStatus());
+        assertEquals("1002", order.getExternalId());
+    }
+
+    @Test
+    @DisplayName("拼多多订单同步应按好单库文档字段映射佣金和渠道")
+    void testPddOrderResponseMapsHdkFields() throws Exception {
+        HdkPddVendorClient pddClient = new HdkPddVendorClient();
+
+        List<CpsOrderDTO> orders = pddClient.parseOrderQueryResponse(OBJECT_MAPPER.readTree("""
+                {"code":200,"data":[{
+                  "trade_id":"PDD-ORDER-1",
+                  "trade_parent_id":"PDD-PARENT-1",
+                  "goods_sign":"PDD-GOODS-SIGN",
+                  "goods_id":"PDD-GOODS-1",
+                  "item_title":"拼多多测试商品",
+                  "item_img":"https://img.example/pdd.jpg",
+                  "pay_price":"29.90",
+                  "predict_money":"2.87",
+                  "actual_money":"2.00",
+                  "commission_rate":"9.6",
+                  "order_status":1,
+                  "create_time":"2026-07-06 18:02:08",
+                  "paid_time":"2026-07-06 18:04:08",
+                  "channel_code":"1002"
+                }]}
+                """));
+
+        CpsOrderDTO order = orders.get(0);
+        assertEquals("PDD-ORDER-1", order.getPlatformOrderId());
+        assertEquals("PDD-PARENT-1", order.getParentOrderId());
+        assertEquals("PDD-GOODS-SIGN", order.getItemId());
+        assertEquals(new BigDecimal("29.90"), order.getFinalPrice());
+        assertEquals(new BigDecimal("9.6"), order.getCommissionRate());
+        assertEquals(new BigDecimal("2.00"), order.getCommissionAmount());
+        assertEquals(1, order.getPlatformStatus());
+        assertEquals("1002", order.getExternalId());
     }
 
     @Test

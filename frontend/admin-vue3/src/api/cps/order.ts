@@ -54,9 +54,9 @@ export const getCpsOrder = async (id: number) => {
 }
 
 // 手动触发订单同步
-export const syncCpsOrders = async (platformCode: string, hours = 2) => {
+export const syncCpsOrders = async (platformCode: string, hours = 2, queryType = 1) => {
   return await request.post({
     url: '/cps/order/sync',
-    params: { platformCode, hours }
+    params: { platformCode, hours, queryType }
   })
 }

@@ -54,9 +54,11 @@ public class CpsOrderController {
     @PreAuthorize("@ss.hasPermission('cps:order:sync')")
     @Parameter(name = "platformCode", description = "平台编码（taobao/jd/pdd/douyin）", required = true)
     @Parameter(name = "hours", description = "向前追溯小时数，默认2", example = "2")
+    @Parameter(name = "queryType", description = "查询时间维度：1下单时间 2付款时间 3结算时间 4更新时间，默认1", example = "4")
     public CommonResult<String> manualSync(@RequestParam("platformCode") String platformCode,
-                                           @RequestParam(value = "hours", defaultValue = "2") Integer hours) {
-        String result = orderService.manualSync(platformCode, hours);
+                                           @RequestParam(value = "hours", defaultValue = "2") Integer hours,
+                                           @RequestParam(value = "queryType", defaultValue = "1") Integer queryType) {
+        String result = orderService.manualSync(platformCode, hours, queryType);
         return success(result);
     }
 
