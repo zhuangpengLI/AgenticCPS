@@ -258,15 +258,95 @@ class AbstractDtkVendorClientTest {
         request.setPlatformCode("taobao");
         request.setOriginalContent("https://m.tb.cn/h.RyYoJdn");
 
-        var result = client.parseContent(request, CpsVendorConfig.builder().build());
+        var result = client.parseContent(request, CpsVendorConfig.builder()
+                .defaultAdzoneId("mm_111_222_333")
+                .build());
 
         assertEquals("/tb-service/parse-content", client.requestedPath);
         assertEquals("v1.0.0", client.requestedParams.get("version"));
         assertEquals("https://m.tb.cn/h.RyYoJdn", client.requestedParams.get("content"));
+        assertFalse(client.requestedParams.containsKey("pid"));
         assertTrue(result.getSupported());
         assertEquals("625171500599", result.getGoodsId());
         assertEquals("https://m.tb.cn/h.RyYoJdn", result.getItemLink());
         assertEquals("测试商品标题", result.getTitle());
+    }
+
+    @Test
+    @DisplayName("淘宝万能解析失败时应透传大淘客失败原因")
+    void testTaobaoParseContentFailureMessage() throws Exception {
+        class FailingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                try {
+                    return new ObjectMapper().readTree("""
+                            {
+                              "code": 1,
+                              "msg": "渠道ID校验失败"
+                            }
+                            """);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        CpsContentParseRequest request = new CpsContentParseRequest();
+        request.setPlatformCode("taobao");
+        request.setOriginalContent("https://m.tb.cn/h.RyYoJdn");
+
+        var result = new FailingDtkTaobaoVendorClient().parseContent(request, CpsVendorConfig.builder().build());
+
+        assertFalse(result.getSupported());
+        assertEquals("PARSE_FAILED", result.getFailureCode());
+        assertEquals("渠道ID校验失败", result.getFailureReason());
+    }
+
+    @Test
+    @DisplayName("queryCouponInfo should call Dataoke coupon info API")
+    void testTaobaoQueryCouponInfoUsesDtkCouponApi() {
+        class CapturingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {
+            private String requestedPath;
+            private Map<String, Object> requestedParams;
+
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                this.requestedPath = path;
+                this.requestedParams = params;
+                try {
+                    return new ObjectMapper().readTree("""
+                            {
+                              "code": 0,
+                              "msg": "success",
+                              "data": {
+                                "couponReceiveNum": 7000,
+                                "couponLink": "https://uland.taobao.com/quan/detail?activityId=abc",
+                                "couponEndTime": "2026-07-31 23:59:59",
+                                "couponStartTime": "2026-07-01 00:00:00",
+                                "couponConditions": "59",
+                                "couponId": "abc",
+                                "couponAmount": 40,
+                                "couponTotalNum": 100000,
+                                "couponRemainNum": 93000
+                              }
+                            }
+                            """);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        CapturingDtkTaobaoVendorClient client = new CapturingDtkTaobaoVendorClient();
+
+        var result = client.queryCouponInfo("￥FV25gmAa2SI￥", CpsVendorConfig.builder().build());
+
+        assertEquals("/dels/taobao/kit/coupon/get-coupon-info", client.requestedPath);
+        assertEquals("v1.0.0", client.requestedParams.get("version"));
+        assertEquals("￥FV25gmAa2SI￥", client.requestedParams.get("content"));
+        assertEquals("abc", result.getCouponId());
+        assertEquals(new BigDecimal("40"), result.getCouponAmount());
+        assertEquals(new BigDecimal("59"), result.getCouponConditions());
+        assertEquals(93000L, result.getCouponRemainNum());
+        assertEquals("2026-07-31 23:59:59", result.getCouponEndTime());
     }
 
 }

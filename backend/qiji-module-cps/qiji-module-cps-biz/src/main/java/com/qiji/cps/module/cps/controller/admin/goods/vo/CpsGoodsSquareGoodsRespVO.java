@@ -33,6 +33,18 @@ public class CpsGoodsSquareGoodsRespVO {
     @Schema(description = "优惠券金额")
     private BigDecimal couponPrice;
 
+    @Schema(description = "优惠券使用门槛")
+    private BigDecimal couponConditions;
+
+    @Schema(description = "优惠券总量")
+    private Long couponTotalNum;
+
+    @Schema(description = "优惠券剩余数量")
+    private Long couponRemainNum;
+
+    @Schema(description = "优惠券已领取数量")
+    private Long couponReceiveNum;
+
     @Schema(description = "佣金比例")
     private BigDecimal commissionRate;
 
@@ -65,6 +77,9 @@ public class CpsGoodsSquareGoodsRespVO {
 
     @Schema(description = "优惠券结束时间")
     private String couponEndTime;
+
+    @Schema(description = "优惠券开始时间")
+    private String couponStartTime;
 
     @Schema(description = "榜单或热销标签")
     private String rankTag;

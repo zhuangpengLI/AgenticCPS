@@ -4,6 +4,7 @@ import com.qiji.cps.module.cps.client.dto.*;
 import com.qiji.cps.module.cps.client.selection.CpsTaobaoSelectionVendorClient;
 import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.qiji.cps.module.cps.client.CpsCouponInfoVendorClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -19,9 +20,11 @@ import java.util.*;
  */
 @Slf4j
 @Component
-public class DtkTaobaoVendorClient extends AbstractDtkVendorClient implements CpsTaobaoSelectionVendorClient {
+public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
+        implements CpsTaobaoSelectionVendorClient, CpsCouponInfoVendorClient {
 
     private static final String PARSE_CONTENT_PATH = "/tb-service/parse-content";
+    private static final String COUPON_INFO_PATH = "/dels/taobao/kit/coupon/get-coupon-info";
 
     @Override
     public String getPlatformCode() {
@@ -136,13 +139,10 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient implements Cp
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("version", "v1.0.0");
         params.put("content", request.getOriginalContent());
-        if (hasText(config.getDefaultAdzoneId())) {
-            params.put("pid", config.getDefaultAdzoneId());
-        }
 
         JsonNode response = executeRequest(PARSE_CONTENT_PATH, params, config);
         if (response == null || !isSuccessResponse(response)) {
-            return CpsContentParseResult.unsupported("PARSE_FAILED", "大淘客万能解析失败，请检查口令或链接是否有效");
+            return CpsContentParseResult.unsupported("PARSE_FAILED", parseFailureMessage(response));
         }
 
         JsonNode data = response.path("data");
@@ -159,6 +159,11 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient implements Cp
                 .itemLink(firstText(data, "originUrl", "itemLink"))
                 .title(title)
                 .build();
+    }
+
+    private String parseFailureMessage(JsonNode response) {
+        String msg = response == null ? null : response.path("msg").asText(null);
+        return hasText(msg) ? msg : "大淘客万能解析失败，请检查口令或链接是否有效";
     }
 
     // ==================== 订单查询 ====================
@@ -208,6 +213,34 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient implements Cp
     @Override
     protected Map<String, Object> buildTestConnectionParams() {
         return new HashMap<>();
+    }
+
+    @Override
+    public CpsCouponInfo queryCouponInfo(String content, CpsVendorConfig config) {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("version", "v1.0.0");
+        params.put("content", content);
+
+        JsonNode response = executeRequest(COUPON_INFO_PATH, params, config);
+        if (response == null || !isSuccessResponse(response)) {
+            log.warn("[{}:{}] query coupon info failed: {}", getVendorCode(), getPlatformCode(), response);
+            return null;
+        }
+        JsonNode data = response.path("data");
+        return CpsCouponInfo.builder()
+                .couponId(firstText(data, "couponId", "coupon_id", "activityId", "activity_id"))
+                .couponLink(firstText(data, "couponLink", "coupon_link", "couponUrl", "coupon_url"))
+                .couponAmount(parseDecimal(data, "couponAmount", "coupon_amount", "couponMoney", "coupon_money"))
+                .couponConditions(parseDecimal(data, "couponConditions", "coupon_conditions",
+                        "couponCondition", "coupon_condition", "couponStartFee", "coupon_start_fee"))
+                .couponTotalNum(parseLong(data, "couponTotalNum", "coupon_total_num"))
+                .couponRemainNum(parseLong(data, "couponRemainNum", "coupon_remain_num",
+                        "couponSurplusNum", "coupon_surplus_num"))
+                .couponReceiveNum(parseLong(data, "couponReceiveNum", "coupon_receive_num",
+                        "couponUseNum", "coupon_use_num"))
+                .couponStartTime(firstText(data, "couponStartTime", "coupon_start_time"))
+                .couponEndTime(firstText(data, "couponEndTime", "coupon_end_time"))
+                .build();
     }
 
     @Override
@@ -316,6 +349,31 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient implements Cp
             String value = node.path(fieldName).asText(null);
             if (hasText(value)) {
                 return value;
+            }
+        }
+        return null;
+    }
+
+    private BigDecimal parseDecimal(JsonNode node, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            BigDecimal value = parseDecimal(node, fieldName);
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private Long parseLong(JsonNode node, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            JsonNode value = node.path(fieldName);
+            if (value.isMissingNode() || value.isNull()) {
+                continue;
+            }
+            try {
+                return Long.valueOf(value.asText());
+            } catch (Exception ignored) {
+                // Try the next known alias.
             }
         }
         return null;

@@ -14,6 +14,8 @@ export interface CpsGoodsParseRespVO {
   goodsId?: string
   goodsSign?: string
   itemLink?: string
+  couponLink?: string
+  sourceLink?: string
   title?: string
   parseSource?: 'local' | 'platform' | string
   failureCode?: string
@@ -57,12 +59,16 @@ export interface CpsGoodsOwnershipCheckReqVO {
 export interface CpsGoodsOwnershipCheckRespVO {
   checkStatus: 'MATCH' | 'MISMATCH' | 'NOT_FOUND' | string
   message?: string
+  ownershipResult?: string
   platformCode?: string
   itemId?: string
   itemTitle?: string
   transferRecordId?: number
   recordMemberId?: number
+  recordMemberNickname?: string
+  recordMemberMobile?: string
   recordAdzoneId?: string
+  pid?: string
   promotionUrl?: string
   taoCommand?: string
   recordStatus?: number

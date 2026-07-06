@@ -182,53 +182,94 @@
       </div>
     </el-form>
 
-    <el-table v-if="resultRows.length" :data="resultRows" border class="mt-16px">
-      <el-table-column label="#" prop="inputIndex" width="60" align="center" />
-      <el-table-column label="状态" width="100" align="center">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 'SUCCESS' ? 'success' : 'warning'" effect="plain">
-            {{ statusText(row.status) }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="原始内容" prop="originalContent" min-width="220" show-overflow-tooltip />
-      <el-table-column label="商品" min-width="220" show-overflow-tooltip>
-        <template #default="{ row }">
-          {{ row.goods?.title || '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column label="券后价" width="100" align="right">
-        <template #default="{ row }">
-          {{ formatMoney(row.goods?.actualPrice) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="返利" width="100" align="right">
-        <template #default="{ row }">
-          {{ formatMoney(row.rebate?.estimateRebateAmount || row.rebate?.commissionAmount) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="说明" prop="message" min-width="180" show-overflow-tooltip />
-      <el-table-column label="操作" width="170" fixed="right" align="center">
-        <template #default="{ row }">
+    <section v-if="resultRows.length" class="transfer-detail">
+      <div class="detail-title-row">
+        <div>
+          <div class="detail-title">转链明细</div>
+          <div class="detail-subtitle">
+            转链成功 {{ successRows.length }} 条，失败 {{ failureRows.length }} 条；成功商品已加入转链记录。
+          </div>
+        </div>
+        <el-button type="primary" plain :disabled="successRows.length === 0" @click="copyAllSuccess">
+          <Icon icon="ep:copy-document" class="mr-5px" /> 一键复制
+        </el-button>
+      </div>
+
+      <div class="transfer-detail-head">
+        <span>转链信息</span>
+        <span>原链接/口令</span>
+        <span>转链淘口令</span>
+        <span>转链链接</span>
+        <span>移动端链接</span>
+        <span>操作</span>
+      </div>
+
+      <div v-for="row in resultRows" :key="`${row.inputIndex}:${row.originalContent}`" class="transfer-detail-row">
+        <div class="goods-summary">
+          <el-image
+            v-if="row.goods?.mainPic"
+            :src="row.goods.mainPic"
+            fit="cover"
+            class="goods-thumb"
+            lazy
+          />
+          <div v-else class="goods-thumb goods-thumb-empty">无图</div>
+          <div class="goods-meta">
+            <div class="goods-title" :title="row.goods?.title || row.message || row.originalContent">
+              {{ row.goods?.title || row.message || '未解析到商品' }}
+            </div>
+            <div class="goods-stats">
+              <span>{{ formatMoney(row.goods?.actualPrice) }}</span>
+              <span v-if="row.rebate?.commissionRate">佣金 {{ formatRate(row.rebate.commissionRate) }}</span>
+              <span v-if="row.rebate?.estimateRebateAmount || row.rebate?.commissionAmount">
+                返利 {{ formatMoney(row.rebate?.estimateRebateAmount || row.rebate?.commissionAmount) }}
+              </span>
+            </div>
+            <el-tag :type="row.status === 'SUCCESS' ? 'success' : 'warning'" effect="plain" size="small">
+              {{ statusText(row.status) }}
+            </el-tag>
+          </div>
+        </div>
+
+        <div class="copy-cell">
+          <span class="copy-text" :title="row.originalContent">{{ row.originalContent }}</span>
+          <el-button link type="primary" @click="handleCopy(row.originalContent)">复制</el-button>
+        </div>
+
+        <div class="copy-cell">
+          <span class="copy-text" :title="row.links?.tpwd || ''">{{ row.links?.tpwd || '-' }}</span>
+          <el-button v-if="row.links?.tpwd" link type="primary" @click="handleCopy(row.links.tpwd)">复制</el-button>
+        </div>
+
+        <div class="copy-cell">
+          <span class="copy-text" :title="row.links?.shortUrl || row.links?.longUrl || ''">
+            {{ row.links?.shortUrl || row.links?.longUrl || '-' }}
+          </span>
           <el-button
+            v-if="row.links?.shortUrl || row.links?.longUrl"
             link
             type="primary"
-            :disabled="row.status !== 'SUCCESS'"
-            @click="sendToEditor(row)"
-          >
-            发到文案区
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            :disabled="row.status !== 'SUCCESS'"
-            @click="handleCopy(buildOutputText(row))"
+            @click="handleCopy(row.links?.shortUrl || row.links?.longUrl)"
           >
             复制
           </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+        </div>
+
+        <div class="copy-cell">
+          <span class="copy-text" :title="row.links?.mobileUrl || ''">{{ row.links?.mobileUrl || '-' }}</span>
+          <el-button v-if="row.links?.mobileUrl" link type="primary" @click="handleCopy(row.links.mobileUrl)">复制</el-button>
+        </div>
+
+        <div class="detail-actions">
+          <el-button link type="primary" :disabled="row.status !== 'SUCCESS'" @click="sendToEditor(row)">
+            发文案区
+          </el-button>
+          <el-button link type="primary" :disabled="row.status !== 'SUCCESS'" @click="handleCopy(buildOutputText(row))">
+            复制全部
+          </el-button>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -306,6 +347,7 @@ const contentLines = computed(() =>
 const enabledVendorOptions = computed(() => vendorOptions.value.filter((item) => item.status === 1))
 const enabledAdzoneOptions = computed(() => adzoneOptions.value.filter((item) => item.status === 1))
 const successRows = computed(() => resultRows.value.filter((item) => item.status === 'SUCCESS'))
+const failureRows = computed(() => resultRows.value.filter((item) => item.status !== 'SUCCESS'))
 const resultOutput = computed(() => successRows.value.map((item) => buildOutputText(item)).filter(Boolean).join('\n\n'))
 const selectedVendor = computed(() =>
   enabledVendorOptions.value.find((item) => item.vendorCode === formData.vendorCode)
@@ -531,6 +573,9 @@ const statusText = (status?: string) =>
 const formatMoney = (value?: number) =>
   value === undefined || value === null ? '-' : `￥${Number(value).toFixed(2)}`
 
+const formatRate = (value?: number) =>
+  value === undefined || value === null ? '-' : `${Number(value).toFixed(2)}%`
+
 onMounted(async () => {
   if (props.lockedPlatformCode) {
     formData.platformCode = props.lockedPlatformCode
@@ -648,6 +693,130 @@ onMounted(async () => {
   margin-top: 12px;
 }
 
+.transfer-detail {
+  margin-top: 16px;
+}
+
+.detail-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.detail-title {
+  color: var(--el-text-color-primary);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.detail-subtitle {
+  margin-top: 4px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.transfer-detail-head,
+.transfer-detail-row {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.4fr) minmax(190px, 1fr) minmax(160px, 0.9fr) minmax(190px, 1fr) minmax(190px, 1fr) 120px;
+  gap: 12px;
+  align-items: center;
+}
+
+.transfer-detail-head {
+  padding: 10px 14px;
+  color: var(--el-text-color-secondary);
+  background: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color-lighter);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.transfer-detail-row {
+  min-height: 96px;
+  padding: 14px;
+  border-right: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-left: 1px solid var(--el-border-color-lighter);
+  background: var(--el-bg-color);
+}
+
+.goods-summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.goods-thumb {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  border-radius: 6px;
+  background: var(--el-fill-color-light);
+}
+
+.goods-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--el-text-color-placeholder);
+  font-size: 12px;
+}
+
+.goods-meta {
+  min-width: 0;
+}
+
+.goods-title {
+  overflow: hidden;
+  color: var(--el-text-color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.goods-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 6px 0;
+  color: var(--el-text-color-regular);
+  font-size: 12px;
+}
+
+.copy-cell {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.copy-text {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--el-text-color-regular);
+  font-size: 13px;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 8px;
+}
+
+.detail-actions .el-button {
+  margin-left: 0;
+}
+
 .play-mode-tip {
   margin-top: 8px;
   color: var(--el-text-color-secondary);
@@ -667,6 +836,21 @@ onMounted(async () => {
 
   .play-mode-box {
     grid-column: 1 / -1;
+  }
+
+  .transfer-detail-head {
+    display: none;
+  }
+
+  .transfer-detail-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+    border-top: 1px solid var(--el-border-color-lighter);
+  }
+
+  .detail-actions {
+    justify-content: flex-start;
   }
 }
 </style>

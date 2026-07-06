@@ -25,6 +25,8 @@ public final class CpsContentParser {
     private static final Pattern JD_ITEM_PATH = Pattern.compile("/(\\d{5,})\\.html");
     private static final Pattern DOUYIN_PRODUCT_PATH = Pattern.compile("/(?:product|item)/(\\d{5,})");
     private static final Pattern PLAIN_ID = Pattern.compile("[A-Za-z0-9_-]{4,}");
+    private static final String TAOBAO_ACCURATE_RETURN_PATH = "mos.m.taobao.com/union/accurate-return";
+    private static final String TAOBAO_QUAN_DETAIL_PATH = "uland.taobao.com/quan/detail";
 
     private CpsContentParser() {
     }
@@ -36,7 +38,7 @@ public final class CpsContentParser {
         String content = originalContent.trim();
         String url = extractUrl(content);
         if (StringUtils.hasText(url)) {
-            return parseUrl(platformCode, url);
+            return parseUrl(platformCode, url, null);
         }
         if (looksLikeCommand(content)) {
             return CpsContentParseResult.unsupported("COMMAND_UNSUPPORTED", COMMAND_UNSUPPORTED_MESSAGE);
@@ -60,8 +62,15 @@ public final class CpsContentParser {
         return result;
     }
 
-    private static CpsContentParseResult parseUrl(String platformCode, String url) {
+    private static CpsContentParseResult parseUrl(String platformCode, String url, String sourceLink) {
         Map<String, String> params = parseQueryParams(url);
+        if ("taobao".equals(platformCode) && url.contains(TAOBAO_ACCURATE_RETURN_PATH)
+                && StringUtils.hasText(params.get("targetUrl"))) {
+            CpsContentParseResult targetResult = parseUrl(platformCode, params.get("targetUrl"), url);
+            if (Boolean.TRUE.equals(targetResult.getSupported())) {
+                return targetResult;
+            }
+        }
         String goodsId = switch (platformCode) {
             case "taobao" -> firstNonBlank(params.get("id"), params.get("itemId"), params.get("item_id"));
             case "jd" -> firstNonBlank(params.get("sku"), params.get("skuId"), params.get("sku_id"), match(url, JD_ITEM_PATH));
@@ -69,17 +78,24 @@ public final class CpsContentParser {
             case "douyin" -> firstNonBlank(params.get("id"), params.get("item_id"), params.get("product_id"), match(url, DOUYIN_PRODUCT_PATH));
             default -> firstNonBlank(params.get("id"), params.get("item_id"), params.get("goods_id"));
         };
-        if (!StringUtils.hasText(goodsId)) {
+        String couponLink = isTaobaoCouponUrl(platformCode, url) ? url : null;
+        if (!StringUtils.hasText(goodsId) && !StringUtils.hasText(couponLink)) {
             return CpsContentParseResult.unsupported("URL_PARSE_FAILED", "未能从商品链接中识别商品ID");
         }
         CpsContentParseResult.CpsContentParseResultBuilder builder = CpsContentParseResult.builder()
                 .supported(true)
                 .goodsId(goodsId)
-                .itemLink(url);
+                .itemLink(StringUtils.hasText(goodsId) ? url : null)
+                .couponLink(couponLink)
+                .sourceLink(sourceLink);
         if ("pdd".equals(platformCode)) {
             builder.goodsSign(goodsId);
         }
         return builder.build();
+    }
+
+    private static boolean isTaobaoCouponUrl(String platformCode, String url) {
+        return "taobao".equals(platformCode) && url.contains(TAOBAO_QUAN_DETAIL_PATH);
     }
 
     private static CpsContentParseResult buildPlainIdResult(String platformCode, String content) {

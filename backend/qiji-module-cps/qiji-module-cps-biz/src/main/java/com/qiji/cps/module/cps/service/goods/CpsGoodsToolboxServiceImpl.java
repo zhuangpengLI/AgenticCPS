@@ -1,9 +1,13 @@
 package com.qiji.cps.module.cps.service.goods;
 
+import com.qiji.cps.module.cps.client.CpsApiVendorClient;
+import com.qiji.cps.module.cps.client.CpsCouponInfoVendorClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.dto.CpsCouponInfo;
 import com.qiji.cps.module.cps.client.dto.CpsContentParseRequest;
 import com.qiji.cps.module.cps.client.dto.CpsContentParseResult;
+import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsBatchTransferReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsBatchTransferRespVO;
@@ -17,10 +21,13 @@ import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsParseReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsParseRespVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsRebateQueryReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsRebateQueryRespVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsRespVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
+import com.qiji.cps.module.member.dal.dataobject.user.MemberUserDO;
+import com.qiji.cps.module.member.service.user.MemberUserService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -41,6 +48,8 @@ public class CpsGoodsToolboxServiceImpl implements CpsGoodsToolboxService {
     private static final String CHECK_MATCH = "MATCH";
     private static final String CHECK_MISMATCH = "MISMATCH";
     private static final String CHECK_NOT_FOUND = "NOT_FOUND";
+    private static final String PLATFORM_TAOBAO = "taobao";
+    private static final String VENDOR_DATAOKE = "dataoke";
 
     @Resource
     private CpsGoodsRebateQueryService goodsRebateQueryService;
@@ -53,6 +62,9 @@ public class CpsGoodsToolboxServiceImpl implements CpsGoodsToolboxService {
 
     @Resource
     private CpsPlatformClientFactory platformClientFactory;
+
+    @Resource
+    private MemberUserService memberUserService;
 
     @Override
     public CpsGoodsParseRespVO parseContent(CpsGoodsParseReqVO reqVO) {
@@ -112,6 +124,7 @@ public class CpsGoodsToolboxServiceImpl implements CpsGoodsToolboxService {
             return CpsGoodsOwnershipCheckRespVO.builder()
                     .checkStatus(CHECK_NOT_FOUND)
                     .message("未找到匹配的转链记录")
+                    .ownershipResult("未找到归属记录")
                     .platformCode(reqVO.getPlatformCode())
                     .itemId(parseResult.getGoodsId())
                     .mismatches(List.of("transferRecord"))
@@ -128,16 +141,21 @@ public class CpsGoodsToolboxServiceImpl implements CpsGoodsToolboxService {
         if (StringUtils.hasText(reqVO.getPlatformCode()) && !Objects.equals(reqVO.getPlatformCode(), record.getPlatformCode())) {
             mismatches.add("platformCode");
         }
+        MemberUserDO recordMember = record.getMemberId() == null ? null : memberUserService.getUser(record.getMemberId());
 
         return CpsGoodsOwnershipCheckRespVO.builder()
                 .checkStatus(mismatches.isEmpty() ? CHECK_MATCH : CHECK_MISMATCH)
                 .message(mismatches.isEmpty() ? "归属匹配" : "归属存在不一致项")
+                .ownershipResult(resolveOwnershipResult(reqVO, mismatches))
                 .platformCode(record.getPlatformCode())
                 .itemId(record.getItemId())
                 .itemTitle(record.getItemTitle())
                 .transferRecordId(record.getId())
                 .recordMemberId(record.getMemberId())
+                .recordMemberNickname(recordMember == null ? null : recordMember.getNickname())
+                .recordMemberMobile(recordMember == null ? null : recordMember.getMobile())
                 .recordAdzoneId(record.getAdzoneId())
+                .pid(record.getAdzoneId())
                 .promotionUrl(record.getPromotionUrl())
                 .taoCommand(record.getTaoCommand())
                 .recordStatus(record.getStatus())
@@ -146,8 +164,21 @@ public class CpsGoodsToolboxServiceImpl implements CpsGoodsToolboxService {
                 .build();
     }
 
+    private String resolveOwnershipResult(CpsGoodsOwnershipCheckReqVO reqVO, List<String> mismatches) {
+        if (mismatches.isEmpty()) {
+            return reqVO.getMemberId() != null || StringUtils.hasText(reqVO.getAdzoneId())
+                    ? "是您的淘口令" : "已找到归属记录";
+        }
+        return "不是您的淘口令";
+    }
+
     @Override
     public CpsGoodsCouponQueryRespVO queryCoupons(CpsGoodsCouponQueryReqVO reqVO) {
+        CpsGoodsCouponQueryRespVO couponInfoResp = queryDataokeTaobaoCouponInfo(reqVO);
+        if (couponInfoResp != null) {
+            return couponInfoResp;
+        }
+
         CpsGoodsSquareSearchReqVO searchReqVO = new CpsGoodsSquareSearchReqVO();
         searchReqVO.setPlatformCode(reqVO.getPlatformCode());
         searchReqVO.setVendorCode(reqVO.getVendorCode());
@@ -169,6 +200,79 @@ public class CpsGoodsToolboxServiceImpl implements CpsGoodsToolboxService {
                 .pageSize(searchResp.getPageSize())
                 .summary(total > 0 ? "已找到 " + total + " 个有券商品" : "未找到符合条件的优惠券商品")
                 .build();
+    }
+
+    private CpsGoodsCouponQueryRespVO queryDataokeTaobaoCouponInfo(CpsGoodsCouponQueryReqVO reqVO) {
+        if (!PLATFORM_TAOBAO.equals(reqVO.getPlatformCode())) {
+            return null;
+        }
+        String vendorCode = StringUtils.hasText(reqVO.getVendorCode()) ? reqVO.getVendorCode()
+                : platformClientFactory.resolveActiveVendorCode(reqVO.getPlatformCode());
+        if (!VENDOR_DATAOKE.equals(vendorCode)) {
+            return null;
+        }
+        CpsApiVendorClient vendorClient = platformClientFactory.getVendorClient(vendorCode, reqVO.getPlatformCode());
+        if (!(vendorClient instanceof CpsCouponInfoVendorClient couponInfoVendorClient)) {
+            return null;
+        }
+        CpsVendorConfig config = platformClientFactory.getVendorConfig(vendorCode, reqVO.getPlatformCode());
+        CpsCouponInfo couponInfo = couponInfoVendorClient.queryCouponInfo(reqVO.getQueryText(), config);
+        if (couponInfo == null || couponInfo.getCouponAmount() == null) {
+            return null;
+        }
+        CpsGoodsSquareGoodsRespVO goods = toCouponGoods(reqVO, vendorCode, couponInfo);
+        return CpsGoodsCouponQueryRespVO.builder()
+                .platformCode(reqVO.getPlatformCode())
+                .vendorCode(vendorCode)
+                .keyword(reqVO.getQueryText())
+                .list(List.of(goods))
+                .total(1L)
+                .pageNo(reqVO.getPageNo())
+                .pageSize(reqVO.getPageSize())
+                .summary("已找到 1 个优惠券")
+                .build();
+    }
+
+    private CpsGoodsSquareGoodsRespVO toCouponGoods(CpsGoodsCouponQueryReqVO reqVO, String vendorCode,
+                                                    CpsCouponInfo couponInfo) {
+        CpsGoodsSquareGoodsRespVO goods = new CpsGoodsSquareGoodsRespVO();
+        goods.setGoodsId(firstText(couponInfo.getCouponId(), reqVO.getQueryText()));
+        goods.setPlatformCode(reqVO.getPlatformCode());
+        goods.setVendorCode(vendorCode);
+        goods.setTitle("淘宝优惠券 " + couponInfo.getCouponAmount().stripTrailingZeros().toPlainString() + " 元");
+        goods.setCouponPrice(couponInfo.getCouponAmount());
+        goods.setCouponConditions(couponInfo.getCouponConditions());
+        goods.setCouponTotalNum(couponInfo.getCouponTotalNum());
+        goods.setCouponRemainNum(couponInfo.getCouponRemainNum());
+        goods.setCouponReceiveNum(couponInfo.getCouponReceiveNum());
+        goods.setCouponStartTime(couponInfo.getCouponStartTime());
+        goods.setItemLink(couponInfo.getCouponLink());
+        goods.setSource("dataoke:coupon-info");
+        goods.setActivityTag(buildCouponActivityTag(couponInfo));
+        goods.setCouponEndTime(couponInfo.getCouponEndTime());
+        goods.setSellingPoint(buildCouponSellingPoint(couponInfo));
+        return goods;
+    }
+
+    private String buildCouponActivityTag(CpsCouponInfo couponInfo) {
+        if (couponInfo.getCouponRemainNum() == null) {
+            return "优惠券";
+        }
+        return "剩余" + couponInfo.getCouponRemainNum() + "张";
+    }
+
+    private String buildCouponSellingPoint(CpsCouponInfo couponInfo) {
+        List<String> parts = new ArrayList<>();
+        if (couponInfo.getCouponConditions() != null) {
+            parts.add("满" + couponInfo.getCouponConditions().stripTrailingZeros().toPlainString() + "可用");
+        }
+        if (couponInfo.getCouponReceiveNum() != null) {
+            parts.add("已领" + couponInfo.getCouponReceiveNum() + "张");
+        }
+        if (couponInfo.getCouponStartTime() != null) {
+            parts.add("开始" + couponInfo.getCouponStartTime());
+        }
+        return String.join("，", parts);
     }
 
     @Override
@@ -231,12 +335,47 @@ public class CpsGoodsToolboxServiceImpl implements CpsGoodsToolboxService {
             wrapper.eq(CpsTransferRecordDO::getPlatformCode, reqVO.getPlatformCode());
             wrapper.eq(CpsTransferRecordDO::getItemId, parseResult.getGoodsId());
         } else if (StringUtils.hasText(reqVO.getOriginalContent())) {
+            List<String> keywords = buildOwnershipKeywords(reqVO.getOriginalContent());
             wrapper.eq(CpsTransferRecordDO::getPlatformCode, reqVO.getPlatformCode());
-            wrapper.like(CpsTransferRecordDO::getOriginalContent, reqVO.getOriginalContent().trim());
+            wrapper.and(query -> {
+                for (int i = 0; i < keywords.size(); i++) {
+                    if (i > 0) {
+                        query.or();
+                    }
+                    String keyword = keywords.get(i);
+                    query.like(CpsTransferRecordDO::getOriginalContent, keyword)
+                            .or().like(CpsTransferRecordDO::getTaoCommand, keyword)
+                            .or().like(CpsTransferRecordDO::getPromotionUrl, keyword);
+                }
+            });
         }
         wrapper.orderByDesc(CpsTransferRecordDO::getId);
         List<CpsTransferRecordDO> records = transferRecordMapper.selectList(wrapper);
         return records == null || records.isEmpty() ? null : records.get(0);
+    }
+
+    private List<String> buildOwnershipKeywords(String originalContent) {
+        String content = originalContent.trim();
+        List<String> keywords = new ArrayList<>();
+        keywords.add(content);
+        addCommandKeyword(keywords, content, '￥');
+        addCommandKeyword(keywords, content, '¥');
+        return keywords;
+    }
+
+    private void addCommandKeyword(List<String> keywords, String content, char marker) {
+        int start = content.indexOf(marker);
+        if (start < 0) {
+            return;
+        }
+        int end = content.indexOf(marker, start + 1);
+        if (end <= start) {
+            return;
+        }
+        String command = content.substring(start, end + 1);
+        if (StringUtils.hasText(command) && !keywords.contains(command)) {
+            keywords.add(command);
+        }
     }
 
     private String resolveCouponKeyword(CpsGoodsCouponQueryReqVO reqVO) {
@@ -254,6 +393,8 @@ public class CpsGoodsToolboxServiceImpl implements CpsGoodsToolboxService {
                 .goodsId(result.getGoodsId())
                 .goodsSign(result.getGoodsSign())
                 .itemLink(result.getItemLink())
+                .couponLink(result.getCouponLink())
+                .sourceLink(result.getSourceLink())
                 .title(result.getTitle())
                 .parseSource(parseSource)
                 .failureCode(result.getFailureCode())

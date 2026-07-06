@@ -33,6 +33,16 @@ public class CpsContentParseResult {
     private String itemLink;
 
     /**
+     * 优惠券链接.
+     */
+    private String couponLink;
+
+    /**
+     * 来源长链，例如二合一外层链接.
+     */
+    private String sourceLink;
+
+    /**
      * 商品标题.
      */
     private String title;

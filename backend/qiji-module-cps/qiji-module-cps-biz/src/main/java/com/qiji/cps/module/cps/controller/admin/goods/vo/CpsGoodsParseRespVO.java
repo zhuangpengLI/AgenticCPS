@@ -24,6 +24,12 @@ public class CpsGoodsParseRespVO {
     @Schema(description = "商品原始链接")
     private String itemLink;
 
+    @Schema(description = "优惠券链接")
+    private String couponLink;
+
+    @Schema(description = "来源长链，例如二合一外层链接")
+    private String sourceLink;
+
     @Schema(description = "商品标题")
     private String title;
 

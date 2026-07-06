@@ -31,6 +31,10 @@ export interface CpsGoodsSquareGoodsVO {
   originalPrice?: number
   actualPrice?: number
   couponPrice?: number
+  couponConditions?: number
+  couponTotalNum?: number
+  couponRemainNum?: number
+  couponReceiveNum?: number
   commissionRate?: number
   commissionAmount?: number
   monthSales?: number
@@ -41,6 +45,7 @@ export interface CpsGoodsSquareGoodsVO {
   source?: string
   activityTag?: string
   categoryName?: string
+  couponStartTime?: string
   couponEndTime?: string
   rankTag?: string
   sellingPoint?: string

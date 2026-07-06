@@ -2,7 +2,11 @@ package com.qiji.cps.module.cps.service.goods;
 
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.CpsCouponInfoVendorClient;
+import com.qiji.cps.module.cps.client.dto.CpsCouponInfo;
 import com.qiji.cps.module.cps.client.dto.CpsContentParseResult;
+import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
+import com.qiji.cps.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsBatchTransferReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsCashGiftPlanReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsCouponQueryReqVO;
@@ -13,6 +17,8 @@ import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsResp
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
+import com.qiji.cps.module.member.dal.dataobject.user.MemberUserDO;
+import com.qiji.cps.module.member.service.user.MemberUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,7 +61,13 @@ class CpsGoodsToolboxServiceImplTest {
     private CpsPlatformClientFactory platformClientFactory;
 
     @Mock
+    private MemberUserService memberUserService;
+
+    @Mock
     private CpsPlatformClient platformClient;
+
+    @Mock
+    private CpsCouponInfoVendorClient couponInfoVendorClient;
 
     @BeforeEach
     void setUp() {
@@ -200,7 +212,52 @@ class CpsGoodsToolboxServiceImplTest {
     }
 
     @Test
-    @DisplayName("checkOwnership - 返回会员和推广位归属匹配结果")
+    @DisplayName("queryCoupons should use Dataoke coupon API for Taobao content")
+    void queryCoupons_usesDataokeCouponInfoApiForTaobao() {
+        CpsGoodsCouponQueryReqVO reqVO = new CpsGoodsCouponQueryReqVO();
+        reqVO.setPlatformCode("taobao");
+        reqVO.setVendorCode("dataoke");
+        reqVO.setQueryText("￥FV25gmAa2SI￥");
+        reqVO.setPageNo(1);
+        reqVO.setPageSize(10);
+        CpsVendorConfig config = CpsVendorConfig.builder().build();
+        when(platformClientFactory.getVendorClient("dataoke", "taobao")).thenReturn(couponInfoVendorClient);
+        when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(config);
+        when(couponInfoVendorClient.queryCouponInfo("￥FV25gmAa2SI￥", config))
+                .thenReturn(CpsCouponInfo.builder()
+                        .couponId("abc")
+                        .couponLink("https://uland.taobao.com/quan/detail?activityId=abc")
+                        .couponAmount(new BigDecimal("40"))
+                        .couponConditions(new BigDecimal("59"))
+                        .couponRemainNum(93000L)
+                        .couponTotalNum(100000L)
+                        .couponReceiveNum(7000L)
+                        .couponStartTime("2026-07-01 00:00:00")
+                        .couponEndTime("2026-07-31 23:59:59")
+                        .build());
+
+        var result = service.queryCoupons(reqVO);
+
+        assertEquals(1L, result.getTotal());
+        assertEquals(1, result.getList().size());
+        CpsGoodsSquareGoodsRespVO goods = result.getList().get(0);
+        assertEquals("abc", goods.getGoodsId());
+        assertEquals("taobao", goods.getPlatformCode());
+        assertEquals("dataoke", goods.getVendorCode());
+        assertEquals(new BigDecimal("40"), goods.getCouponPrice());
+        assertNull(goods.getActualPrice());
+        assertEquals(new BigDecimal("59"), goods.getCouponConditions());
+        assertEquals(93000L, goods.getCouponRemainNum());
+        assertEquals(100000L, goods.getCouponTotalNum());
+        assertEquals(7000L, goods.getCouponReceiveNum());
+        assertEquals("2026-07-01 00:00:00", goods.getCouponStartTime());
+        assertEquals("https://uland.taobao.com/quan/detail?activityId=abc", goods.getItemLink());
+        assertEquals("2026-07-31 23:59:59", goods.getCouponEndTime());
+        verify(goodsSquareService, never()).searchGoods(any());
+    }
+
+    @Test
+    @DisplayName("checkOwnership returns matched transfer record")
     void checkOwnership_returnsMatchedTransferRecord() {
         CpsGoodsOwnershipCheckReqVO reqVO = new CpsGoodsOwnershipCheckReqVO();
         reqVO.setPlatformCode("taobao");
@@ -219,13 +276,62 @@ class CpsGoodsToolboxServiceImplTest {
                 .status(1)
                 .build();
         when(transferRecordMapper.selectList(any())).thenReturn(List.of(record));
+        when(memberUserService.getUser(100L)).thenReturn(MemberUserDO.builder()
+                .id(100L)
+                .nickname("张三")
+                .mobile("13800138000")
+                .build());
 
         var result = service.checkOwnership(reqVO);
 
         assertEquals("MATCH", result.getCheckStatus());
+        assertEquals("是您的淘口令", result.getOwnershipResult());
         assertEquals(10L, result.getTransferRecordId());
         assertEquals("测试商品", result.getItemTitle());
+        assertEquals(100L, result.getRecordMemberId());
+        assertEquals("张三", result.getRecordMemberNickname());
+        assertEquals("13800138000", result.getRecordMemberMobile());
+        assertEquals("mm_1_2_3", result.getPid());
+        assertEquals("mm_1_2_3", result.getRecordAdzoneId());
         assertTrue(result.getMismatches().isEmpty());
+    }
+
+    @Test
+    @DisplayName("checkOwnership - 使用万能转链生成的淘口令能反查转链记录")
+    void checkOwnership_findsTransferRecordByGeneratedTaoCommand() {
+        CpsGoodsOwnershipCheckReqVO reqVO = new CpsGoodsOwnershipCheckReqVO();
+        reqVO.setPlatformCode("taobao");
+        reqVO.setOriginalContent("￥FV25gmAa2SI￥");
+        reqVO.setMemberId(285L);
+
+        CpsTransferRecordDO record = CpsTransferRecordDO.builder()
+                .id(20L)
+                .memberId(285L)
+                .platformCode("taobao")
+                .originalContent("https://item.taobao.com/item.htm?id=222")
+                .itemId("222")
+                .itemTitle("万能转链商品")
+                .adzoneId("mm_44880323_46012675_109717600050")
+                .promotionUrl("https://uland.taobao.com/item/detail?id=222")
+                .taoCommand("￥FV25gmAa2SI￥")
+                .status(1)
+                .build();
+        when(transferRecordMapper.selectList(any())).thenAnswer(invocation -> {
+            LambdaQueryWrapperX<CpsTransferRecordDO> wrapper = invocation.getArgument(0);
+            return wrapper.getSqlSegment().contains("tao_command") ? List.of(record) : List.of();
+        });
+        when(memberUserService.getUser(285L)).thenReturn(MemberUserDO.builder()
+                .id(285L)
+                .nickname("我是喵团员")
+                .build());
+
+        var result = service.checkOwnership(reqVO);
+
+        assertEquals("MATCH", result.getCheckStatus());
+        assertEquals(20L, result.getTransferRecordId());
+        assertEquals("万能转链商品", result.getItemTitle());
+        assertEquals("mm_44880323_46012675_109717600050", result.getPid());
+        assertEquals("我是喵团员", result.getRecordMemberNickname());
     }
 
     @Test
@@ -246,6 +352,7 @@ class CpsGoodsToolboxServiceImplTest {
         var result = service.checkOwnership(reqVO);
 
         assertEquals("MISMATCH", result.getCheckStatus());
+        assertEquals("不是您的淘口令", result.getOwnershipResult());
         assertEquals(List.of("memberId"), result.getMismatches());
     }
 

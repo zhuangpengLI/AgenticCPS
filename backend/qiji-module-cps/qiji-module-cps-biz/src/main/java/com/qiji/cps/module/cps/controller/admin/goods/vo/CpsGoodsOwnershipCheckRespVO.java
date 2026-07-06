@@ -18,6 +18,9 @@ public class CpsGoodsOwnershipCheckRespVO {
     @Schema(description = "检测结论")
     private String message;
 
+    @Schema(description = "归属结论文案")
+    private String ownershipResult;
+
     @Schema(description = "平台编码")
     private String platformCode;
 
@@ -33,8 +36,17 @@ public class CpsGoodsOwnershipCheckRespVO {
     @Schema(description = "记录会员ID")
     private Long recordMemberId;
 
+    @Schema(description = "记录会员昵称")
+    private String recordMemberNickname;
+
+    @Schema(description = "记录会员手机号")
+    private String recordMemberMobile;
+
     @Schema(description = "记录推广位ID")
     private String recordAdzoneId;
+
+    @Schema(description = "推广位ID / PID")
+    private String pid;
 
     @Schema(description = "推广链接")
     private String promotionUrl;

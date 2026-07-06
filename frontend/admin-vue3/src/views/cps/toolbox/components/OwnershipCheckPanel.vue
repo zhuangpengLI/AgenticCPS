@@ -69,29 +69,47 @@
       </el-button>
     </div>
 
-    <el-descriptions v-if="result" class="mt-16px" :column="1" border>
-      <el-descriptions-item label="检测结论">
-        <el-tag :type="statusType(result.checkStatus)" effect="plain">
-          {{ statusText(result.checkStatus) }}
-        </el-tag>
-        <span class="ml-8px">{{ result.message }}</span>
-      </el-descriptions-item>
-      <el-descriptions-item label="转链记录">{{ result.transferRecordId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="商品">{{ result.itemTitle || result.itemId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="记录会员">{{ result.recordMemberId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="记录推广位">{{ result.recordAdzoneId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="推广链接">
-        <a v-if="result.promotionUrl" :href="result.promotionUrl" target="_blank" class="text-blue-500">打开</a>
-        <span v-else>-</span>
-      </el-descriptions-item>
-      <el-descriptions-item label="淘口令">{{ result.taoCommand || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="不一致项">
-        <el-tag v-for="item in result.mismatches || []" :key="item" class="mr-6px" type="warning" effect="plain">
+    <div v-if="result" class="ownership-result">
+      <div class="result-row">
+        <div class="result-label">商品</div>
+        <el-input :model-value="goodsDisplay" readonly>
+          <template #append>
+            <el-button v-if="result.promotionUrl" @click="copyText(result.promotionUrl)">
+              <Icon icon="ep:copy-document" />
+            </el-button>
+            <el-button v-if="result.promotionUrl" type="primary" @click="openUrl(result.promotionUrl)">打开</el-button>
+          </template>
+        </el-input>
+      </div>
+      <div class="result-row">
+        <div class="result-label">PID</div>
+        <el-input :model-value="result.pid || result.recordAdzoneId || '-'" readonly>
+          <template #append>
+            <el-button v-if="result.pid || result.recordAdzoneId" @click="copyText(result.pid || result.recordAdzoneId)">
+              <Icon icon="ep:copy-document" />
+            </el-button>
+          </template>
+        </el-input>
+      </div>
+      <div class="result-row">
+        <div class="result-label">会员</div>
+        <el-input :model-value="memberDisplay" readonly />
+      </div>
+      <div class="result-verdict" :class="`is-${result.checkStatus?.toLowerCase()}`">
+        <Icon :icon="result.checkStatus === 'MATCH' ? 'ep:success-filled' : 'ep:warning-filled'" />
+        <span>{{ result.ownershipResult || result.message || statusText(result.checkStatus) }}</span>
+      </div>
+      <div class="result-meta">
+        <span>转链记录：{{ result.transferRecordId || '-' }}</span>
+        <span>平台：{{ platformLabel(result.platformCode) }}</span>
+        <span>状态：{{ statusText(result.checkStatus) }}</span>
+      </div>
+      <div v-if="result.mismatches?.length" class="result-mismatches">
+        <el-tag v-for="item in result.mismatches" :key="item" type="warning" effect="plain">
           {{ mismatchText(item) }}
         </el-tag>
-        <span v-if="!result.mismatches?.length">-</span>
-      </el-descriptions-item>
-    </el-descriptions>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -156,6 +174,26 @@ const handleReset = () => {
   result.value = undefined
 }
 
+const goodsDisplay = computed(() =>
+  result.value?.promotionUrl || result.value?.itemTitle || result.value?.itemId || '-'
+)
+
+const memberDisplay = computed(() => {
+  if (!result.value?.recordMemberId) return '-'
+  const name = result.value.recordMemberNickname || result.value.recordMemberMobile
+  return name ? `${name}（ID:${result.value.recordMemberId}）` : `ID:${result.value.recordMemberId}`
+})
+
+const openUrl = (url: string) => {
+  window.open(url, '_blank')
+}
+
+const copyText = async (text?: string) => {
+  if (!text) return
+  await navigator.clipboard.writeText(text)
+  message.success('已复制')
+}
+
 const searchMemberOptions = async (keyword?: string) => {
   memberLoading.value = true
   try {
@@ -211,5 +249,59 @@ onMounted(loadPlatformOptions)
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.ownership-result {
+  display: flex;
+  max-width: 720px;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.result-row {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  grid-template-columns: 68px minmax(0, 1fr);
+}
+
+.result-label {
+  color: var(--el-text-color-primary);
+  font-size: 13px;
+}
+
+.result-verdict {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 6px;
+  background: var(--el-fill-color-lighter);
+  color: var(--el-text-color-primary);
+  font-size: 14px;
+}
+
+.result-verdict.is-match {
+  color: var(--el-color-success);
+}
+
+.result-verdict.is-mismatch {
+  color: var(--el-color-warning);
+}
+
+.result-verdict.is-not_found {
+  color: var(--el-color-info);
+}
+
+.result-meta,
+.result-mismatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
 }
 </style>

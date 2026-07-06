@@ -20,6 +20,53 @@ class CpsContentParserTest {
     }
 
     @Test
+    @DisplayName("parse - 淘宝 uland 商品地址解析加密 id")
+    void parse_taobaoUlandItemDetailUrl() {
+        CpsContentParseResult result = CpsContentParser.parse("taobao",
+                "https://uland.taobao.com/item/detail?id=vNYO4nJhZt6weZ8o48I9rVT0te-vdGJZ");
+
+        assertTrue(result.getSupported());
+        assertEquals("vNYO4nJhZt6weZ8o48I9rVT0te-vdGJZ", result.getGoodsId());
+        assertEquals("https://uland.taobao.com/item/detail?id=vNYO4nJhZt6weZ8o48I9rVT0te-vdGJZ", result.getItemLink());
+    }
+
+    @Test
+    @DisplayName("parse - 淘宝 uland 优惠券地址保留券链接")
+    void parse_taobaoUlandQuanDetailUrl() {
+        CpsContentParseResult result = CpsContentParser.parse("taobao",
+                "https://uland.taobao.com/quan/detail?sellerId=4757067876244917769&activityId=abc123");
+
+        assertTrue(result.getSupported());
+        assertNull(result.getGoodsId());
+        assertEquals("https://uland.taobao.com/quan/detail?sellerId=4757067876244917769&activityId=abc123", result.getCouponLink());
+        assertNull(result.getItemLink());
+    }
+
+    @Test
+    @DisplayName("parse - 淘宝 uland 优惠券地址无 activityId 时仍保留券地址")
+    void parse_taobaoUlandQuanDetailUrlWithoutActivityId() {
+        CpsContentParseResult result = CpsContentParser.parse("taobao",
+                "https://uland.taobao.com/quan/detail?sellerId=4757067876244917769");
+
+        assertTrue(result.getSupported());
+        assertNull(result.getGoodsId());
+        assertEquals("https://uland.taobao.com/quan/detail?sellerId=4757067876244917769", result.getCouponLink());
+        assertNull(result.getItemLink());
+    }
+
+    @Test
+    @DisplayName("parse - 淘宝二合一长链解析 targetUrl 内商品 id")
+    void parse_taobaoAccurateReturnTargetUrl() {
+        CpsContentParseResult result = CpsContentParser.parse("taobao",
+                "https://mos.m.taobao.com/union/accurate-return?targetUrl=https%3A%2F%2Fuland.taobao.com%2Fitem%2Fdetail%3Fid%3DtargetGoods123");
+
+        assertTrue(result.getSupported());
+        assertEquals("targetGoods123", result.getGoodsId());
+        assertEquals("https://uland.taobao.com/item/detail?id=targetGoods123", result.getItemLink());
+        assertEquals("https://mos.m.taobao.com/union/accurate-return?targetUrl=https%3A%2F%2Fuland.taobao.com%2Fitem%2Fdetail%3Fid%3DtargetGoods123", result.getSourceLink());
+    }
+
+    @Test
     @DisplayName("parse - 京东商品链接解析 sku id")
     void parse_jdUrl() {
         CpsContentParseResult result = CpsContentParser.parse("jd",

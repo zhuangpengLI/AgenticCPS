@@ -108,9 +108,23 @@
           <strong>{{ result.title || '-' }}</strong>
         </div>
         <div class="result-item full">
-          <span>原始链接</span>
+          <span>商品地址</span>
           <a v-if="result.itemLink" :href="result.itemLink" target="_blank" class="text-blue-500">
             {{ result.itemLink }}
+          </a>
+          <strong v-else>-</strong>
+        </div>
+        <div class="result-item full">
+          <span>优惠券地址</span>
+          <a v-if="result.couponLink" :href="result.couponLink" target="_blank" class="text-blue-500">
+            {{ result.couponLink }}
+          </a>
+          <strong v-else>-</strong>
+        </div>
+        <div class="result-item full">
+          <span>原二合一长链</span>
+          <a v-if="result.sourceLink" :href="result.sourceLink" target="_blank" class="text-blue-500">
+            {{ result.sourceLink }}
           </a>
           <strong v-else>-</strong>
         </div>

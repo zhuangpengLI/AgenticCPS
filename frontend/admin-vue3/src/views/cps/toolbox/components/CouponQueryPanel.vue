@@ -102,11 +102,11 @@ const couponCard = computed(() => {
   const goods = goodsList.value[0]
   return {
     goods,
-    remainingText: goods ? '***' : '***',
-    usedText: goods ? '***' : '***',
-    thresholdText: goods ? `${Number(goods.actualPrice || 0).toFixed(2)} 元` : '***',
-    startText: goods ? '以平台展示为准' : '***',
-    endText: goods?.couponEndTime || '***'
+    remainingText: formatCount(goods?.couponRemainNum),
+    usedText: formatCount(goods?.couponReceiveNum),
+    thresholdText: formatThreshold(goods),
+    startText: formatDateText(goods?.couponStartTime),
+    endText: formatDateText(goods?.couponEndTime)
   }
 })
 
@@ -159,8 +159,10 @@ const copyCouponText = async () => {
   await copy([
     `${couponAmountText.value}元优惠券`,
     goods.title || goods.goodsId,
-    `券后价：${formatMoney(goods.actualPrice)}`,
-    `有效期：${couponCard.value.endText}`
+    `使用门槛：满 ${couponCard.value.thresholdText} 可用`,
+    `剩余：${couponCard.value.remainingText} 张`,
+    `已领用：${couponCard.value.usedText} 张`,
+    `有效期：${couponCard.value.startText} 至 ${couponCard.value.endText}`
   ].join('\n'))
   message.success('优惠券信息已复制')
 }
@@ -179,6 +181,21 @@ const platformLabel = (platformCode?: string) => {
 
 const formatMoney = (value?: number) =>
   value === undefined || value === null ? '-' : `￥${Number(value).toFixed(2)}`
+
+const formatCount = (value?: number) =>
+  value === undefined || value === null ? '***' : `${Number(value)}`
+
+const formatThreshold = (goods?: CpsGoodsSquareGoodsVO) => {
+  const value = goods?.couponConditions ?? goods?.actualPrice
+  return value === undefined || value === null ? '***' : `${Number(value).toFixed(2)} 元`
+}
+
+const formatDateText = (value?: string) => {
+  if (!value) return '***'
+  const matched = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
+  if (!matched) return value
+  return `${matched[1]}.${Number(matched[2])}.${Number(matched[3])}`
+}
 </script>
 
 <style scoped>
