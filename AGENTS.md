@@ -55,6 +55,7 @@ AgenticCPS is developed with Codex as an autonomous coding agent, deeply integra
 - CPS critical flow map: App/MCP -> CPS controller/tool -> `CpsGoodsService` / exchange services -> `CpsPlatformClientFactory` or aitoken OpenAPI -> external platform / aitoken -> CPS DB records.
 - Activity center flow: Admin activity center -> `CpsRebateActivityController` -> `CpsRebateActivityService` -> `cps_rebate_activity`; card `search` jumps to `frontend/admin-vue3/src/views/cps/goods/square/index.vue` with platform/keyword/tag query params.
 - Rebate toolbox flow: Admin toolbox -> `frontend/admin-vue3/src/views/cps/toolbox/index.vue` -> `CpsGoodsRebateQueryController` toolbox endpoints -> `CpsGoodsToolboxService` -> existing rebate query, goods square, transfer record, and platform parsing services.
+- Selection ranking flow: Admin selection theme -> `frontend/admin-vue3/src/views/cps/selection/theme/index.vue` -> `/admin-api/cps/selection-theme` -> `CpsSelectionThemeService` -> `cps_selection_theme` / `cps_selection_theme_item`; list-style features such as hot goods recommendations, anchor sales rankings, 9.9 free-shipping zones, and blogger-window hot picks are modeled as selection themes/templates/rules over item snapshots, not separate financial truth tables.
 - Generated companion map: `docs/project-map.md` contains the latest read-only project map and should be refreshed when module ownership, entrypoints, commands, or risk areas change.
 
 ## Agentic Ecosystem Relationship
@@ -64,14 +65,14 @@ AgenticCPS is one service in a three-project Agentic ecosystem. Future features 
 Current ecosystem capability baseline:
 
 - `AgenticTokenHub` already has a multi-model gateway, Token billing, membership plans, credit/points transfer, and payment capabilities. It is the ecosystem's AI capability and Token settlement foundation.
-- `AgenticCPS` already plans and implements activity-center operations, rebate toolbox operations, selection-theme libraries, product search, price comparison, promotion link generation, order tracking, rebate summary, and MCP tools. It is the ecosystem's CPS rebate asset and product recommendation service.
+- `AgenticCPS` already plans and implements activity-center operations, rebate toolbox operations, selection-theme libraries, ranking shelves, product search, price comparison, promotion link generation, order tracking, rebate summary, and MCP tools. It is the ecosystem's CPS rebate asset and product recommendation service.
 - `AgenticAIoT` is positioned as a device access, data flow, rule engine, AI operations, and multi-protocol IoT platform. It is the ecosystem's enterprise device data and AI operations scenario entry.
 
 The missing ecosystem integration is **account interoperability, asset conversion, scenario linkage, and Agent-callable interfaces**. Do not merge the three systems into a monolith. For every new feature, first decide which project owns the responsibility, then connect systems through OpenAPI, MCP tools, or event ledgers.
 
 | Project | Path | Role | Owns | Must Not Own |
 |---------|------|------|------|--------------|
-| AgenticCPS | `F:\ai\AgenticCPS` | CPS rebate and product recommendation service | Activity-center operations, rebate toolbox operations, selection-theme libraries and item snapshots, CPS platform adapters, goods search, price comparison, promotion links, batch transfer, content parsing, order tracking, rebate settlement, rebate freeze/deduct, CPS MCP tools, AIoT scene-based product recommendation | Model gateway, Token master ledger, IoT device ingestion, IoT rule engine |
+| AgenticCPS | `F:\ai\AgenticCPS` | CPS rebate and product recommendation service | Activity-center operations, rebate toolbox operations, selection-theme libraries and item snapshots, ranking shelves such as hot goods, anchor sales, 9.9 free-shipping, and blogger-window picks, CPS platform adapters, goods search, price comparison, promotion links, batch transfer, content parsing, order tracking, rebate settlement, rebate freeze/deduct, CPS MCP tools, AIoT scene-based product recommendation | Model gateway, Token master ledger, IoT device ingestion, IoT rule engine |
 | AgenticTokenHub | `F:\ai\AgenticTokenHub` | AI Token and model billing foundation | Multi-model gateway, Token wallet/quota, membership plans, external rebate-to-Token exchange, API Key quota, AI usage cost accounting, Token MCP tools | CPS orders, CPS rebate settlement, product recommendation, IoT devices |
 | AgenticAIoT | `F:\ai\AgenticAIoT` | Enterprise AIoT data and operations scenario service | Device access, metrics, alerts, rules, AI analysis tasks, purchase-need generation, CPS recommendation trigger, AIoT MCP tools | Token wallet master ledger, CPS rebate accounting, ecommerce platform adapters |
 
@@ -342,9 +343,11 @@ The admin selection library is backed by `cps_selection_theme` and `cps_selectio
 - Admin API root: `/admin-api/cps/selection-theme`; permissions use `cps:selection-theme:*`.
 - Frontend page: `frontend/admin-vue3/src/views/cps/selection/theme/index.vue`.
 - Data boundary: selection item prices, coupons, commissions, sales, and shop/category fields are snapshots for operations and AI recommendation only; they must not drive rebate settlement, order attribution, freeze/deduct, withdrawal, or Token exchange.
+- Ranking/shelf features such as hot goods recommendations, anchor sales rankings, 9.9 free-shipping zones, and blogger-window hot picks should be represented as selection themes, promotion templates, or vendor-pulled theme snapshots. They reuse theme rules and item snapshots rather than introducing separate settlement or order-attribution models.
 - Import sources are fixed as `MANUAL`, `AI_RECOMMEND`, `VENDOR_PULL`, and `PROMOTION_TEMPLATE`; item status is `ENABLED` / `DISABLED`; theme status is `DRAFT` / `PUBLISHED` / `OFFLINE`.
 - Third-party pull must reuse `CpsGoodsSquareService` / `CpsGoodsService` / `CpsPlatformClientFactory`; do not add a platform adapter just for selection-library ingestion.
 - AI recommendation must remain explainable: deterministic rule scoring decides ranking, while LLM output may only enrich theme copy and item recommendation reasons. Never let LLM output overwrite third-party facts such as `goodsId`, price, coupon, commission, or sales.
+- Ranking logic should stay explainable: deterministic scoring may combine commission amount/rate, coupon price, monthly sales, activity tags, platform/vendor weights, source rank tags, and manual top/sort fields.
 - Built-in promotion templates create draft themes only. Operations must explicitly publish after reviewing rules and imported items.
 
 ### MCP AI Interface Layer
@@ -542,7 +545,7 @@ with open('local/path/to/file.sql', 'w', encoding='utf-8', newline='') as f:
 - **Member identity trust boundary**: never trust request-body `memberId` / `userId` for user-facing asset operations. Use login context or verified service signatures. MCP link generation is especially sensitive because attribution affects rebates.
 - **Platform adapter completeness**: official vendor clients may be partial; switching `active_vendor_code` can turn unimplemented adapters into silent empty results or null link failures.
 - **Activity center data boundary**: operation-configured cards are the stable source; vendor/source metadata is optional enhancement. Keep `search/url/none` jump semantics safe, and do not make card availability depend on external platform calls.
-- **Selection library snapshot boundary**: theme items are marketing/operations snapshots, not financial truth. Refresh/import must preserve tenant isolation, item dedupe, and source/status fields; AI copy must not mutate platform facts.
+- **Selection library snapshot boundary**: theme items and ranking shelves are marketing/operations snapshots, not financial truth. Refresh/import must preserve tenant isolation, item dedupe, source/status fields, and explainable ranking fields; AI copy must not mutate platform facts.
 - **Order sync and settlement state**: platform order sync can receive duplicates or out-of-order state changes. Guard against status rollback, duplicate rebate records, and repeated account mutation.
 - **MCP auditability**: MCP access log tables exist, but tool-level logging may be incomplete. Changes to MCP tools should preserve tool name, parameter summary, member context, status, duration, and error reason.
 - **Statistics performance**: SQL that wraps indexed time columns, such as `DATE(create_time)`, can degrade on large tables. Prefer range predicates when touching dashboard/statistics queries.
