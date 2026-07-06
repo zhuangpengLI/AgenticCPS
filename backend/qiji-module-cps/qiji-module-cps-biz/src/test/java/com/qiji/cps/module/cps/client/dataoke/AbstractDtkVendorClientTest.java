@@ -426,6 +426,88 @@ class AbstractDtkVendorClientTest {
     }
 
     @Test
+    @DisplayName("淘宝订单查询应优先使用真实 external_id 归因")
+    void testTaobaoQueryOrdersPrefersExternalIdForAttribution() {
+        class CapturingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                try {
+                    return new ObjectMapper().readTree("""
+                            {
+                              "code": 0,
+                              "msg": "success",
+                              "data": {
+                                "results": {
+                                  "publisher_order_dto": [
+                                    {
+                                      "trade_id": "TB-EXTERNAL-1",
+                                      "item_id": "ITEM-1",
+                                      "tk_status": 12,
+                                      "external_id": "1001",
+                                      "special_id": "SPECIAL-999",
+                                      "relation_id": "REL-888"
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                            """);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+
+        var orders = new CapturingDtkTaobaoVendorClient().queryOrders(
+                new CpsOrderQueryRequest(), CpsVendorConfig.builder().build());
+
+        assertEquals(1, orders.size());
+        assertEquals("1001", orders.get(0).getExternalId());
+    }
+
+    @Test
+    @DisplayName("拼多多订单查询应映射 customParameters 用于会员归因")
+    void testPddQueryOrdersMapsCustomParametersForAttribution() {
+        class CapturingDtkPddVendorClient extends DtkPddVendorClient {
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                try {
+                    return new ObjectMapper().readTree("""
+                            {
+                              "code": 0,
+                              "msg": "success",
+                              "data": {
+                                "orderList": [
+                                  {
+                                    "orderSn": "PDD-1",
+                                    "goodsSign": "PDD-GOODS-1",
+                                    "goodsName": "测试拼多多商品",
+                                    "promotionRate": "20",
+                                    "promotionAmount": "100",
+                                    "orderStatus": 1,
+                                    "orderCreateTime": "2026-07-06 20:00:00",
+                                    "pid": "pdd-pid-1",
+                                    "customParameters": "1001"
+                                  }
+                                ]
+                              }
+                            }
+                            """);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+
+        var orders = new CapturingDtkPddVendorClient().queryOrders(
+                new CpsOrderQueryRequest(), CpsVendorConfig.builder().build());
+
+        assertEquals(1, orders.size());
+        assertEquals("1001", orders.get(0).getExternalId());
+        assertEquals("pdd-pid-1", orders.get(0).getAdzoneId());
+    }
+
+    @Test
     @DisplayName("淘宝订单查询应兼容联盟付款金额和预估佣金字段")
     void testTaobaoQueryOrdersMapsOfficialPaymentAndCommissionFields() {
         class CapturingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {

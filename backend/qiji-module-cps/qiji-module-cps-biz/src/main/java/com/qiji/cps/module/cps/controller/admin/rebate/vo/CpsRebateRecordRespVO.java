@@ -21,6 +21,9 @@ public class CpsRebateRecordRespVO {
     @Schema(description = "会员ID")
     private Long memberId;
 
+    @Schema(description = "会员昵称")
+    private String memberNickname;
+
     @Schema(description = "订单ID")
     private Long orderId;
 

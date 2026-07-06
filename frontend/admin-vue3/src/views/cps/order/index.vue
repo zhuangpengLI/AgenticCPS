@@ -37,10 +37,10 @@
           <el-option label="已失效" value="invalid" />
         </el-select>
       </el-form-item>
-      <el-form-item label="会员ID" prop="memberId">
+      <el-form-item label="会员名" prop="memberName">
         <el-input
-          v-model.number="queryParams.memberId"
-          placeholder="请输入会员ID"
+          v-model="queryParams.memberName"
+          placeholder="请输入会员名"
           clearable
           class="!w-160px"
           @keyup.enter="handleQuery"
@@ -90,7 +90,6 @@
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="taobao">同步淘宝</el-dropdown-item>
-              <el-dropdown-item command="taobao-status">同步淘宝状态</el-dropdown-item>
               <el-dropdown-item command="jd">同步京东</el-dropdown-item>
               <el-dropdown-item command="pdd">同步拼多多</el-dropdown-item>
               <el-dropdown-item command="douyin">同步抖音</el-dropdown-item>
@@ -126,7 +125,11 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="会员" align="center" prop="memberNickname" width="100" show-overflow-tooltip />
+      <el-table-column label="会员名" align="center" prop="memberNickname" width="120" show-overflow-tooltip>
+        <template #default="scope">
+          <span>{{ scope.row.memberNickname || scope.row.memberId || '-' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="券后价" align="center" width="90">
         <template #default="scope">
           ¥{{ formatAmount(scope.row.finalPrice) }}
@@ -189,8 +192,7 @@
       <el-descriptions-item label="平台">{{ platformLabel(detailData.platformCode) }}</el-descriptions-item>
       <el-descriptions-item label="平台单号" :span="2">{{ detailData.platformOrderId }}</el-descriptions-item>
       <el-descriptions-item label="父订单号" :span="2">{{ detailData.parentOrderId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="会员ID">{{ detailData.memberId }}</el-descriptions-item>
-      <el-descriptions-item label="会员昵称">{{ detailData.memberNickname || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="会员名">{{ detailData.memberNickname || detailData.memberId || '-' }}</el-descriptions-item>
       <el-descriptions-item label="商品标题" :span="2">{{ detailData.itemTitle || '-' }}</el-descriptions-item>
       <el-descriptions-item label="商品原价">¥{{ formatAmount(detailData.itemPrice) }}</el-descriptions-item>
       <el-descriptions-item label="券后价">¥{{ formatAmount(detailData.finalPrice) }}</el-descriptions-item>
@@ -224,6 +226,8 @@ import type { CpsOrderVO, CpsOrderPageReqVO } from '@/api/cps/order'
 
 defineOptions({ name: 'CpsOrder' })
 
+type ElTagType = 'primary' | 'success' | 'warning' | 'danger' | 'info'
+
 const message = useMessage()
 
 const loading = ref(false)
@@ -235,7 +239,7 @@ const queryParams = reactive<CpsOrderPageReqVO>({
   pageNo: 1,
   pageSize: 10,
   platformCode: undefined,
-  memberId: undefined,
+  memberName: undefined,
   orderStatus: undefined,
   itemTitle: undefined,
   platformOrderId: undefined,
@@ -243,8 +247,8 @@ const queryParams = reactive<CpsOrderPageReqVO>({
 })
 
 /** 平台标签类型 */
-const platformTagType = (code: string) => {
-  const map: Record<string, string> = { taobao: 'danger', jd: 'primary', pdd: 'warning', douyin: '' }
+const platformTagType = (code: string): ElTagType => {
+  const map: Record<string, ElTagType> = { taobao: 'danger', jd: 'primary', pdd: 'warning', douyin: 'info' }
   return map[code] || 'info'
 }
 const platformLabel = (code: string) => {
@@ -253,8 +257,8 @@ const platformLabel = (code: string) => {
 }
 
 /** 订单状态 */
-const orderStatusTagType = (status: string) => {
-  const map: Record<string, string> = {
+const orderStatusTagType = (status: string): ElTagType => {
+  const map: Record<string, ElTagType> = {
     created: 'info',
     ordered: 'info',
     paid: 'primary',
@@ -320,11 +324,11 @@ const resetQuery = () => {
 
 /** 手动同步 */
 const handleSync = async (command: string) => {
-  const statusSync = command.endsWith('-status')
-  const platformCode = statusSync ? command.replace('-status', '') : command
-  const queryType = statusSync ? 4 : 1
-  const hours = statusSync ? 24 : 2
-  const actionText = statusSync ? '状态' : '订单'
+  const platformCode = command
+  const syncTaobaoWithStatus = platformCode === 'taobao'
+  const queryType = syncTaobaoWithStatus ? 4 : 1
+  const hours = syncTaobaoWithStatus ? 24 : 2
+  const actionText = syncTaobaoWithStatus ? '订单及状态' : '订单'
   try {
     await message.confirm(`确认同步 ${platformLabel(platformCode)} 最近${hours}小时${actionText}？`)
     const result = await OrderApi.syncCpsOrders(platformCode, hours, queryType)

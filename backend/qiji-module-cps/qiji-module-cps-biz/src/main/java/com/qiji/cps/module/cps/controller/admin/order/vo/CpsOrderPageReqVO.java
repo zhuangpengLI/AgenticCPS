@@ -8,6 +8,7 @@ import lombok.ToString;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static com.qiji.cps.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
@@ -22,6 +23,12 @@ public class CpsOrderPageReqVO extends PageParam {
 
     @Schema(description = "会员ID", example = "1")
     private Long memberId;
+
+    @Schema(description = "会员名，支持模糊搜索", example = "张三")
+    private String memberName;
+
+    @Schema(description = "会员ID列表，后端按会员名模糊搜索使用", hidden = true)
+    private List<Long> memberIds;
 
     @Schema(description = "订单状态", example = "paid")
     private String orderStatus;

@@ -9,10 +9,14 @@ import com.qiji.cps.module.cps.client.dto.CpsOrderQueryRequest;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderPageReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderSyncLogDO;
+import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderMapper;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderSyncLogMapper;
+import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
 import com.qiji.cps.module.cps.enums.CpsOrderStatusEnum;
 import com.qiji.cps.module.cps.service.rebate.CpsRebateSettleService;
+import com.qiji.cps.module.member.api.user.MemberUserApi;
+import com.qiji.cps.module.member.api.user.dto.MemberUserRespDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,8 +26,13 @@ import org.springframework.validation.annotation.Validated;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ORDER_NOT_EXISTS;
@@ -52,6 +61,12 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     @Resource
     private CpsRebateSettleService rebateSettleService;
 
+    @Resource
+    private CpsTransferRecordMapper transferRecordMapper;
+
+    @Resource
+    private MemberUserApi memberUserApi;
+
     // ==================== 订单查询 ====================
 
     @Override
@@ -60,12 +75,16 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         if (order == null) {
             throw exception(ORDER_NOT_EXISTS);
         }
+        enrichOrderMembers(List.of(order));
         return order;
     }
 
     @Override
     public PageResult<CpsOrderDO> getOrderPage(CpsOrderPageReqVO pageReqVO) {
-        return orderMapper.selectPage(pageReqVO);
+        fillMemberIdsForNicknameSearch(pageReqVO);
+        PageResult<CpsOrderDO> pageResult = orderMapper.selectPage(pageReqVO);
+        enrichOrderMembers(pageResult.getList());
+        return pageResult;
     }
 
     @Override
@@ -86,17 +105,28 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         if (existing == null) {
             // 新订单：插入
             CpsOrderDO newOrder = convertToOrderDO(orderDTO);
+            AttributionResult attribution = resolveAttribution(orderDTO);
+            if (newOrder.getMemberId() == null && attribution.memberId() != null) {
+                newOrder.setMemberId(attribution.memberId());
+            }
+            fillMemberNickname(newOrder);
             newOrder.setSyncTime(LocalDateTime.now());
             newOrder.setRetryCount(0);
             orderMapper.insert(newOrder);
+            closeTransferRecordLoop(attribution, orderDTO.getPlatformOrderId());
             log.debug("[saveOrUpdateOrder] 新增订单: platform={}, orderId={}",
                     orderDTO.getPlatformCode(), orderDTO.getPlatformOrderId());
             return 1;
         } else {
             // 已有订单：判断是否需要更新
             String newStatus = resolveNextOrderStatus(existing, orderDTO);
+            AttributionResult attribution = existing.getMemberId() == null
+                    ? resolveAttribution(orderDTO) : AttributionResult.empty();
+            boolean shouldFillMemberNickname = existing.getMemberId() != null && isBlank(existing.getMemberNickname());
             if (Objects.equals(existing.getOrderStatus(), newStatus)
-                    && !hasOrderSnapshotChanged(existing, orderDTO)) {
+                    && !hasOrderSnapshotChanged(existing, orderDTO)
+                    && attribution.memberId() == null
+                    && !shouldFillMemberNickname) {
                 // 状态和订单快照均无变化，跳过
                 return 0;
             }
@@ -120,9 +150,12 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             if (orderDTO.getCommissionAmount() != null) {
                 updateDO.setEstimateRebate(calculateEstimateRebate(orderDTO));
             }
-            Long attributedMemberId = parseMemberId(orderDTO.getExternalId());
+            Long attributedMemberId = attribution.memberId();
             if (existing.getMemberId() == null && attributedMemberId != null) {
                 updateDO.setMemberId(attributedMemberId);
+                updateDO.setMemberNickname(resolveMemberNickname(attributedMemberId));
+            } else if (existing.getMemberId() != null && isBlank(existing.getMemberNickname())) {
+                updateDO.setMemberNickname(resolveMemberNickname(existing.getMemberId()));
             }
             // 收货时间
             if (orderDTO.getReceiveTime() != null && existing.getConfirmReceiptTime() == null) {
@@ -145,6 +178,9 @@ public class CpsOrderServiceImpl implements CpsOrderService {
                 }
             }
             orderMapper.updateById(updateDO);
+            if (existing.getMemberId() == null && attributedMemberId != null) {
+                closeTransferRecordLoop(attribution, orderDTO.getPlatformOrderId());
+            }
             log.debug("[saveOrUpdateOrder] 更新订单: platform={}, orderId={}, status={}",
                     orderDTO.getPlatformCode(), orderDTO.getPlatformOrderId(), newStatus);
             return 2;
@@ -323,6 +359,117 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private AttributionResult resolveAttribution(CpsOrderDTO dto) {
+        Long externalMemberId = parseMemberId(dto.getExternalId());
+        if (externalMemberId != null) {
+            return new AttributionResult(externalMemberId, null);
+        }
+        if (dto.getPlatformCode() == null || dto.getItemId() == null) {
+            return AttributionResult.empty();
+        }
+        LocalDateTime orderTime = parseDateTime(dto.getOrderTime());
+        if (orderTime == null) {
+            return AttributionResult.empty();
+        }
+        LocalDateTime startTime = orderTime.minusHours(24);
+        LocalDateTime endTime = orderTime.plusMinutes(30);
+        List<CpsTransferRecordDO> candidates = transferRecordMapper.selectAttributionCandidates(
+                dto.getPlatformCode(), dto.getItemId(), dto.getAdzoneId(), startTime, endTime);
+        if (candidates == null || candidates.size() != 1) {
+            if (candidates != null && candidates.size() > 1) {
+                log.warn("[resolveAttribution] 订单存在多条转链候选，跳过兜底归因: platform={}, orderId={}, itemId={}, adzoneId={}, count={}",
+                        dto.getPlatformCode(), dto.getPlatformOrderId(), dto.getItemId(), dto.getAdzoneId(), candidates.size());
+            }
+            return AttributionResult.empty();
+        }
+        CpsTransferRecordDO record = candidates.get(0);
+        return record.getMemberId() == null ? AttributionResult.empty()
+                : new AttributionResult(record.getMemberId(), record.getId());
+    }
+
+    private void closeTransferRecordLoop(AttributionResult attribution, String platformOrderId) {
+        if (attribution.transferRecordId() == null || platformOrderId == null) {
+            return;
+        }
+        transferRecordMapper.updatePlatformOrderId(attribution.transferRecordId(), platformOrderId);
+    }
+
+    private record AttributionResult(Long memberId, Long transferRecordId) {
+        private static AttributionResult empty() {
+            return new AttributionResult(null, null);
+        }
+    }
+
+    private void fillMemberIdsForNicknameSearch(CpsOrderPageReqVO pageReqVO) {
+        if (isBlank(pageReqVO.getMemberName())) {
+            return;
+        }
+        pageReqVO.setMemberIds(findMemberIdsByNickname(pageReqVO.getMemberName()));
+    }
+
+    private List<Long> findMemberIdsByNickname(String memberName) {
+        try {
+            List<MemberUserRespDTO> users = memberUserApi.getUserListByNickname(memberName);
+            if (users == null || users.isEmpty()) {
+                return Collections.emptyList();
+            }
+            return users.stream().map(MemberUserRespDTO::getId).filter(Objects::nonNull).toList();
+        } catch (Exception e) {
+            log.warn("[findMemberIdsByNickname] 按会员名查询会员失败: memberName={}", memberName, e);
+            return Collections.emptyList();
+        }
+    }
+
+    private void fillMemberNickname(CpsOrderDO order) {
+        if (order.getMemberId() != null && isBlank(order.getMemberNickname())) {
+            order.setMemberNickname(resolveMemberNickname(order.getMemberId()));
+        }
+    }
+
+    private void enrichOrderMembers(Collection<CpsOrderDO> orders) {
+        if (orders == null || orders.isEmpty()) {
+            return;
+        }
+        Set<Long> memberIds = orders.stream()
+                .filter(order -> order.getMemberId() != null && isBlank(order.getMemberNickname()))
+                .map(CpsOrderDO::getMemberId)
+                .collect(Collectors.toSet());
+        if (memberIds.isEmpty()) {
+            return;
+        }
+        try {
+            Map<Long, MemberUserRespDTO> userMap = memberUserApi.getUserMap(memberIds);
+            if (userMap == null || userMap.isEmpty()) {
+                return;
+            }
+            orders.forEach(order -> {
+                MemberUserRespDTO user = userMap.get(order.getMemberId());
+                if (user != null && !isBlank(user.getNickname())) {
+                    order.setMemberNickname(user.getNickname());
+                }
+            });
+        } catch (Exception e) {
+            log.warn("[enrichOrderMembers] 补充订单会员昵称失败: memberIds={}", memberIds, e);
+        }
+    }
+
+    private String resolveMemberNickname(Long memberId) {
+        if (memberId == null) {
+            return null;
+        }
+        try {
+            MemberUserRespDTO user = memberUserApi.getUser(memberId);
+            return user == null ? null : user.getNickname();
+        } catch (Exception e) {
+            log.warn("[resolveMemberNickname] 获取会员昵称失败: memberId={}", memberId, e);
+            return null;
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     /**

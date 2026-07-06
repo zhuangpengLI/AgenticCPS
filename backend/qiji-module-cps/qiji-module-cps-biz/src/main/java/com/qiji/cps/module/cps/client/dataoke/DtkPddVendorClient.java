@@ -198,6 +198,8 @@ public class DtkPddVendorClient extends AbstractDtkVendorClient {
                 .commissionAmount(parseDecimal(item, "promotionAmount"))
                 .platformStatus(item.path("orderStatus").asInt(-1))
                 .orderTime(item.path("orderCreateTime").asText(null))
+                .adzoneId(firstText(item, "pid", "pId"))
+                .externalId(firstText(item, "customParameters", "custom_parameters"))
                 .build();
     }
 
@@ -209,6 +211,16 @@ public class DtkPddVendorClient extends AbstractDtkVendorClient {
             case 4 -> 2;  // 佣金率降序
             default -> 0; // 综合排序
         };
+    }
+
+    private String firstText(JsonNode node, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            String value = node.path(fieldName).asText(null);
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
 }

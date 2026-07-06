@@ -22,14 +22,24 @@ import java.util.Map;
 public interface CpsOrderMapper extends BaseMapperX<CpsOrderDO> {
 
     default PageResult<CpsOrderDO> selectPage(CpsOrderPageReqVO reqVO) {
-        return selectPage(reqVO, new LambdaQueryWrapperX<CpsOrderDO>()
+        LambdaQueryWrapperX<CpsOrderDO> wrapper = new LambdaQueryWrapperX<CpsOrderDO>()
                 .eqIfPresent(CpsOrderDO::getPlatformCode, reqVO.getPlatformCode())
                 .eqIfPresent(CpsOrderDO::getMemberId, reqVO.getMemberId())
                 .eqIfPresent(CpsOrderDO::getOrderStatus, reqVO.getOrderStatus())
                 .likeIfPresent(CpsOrderDO::getItemTitle, reqVO.getItemTitle())
                 .likeIfPresent(CpsOrderDO::getPlatformOrderId, reqVO.getPlatformOrderId())
-                .betweenIfPresent(CpsOrderDO::getCreateTime, reqVO.getCreateTime())
-                .orderByDesc(CpsOrderDO::getId));
+                .betweenIfPresent(CpsOrderDO::getCreateTime, reqVO.getCreateTime());
+        if (reqVO.getMemberName() != null && !reqVO.getMemberName().isBlank()) {
+            wrapper.and(w -> {
+                w.like(CpsOrderDO::getMemberNickname, reqVO.getMemberName());
+                if (reqVO.getMemberIds() != null && !reqVO.getMemberIds().isEmpty()) {
+                    w.or().in(CpsOrderDO::getMemberId, reqVO.getMemberIds());
+                }
+            });
+        } else {
+            wrapper.inIfPresent(CpsOrderDO::getMemberId, reqVO.getMemberIds());
+        }
+        return selectPage(reqVO, wrapper.orderByDesc(CpsOrderDO::getId));
     }
 
     default CpsOrderDO selectByPlatformOrderId(String platformOrderId) {

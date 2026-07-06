@@ -6,10 +6,14 @@ import com.qiji.cps.module.cps.client.dto.CpsOrderDTO;
 import com.qiji.cps.module.cps.client.dto.CpsOrderQueryRequest;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderSyncLogDO;
+import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderMapper;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderSyncLogMapper;
+import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
 import com.qiji.cps.module.cps.enums.CpsOrderStatusEnum;
 import com.qiji.cps.module.cps.service.rebate.CpsRebateSettleService;
+import com.qiji.cps.module.member.api.user.MemberUserApi;
+import com.qiji.cps.module.member.api.user.dto.MemberUserRespDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +28,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,6 +49,10 @@ class CpsOrderServiceImplTest {
     private CpsRebateSettleService rebateSettleService;
     @Mock
     private CpsPlatformClient platformClient;
+    @Mock
+    private CpsTransferRecordMapper transferRecordMapper;
+    @Mock
+    private MemberUserApi memberUserApi;
 
     @Test
     @DisplayName("saveOrUpdateOrder - 已到账订单收到退款状态时触发返利扣回")
@@ -148,6 +157,69 @@ class CpsOrderServiceImplTest {
                         && Long.valueOf(1002L).equals(order.getMemberId())
                         && "1002".equals(order.getExternalInfo())
                         && "ITEM-3".equals(order.getItemId())));
+    }
+
+    @Test
+    @DisplayName("saveOrUpdateOrder - externalId 为空时唯一转链记录应兜底归因并回写订单号")
+    void saveOrUpdateOrder_attributesByUniqueTransferRecordWhenExternalIdMissing() {
+        when(orderMapper.selectByPlatformOrderId("TB-FALLBACK-1")).thenReturn(null);
+        when(transferRecordMapper.selectAttributionCandidates(eq("taobao"), eq("ITEM-1"),
+                eq("mm_111_222_333"), any(), any())).thenReturn(List.of(CpsTransferRecordDO.builder()
+                .id(10L)
+                .memberId(1001L)
+                .platformCode("taobao")
+                .itemId("ITEM-1")
+                .adzoneId("mm_111_222_333")
+                .build()));
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(1001L);
+        member.setNickname("我是喵团员");
+        when(memberUserApi.getUser(1001L)).thenReturn(member);
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .platformOrderId("TB-FALLBACK-1")
+                .platformCode("taobao")
+                .itemId("ITEM-1")
+                .adzoneId("mm_111_222_333")
+                .orderTime("2026-07-06 20:59:00")
+                .platformStatus(1)
+                .build();
+
+        int result = orderService.saveOrUpdateOrder(dto);
+
+        assertEquals(1, result);
+        verify(orderMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
+                Long.valueOf(1001L).equals(order.getMemberId())
+                        && "我是喵团员".equals(order.getMemberNickname())
+                        && "TB-FALLBACK-1".equals(order.getPlatformOrderId())
+                        && "ITEM-1".equals(order.getItemId())));
+        verify(transferRecordMapper).updatePlatformOrderId(10L, "TB-FALLBACK-1");
+    }
+
+    @Test
+    @DisplayName("saveOrUpdateOrder - 多条转链候选不做兜底归因避免误绑")
+    void saveOrUpdateOrder_doesNotAttributeWhenTransferCandidatesAreAmbiguous() {
+        when(orderMapper.selectByPlatformOrderId("TB-FALLBACK-2")).thenReturn(null);
+        when(transferRecordMapper.selectAttributionCandidates(eq("taobao"), eq("ITEM-1"),
+                eq("mm_111_222_333"), any(), any())).thenReturn(List.of(
+                CpsTransferRecordDO.builder().id(10L).memberId(1001L).build(),
+                CpsTransferRecordDO.builder().id(11L).memberId(1002L).build()));
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .platformOrderId("TB-FALLBACK-2")
+                .platformCode("taobao")
+                .itemId("ITEM-1")
+                .adzoneId("mm_111_222_333")
+                .orderTime("2026-07-06 20:59:00")
+                .platformStatus(1)
+                .build();
+
+        int result = orderService.saveOrUpdateOrder(dto);
+
+        assertEquals(1, result);
+        verify(orderMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
+                order.getMemberId() == null));
+        verify(transferRecordMapper, never()).updatePlatformOrderId(any(), any());
     }
 
     @Test

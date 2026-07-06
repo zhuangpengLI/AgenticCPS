@@ -306,7 +306,7 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
                 .receiveTime(firstText(item, "tb_deposit_time", "tk_deposit_time", "confirm_receipt_time"))
                 .settleTime(firstText(item, "tk_earning_time", "earning_time", "settle_time"))
                 .adzoneId(item.path("adzone_id").asText(null))
-                .externalId(firstText(item, "special_id", "specialId", "relation_id", "relationId", "external_id", "externalId"))
+                .externalId(firstText(item, "external_id", "externalId", "special_id", "specialId", "relation_id", "relationId"))
                 .refundTag(item.path("refund_tag").asInt(0))
                 .nextPositionIndex(nextPositionIndex)
                 .extraFields(extraFields)

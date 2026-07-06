@@ -4,6 +4,7 @@ import com.qiji.cps.framework.tenant.core.db.TenantBaseDO;
 import com.qiji.cps.module.cps.enums.CpsRebateStatusEnum;
 import com.qiji.cps.module.cps.enums.CpsRebateTypeEnum;
 import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
@@ -34,6 +35,11 @@ public class CpsRebateRecordDO extends TenantBaseDO {
      * 会员ID
      */
     private Long memberId;
+    /**
+     * 会员昵称，仅用于管理端展示
+     */
+    @TableField(exist = false)
+    private String memberNickname;
     /**
      * 订单ID
      */

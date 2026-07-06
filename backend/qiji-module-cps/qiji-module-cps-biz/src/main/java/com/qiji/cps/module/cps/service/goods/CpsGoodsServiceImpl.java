@@ -103,7 +103,9 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
         linkRequest.setAdzoneId(finalAdzoneId);
         // 将 memberId 作为外部用户标识，用于订单归因
         if (memberId != null) {
-            linkRequest.setExternalId(String.valueOf(memberId));
+            String attributionId = String.valueOf(memberId);
+            linkRequest.setExternalId(attributionId);
+            linkRequest.setChannelId(attributionId);
         }
 
         return client.generatePromotionLink(linkRequest);

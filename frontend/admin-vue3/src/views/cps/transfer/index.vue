@@ -21,10 +21,10 @@
           <el-option label="抖音" value="douyin" />
         </el-select>
       </el-form-item>
-      <el-form-item label="会员ID" prop="memberId">
+      <el-form-item label="会员名" prop="memberName">
         <el-input
-          v-model.number="queryParams.memberId"
-          placeholder="请输入会员ID"
+          v-model="queryParams.memberName"
+          placeholder="请输入会员名"
           clearable
           class="!w-160px"
           @keyup.enter="handleQuery"
@@ -142,7 +142,7 @@ const total = ref(0)
 const queryParams = reactive<CpsTransferRecordPageReqVO>({
   pageNo: 1,
   pageSize: 10,
-  memberId: undefined,
+  memberName: undefined,
   platformCode: undefined,
   itemTitle: undefined,
   status: undefined,

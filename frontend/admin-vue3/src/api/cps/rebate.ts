@@ -38,6 +38,7 @@ export interface CpsRebateConfigPageReqVO {
 export interface CpsRebateRecordVO {
   id: number
   memberId: number
+  memberNickname?: string
   orderId: number
   platformCode: string
   platformOrderId: string
@@ -60,6 +61,7 @@ export interface CpsRebateRecordPageReqVO {
   pageNo: number
   pageSize: number
   memberId?: number
+  memberName?: string
   platformCode?: string
   rebateType?: string
   rebateStatus?: string

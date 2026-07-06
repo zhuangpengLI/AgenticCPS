@@ -100,6 +100,21 @@ class CpsGoodsServiceImplTest {
         verify(platformClient).generatePromotionLink(any());
     }
 
+    @Test
+    @DisplayName("generatePromotionLink - 会员ID同时写入 externalId 和 channelId 用于各平台订单归因")
+    void generatePromotionLink_setsExternalIdAndChannelIdForAttribution() {
+        mockEnabledPlatform("jd", "platform-default-pid");
+        when(platformClientFactory.getRequiredClient("jd")).thenReturn(platformClient);
+        when(platformClient.generatePromotionLink(any())).thenReturn(CpsPromotionLinkResult.builder().build());
+
+        service.generatePromotionLink("jd", "goods-1", null, 100L, null);
+
+        ArgumentCaptor<CpsPromotionLinkRequest> captor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
+        verify(platformClient).generatePromotionLink(captor.capture());
+        assertEquals("100", captor.getValue().getExternalId());
+        assertEquals("100", captor.getValue().getChannelId());
+    }
+
     private void mockEnabledPlatform(String platformCode, String defaultAdzoneId) {
         CpsPlatformDO platform = new CpsPlatformDO();
         platform.setPlatformCode(platformCode);

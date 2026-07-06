@@ -20,7 +20,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.qiji.cps.framework.common.pojo.CommonResult.success;
 import static com.qiji.cps.framework.common.util.collection.CollectionUtils.convertMap;
@@ -48,6 +50,7 @@ public class CpsTransferRecordController {
     @PreAuthorize("@ss.hasPermission('cps:transfer-record:query')")
     public CommonResult<PageResult<CpsTransferRecordRespVO>> getTransferPage(
             @Valid CpsTransferRecordPageReqVO reqVO) {
+        fillMemberIdsForNicknameSearch(reqVO);
         PageResult<CpsTransferRecordDO> page = transferService.getTransferPage(reqVO);
         PageResult<CpsTransferRecordRespVO> result = BeanUtils.toBean(page, CpsTransferRecordRespVO.class);
         if (CollectionUtils.isEmpty(result.getList())) {
@@ -63,6 +66,17 @@ public class CpsTransferRecordController {
             }
         });
         return success(result);
+    }
+
+    private void fillMemberIdsForNicknameSearch(CpsTransferRecordPageReqVO reqVO) {
+        if (reqVO.getMemberName() == null || reqVO.getMemberName().isBlank()) {
+            return;
+        }
+        List<Long> memberIds = memberUserService.getUserListByNickname(reqVO.getMemberName()).stream()
+                .map(MemberUserDO::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        reqVO.setMemberIds(memberIds.isEmpty() ? List.of(-1L) : memberIds);
     }
 
 }

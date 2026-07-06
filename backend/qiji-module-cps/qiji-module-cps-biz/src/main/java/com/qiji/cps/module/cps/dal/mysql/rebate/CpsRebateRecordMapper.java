@@ -18,6 +18,7 @@ public interface CpsRebateRecordMapper extends BaseMapperX<CpsRebateRecordDO> {
     default PageResult<CpsRebateRecordDO> selectPage(CpsRebateRecordPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<CpsRebateRecordDO>()
                 .eqIfPresent(CpsRebateRecordDO::getMemberId, reqVO.getMemberId())
+                .inIfPresent(CpsRebateRecordDO::getMemberId, reqVO.getMemberIds())
                 .eqIfPresent(CpsRebateRecordDO::getPlatformCode, reqVO.getPlatformCode())
                 .eqIfPresent(CpsRebateRecordDO::getRebateType, reqVO.getRebateType())
                 .eqIfPresent(CpsRebateRecordDO::getRebateStatus, reqVO.getRebateStatus())

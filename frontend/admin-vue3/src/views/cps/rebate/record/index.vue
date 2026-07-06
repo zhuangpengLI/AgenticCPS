@@ -8,10 +8,10 @@
       :inline="true"
       label-width="90px"
     >
-      <el-form-item label="会员ID" prop="memberId">
+      <el-form-item label="会员名" prop="memberName">
         <el-input
-          v-model.number="queryParams.memberId"
-          placeholder="请输入会员ID"
+          v-model="queryParams.memberName"
+          placeholder="请输入会员名"
           clearable
           class="!w-160px"
           @keyup.enter="handleQuery"
@@ -78,7 +78,11 @@
   <ContentWrap>
     <el-table v-loading="loading" :data="list" stripe>
       <el-table-column label="ID" align="center" prop="id" width="70" />
-      <el-table-column label="会员ID" align="center" prop="memberId" width="80" />
+      <el-table-column label="会员名" align="center" prop="memberNickname" width="120" show-overflow-tooltip>
+        <template #default="scope">
+          <span>{{ scope.row.memberNickname || scope.row.memberId || '-' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="平台" align="center" prop="platformCode" width="80">
         <template #default="scope">
           <el-tag :type="platformTagType(scope.row.platformCode)" size="small">
@@ -163,7 +167,7 @@
   >
     <el-descriptions :column="2" border v-if="detailData">
       <el-descriptions-item label="记录ID">{{ detailData.id }}</el-descriptions-item>
-      <el-descriptions-item label="会员ID">{{ detailData.memberId }}</el-descriptions-item>
+      <el-descriptions-item label="会员名">{{ detailData.memberNickname || detailData.memberId || '-' }}</el-descriptions-item>
       <el-descriptions-item label="订单ID">{{ detailData.orderId }}</el-descriptions-item>
       <el-descriptions-item label="平台">{{ platformLabel(detailData.platformCode) }}</el-descriptions-item>
       <el-descriptions-item label="平台单号" :span="2">{{ detailData.platformOrderId }}</el-descriptions-item>
@@ -204,6 +208,8 @@ import type { CpsRebateRecordVO, CpsRebateRecordPageReqVO } from '@/api/cps/reba
 
 defineOptions({ name: 'CpsRebateRecord' })
 
+type ElTagType = 'primary' | 'success' | 'warning' | 'danger' | 'info'
+
 const message = useMessage()
 
 const loading = ref(false)
@@ -214,15 +220,15 @@ const queryFormRef = ref()
 const queryParams = reactive<CpsRebateRecordPageReqVO>({
   pageNo: 1,
   pageSize: 10,
-  memberId: undefined,
+  memberName: undefined,
   platformCode: undefined,
   rebateType: undefined,
   rebateStatus: undefined,
   createTime: undefined
 })
 
-const platformTagType = (code: string) => {
-  const map: Record<string, string> = { taobao: 'danger', jd: 'primary', pdd: 'warning', douyin: '' }
+const platformTagType = (code: string): ElTagType => {
+  const map: Record<string, ElTagType> = { taobao: 'danger', jd: 'primary', pdd: 'warning', douyin: 'info' }
   return map[code] || 'info'
 }
 const platformLabel = (code: string) => {

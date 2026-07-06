@@ -8,6 +8,8 @@ import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * CPS转链记录 Mapper
@@ -23,6 +25,7 @@ public interface CpsTransferRecordMapper extends BaseMapperX<CpsTransferRecordDO
     default PageResult<CpsTransferRecordDO> selectPage(CpsTransferRecordPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<CpsTransferRecordDO>()
                 .eqIfPresent(CpsTransferRecordDO::getMemberId, reqVO.getMemberId())
+                .inIfPresent(CpsTransferRecordDO::getMemberId, reqVO.getMemberIds())
                 .eqIfPresent(CpsTransferRecordDO::getPlatformCode, reqVO.getPlatformCode())
                 .eqIfPresent(CpsTransferRecordDO::getStatus, reqVO.getStatus())
                 .likeIfPresent(CpsTransferRecordDO::getItemTitle, reqVO.getItemTitle())
@@ -38,6 +41,33 @@ public interface CpsTransferRecordMapper extends BaseMapperX<CpsTransferRecordDO
                 .eq(CpsTransferRecordDO::getMemberId, memberId)
                 .between(CpsTransferRecordDO::getCreateTime,
                         date.atStartOfDay(), date.plusDays(1).atStartOfDay()));
+    }
+
+    /**
+     * 查找订单兜底归因候选，最多返回 2 条用于识别歧义。
+     */
+    default List<CpsTransferRecordDO> selectAttributionCandidates(String platformCode, String itemId,
+                                                                  String adzoneId, LocalDateTime startTime,
+                                                                  LocalDateTime endTime) {
+        return selectList(new LambdaQueryWrapperX<CpsTransferRecordDO>()
+                .eq(CpsTransferRecordDO::getPlatformCode, platformCode)
+                .eq(CpsTransferRecordDO::getItemId, itemId)
+                .eqIfPresent(CpsTransferRecordDO::getAdzoneId, adzoneId)
+                .eq(CpsTransferRecordDO::getStatus, 1)
+                .isNull(CpsTransferRecordDO::getPlatformOrderId)
+                .between(CpsTransferRecordDO::getCreateTime, startTime, endTime)
+                .orderByDesc(CpsTransferRecordDO::getId)
+                .last("LIMIT 2"));
+    }
+
+    /**
+     * 订单归因成功后回写平台订单号，形成转链记录到订单的闭环。
+     */
+    default int updatePlatformOrderId(Long id, String platformOrderId) {
+        return updateById(CpsTransferRecordDO.builder()
+                .id(id)
+                .platformOrderId(platformOrderId)
+                .build());
     }
 
 }

@@ -23,6 +23,7 @@ export interface CpsTransferRecordPageReqVO {
   pageNo: number
   pageSize: number
   memberId?: number
+  memberName?: string
   platformCode?: string
   itemTitle?: string
   status?: number

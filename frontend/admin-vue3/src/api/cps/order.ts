@@ -37,6 +37,7 @@ export interface CpsOrderPageReqVO {
   pageSize: number
   platformCode?: string
   memberId?: number
+  memberName?: string
   orderStatus?: string
   itemTitle?: string
   platformOrderId?: string
