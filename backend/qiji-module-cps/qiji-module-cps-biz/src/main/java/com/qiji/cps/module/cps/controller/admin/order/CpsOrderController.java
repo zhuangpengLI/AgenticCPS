@@ -16,6 +16,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 import static com.qiji.cps.framework.common.pojo.CommonResult.success;
 
 /**
@@ -47,6 +49,24 @@ public class CpsOrderController {
     public CommonResult<CpsOrderRespVO> getOrder(@RequestParam("id") Long id) {
         CpsOrderDO order = orderService.getOrder(id);
         return success(BeanUtils.toBean(order, CpsOrderRespVO.class));
+    }
+
+    @DeleteMapping("/delete")
+    @Operation(summary = "删除订单")
+    @PreAuthorize("@ss.hasPermission('cps:order:delete')")
+    @Parameter(name = "id", description = "订单ID", required = true, example = "1")
+    public CommonResult<Boolean> deleteOrder(@RequestParam("id") Long id) {
+        orderService.deleteOrder(id);
+        return success(true);
+    }
+
+    @DeleteMapping("/delete-list")
+    @Operation(summary = "批量删除订单")
+    @PreAuthorize("@ss.hasPermission('cps:order:delete')")
+    @Parameter(name = "ids", description = "订单ID列表", required = true)
+    public CommonResult<Boolean> deleteOrderList(@RequestParam("ids") List<Long> ids) {
+        orderService.deleteOrderList(ids);
+        return success(true);
     }
 
     @PostMapping("/sync")

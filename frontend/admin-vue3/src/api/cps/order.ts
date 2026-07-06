@@ -54,6 +54,16 @@ export const getCpsOrder = async (id: number) => {
   return await request.get({ url: '/cps/order/get', params: { id } })
 }
 
+// 删除订单
+export const deleteCpsOrder = async (id: number) => {
+  return await request.delete({ url: '/cps/order/delete', params: { id } })
+}
+
+// 批量删除订单
+export const deleteCpsOrderList = async (ids: number[]) => {
+  return await request.delete({ url: '/cps/order/delete-list', params: { ids: ids.join(',') } })
+}
+
 // 手动触发订单同步
 export const syncCpsOrders = async (platformCode: string, hours = 2, queryType = 1) => {
   return await request.post({

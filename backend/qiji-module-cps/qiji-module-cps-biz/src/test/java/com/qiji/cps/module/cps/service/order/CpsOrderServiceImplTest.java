@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -53,6 +54,38 @@ class CpsOrderServiceImplTest {
     private CpsTransferRecordMapper transferRecordMapper;
     @Mock
     private MemberUserApi memberUserApi;
+
+    @Test
+    @DisplayName("deleteOrder - 删除订单前校验订单存在")
+    void deleteOrder_validatesExistsThenDeletes() {
+        when(orderMapper.selectById(7L)).thenReturn(CpsOrderDO.builder().id(7L).build());
+
+        orderService.deleteOrder(7L);
+
+        verify(orderMapper).deleteById(7L);
+    }
+
+    @Test
+    @DisplayName("deleteOrderList - 批量删除订单时逐个校验存在")
+    void deleteOrderList_validatesAndDeletesEachOrder() {
+        when(orderMapper.selectById(7L)).thenReturn(CpsOrderDO.builder().id(7L).build());
+        when(orderMapper.selectById(8L)).thenReturn(CpsOrderDO.builder().id(8L).build());
+
+        orderService.deleteOrderList(List.of(7L, 8L));
+
+        verify(orderMapper).deleteById(7L);
+        verify(orderMapper).deleteById(8L);
+    }
+
+    @Test
+    @DisplayName("deleteOrder - 订单不存在时抛出业务异常")
+    void deleteOrder_throwsWhenMissing() {
+        when(orderMapper.selectById(7L)).thenReturn(null);
+
+        assertThrows(RuntimeException.class, () -> orderService.deleteOrder(7L));
+
+        verify(orderMapper, never()).deleteById(7L);
+    }
 
     @Test
     @DisplayName("saveOrUpdateOrder - 已到账订单收到退款状态时触发返利扣回")

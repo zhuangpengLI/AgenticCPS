@@ -38,6 +38,16 @@ public interface CpsOrderService {
     CpsOrderDO getOrder(Long id);
 
     /**
+     * 删除订单（管理端）
+     */
+    void deleteOrder(Long id);
+
+    /**
+     * 批量删除订单（管理端）
+     */
+    void deleteOrderList(List<Long> ids);
+
+    /**
      * 分页查询订单（管理端）
      */
     PageResult<CpsOrderDO> getOrderPage(CpsOrderPageReqVO pageReqVO);

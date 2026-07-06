@@ -80,6 +80,20 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     }
 
     @Override
+    public void deleteOrder(Long id) {
+        validateOrderExists(id);
+        orderMapper.deleteById(id);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteOrderList(List<Long> ids) {
+        for (Long id : ids) {
+            deleteOrder(id);
+        }
+    }
+
+    @Override
     public PageResult<CpsOrderDO> getOrderPage(CpsOrderPageReqVO pageReqVO) {
         fillMemberIdsForNicknameSearch(pageReqVO);
         PageResult<CpsOrderDO> pageResult = orderMapper.selectPage(pageReqVO);
@@ -407,6 +421,12 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             return;
         }
         pageReqVO.setMemberIds(findMemberIdsByNickname(pageReqVO.getMemberName()));
+    }
+
+    private void validateOrderExists(Long id) {
+        if (orderMapper.selectById(id) == null) {
+            throw exception(ORDER_NOT_EXISTS);
+        }
     }
 
     private List<Long> findMemberIdsByNickname(String memberName) {

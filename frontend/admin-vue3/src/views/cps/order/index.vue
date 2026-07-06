@@ -82,6 +82,15 @@
         <el-button @click="resetQuery">
           <Icon icon="ep:refresh" class="mr-5px" /> 重置
         </el-button>
+        <el-button
+          type="danger"
+          plain
+          :disabled="selectedOrderIds.length === 0"
+          @click="handleBatchDelete"
+          v-hasPermi="['cps:order:delete']"
+        >
+          <Icon icon="ep:delete" class="mr-5px" /> 批量删除
+        </el-button>
         <el-dropdown @command="handleSync" class="ml-8px">
           <el-button type="primary" plain>
             <Icon icon="ep:refresh-right" class="mr-5px" /> 同步订单
@@ -102,7 +111,8 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" stripe>
+    <el-table v-loading="loading" :data="list" stripe row-key="id" @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="45" />
       <el-table-column label="ID" align="center" prop="id" width="70" />
       <el-table-column label="平台" align="center" prop="platformCode" width="80">
         <template #default="scope">
@@ -159,7 +169,7 @@
         width="165"
         :formatter="dateFormatter"
       />
-      <el-table-column label="操作" align="center" fixed="right" width="80">
+      <el-table-column label="操作" align="center" fixed="right" width="120">
         <template #default="scope">
           <el-button
             type="primary"
@@ -168,6 +178,14 @@
             v-hasPermi="['cps:order:query']"
           >
             详情
+          </el-button>
+          <el-button
+            type="danger"
+            link
+            @click="handleDelete(scope.row.id)"
+            v-hasPermi="['cps:order:delete']"
+          >
+            删除
           </el-button>
         </template>
       </el-table-column>
@@ -233,6 +251,7 @@ const message = useMessage()
 const loading = ref(false)
 const total = ref(0)
 const list = ref<CpsOrderVO[]>([])
+const selectedOrderIds = ref<number[]>([])
 const queryFormRef = ref()
 
 const queryParams = reactive<CpsOrderPageReqVO>({
@@ -320,6 +339,35 @@ const handleQuery = () => {
 const resetQuery = () => {
   queryFormRef.value.resetFields()
   handleQuery()
+}
+
+/** 表格选择 */
+const handleSelectionChange = (rows: CpsOrderVO[]) => {
+  selectedOrderIds.value = rows.map((row) => row.id)
+}
+
+/** 删除 */
+const handleDelete = async (id: number) => {
+  try {
+    await message.delConfirm()
+    await OrderApi.deleteCpsOrder(id)
+    message.success('删除成功')
+    selectedOrderIds.value = selectedOrderIds.value.filter((selectedId) => selectedId !== id)
+    await getList()
+  } catch {}
+}
+
+/** 批量删除 */
+const handleBatchDelete = async () => {
+  const ids = [...selectedOrderIds.value]
+  if (ids.length === 0) return
+  try {
+    await message.confirm(`确认删除选中的 ${ids.length} 条订单？`)
+    await OrderApi.deleteCpsOrderList(ids)
+    message.success('批量删除成功')
+    selectedOrderIds.value = []
+    await getList()
+  } catch {}
 }
 
 /** 手动同步 */
