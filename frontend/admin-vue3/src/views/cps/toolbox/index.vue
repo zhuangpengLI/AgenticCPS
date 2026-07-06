@@ -70,6 +70,10 @@
             v-else-if="activeTool === 'cash-gift'"
             @promotion="promotionContent = $event"
           />
+          <PromoImagePanel
+            v-else-if="activeTool === 'promo-image'"
+            @promotion="promotionContent = $event"
+          />
           <div v-else class="coming-soon">
             <Icon icon="ep:tools" />
             <span>该工具已规划，后续版本接入真实能力。</span>
@@ -93,6 +97,7 @@ import GoodsSquarePanel from './components/GoodsSquarePanel.vue'
 import OwnershipCheckPanel from './components/OwnershipCheckPanel.vue'
 import ParsePanel from './components/ParsePanel.vue'
 import PromotionResultEditor from './components/PromotionResultEditor.vue'
+import PromoImagePanel from './components/PromoImagePanel.vue'
 import UniversalTransferPanel from './components/UniversalTransferPanel.vue'
 
 type ToolKey =
@@ -102,6 +107,7 @@ type ToolKey =
   | 'ownership-check'
   | 'coupon-query'
   | 'copy-editor'
+  | 'promo-image'
   | 'cash-gift'
 
 const route = useRoute()
@@ -131,8 +137,7 @@ const toolGroups: Array<{
         key: 'ownership-check',
         label: '归属检测',
         icon: 'ep:aim',
-        desc: '按链接、口令或记录ID检查推广位和会员归因。',
-        tag: 'P1'
+        desc: '按链接、口令或记录ID检查推广位和会员归因。'
       }
     ]
   },
@@ -149,14 +154,19 @@ const toolGroups: Array<{
         key: 'coupon-query',
         label: '优惠券查询',
         icon: 'ep:ticket',
-        desc: '按商品、链接或关键词查询有券商品，并带入转链。',
-        tag: 'P1'
+        desc: '按商品、链接或关键词查询有券商品，并带入转链。'
       }
     ]
   },
   {
     label: '创作工具',
     children: [
+      {
+        key: 'promo-image',
+        label: '推广图制作',
+        icon: 'ep:picture',
+        desc: '按模板、标签和商品素材生成营销推广图。'
+      },
       {
         key: 'copy-editor',
         label: '文案编辑',
@@ -173,8 +183,7 @@ const toolGroups: Array<{
         key: 'cash-gift',
         label: '淘礼金',
         icon: 'ep:present',
-        desc: '生成淘礼金活动模板、补贴预算和上线检查清单。',
-        tag: 'P2'
+        desc: '生成淘礼金活动模板、补贴预算和上线检查清单。'
       }
     ]
   }

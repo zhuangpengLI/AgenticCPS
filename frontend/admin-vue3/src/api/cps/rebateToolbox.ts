@@ -4,6 +4,7 @@ import type { CpsGoodsSquareGoodsVO } from './goodsSquare'
 
 export interface CpsGoodsParseReqVO {
   platformCode: string
+  vendorCode?: string
   originalContent: string
 }
 

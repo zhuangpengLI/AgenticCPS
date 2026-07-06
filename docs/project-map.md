@@ -158,6 +158,7 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 
 - `CpsGoodsRebateQueryController`：新增 `POST /cps/goods/parse` 和 `POST /cps/goods/batch-transfer`，权限分别为 `cps:toolbox:query`、`cps:toolbox:link`。
 - `CpsGoodsToolboxServiceImpl`：解析仅识别商品信息，不生成推广链接或转链记录；批量转链逐条调用既有 `CpsGoodsRebateQueryService.queryRebate()`。
+- Standalone `goods/rebate-query` admin menu is removed from CPS menu seed and existing DB migration; rebate query and transfer operations should enter through the existing rebate toolbox menu.
 - 批量转链忽略空行，最多支持 20 条非空内容，保留原始输入序号，单条失败不阻断整批。
 - P1/P2 接口包含 `POST /cps/goods/ownership-check`、`POST /cps/goods/coupon-query`、`POST /cps/goods/cash-gift/plan`；淘礼金当前只生成运营计划和预算检查，不调用真实发放接口。
 - 前端工具箱包含万能转链、口令解析、归属检测、优惠券查询、商品广场、淘礼金计划与推广文案编辑区，商品广场入口可通过 `/cps/toolbox?tool=goods-square` 直达。

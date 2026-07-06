@@ -4,12 +4,16 @@ import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsResp
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class CpsSelectionAiRecommendServiceTest {
 
@@ -46,6 +50,21 @@ class CpsSelectionAiRecommendServiceTest {
         assertEquals("goods-1", after.getGoodsId());
         assertEquals(new BigDecimal("79.00"), after.getActualPrice());
         assertEquals(new BigDecimal("7.90"), after.getCommissionAmount());
+    }
+
+    @Test
+    @DisplayName("recommend - 默认不触发可选 LLM 文案增强，避免供应商同步被模型端点拖慢")
+    void recommend_doesNotResolveAiModelWhenLlmReasonsDisabledByDefault() {
+        ApplicationContext applicationContext = mock(ApplicationContext.class);
+        ReflectionTestUtils.setField(service, "applicationContext", applicationContext);
+        CpsSelectionThemeDO theme = CpsSelectionThemeDO.builder().themeName("大促选品").build();
+
+        List<CpsSelectionAiRecommendService.RecommendedGoods> result =
+                service.recommend(theme, List.of(goods("taobao", "goods-1", "爆款", "99.00", "20", "18.00", 2000L)), 1);
+
+        assertEquals("goods-1", result.get(0).getGoods().getGoodsId());
+        assertTrue(result.get(0).getRecommendReason().contains("大促选品"));
+        verifyNoInteractions(applicationContext);
     }
 
     private CpsGoodsSquareGoodsRespVO goods(String platformCode, String goodsId, String title, String price,

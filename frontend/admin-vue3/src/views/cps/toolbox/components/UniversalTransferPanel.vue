@@ -1,7 +1,7 @@
 <template>
   <div class="tool-panel">
-    <el-form ref="formRef" :model="formData" :rules="formRules" label-width="88px">
-      <el-row :gutter="12">
+    <el-form ref="formRef" :model="formData" :rules="formRules" label-width="76px">
+      <el-row :gutter="12" class="transfer-topbar">
         <el-col :xs="24" :sm="12" :lg="6">
           <el-form-item label="平台" prop="platformCode">
             <el-select
@@ -81,45 +81,105 @@
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="24">
-          <el-form-item label="输出格式">
-            <el-checkbox-group v-model="formatOptions">
-              <el-checkbox label="promotionContent">完整文案</el-checkbox>
-              <el-checkbox label="shortUrl">短链</el-checkbox>
-              <el-checkbox label="longUrl">长链</el-checkbox>
-              <el-checkbox label="tpwd">淘口令</el-checkbox>
-              <el-checkbox label="mobileUrl">移动端链接</el-checkbox>
-              <el-checkbox label="original">保留原文</el-checkbox>
-            </el-checkbox-group>
-          </el-form-item>
-        </el-col>
-        <el-col :span="24">
-          <el-form-item label="原始内容" prop="originalText">
+      </el-row>
+
+      <div class="route-strip">
+        <span>联盟账号：{{ selectedVendorName }}</span>
+        <span>PID：{{ selectedAdzoneText }}</span>
+        <el-tag size="small" type="success" effect="plain">{{ selectedRouteText }}</el-tag>
+      </div>
+
+      <el-alert
+        class="toolbox-alert"
+        type="warning"
+        show-icon
+        :closable="false"
+        title="支持商品、店铺、会场链接或淘口令批量转链；淘宝纯数字 ID 受官方规则限制，请优先粘贴原始链接或口令。"
+      />
+
+      <div class="transfer-workbench">
+        <section class="transfer-pane input-pane">
+          <div class="pane-title-row">
+            <div>
+              <div class="pane-title">需要转链的内容</div>
+              <div class="pane-subtitle">一行一条，最多 20 条，原文顺序会保留。</div>
+            </div>
+            <el-button text type="primary" @click="formData.originalText = ''">清空</el-button>
+          </div>
+          <el-form-item label-width="0" prop="originalText">
             <el-input
               v-model="formData.originalText"
               type="textarea"
-              :rows="7"
+              :rows="12"
               maxlength="5000"
               show-word-limit
-              placeholder="粘贴商品链接、商品ID或平台口令，每行一条，最多 20 条"
+              placeholder="粘贴商品链接、商品ID、淘口令或平台口令，每行一条。"
             />
           </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
+          <div class="input-hint">已识别 {{ contentLines.length }} 条；含券商品会优先按券后价转链。</div>
+        </section>
 
-    <div class="panel-actions">
-      <el-button type="primary" :loading="loading" @click="handleSubmit">
-        <Icon icon="ep:connection" class="mr-5px" /> 批量转链
-      </el-button>
-      <el-button @click="handleReset">
-        <Icon icon="ep:refresh" class="mr-5px" /> 重置
-      </el-button>
-      <el-button :disabled="successRows.length === 0" @click="copyAllSuccess">
-        <Icon icon="ep:copy-document" class="mr-5px" /> 复制成功项
-      </el-button>
-      <span class="limit-text">已识别 {{ contentLines.length }} 条</span>
-    </div>
+        <section class="action-rail">
+          <el-button type="primary" size="large" :loading="loading" @click="handleSubmit">
+            <Icon icon="ep:connection" class="mr-5px" /> 批量转链
+          </el-button>
+          <el-button
+            v-if="formData.platformCode === 'taobao'"
+            type="warning"
+            size="large"
+            plain
+            :loading="loading"
+            @click="handleSubsidySubmit"
+          >
+            <Icon icon="ep:present" class="mr-5px" /> 转百亿补贴
+          </el-button>
+          <el-button size="large" @click="handleReset">
+            <Icon icon="ep:refresh" class="mr-5px" /> 重置
+          </el-button>
+          <el-button size="large" :disabled="successRows.length === 0" @click="copyAllSuccess">
+            <Icon icon="ep:copy-document" class="mr-5px" /> 复制成功项
+          </el-button>
+
+          <div v-if="formData.platformCode === 'taobao'" class="play-mode-box">
+            <div class="play-mode-title">淘宝玩法</div>
+            <el-radio-group v-model="taobaoPlayMode" class="play-mode-radios">
+              <el-radio label="normal">普通转链</el-radio>
+              <el-radio label="super_red">品带超红</el-radio>
+              <el-radio label="taojinbi">淘金币玩法</el-radio>
+            </el-radio-group>
+            <div class="play-mode-tip">品带超红和淘金币互斥，当前作为转链路由提示保留。</div>
+          </div>
+        </section>
+
+        <section class="transfer-pane output-pane">
+          <div class="pane-title-row">
+            <div>
+              <div class="pane-title">转链结果</div>
+              <div class="pane-subtitle">可按运营风格选择输出字段。</div>
+            </div>
+          </div>
+          <el-form-item label="输出格式" label-width="70px">
+            <el-checkbox-group v-model="formatOptions" class="format-checks">
+              <el-checkbox label="original">原格式</el-checkbox>
+              <el-checkbox label="tpwd">淘口令</el-checkbox>
+              <el-checkbox label="shortUrl">链接</el-checkbox>
+              <el-checkbox label="promotionContent">推广文案</el-checkbox>
+              <el-checkbox label="longUrl">长链</el-checkbox>
+              <el-checkbox label="mobileUrl">移动端链接</el-checkbox>
+              <el-checkbox label="kuaizhan" disabled>快站中转</el-checkbox>
+            </el-checkbox-group>
+          </el-form-item>
+          <el-input
+            :model-value="resultOutput"
+            type="textarea"
+            :rows="12"
+            readonly
+            placeholder="批量转链后这里展示可复制结果。"
+          />
+          <div class="input-hint">可以继续在右侧文案编辑区做二次整理。</div>
+        </section>
+      </div>
+    </el-form>
 
     <el-table v-if="resultRows.length" :data="resultRows" border class="mt-16px">
       <el-table-column label="#" prop="inputIndex" width="60" align="center" />
@@ -129,42 +189,6 @@
             {{ statusText(row.status) }}
           </el-tag>
         </template>
-      </el-table-column>
-      <el-table-column label="商品" min-width="220" show-overflow-tooltip>
-        <template #default="{ row }">
-          {{ row.goods?.title || row.goods?.goodsId || row.originalContent }}
-        </template>
-      </el-table-column>
-      <el-table-column label="佣金" width="110" align="center">
-        <template #default="{ row }">
-          {{ formatMoney(row.rebate?.commissionAmount) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="返利" width="110" align="center">
-        <template #default="{ row }">
-          {{ formatMoney(row.rebate?.estimateRebateAmount) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="记录ID" prop="transferRecordId" width="100" align="center" />
-      <el-table-column label="消息" min-width="180" show-overflow-tooltip>
-        <template #default="{ row }">{{ row.message || '-' }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
-        <template #default="{ row }">
-          <el-button text :disabled="row.status !== 'SUCCESS'" @click="sendToEditor(row)">
-            编辑文案
-          </el-button>
-          <el-button text :disabled="!row.links?.shortUrl" @click="handleCopy(row.links?.shortUrl)">
-            复制短链
-          </el-button>
-          <el-button text :disabled="!row.links?.tpwd" @click="handleCopy(row.links?.tpwd)">
-            淘口令
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-  </div>
-</template>
 
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
@@ -205,6 +229,7 @@ const adzoneOptions = ref<CpsAdzoneVO[]>([])
 const memberOptions = ref<UserVO[]>([])
 const resultRows = ref<CpsGoodsBatchTransferItemVO[]>([])
 const formatOptions = ref(['promotionContent', 'shortUrl', 'tpwd'])
+const taobaoPlayMode = ref<'normal' | 'super_red' | 'taojinbi'>('normal')
 
 const formData = reactive({
   platformCode: 'taobao',
@@ -236,6 +261,26 @@ const contentLines = computed(() =>
 const enabledVendorOptions = computed(() => vendorOptions.value.filter((item) => item.status === 1))
 const enabledAdzoneOptions = computed(() => adzoneOptions.value.filter((item) => item.status === 1))
 const successRows = computed(() => resultRows.value.filter((item) => item.status === 'SUCCESS'))
+const resultOutput = computed(() => successRows.value.map((item) => buildOutputText(item)).filter(Boolean).join('\n\n'))
+const selectedVendor = computed(() =>
+  enabledVendorOptions.value.find((item) => item.vendorCode === formData.vendorCode)
+)
+const selectedAdzone = computed(() =>
+  enabledAdzoneOptions.value.find((item) => item.adzoneId === formData.adzoneId)
+)
+const selectedVendorName = computed(() => {
+  if (selectedVendor.value) return formatVendorLabel(selectedVendor.value)
+  const activeVendor = vendorOptions.value.find((item) => item.priority === 0 || item.remark?.includes('默认'))
+  return activeVendor ? formatVendorLabel(activeVendor) : '默认供应商'
+})
+const selectedAdzoneText = computed(() => {
+  if (selectedAdzone.value) return formatAdzoneLabel(selectedAdzone.value)
+  const defaultAdzone = enabledAdzoneOptions.value.find((item) => item.isDefault === 1)
+  return defaultAdzone ? formatAdzoneLabel(defaultAdzone) : '默认推广位'
+})
+const selectedRouteText = computed(
+  () => `${platformLabel(formData.platformCode)} / ${vendorLabel(formData.vendorCode)}`
+)
 
 watch(
   () => props.draft,
@@ -286,16 +331,23 @@ const handleSubmit = async () => {
   }
 }
 
+const handleSubsidySubmit = async () => {
+  taobaoPlayMode.value = 'super_red'
+  await handleSubmit()
+}
+
 const handleReset = () => {
   formData.vendorCode = undefined
   formData.adzoneId = undefined
   formData.originalText = ''
+  taobaoPlayMode.value = 'normal'
   resultRows.value = []
 }
 
 const handlePlatformChange = async () => {
   formData.vendorCode = undefined
   formData.adzoneId = undefined
+  taobaoPlayMode.value = 'normal'
   await Promise.all([loadVendorOptions(formData.platformCode), loadAdzoneOptions(formData.platformCode)])
 }
 
@@ -353,7 +405,7 @@ const sendToEditor = (row: CpsGoodsBatchTransferItemVO) => {
 }
 
 const copyAllSuccess = async () => {
-  const text = successRows.value.map((item) => buildOutputText(item)).filter(Boolean).join('\n\n')
+  const text = resultOutput.value
   await handleCopy(text)
 }
 
@@ -418,15 +470,127 @@ onMounted(async () => {
   flex-direction: column;
 }
 
-.panel-actions {
+.transfer-topbar :deep(.el-form-item) {
+  margin-bottom: 12px;
+}
+
+.transfer-workbench {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.1fr) 190px minmax(320px, 1fr);
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.transfer-pane {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  background: var(--el-bg-color-page);
+}
+
+.pane-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pane-title {
+  color: var(--el-text-color-primary);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pane-subtitle,
+.input-hint {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.pane-subtitle {
+  margin-top: 3px;
+}
+
+.input-hint {
+  margin-top: 8px;
+}
+
+.action-rail {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.action-rail .el-button {
+  width: 100%;
+  margin-left: 0;
+}
+
+.play-mode-box {
+  padding: 12px;
+  border: 1px solid var(--el-color-danger-light-7);
+  border-radius: 8px;
+  background: var(--el-color-danger-light-9);
+}
+
+.play-mode-title {
+  color: var(--el-text-color-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.play-mode-radios {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 6px;
+}
+
+.format-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+}
+
+.route-strip {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+  padding: 8px 10px;
+  color: var(--el-text-color-regular);
+  background: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  font-size: 13px;
 }
 
-.limit-text {
+.toolbox-alert {
+  margin-top: 12px;
+}
+
+.play-mode-tip {
+  margin-top: 8px;
   color: var(--el-text-color-secondary);
   font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1280px) {
+  .transfer-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .action-rail {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .play-mode-box {
+    grid-column: 1 / -1;
+  }
 }
 </style>

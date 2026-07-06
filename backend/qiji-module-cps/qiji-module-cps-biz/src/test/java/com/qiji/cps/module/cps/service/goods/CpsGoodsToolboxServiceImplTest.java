@@ -13,6 +13,7 @@ import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsResp
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +56,14 @@ class CpsGoodsToolboxServiceImplTest {
 
     @Mock
     private CpsPlatformClient platformClient;
+
+    @BeforeEach
+    void setUp() {
+        lenient().doAnswer(invocation -> {
+            java.util.function.Supplier<?> supplier = invocation.getArgument(1);
+            return supplier.get();
+        }).when(platformClientFactory).withVendorCode(any(), any());
+    }
 
     @Test
     @DisplayName("parseContent - 本地可解析链接时不调用平台解析且不转链")
@@ -93,6 +104,32 @@ class CpsGoodsToolboxServiceImplTest {
         assertEquals("platform", result.getParseSource());
         assertEquals("123456", result.getGoodsId());
         assertEquals("平台商品", result.getTitle());
+        verify(platformClient).parseContent(any());
+        verify(goodsRebateQueryService, never()).queryRebate(any());
+    }
+
+    @Test
+    @DisplayName("parseContent - 指定供应商时平台解析使用临时供应商路由")
+    void parseContent_usesExplicitVendorForPlatformParser() {
+        CpsGoodsParseReqVO reqVO = new CpsGoodsParseReqVO();
+        reqVO.setPlatformCode("taobao");
+        reqVO.setOriginalContent("￥abc123￥复制打开淘宝");
+        reqVO.setVendorCode("haodanku");
+        when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);
+        when(platformClient.parseContent(any())).thenReturn(CpsContentParseResult.builder()
+                .supported(true)
+                .goodsId("123456")
+                .itemLink("https://item.taobao.com/item.htm?id=123456")
+                .title("好单库解析商品")
+                .build());
+
+        var result = service.parseContent(reqVO);
+
+        assertTrue(result.getSupported());
+        assertEquals("platform", result.getParseSource());
+        assertEquals("123456", result.getGoodsId());
+        assertEquals("好单库解析商品", result.getTitle());
+        verify(platformClientFactory, times(1)).withVendorCode(org.mockito.ArgumentMatchers.eq("haodanku"), any());
         verify(platformClient).parseContent(any());
         verify(goodsRebateQueryService, never()).queryRebate(any());
     }

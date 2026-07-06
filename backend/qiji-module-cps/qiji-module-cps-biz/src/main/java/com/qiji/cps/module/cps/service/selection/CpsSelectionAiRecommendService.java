@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -43,6 +44,9 @@ public class CpsSelectionAiRecommendService {
 
     @Resource
     private ApplicationContext applicationContext;
+
+    @Value("${qiji.cps.selection.llm-reasons.enabled:false}")
+    private boolean llmReasonsEnabled;
 
     public List<RecommendedGoods> recommend(CpsSelectionThemeDO theme, List<CpsGoodsSquareGoodsRespVO> candidates,
                                             Integer limit) {
@@ -123,6 +127,9 @@ public class CpsSelectionAiRecommendService {
     }
 
     private Map<String, String> buildLlmReasons(CpsSelectionThemeDO theme, List<RecommendedGoods> ranked) {
+        if (!llmReasonsEnabled) {
+            return Map.of();
+        }
         Object aiModelService = resolveAiModelService();
         if (aiModelService == null || ranked.isEmpty()) {
             return Map.of();

@@ -460,6 +460,7 @@
             v-model:limit="itemPageParams.pageSize"
             v-model:page="itemPageParams.pageNo"
             :pager-count="5"
+            :page-sizes="[10, 20, 30, 40]"
             :total="itemTotal"
             small
             @pagination="getItems"
@@ -796,7 +797,7 @@ const queryParams = reactive({
 
 const itemPageParams = reactive<CpsSelectionThemeItemPageReqVO>({
   pageNo: 1,
-  pageSize: 12,
+  pageSize: 10,
   themeId: 0
 })
 
@@ -1991,7 +1992,12 @@ onMounted(() => {
   align-items: center;
 }
 
-.goods-grid,
+.goods-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .template-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -2077,11 +2083,19 @@ onMounted(() => {
   .selection-layout {
     grid-template-columns: 1fr;
   }
+
+  .goods-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 900px) {
   .stat-strip,
   .theme-insight {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .goods-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -2095,6 +2109,10 @@ onMounted(() => {
   .selected-head {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .goods-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -56,6 +56,10 @@ public class CpsGoodsToolboxServiceImpl implements CpsGoodsToolboxService {
 
     @Override
     public CpsGoodsParseRespVO parseContent(CpsGoodsParseReqVO reqVO) {
+        return platformClientFactory.withVendorCode(reqVO.getVendorCode(), () -> doParseContent(reqVO));
+    }
+
+    private CpsGoodsParseRespVO doParseContent(CpsGoodsParseReqVO reqVO) {
         CpsContentParseResult localResult = CpsContentParser.parse(reqVO.getPlatformCode(), reqVO.getOriginalContent());
         if (Boolean.TRUE.equals(localResult.getSupported())) {
             return toParseResp(reqVO.getPlatformCode(), localResult, "local");
