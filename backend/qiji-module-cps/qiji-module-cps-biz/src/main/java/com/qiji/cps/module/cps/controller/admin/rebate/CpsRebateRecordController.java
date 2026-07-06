@@ -16,6 +16,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 import static com.qiji.cps.framework.common.pojo.CommonResult.success;
 
 /**
@@ -47,6 +49,24 @@ public class CpsRebateRecordController {
     public CommonResult<CpsRebateRecordRespVO> getRebateRecord(@RequestParam("id") Long id) {
         CpsRebateRecordDO record = rebateRecordService.getRebateRecord(id);
         return success(BeanUtils.toBean(record, CpsRebateRecordRespVO.class));
+    }
+
+    @DeleteMapping("/delete")
+    @Operation(summary = "删除返利记录")
+    @Parameter(name = "id", description = "返利记录ID", required = true, example = "1")
+    @PreAuthorize("@ss.hasPermission('cps:rebate-record:delete')")
+    public CommonResult<Boolean> deleteRebateRecord(@RequestParam("id") Long id) {
+        rebateRecordService.deleteRebateRecord(id);
+        return success(true);
+    }
+
+    @DeleteMapping("/delete-list")
+    @Operation(summary = "批量删除返利记录")
+    @Parameter(name = "ids", description = "返利记录ID列表", required = true)
+    @PreAuthorize("@ss.hasPermission('cps:rebate-record:delete')")
+    public CommonResult<Boolean> deleteRebateRecordList(@RequestParam("ids") List<Long> ids) {
+        rebateRecordService.deleteRebateRecordList(ids);
+        return success(true);
     }
 
     @PostMapping("/reverse")

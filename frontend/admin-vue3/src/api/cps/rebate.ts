@@ -112,6 +112,16 @@ export const getCpsRebateRecord = async (id: number) => {
   return await request.get({ url: '/cps/rebate-record/get', params: { id } })
 }
 
+// 删除返利记录
+export const deleteCpsRebateRecord = async (id: number) => {
+  return await request.delete({ url: '/cps/rebate-record/delete', params: { id } })
+}
+
+// 批量删除返利记录
+export const deleteCpsRebateRecordList = async (ids: number[]) => {
+  return await request.delete({ url: '/cps/rebate-record/delete-list', params: { ids: ids.join(',') } })
+}
+
 // 退款回扣（逆向扣回返利）
 export const reverseCpsRebate = async (orderId: number) => {
   return await request.post({ url: '/cps/rebate-record/reverse', params: { orderId } })

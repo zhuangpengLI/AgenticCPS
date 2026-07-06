@@ -4,6 +4,8 @@ import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateRecordPageReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateRecordDO;
 
+import java.util.List;
+
 /**
  * CPS 返利记录 Service 接口
  *
@@ -28,6 +30,20 @@ public interface CpsRebateRecordService {
      * @return 返利记录，不存在则返回 null
      */
     CpsRebateRecordDO getRebateRecord(Long id);
+
+    /**
+     * 删除返利记录
+     *
+     * @param id 主键ID
+     */
+    void deleteRebateRecord(Long id);
+
+    /**
+     * 批量删除返利记录
+     *
+     * @param ids 主键ID列表
+     */
+    void deleteRebateRecordList(List<Long> ids);
 
     /**
      * 获取会员的返利记录分页（App端）

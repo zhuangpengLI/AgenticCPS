@@ -78,4 +78,20 @@ public abstract class AbstractDtkVendorClient extends AbstractAggregatorVendorCl
         return root;
     }
 
+    protected String getExtraConfig(CpsVendorConfig config, String key) {
+        return config != null && config.getExtraConfig() != null ? config.getExtraConfig().get(key) : null;
+    }
+
+    protected String firstNonBlankExtraConfig(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
 }

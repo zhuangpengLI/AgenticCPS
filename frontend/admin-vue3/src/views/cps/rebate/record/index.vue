@@ -70,13 +70,22 @@
         <el-button @click="resetQuery">
           <Icon icon="ep:refresh" class="mr-5px" /> 重置
         </el-button>
+        <el-button
+          type="danger"
+          plain
+          :disabled="selectedRecordIds.length === 0"
+          @click="handleBatchDelete"
+        >
+          <Icon icon="ep:delete" class="mr-5px" /> 批量删除
+        </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" stripe>
+    <el-table v-loading="loading" :data="list" stripe row-key="id" @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="45" />
       <el-table-column label="ID" align="center" prop="id" width="70" />
       <el-table-column label="会员名" align="center" prop="memberNickname" width="120" show-overflow-tooltip>
         <template #default="scope">
@@ -128,7 +137,7 @@
         width="165"
         :formatter="dateFormatter"
       />
-      <el-table-column label="操作" align="center" fixed="right" width="130">
+      <el-table-column label="操作" align="center" fixed="right" width="170">
         <template #default="scope">
           <el-button
             type="primary"
@@ -146,6 +155,13 @@
             v-hasPermi="['cps:rebate-record:reverse']"
           >
             扣回
+          </el-button>
+          <el-button
+            type="danger"
+            link
+            @click="handleDelete(scope.row.id)"
+          >
+            删除
           </el-button>
         </template>
       </el-table-column>
@@ -215,6 +231,7 @@ const message = useMessage()
 const loading = ref(false)
 const total = ref(0)
 const list = ref<CpsRebateRecordVO[]>([])
+const selectedRecordIds = ref<number[]>([])
 const queryFormRef = ref()
 
 const queryParams = reactive<CpsRebateRecordPageReqVO>({
@@ -263,6 +280,34 @@ const handleQuery = () => {
 const resetQuery = () => {
   queryFormRef.value.resetFields()
   handleQuery()
+}
+
+const handleSelectionChange = (rows: CpsRebateRecordVO[]) => {
+  selectedRecordIds.value = rows.map((row) => row.id)
+}
+
+/** 删除 */
+const handleDelete = async (id: number) => {
+  try {
+    await message.delConfirm()
+    await RebateApi.deleteCpsRebateRecord(id)
+    message.success('删除成功')
+    selectedRecordIds.value = selectedRecordIds.value.filter((selectedId) => selectedId !== id)
+    await getList()
+  } catch {}
+}
+
+/** 批量删除 */
+const handleBatchDelete = async () => {
+  const ids = [...selectedRecordIds.value]
+  if (ids.length === 0) return
+  try {
+    await message.confirm(`确认删除选中的 ${ids.length} 条返利记录？`)
+    await RebateApi.deleteCpsRebateRecordList(ids)
+    message.success('批量删除成功')
+    selectedRecordIds.value = []
+    await getList()
+  } catch {}
 }
 
 /** 退款扣回 */

@@ -87,7 +87,6 @@
           plain
           :disabled="selectedOrderIds.length === 0"
           @click="handleBatchDelete"
-          v-hasPermi="['cps:order:delete']"
         >
           <Icon icon="ep:delete" class="mr-5px" /> 批量删除
         </el-button>
@@ -183,7 +182,6 @@
             type="danger"
             link
             @click="handleDelete(scope.row.id)"
-            v-hasPermi="['cps:order:delete']"
           >
             删除
           </el-button>

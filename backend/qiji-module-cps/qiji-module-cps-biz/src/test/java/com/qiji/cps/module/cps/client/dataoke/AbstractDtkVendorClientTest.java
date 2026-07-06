@@ -4,6 +4,7 @@ import cn.hutool.crypto.digest.DigestUtil;
 import com.qiji.cps.module.cps.client.dto.CpsContentParseRequest;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
 import com.qiji.cps.module.cps.client.dto.CpsOrderQueryRequest;
+import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -274,7 +275,52 @@ class AbstractDtkVendorClientTest {
     }
 
     @Test
-    @DisplayName("淘宝万能解析失败时应透传大淘客失败原因")
+    @DisplayName("Taobao Dataoke link should not send member attribution as channelId")
+    void testTaobaoPromotionLinkDoesNotSendMemberAttributionAsChannelId() throws Exception {
+        class CapturingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {
+            private String requestedPath;
+            private Map<String, Object> requestedParams;
+
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                this.requestedPath = path;
+                this.requestedParams = params;
+                try {
+                    return new ObjectMapper().readTree("""
+                            {
+                              "code": 0,
+                              "msg": "success",
+                              "data": {
+                                "shortUrl": "https://s.click.taobao.com/abc",
+                                "itemUrl": "https://uland.taobao.com/coupon/edetail?id=123",
+                                "tpwd": "cmd"
+                              }
+                            }
+                            """);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        CapturingDtkTaobaoVendorClient client = new CapturingDtkTaobaoVendorClient();
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsId("625171500599");
+        request.setAdzoneId("mm_111_222_333");
+        request.setExternalId("285");
+        request.setChannelId("285");
+
+        var result = client.generatePromotionLink(request, CpsVendorConfig.builder().build());
+
+        assertEquals("/tb-service/get-privilege-link", client.requestedPath);
+        assertEquals("625171500599", client.requestedParams.get("goodsId"));
+        assertEquals("mm_111_222_333", client.requestedParams.get("pid"));
+        assertEquals("285", client.requestedParams.get("externalId"));
+        assertFalse(client.requestedParams.containsKey("channelId"));
+        assertEquals("https://s.click.taobao.com/abc", result.getShortUrl());
+    }
+
+    @Test
+    @DisplayName("Taobao parse failure should return Dataoke failure message")
     void testTaobaoParseContentFailureMessage() throws Exception {
         class FailingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {
             @Override

@@ -9,6 +9,7 @@ import com.qiji.cps.module.member.api.user.dto.MemberUserRespDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.Collection;
@@ -18,6 +19,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.REBATE_RECORD_NOT_EXISTS;
 
 /**
  * CPS 返利记录 Service 实现
@@ -51,6 +55,18 @@ public class CpsRebateRecordServiceImpl implements CpsRebateRecordService {
         CpsRebateRecordDO record = rebateRecordMapper.selectById(id);
         enrichRecordMembers(record == null ? Collections.emptyList() : List.of(record));
         return record;
+    }
+
+    @Override
+    public void deleteRebateRecord(Long id) {
+        validateRebateRecordExists(id);
+        rebateRecordMapper.deleteById(id);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteRebateRecordList(List<Long> ids) {
+        ids.forEach(this::deleteRebateRecord);
     }
 
     @Override
@@ -118,6 +134,12 @@ public class CpsRebateRecordServiceImpl implements CpsRebateRecordService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private void validateRebateRecordExists(Long id) {
+        if (rebateRecordMapper.selectById(id) == null) {
+            throw exception(REBATE_RECORD_NOT_EXISTS);
+        }
     }
 
 }

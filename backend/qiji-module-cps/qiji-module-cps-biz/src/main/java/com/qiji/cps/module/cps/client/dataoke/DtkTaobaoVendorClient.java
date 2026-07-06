@@ -112,8 +112,9 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
         if (request.getAdzoneId() != null) {
             params.put("pid", request.getAdzoneId());
         }
-        if (request.getChannelId() != null) {
-            params.put("channelId", request.getChannelId());
+        String configuredChannelId = firstNonBlankExtraConfig(getExtraConfig(config, "channelId"), getExtraConfig(config, "relationId"));
+        if (configuredChannelId != null) {
+            params.put("channelId", configuredChannelId);
         }
         if (request.getExternalId() != null) {
             params.put("externalId", request.getExternalId());
