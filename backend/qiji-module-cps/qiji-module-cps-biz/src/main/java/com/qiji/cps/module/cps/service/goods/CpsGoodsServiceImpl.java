@@ -3,11 +3,14 @@ package com.qiji.cps.module.cps.service.goods;
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.dto.*;
+import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
+import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
 import com.qiji.cps.module.cps.service.platform.CpsPlatformService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -32,6 +35,9 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
 
     @Resource
     private CpsPlatformService platformService;
+
+    @Resource
+    private CpsAdzoneService adzoneService;
 
     @Override
     public CpsGoodsSearchResult searchGoods(String platformCode, CpsGoodsSearchRequest request) {
@@ -88,24 +94,24 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
     }
 
     private CpsPromotionLinkResult doGeneratePromotionLink(String platformCode, String goodsId,
-                                                           String goodsSign, Long memberId, String adzoneId) {
+                                                            String goodsSign, Long memberId, String adzoneId) {
         // 校验平台
-        validatePlatform(platformCode);
+        CpsPlatformDO platform = validatePlatform(platformCode);
         CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
 
         // 确定使用的推广位
-        String finalAdzoneId = resolvePromotionAdzoneId(platformCode, memberId, adzoneId);
+        PromotionAdzoneContext adzoneContext = resolvePromotionAdzone(platformCode, memberId, adzoneId, platform);
 
         // 构建转链请求
         CpsPromotionLinkRequest linkRequest = new CpsPromotionLinkRequest();
         linkRequest.setGoodsId(goodsId);
         linkRequest.setGoodsSign(goodsSign);
-        linkRequest.setAdzoneId(finalAdzoneId);
+        linkRequest.setAdzoneId(adzoneContext.adzoneId());
         // 将 memberId 作为外部用户标识，用于订单归因
         if (memberId != null) {
             String attributionId = String.valueOf(memberId);
             linkRequest.setExternalId(attributionId);
-            linkRequest.setChannelId(attributionId);
+            applyAttributionParams(platformCode, adzoneContext.adzone(), linkRequest, attributionId);
         }
 
         return client.generatePromotionLink(linkRequest);
@@ -114,11 +120,45 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
     @Override
     public String resolvePromotionAdzoneId(String platformCode, Long memberId, String adzoneId) {
         CpsPlatformDO platform = validatePlatform(platformCode);
-        String finalAdzoneId = adzoneId;
-        if (finalAdzoneId == null) {
-            finalAdzoneId = platform.getDefaultAdzoneId();
+        return resolvePromotionAdzone(platformCode, memberId, adzoneId, platform).adzoneId();
+    }
+
+    private PromotionAdzoneContext resolvePromotionAdzone(String platformCode, Long memberId, String adzoneId,
+                                                          CpsPlatformDO platform) {
+        if (StringUtils.hasText(adzoneId)) {
+            return new PromotionAdzoneContext(adzoneId, null);
         }
-        return finalAdzoneId;
+        if (memberId != null) {
+            CpsAdzoneDO memberAdzone = adzoneService.getMemberAdzone(platformCode, memberId);
+            if (memberAdzone != null && StringUtils.hasText(memberAdzone.getAdzoneId())) {
+                return new PromotionAdzoneContext(memberAdzone.getAdzoneId(), memberAdzone);
+            }
+        }
+        return new PromotionAdzoneContext(platform.getDefaultAdzoneId(), null);
+    }
+
+    private void applyAttributionParams(String platformCode, CpsAdzoneDO adzone,
+                                        CpsPromotionLinkRequest linkRequest, String attributionId) {
+        if (!"taobao".equalsIgnoreCase(platformCode)) {
+            linkRequest.setChannelId(attributionId);
+            return;
+        }
+        if (adzone == null) {
+            return;
+        }
+        if ("member".equalsIgnoreCase(adzone.getRelationType()) && StringUtils.hasText(adzone.getExternalSpecialId())) {
+            linkRequest.setSpecialId(adzone.getExternalSpecialId());
+            linkRequest.setOrderScene(3);
+            return;
+        }
+        if ("channel".equalsIgnoreCase(adzone.getRelationType()) && StringUtils.hasText(adzone.getExternalRelationId())) {
+            linkRequest.setRelationId(adzone.getExternalRelationId());
+            linkRequest.setChannelId(adzone.getExternalRelationId());
+            linkRequest.setOrderScene(2);
+        }
+    }
+
+    private record PromotionAdzoneContext(String adzoneId, CpsAdzoneDO adzone) {
     }
 
     // ==================== 私有方法 ====================

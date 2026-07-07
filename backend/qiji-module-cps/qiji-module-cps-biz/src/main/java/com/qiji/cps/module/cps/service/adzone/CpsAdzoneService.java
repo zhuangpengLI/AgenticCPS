@@ -45,4 +45,9 @@ public interface CpsAdzoneService {
      */
     List<CpsAdzoneDO> getAdzoneListByPlatformCode(String platformCode);
 
+    /**
+     * 获取会员在指定平台的启用专属推广位
+     */
+    CpsAdzoneDO getMemberAdzone(String platformCode, Long memberId);
+
 }

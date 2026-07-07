@@ -100,6 +100,22 @@ public class CpsOrderDO extends TenantBaseDO {
      */
     private String externalInfo;
     /**
+     * 淘宝会员运营ID
+     */
+    private String specialId;
+    /**
+     * 淘宝渠道关系ID
+     */
+    private String relationId;
+    /**
+     * 淘宝订单场景（1-常规订单，2-渠道订单，3-会员运营订单）
+     */
+    private Integer orderScene;
+    /**
+     * 会员归因来源（specialId/relationId/externalId/adzone/transferRecord）
+     */
+    private String attributionSource;
+    /**
      * 订单状态
      *
      * 枚举 {@link CpsOrderStatusEnum}

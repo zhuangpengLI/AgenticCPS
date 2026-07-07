@@ -79,6 +79,13 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
+      <el-table-column label="联盟归因ID" align="center" min-width="150" show-overflow-tooltip>
+        <template #default="scope">
+          <span v-if="scope.row.relationType === 'channel'">{{ scope.row.externalRelationId || '-' }}</span>
+          <span v-else-if="scope.row.relationType === 'member'">{{ scope.row.externalSpecialId || '-' }}</span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="平台默认" align="center" width="90">
         <template #default="scope">
           <el-tag :type="isPlatformDefault(scope.row) ? 'success' : 'info'" size="small">
@@ -164,6 +171,9 @@
           controls-position="right"
         />
       </el-form-item>
+      <el-form-item v-if="formData.adzoneType === 'channel'" label="淘宝渠道ID" prop="externalRelationId">
+        <el-input v-model="formData.externalRelationId" placeholder="请输入淘宝联盟 relationId/channelId" />
+      </el-form-item>
       <el-form-item v-if="formData.adzoneType === 'member'" label="关联用户" prop="relationId">
         <div class="flex items-center gap-2 w-full">
           <el-input
@@ -175,6 +185,9 @@
           <el-button type="primary" @click="openMemberPicker">选择用户</el-button>
           <el-button v-if="formData.relationId" @click="clearMember">清除</el-button>
         </div>
+      </el-form-item>
+      <el-form-item v-if="formData.adzoneType === 'member'" label="会员运营ID" prop="externalSpecialId">
+        <el-input v-model="formData.externalSpecialId" placeholder="请输入淘宝联盟 specialId" />
       </el-form-item>
       <el-form-item label="默认标记" prop="isDefault">
         <el-switch
@@ -300,6 +313,8 @@ const defaultFormData = (): CpsAdzoneSaveVO => ({
   adzoneType: undefined,
   relationType: undefined,
   relationId: undefined,
+  externalRelationId: undefined,
+  externalSpecialId: undefined,
   isDefault: 0,
   status: 1
 })
@@ -345,12 +360,18 @@ const handleTypeChange = (val: string) => {
   if (val === 'general') {
     formData.relationType = undefined
     formData.relationId = undefined
+    formData.externalRelationId = undefined
+    formData.externalSpecialId = undefined
     selectedMember.value = null
   } else {
     formData.relationType = val
   }
   if (val !== 'member') {
+    formData.externalSpecialId = undefined
     selectedMember.value = null
+  }
+  if (val !== 'channel') {
+    formData.externalRelationId = undefined
   }
 }
 

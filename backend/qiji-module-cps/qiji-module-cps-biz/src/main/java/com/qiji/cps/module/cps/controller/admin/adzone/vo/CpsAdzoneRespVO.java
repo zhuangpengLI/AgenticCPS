@@ -30,6 +30,12 @@ public class CpsAdzoneRespVO {
     @Schema(description = "关联ID")
     private Long relationId;
 
+    @Schema(description = "淘宝联盟渠道关系ID")
+    private String externalRelationId;
+
+    @Schema(description = "淘宝联盟会员运营ID")
+    private String externalSpecialId;
+
     @Schema(description = "是否默认")
     private Integer isDefault;
 

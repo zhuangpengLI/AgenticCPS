@@ -62,6 +62,14 @@ public class CpsAdzoneServiceImpl implements CpsAdzoneService {
         return adzoneMapper.selectListByPlatformCode(platformCode);
     }
 
+    @Override
+    public CpsAdzoneDO getMemberAdzone(String platformCode, Long memberId) {
+        if (platformCode == null || memberId == null) {
+            return null;
+        }
+        return adzoneMapper.selectActiveMemberAdzone(platformCode, memberId);
+    }
+
     private void validateAdzoneExists(Long id) {
         if (adzoneMapper.selectById(id) == null) {
             throw exception(ADZONE_NOT_EXISTS);

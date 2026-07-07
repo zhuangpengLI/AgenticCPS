@@ -35,6 +35,12 @@ public class CpsAdzoneSaveReqVO {
     @Schema(description = "关联ID（channel/member 类型时必填）")
     private Long relationId;
 
+    @Schema(description = "淘宝联盟渠道关系ID（渠道专属 PID 使用）")
+    private String externalRelationId;
+
+    @Schema(description = "淘宝联盟会员运营ID（用户专属 PID 使用）")
+    private String externalSpecialId;
+
     @Schema(description = "是否默认", example = "0")
     private Integer isDefault;
 

@@ -4,9 +4,11 @@ import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.dto.CpsOrderDTO;
 import com.qiji.cps.module.cps.client.dto.CpsOrderQueryRequest;
+import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderSyncLogDO;
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
+import com.qiji.cps.module.cps.dal.mysql.adzone.CpsAdzoneMapper;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderMapper;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderSyncLogMapper;
 import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
@@ -27,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,6 +41,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.atLeastOnce;
 
 @ExtendWith(MockitoExtension.class)
 class CpsOrderServiceImplTest {
@@ -61,6 +65,8 @@ class CpsOrderServiceImplTest {
     private CpsTransferRecordMapper transferRecordMapper;
     @Mock
     private MemberUserApi memberUserApi;
+    @Mock
+    private CpsAdzoneMapper adzoneMapper;
 
     @Test
     @DisplayName("deleteOrder - 删除订单前校验订单存在")
@@ -326,20 +332,108 @@ class CpsOrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("saveOrUpdateOrder - 淘宝会员运营ID specialId 应优先绑定本地会员")
+    void saveOrUpdateOrder_attributesByTaobaoSpecialId() {
+        when(orderMapper.selectByPlatformOrderId("TB-SPECIAL-1")).thenReturn(null);
+        when(adzoneMapper.selectActiveMemberAdzoneBySpecialId("taobao", "SPECIAL-1001"))
+                .thenReturn(CpsAdzoneDO.builder()
+                        .platformCode("taobao")
+                        .adzoneId("mm_member_pid")
+                        .relationType("member")
+                        .relationId(1001L)
+                        .externalSpecialId("SPECIAL-1001")
+                        .status(1)
+                        .build());
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(1001L);
+        member.setNickname("我是喵团员");
+        when(memberUserApi.getUser(1001L)).thenReturn(member);
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .platformOrderId("TB-SPECIAL-1")
+                .platformCode("taobao")
+                .itemId("ITEM-1")
+                .adzoneId("mm_member_pid")
+                .specialId("SPECIAL-1001")
+                .externalId("not-a-member-id")
+                .orderScene(3)
+                .orderTime("2026-07-07 14:46:25")
+                .platformStatus(1)
+                .build();
+
+        int result = orderService.saveOrUpdateOrder(dto);
+
+        assertEquals(1, result);
+        verify(orderMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
+                Long.valueOf(1001L).equals(order.getMemberId())
+                        && "我是喵团员".equals(order.getMemberNickname())
+                        && "SPECIAL-1001".equals(order.getSpecialId())
+                        && Integer.valueOf(3).equals(order.getOrderScene())
+                        && "specialId".equals(order.getAttributionSource())));
+        verify(adzoneMapper, never()).selectActiveMemberAdzone(eq("taobao"), any(String.class));
+        verify(transferRecordMapper, never()).selectAttributionCandidates(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("saveOrUpdateOrder - 平台返回用户专属推广位时应确定性绑定会员")
+    void saveOrUpdateOrder_attributesByMemberAdzone() {
+        when(orderMapper.selectByPlatformOrderId("TB-ADZONE-1")).thenReturn(null);
+        when(adzoneMapper.selectActiveMemberAdzone("taobao", "mm_111_222_333"))
+                .thenReturn(CpsAdzoneDO.builder()
+                        .platformCode("taobao")
+                        .adzoneId("mm_111_222_333")
+                        .relationType("member")
+                        .relationId(1001L)
+                        .status(1)
+                        .build());
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(1001L);
+        member.setNickname("我是喵团员");
+        when(memberUserApi.getUser(1001L)).thenReturn(member);
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .platformOrderId("TB-ADZONE-1")
+                .platformCode("taobao")
+                .itemId("ITEM-1")
+                .adzoneId("mm_111_222_333")
+                .externalId("not-a-member-id")
+                .orderTime("2026-07-07 14:46:25")
+                .platformStatus(1)
+                .build();
+
+        int result = orderService.saveOrUpdateOrder(dto);
+
+        assertEquals(1, result);
+        verify(orderMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
+                Long.valueOf(1001L).equals(order.getMemberId())
+                        && "我是喵团员".equals(order.getMemberNickname())
+                        && "mm_111_222_333".equals(order.getAdzoneId())));
+        verify(transferRecordMapper, never()).selectAttributionCandidates(any(), any(), any(), any(), any());
+    }
+
+    @Test
     @DisplayName("manualSync - 状态同步应按更新时间查询平台订单")
     void manualSync_usesUpdateTimeQueryTypeForStatusSync() {
         when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);
-        when(platformClient.queryOrders(any(CpsOrderQueryRequest.class))).thenReturn(List.of(CpsOrderDTO.builder()
-                .platformCode("taobao")
-                .platformOrderId("TB-STATUS-1")
-                .platformStatus(3)
-                .commissionAmount(new BigDecimal("8.00"))
-                .build()));
+        when(platformClient.queryOrders(any(CpsOrderQueryRequest.class)))
+                .thenReturn(List.of(CpsOrderDTO.builder()
+                        .platformCode("taobao")
+                        .platformOrderId("TB-STATUS-1")
+                        .platformStatus(3)
+                        .commissionAmount(new BigDecimal("8.00"))
+                        .build()))
+                .thenReturn(List.of())
+                .thenReturn(List.of());
         when(orderMapper.selectByPlatformOrderId("TB-STATUS-1")).thenReturn(null);
 
         String result = orderService.manualSync("taobao", 2, 4);
 
-        verify(platformClient).queryOrders(argThat(req ->
+        ArgumentCaptor<CpsOrderQueryRequest> captor = ArgumentCaptor.forClass(CpsOrderQueryRequest.class);
+        verify(platformClient, times(3)).queryOrders(captor.capture());
+        assertEquals(List.of(1, 2, 3), captor.getAllValues().stream().map(CpsOrderQueryRequest::getOrderScene).toList());
+        captor.getAllValues().forEach(req ->
+                assertEquals(4, req.getQueryType()));
+        verify(platformClient, atLeastOnce()).queryOrders(argThat(req ->
                 Integer.valueOf(4).equals(req.getQueryType())
                         && Integer.valueOf(50).equals(req.getPageSize())
                         && req.getStartTime() != null
@@ -374,7 +468,7 @@ class CpsOrderServiceImplTest {
         String result = orderService.manualSync("taobao", 24, 4);
 
         ArgumentCaptor<CpsOrderQueryRequest> captor = ArgumentCaptor.forClass(CpsOrderQueryRequest.class);
-        verify(platformClient, times(8)).queryOrders(captor.capture());
+        verify(platformClient, times(24)).queryOrders(captor.capture());
         captor.getAllValues().forEach(req -> {
             LocalDateTime start = LocalDateTime.parse(req.getStartTime(), DTF);
             LocalDateTime end = LocalDateTime.parse(req.getEndTime(), DTF);
@@ -382,6 +476,9 @@ class CpsOrderServiceImplTest {
             assertTrue(Duration.between(start, end).compareTo(Duration.ofHours(3)) <= 0);
             assertEquals(4, req.getQueryType());
         });
+        assertEquals(Set.of(1, 2, 3), captor.getAllValues().stream()
+                .map(CpsOrderQueryRequest::getOrderScene)
+                .collect(java.util.stream.Collectors.toSet()));
         verify(syncLogMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderSyncLogDO>argThat(log ->
                 Integer.valueOf(1).equals(log.getTotalCount())
                         && Integer.valueOf(1).equals(log.getNewCount())));

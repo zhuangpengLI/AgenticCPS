@@ -133,7 +133,7 @@ public class CpsOrderSyncJob implements JobHandler {
             long t0 = System.currentTimeMillis();
             try {
                 CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
-                List<CpsOrderDTO> orders = pullAllOrders(client, queryType, startTimeStr, endTimeStr);
+                List<CpsOrderDTO> orders = pullAllOrders(platformCode, client, queryType, startTimeStr, endTimeStr);
 
                 int total = orders.size();
                 int[] stats = orderService.batchSaveOrUpdateOrders(orders);
@@ -177,7 +177,16 @@ public class CpsOrderSyncJob implements JobHandler {
     /**
      * 翻页拉取平台全部订单（支持游标翻页，最多拉取 20 页防止死循环）
      */
-    private List<CpsOrderDTO> pullAllOrders(CpsPlatformClient client, int queryType,
+    private List<CpsOrderDTO> pullAllOrders(String platformCode, CpsPlatformClient client, int queryType,
+                                             String startTime, String endTime) {
+        List<CpsOrderDTO> allOrders = new ArrayList<>();
+        for (Integer orderScene : resolveOrderScenes(platformCode)) {
+            allOrders.addAll(pullAllOrders(client, queryType, orderScene, startTime, endTime));
+        }
+        return allOrders;
+    }
+
+    private List<CpsOrderDTO> pullAllOrders(CpsPlatformClient client, int queryType, Integer orderScene,
                                              String startTime, String endTime) {
         List<CpsOrderDTO> allOrders = new ArrayList<>();
         String positionIndex = null;
@@ -186,6 +195,7 @@ public class CpsOrderSyncJob implements JobHandler {
         for (int page = 1; page <= maxPages; page++) {
             CpsOrderQueryRequest req = new CpsOrderQueryRequest();
             req.setQueryType(queryType);
+            req.setOrderScene(orderScene);
             req.setStartTime(startTime);
             req.setEndTime(endTime);
             req.setPageSize(50);
@@ -215,6 +225,13 @@ public class CpsOrderSyncJob implements JobHandler {
         }
 
         return allOrders;
+    }
+
+    private List<Integer> resolveOrderScenes(String platformCode) {
+        if ("taobao".equalsIgnoreCase(platformCode)) {
+            return List.of(1, 2, 3);
+        }
+        return java.util.Collections.singletonList(null);
     }
 
 }

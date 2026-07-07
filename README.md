@@ -352,6 +352,10 @@ AgenticCPS 的低代码能力体现在系统的每个层面：
 | 运营数据看板 | 订单/佣金/返利/利润实时统计 | 一个人掌控全局 |
 | 风控管理 | 异常行为检测、黑名单、退款率预警 | 自动守护资金安全 |
 
+大淘客淘宝高效转链的订单归因规则已整理到 [`docs/dataoke-high-efficiency-link-attribution.md`](docs/dataoke-high-efficiency-link-attribution.md)。后续优化转链、订单同步、MCP 链接生成和推广位管理时，必须区分 `externalId`、`relationId/channelId`、`specialId` 与专属 PID：只有带可信上下文或已验证映射的订单才能进入会员返利资产链路。
+
+大淘客搜索页与商品广场实现方式已整理到 [`docs/dataoke-search-page-implementation.md`](docs/dataoke-search-page-implementation.md)。后续优化商品搜索页、热搜榜、搜索联想词、超级搜索/联盟搜索补量、商品广场筛选和搜索结果转链时，按“热搜首屏 → 输入联想 → 搜索召回 → 商品统一字段 → 明确转链”的链路实现，搜索结果不得直接进入返利结算或 Token 兑换链路。
+
 ### 技术架构总览
 
 ```

@@ -110,8 +110,38 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 - `CpsGenerateLinkToolFunction`：`@Component("cps_generate_link")`，通过 ToolContext 或请求参数取得 memberId 后调用转链。
 - `CpsPlatformClient`：定义 `searchGoods`、`generatePromotionLink`、`queryOrders`、`testConnection`。
 - `CpsPlatformClientFactory`：启动时注册平台客户端与 `vendorCode:platformCode` 供应商客户端，并从平台配置选择 active vendor。
+- 大淘客淘宝高效转链归因规则见 `docs/dataoke-high-efficiency-link-attribution.md`：`externalId` 只用于绑定 `specialId` 的外部标记，渠道订单依赖渠道专属 PID + `relationId` + `orderScene=2`，会员订单依赖会员专属 PID + `specialId` + `orderScene=3`。
+- 大淘客搜索页与商品广场实现规则见 `docs/dataoke-search-page-implementation.md`：搜索页由热搜记录、搜索联想词、大淘客搜索、超级搜索和联盟搜索组合；当前默认优先 dataoke 大淘客搜索，超级搜索/联盟搜索适合作为扩展召回或补量策略。
 
-### 3.1.1 管理后台活动中心
+### 3.1.1 大淘客搜索页与商品广场
+
+```text
+运营人员
+  -> frontend/admin-vue3/src/views/cps/goods/square/index.vue
+  -> GET /admin-api/cps/goods-square/hot-keywords 或 /suggestions
+  -> CpsGoodsSquareController
+  -> CpsGoodsSquareServiceImpl
+  -> DtkTaobaoVendorClient
+  -> 大淘客热搜记录 / 搜索联想词
+
+运营人员提交搜索
+  -> GET /admin-api/cps/goods-square/search
+  -> CpsGoodsSquareServiceImpl.searchGoods()
+  -> CpsGoodsService
+  -> CpsPlatformClientFactory
+  -> DtkTaobaoVendorClient / 其它平台供应商
+  -> 统一 CpsGoodsItem / 商品广场 VO
+```
+
+关键证据：
+
+- `CpsGoodsSquareController`：提供 `/meta`、`/hot-keywords`、`/suggestions`、`/vendor-goods`、`/search`、`/search-by-image`、`/link`。
+- `CpsGoodsSquareServiceImpl`：组织商品广场元数据、热搜、联想词、关键词搜索、图片搜索和转链记录。
+- `DtkTaobaoVendorClient`：淘宝 dataoke 默认关键词搜索走 `/goods/get-dtk-search-goods`，热搜走 `/category/get-top100`，联想词走 `/goods/search-suggestion`，图片搜索走 `openapiv2.dataoke.com/open-api/goods/search-by-image`。
+- 搜索结果只作为导购展示、运营选品和转链前置展示；返利入账、冻结/扣减、订单归因和 Token 兑换仍以后续订单与归因链路为准。
+- 后续若接入官方“超级搜索”或“联盟搜索”补量，应作为可配置搜索模式或召回策略扩展，保留来源标识和降级逻辑，不覆盖默认大淘客搜索字段。
+
+### 3.1.2 管理后台活动中心
 
 ```text
 运营人员
@@ -140,7 +170,7 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 - 前端活动中心卡片 `search` 跳转到商品广场并带入 `platformCode`、`keyword`、`activityTag`；`url` 新窗口打开；`none` 仅展示。
 - 平台 tabs 优先来自活动数据与启用平台配置，兜底包含热门、美团、饿了么、抖音、本地生活、飞猪、拼多多、淘宝、京东。
 
-### 3.1.2 管理后台返利工具箱
+### 3.1.3 管理后台返利工具箱
 
 管理后台返利工具箱是面向运营的统一工作台，用于把万能转链、口令解析、归属检测、优惠券查询、返利商品广场、淘礼金计划、推广文案编辑和批量复制收敛到一个入口。
 
@@ -164,7 +194,7 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 - 前端工具箱包含万能转链、口令解析、归属检测、优惠券查询、商品广场、淘礼金计划与推广文案编辑区，商品广场入口可通过 `/cps/toolbox?tool=goods-square` 直达。
 - 菜单与权限 SQL 放在 `backend/sql/mysql/cps-all-in-one.sql`；不要把 CPS 菜单、权限或种子数据写回 `ruoyi-vue-pro.sql`。
 
-### 3.1.3 选品库主题与商品快照
+### 3.1.4 选品库主题与商品快照
 
 ```text
 运营后台
@@ -433,6 +463,9 @@ docker-compose down
 ### 关键文档
 
 - 生态 P0 闭环：`docs/agentic-ecosystem-p0-rebate-token-exchange.md`
+- 大淘客高效转链与订单归因：`docs/dataoke-high-efficiency-link-attribution.md`
+- 大淘客搜索页面与商品广场：`docs/dataoke-search-page-implementation.md`
+- 大淘客与好单库配置测试：`docs/大淘客与好单库配置及接口测试指南.md`
 - CPS 技术债：`docs/cps-tech-debt-inventory.md`
 - CPS 主 R 打样 SOP：`docs/cps-refactor-sop.md`
 - CPS 订单同步打样报告：`docs/cps-order-sync-pilot-pre-pr.md`

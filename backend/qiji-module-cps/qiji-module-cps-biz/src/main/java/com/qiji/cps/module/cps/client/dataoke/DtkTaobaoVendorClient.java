@@ -192,8 +192,12 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
             params.put("pid", request.getAdzoneId());
         }
         String configuredChannelId = firstNonBlankExtraConfig(getExtraConfig(config, "channelId"), getExtraConfig(config, "relationId"));
-        if (configuredChannelId != null) {
-            params.put("channelId", configuredChannelId);
+        String channelId = firstNonBlankExtraConfig(request.getRelationId(), request.getChannelId(), configuredChannelId);
+        if (channelId != null) {
+            params.put("channelId", channelId);
+        }
+        if (hasText(request.getSpecialId())) {
+            params.put("specialId", request.getSpecialId());
         }
         if (request.getExternalId() != null) {
             params.put("externalId", request.getExternalId());
@@ -254,6 +258,19 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
     }
 
     @Override
+    public List<CpsOrderDTO> queryOrders(CpsOrderQueryRequest request, CpsVendorConfig config) {
+        List<CpsOrderDTO> orders = super.queryOrders(request, config);
+        if (orders != null && request != null && request.getOrderScene() != null) {
+            orders.forEach(order -> {
+                if (order.getOrderScene() == null) {
+                    order.setOrderScene(request.getOrderScene());
+                }
+            });
+        }
+        return orders;
+    }
+
+    @Override
     protected Map<String, Object> buildOrderQueryParams(CpsOrderQueryRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("queryType", request.getQueryType());
@@ -263,6 +280,9 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
         params.put("version", "v1.0.0");
         if (request.getPositionIndex() != null) {
             params.put("positionIndex", request.getPositionIndex());
+        }
+        if (request.getOrderScene() != null) {
+            params.put("orderScene", request.getOrderScene());
         }
         return params;
     }
@@ -437,9 +457,11 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
 
     private CpsOrderDTO parseTaobaoOrder(JsonNode item, String nextPositionIndex) {
         int tkStatus = item.path("tk_status").asInt(-1);
+        String specialId = firstText(item, "special_id", "specialId");
+        String relationId = firstText(item, "relation_id", "relationId");
         Map<String, Object> extraFields = new LinkedHashMap<>();
-        putIfHasText(extraFields, "specialId", firstText(item, "special_id", "specialId"));
-        putIfHasText(extraFields, "relationId", firstText(item, "relation_id", "relationId"));
+        putIfHasText(extraFields, "specialId", specialId);
+        putIfHasText(extraFields, "relationId", relationId);
         putIfHasText(extraFields, "rawTkStatus", String.valueOf(tkStatus));
         return CpsOrderDTO.builder()
                 .platformCode(getPlatformCode())
@@ -459,7 +481,10 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
                 .receiveTime(firstText(item, "tb_deposit_time", "tk_deposit_time", "confirm_receipt_time"))
                 .settleTime(firstText(item, "tk_earning_time", "earning_time", "settle_time"))
                 .adzoneId(item.path("adzone_id").asText(null))
-                .externalId(firstText(item, "external_id", "externalId", "special_id", "specialId", "relation_id", "relationId"))
+                .externalId(firstText(item, "external_id", "externalId"))
+                .specialId(specialId)
+                .relationId(relationId)
+                .orderScene(parseInteger(item, "order_scene", "orderScene"))
                 .refundTag(item.path("refund_tag").asInt(0))
                 .nextPositionIndex(nextPositionIndex)
                 .extraFields(extraFields)
@@ -578,6 +603,21 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
             }
             try {
                 return Long.valueOf(value.asText());
+            } catch (Exception ignored) {
+                // Try the next known alias.
+            }
+        }
+        return null;
+    }
+
+    private Integer parseInteger(JsonNode node, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            JsonNode value = node.path(fieldName);
+            if (value.isMissingNode() || value.isNull()) {
+                continue;
+            }
+            try {
+                return Integer.valueOf(value.asText());
             } catch (Exception ignored) {
                 // Try the next known alias.
             }

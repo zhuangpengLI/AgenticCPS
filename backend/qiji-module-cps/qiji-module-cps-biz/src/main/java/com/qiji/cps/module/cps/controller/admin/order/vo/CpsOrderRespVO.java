@@ -69,6 +69,18 @@ public class CpsOrderRespVO {
     @Schema(description = "外部追踪参数")
     private String externalInfo;
 
+    @Schema(description = "淘宝会员运营ID")
+    private String specialId;
+
+    @Schema(description = "淘宝渠道关系ID")
+    private String relationId;
+
+    @Schema(description = "淘宝订单场景（1-常规订单，2-渠道订单，3-会员运营订单）")
+    private Integer orderScene;
+
+    @Schema(description = "会员归因来源")
+    private String attributionSource;
+
     @Schema(description = "订单状态")
     private String orderStatus;
 

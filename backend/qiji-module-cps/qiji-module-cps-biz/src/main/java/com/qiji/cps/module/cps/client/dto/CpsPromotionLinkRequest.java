@@ -36,6 +36,21 @@ public class CpsPromotionLinkRequest {
     private String channelId;
 
     /**
+     * 淘宝联盟渠道关系ID（大淘客转链时映射为 channelId）
+     */
+    private String relationId;
+
+    /**
+     * 淘宝联盟会员运营ID（大淘客转链时映射为 specialId）
+     */
+    private String specialId;
+
+    /**
+     * 淘宝订单场景（1-常规订单，2-渠道订单，3-会员运营订单）
+     */
+    private Integer orderScene;
+
+    /**
      * 商品原始URL（京东转链必填的materialId）
      */
     private String itemLink;

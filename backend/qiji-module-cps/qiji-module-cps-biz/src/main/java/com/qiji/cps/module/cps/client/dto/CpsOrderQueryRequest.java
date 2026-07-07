@@ -45,4 +45,9 @@ public class CpsOrderQueryRequest {
      */
     private Integer orderStatus;
 
+    /**
+     * 淘宝订单场景（1-常规订单，2-渠道订单，3-会员运营订单）
+     */
+    private Integer orderScene;
+
 }

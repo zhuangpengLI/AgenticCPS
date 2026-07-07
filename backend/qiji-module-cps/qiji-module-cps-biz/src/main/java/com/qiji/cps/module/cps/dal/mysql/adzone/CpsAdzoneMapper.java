@@ -39,4 +39,41 @@ public interface CpsAdzoneMapper extends BaseMapperX<CpsAdzoneDO> {
                 .eq(CpsAdzoneDO::getStatus, 1));
     }
 
+    default CpsAdzoneDO selectActiveMemberAdzone(String platformCode, String adzoneId) {
+        return selectOne(new LambdaQueryWrapperX<CpsAdzoneDO>()
+                .eq(CpsAdzoneDO::getPlatformCode, platformCode)
+                .eq(CpsAdzoneDO::getAdzoneId, adzoneId)
+                .eq(CpsAdzoneDO::getRelationType, "member")
+                .eq(CpsAdzoneDO::getStatus, 1)
+                .last("LIMIT 1"));
+    }
+
+    default CpsAdzoneDO selectActiveMemberAdzone(String platformCode, Long memberId) {
+        return selectOne(new LambdaQueryWrapperX<CpsAdzoneDO>()
+                .eq(CpsAdzoneDO::getPlatformCode, platformCode)
+                .eq(CpsAdzoneDO::getRelationType, "member")
+                .eq(CpsAdzoneDO::getRelationId, memberId)
+                .eq(CpsAdzoneDO::getStatus, 1)
+                .orderByDesc(CpsAdzoneDO::getIsDefault)
+                .orderByAsc(CpsAdzoneDO::getId)
+                .last("LIMIT 1"));
+    }
+
+    default CpsAdzoneDO selectActiveMemberAdzoneBySpecialId(String platformCode, String specialId) {
+        return selectOne(new LambdaQueryWrapperX<CpsAdzoneDO>()
+                .eq(CpsAdzoneDO::getPlatformCode, platformCode)
+                .eq(CpsAdzoneDO::getExternalSpecialId, specialId)
+                .eq(CpsAdzoneDO::getRelationType, "member")
+                .eq(CpsAdzoneDO::getStatus, 1)
+                .last("LIMIT 1"));
+    }
+
+    default CpsAdzoneDO selectActiveMemberAdzoneByExternalRelationId(String platformCode, String relationId) {
+        return selectOne(new LambdaQueryWrapperX<CpsAdzoneDO>()
+                .eq(CpsAdzoneDO::getPlatformCode, platformCode)
+                .eq(CpsAdzoneDO::getExternalRelationId, relationId)
+                .eq(CpsAdzoneDO::getStatus, 1)
+                .last("LIMIT 1"));
+    }
+
 }

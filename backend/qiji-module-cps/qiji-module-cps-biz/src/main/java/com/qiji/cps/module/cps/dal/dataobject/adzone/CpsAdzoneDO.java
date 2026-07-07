@@ -55,6 +55,14 @@ public class CpsAdzoneDO extends TenantBaseDO {
      */
     private Long relationId;
     /**
+     * 淘宝联盟渠道关系ID（orderScene=2）
+     */
+    private String externalRelationId;
+    /**
+     * 淘宝联盟会员运营ID（orderScene=3）
+     */
+    private String externalSpecialId;
+    /**
      * 是否默认（0否 1是）
      */
     private Integer isDefault;

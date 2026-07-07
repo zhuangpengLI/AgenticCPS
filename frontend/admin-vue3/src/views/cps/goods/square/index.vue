@@ -8,7 +8,7 @@
         <el-input
           v-model="queryParams.keyword"
           size="large"
-          placeholder="请输入关键词/商品加密ID/商品链接"
+          :placeholder="searchPlaceholder"
           clearable
           @input="handleKeywordInput"
           @keyup.enter="handleSearch"
@@ -55,6 +55,50 @@
       </div>
     </div>
 
+    <div class="search-platform-bar">
+      <el-radio-group
+        v-model="queryParams.platformCode"
+        class="search-platform-tabs"
+        @change="handlePlatformChange"
+      >
+        <el-radio-button
+          v-for="item in platformOptions"
+          :key="item.platformCode"
+          :label="item.platformCode"
+        >
+          {{ platformLabel(item.platformCode) }}
+        </el-radio-button>
+      </el-radio-group>
+      <div class="search-mode-group">
+        <el-radio-group v-model="queryParams.searchField" @change="handleSearchModeChange">
+          <el-radio-button
+            v-for="item in SEARCH_FIELD_OPTIONS"
+            :key="item.value"
+            :label="item.value"
+          >
+            {{ item.label }}
+          </el-radio-button>
+        </el-radio-group>
+        <el-select
+          v-model="queryParams.vendorCode"
+          class="vendor-select"
+          clearable
+          filterable
+          :loading="vendorLoading"
+          placeholder="默认供应商"
+          @change="handleVendorChange"
+        >
+          <el-option label="默认供应商" value="" />
+          <el-option
+            v-for="item in vendorOptions"
+            :key="item.vendorCode"
+            :label="item.vendorName || vendorLabel(item.vendorCode)"
+            :value="item.vendorCode"
+          />
+        </el-select>
+      </div>
+    </div>
+
     <div v-if="searchSuggestionOptions.length > 0" class="suggestion-row">
       <span class="suggestion-label">联想词</span>
       <el-tag
@@ -66,6 +110,19 @@
       >
         {{ item.label }}
         <span v-if="item.description" class="suggestion-desc">{{ item.description }}</span>
+      </el-tag>
+    </div>
+
+    <div v-if="activeFilterChips.length > 0" class="active-filter-row">
+      <span class="active-filter-label">当前条件</span>
+      <el-tag
+        v-for="item in activeFilterChips"
+        :key="item.key"
+        closable
+        effect="plain"
+        @close="clearFilterChip(item.key)"
+      >
+        {{ item.label }}
       </el-tag>
     </div>
 
@@ -171,7 +228,16 @@
       </div>
     </div>
 
-    <div v-if="showTaobaoSelection" class="advanced-filter">
+    <div v-if="showTaobaoSelection" class="advanced-toggle-row">
+      <el-button text type="primary" @click="showAdvancedFilter = !showAdvancedFilter">
+        <Icon :icon="showAdvancedFilter ? 'ep:arrow-up' : 'ep:arrow-down'" class="mr-5px" />
+        {{ showAdvancedFilter ? '收起筛选' : '高级筛选' }}
+      </el-button>
+      <span class="advanced-toggle-hint">价格、佣金、销量、店铺和商品属性组合筛选</span>
+    </div>
+
+    <el-collapse-transition>
+      <div v-show="showTaobaoSelection && showAdvancedFilter" class="advanced-filter">
         <el-form :model="queryParams" label-width="96px">
           <el-row :gutter="12">
             <el-col :xs="24" :sm="12" :lg="4">
@@ -275,6 +341,22 @@
             </el-button>
           </div>
         </el-form>
+      </div>
+    </el-collapse-transition>
+
+    <div class="results-toolbar">
+      <div class="result-summary">
+        <b>{{ resultSummaryText }}</b>
+        <span>{{ platformLabel(queryParams.platformCode) }} · {{ vendorLabel(queryParams.vendorCode || metaInfo?.vendorCode) }}</span>
+      </div>
+      <div class="result-actions">
+        <el-button @click="loadTopKeywords">
+          <Icon icon="ep:refresh-right" class="mr-5px" /> 换一批热搜
+        </el-button>
+        <el-button @click="handleReset">
+          <Icon icon="ep:refresh" class="mr-5px" /> 重置
+        </el-button>
+      </div>
     </div>
 
     <el-empty v-if="!loading && goodsList.length === 0" description="暂无商品" />
@@ -468,6 +550,7 @@ const vendorLoading = ref(false)
 const adzoneLoading = ref(false)
 const memberLoading = ref(false)
 const imageSearchLoading = ref(false)
+const showAdvancedFilter = ref(false)
 const goodsList = ref<CpsGoodsSquareGoodsVO[]>([])
 const total = ref(0)
 const metaInfo = ref<CpsGoodsSquareMetaRespVO>()
@@ -506,6 +589,12 @@ const headlineKeywords = [
   { label: '爆款早餐', icon: 'ep:hot-water', tone: 'danger' },
   { label: '社群热推风扇', icon: 'ep:promotion', tone: 'default' },
   { label: '夏季清凉内裤', icon: 'ep:sunny', tone: 'success' }
+]
+
+const SEARCH_FIELD_OPTIONS = [
+  { label: '标题搜索', value: 'title', placeholder: '输入商品名、宝贝标题或运营关键词' },
+  { label: '商品ID', value: 'goods_id', placeholder: '输入商品 ID / 加密 ID / goodsSign' },
+  { label: '链接口令', value: 'link', placeholder: '粘贴商品链接、淘口令或活动链接' }
 ]
 
 const topicOptions = [
@@ -555,6 +644,12 @@ const fallbackPlatformOptions: CpsPlatformVO[] = [
 ]
 
 const showTaobaoSelection = computed(() => queryParams.platformCode === 'taobao')
+const searchPlaceholder = computed(() => {
+  return (
+    SEARCH_FIELD_OPTIONS.find((item) => item.value === queryParams.searchField)?.placeholder ||
+    '请输入关键词/商品加密ID/商品链接'
+  )
+})
 const categorySegmentOptions = computed(() => {
   const categories = metaInfo.value?.categories?.length
     ? metaInfo.value.categories
@@ -571,6 +666,70 @@ const linkRows = computed(() => [
   { label: '移动端链接', value: linkResult.value?.mobileUrl || '' },
   { label: '推广文案', value: linkResult.value?.promotionContent || '' }
 ])
+const resultSummaryText = computed(() => {
+  if (loading.value) return '正在搜索商品'
+  if (total.value > 0) return `找到 ${total.value} 个商品`
+  return goodsList.value.length > 0 ? `展示 ${goodsList.value.length} 个商品` : '暂无商品结果'
+})
+const activeFilterChips = computed(() => {
+  const chips: Array<{ key: string; label: string }> = []
+  if (queryParams.keyword) {
+    chips.push({ key: 'keyword', label: `关键词：${queryParams.keyword}` })
+  }
+  if (queryParams.categoryId && queryParams.categoryId !== '0') {
+    const category = categorySegmentOptions.value.find((item) => item.value === queryParams.categoryId)
+    chips.push({ key: 'categoryId', label: `分类：${category?.label || queryParams.categoryId}` })
+  }
+  if (queryParams.hasCoupon === 1) {
+    chips.push({ key: 'hasCoupon', label: '只看有券' })
+  }
+  if (queryParams.priceLowerLimit !== undefined || queryParams.priceUpperLimit !== undefined) {
+    chips.push({
+      key: 'price',
+      label: `价格：${queryParams.priceLowerLimit ?? 0}-${queryParams.priceUpperLimit ?? '不限'}`
+    })
+  }
+  if (queryParams.minCommissionRate !== undefined) {
+    chips.push({ key: 'minCommissionRate', label: `佣金率≥${queryParams.minCommissionRate}%` })
+  }
+  if (queryParams.minMonthSales !== undefined) {
+    chips.push({ key: 'minMonthSales', label: `销量≥${queryParams.minMonthSales}` })
+  }
+  if (queryParams.couponAmountMin !== undefined || queryParams.couponPriceUpperLimit !== undefined) {
+    chips.push({
+      key: 'coupon',
+      label: `券额：${queryParams.couponAmountMin ?? 0}-${queryParams.couponPriceUpperLimit ?? '不限'}`
+    })
+  }
+  if (queryParams.activityTag) {
+    chips.push({ key: 'activityTag', label: `主题：${queryParams.activityTag}` })
+  }
+  if (queryParams.shopType) {
+    chips.push({ key: 'shopType', label: `店铺：${queryParams.shopType}` })
+  }
+  if (queryParams.goodsPerformance) {
+    chips.push({ key: 'goodsPerformance', label: `表现：${queryParams.goodsPerformance}` })
+  }
+  const booleanLabels: Array<[keyof CpsGoodsSquareSearchReqVO, string]> = [
+    ['commercialOnly', '商单'],
+    ['preSaleOnly', '预告'],
+    ['tmallOnly', '天猫'],
+    ['brandOnly', '品牌'],
+    ['haitaoOnly', '海淘'],
+    ['goldSellerOnly', '金牌卖家'],
+    ['tchaoshiOnly', '天猫超市'],
+    ['juhuasuanOnly', '聚划算'],
+    ['taoqianggouOnly', '淘抢购'],
+    ['inspectedGoodsOnly', '验货'],
+    ['freeshipRemoteDistrict', '偏远包邮']
+  ]
+  booleanLabels.forEach(([key, label]) => {
+    if (queryParams[key] === true) {
+      chips.push({ key: String(key), label })
+    }
+  })
+  return chips
+})
 
 const getGoodsList = async () => {
   loading.value = true
@@ -598,6 +757,37 @@ const loadMeta = async () => {
 const handleSearch = () => {
   queryParams.pageNo = 1
   getGoodsList()
+}
+
+const handlePlatformChange = async () => {
+  queryParams.vendorCode = undefined
+  queryParams.pageNo = 1
+  queryParams.categoryId = '0'
+  queryParams.channelCode = undefined
+  queryParams.activityTag = undefined
+  searchSuggestionOptions.value = []
+  await loadVendorOptions(queryParams.platformCode || 'taobao')
+  await loadMeta()
+  await loadHotKeywords()
+  await getGoodsList()
+}
+
+const handleVendorChange = async () => {
+  if (!queryParams.vendorCode) {
+    queryParams.vendorCode = undefined
+  }
+  queryParams.pageNo = 1
+  await loadMeta()
+  await loadHotKeywords()
+  await getGoodsList()
+}
+
+const handleSearchModeChange = () => {
+  searchSuggestionOptions.value = []
+  if (queryParams.searchField === 'goods_id') {
+    queryParams.sortType = 0
+  }
+  handleSearch()
 }
 
 const loadTopKeywords = () => {
@@ -709,6 +899,54 @@ const handleReset = async () => {
   await loadMeta()
   await loadHotKeywords()
   await getGoodsList()
+}
+
+const clearFilterChip = (key: string) => {
+  switch (key) {
+    case 'keyword':
+      queryParams.keyword = ''
+      searchSuggestionOptions.value = []
+      break
+    case 'categoryId':
+      queryParams.categoryId = '0'
+      break
+    case 'hasCoupon':
+      queryParams.hasCoupon = undefined
+      break
+    case 'price':
+      queryParams.priceLowerLimit = undefined
+      queryParams.priceUpperLimit = undefined
+      break
+    case 'minCommissionRate':
+      queryParams.minCommissionRate = undefined
+      break
+    case 'minMonthSales':
+      queryParams.minMonthSales = undefined
+      break
+    case 'coupon':
+      queryParams.couponAmountMin = undefined
+      queryParams.couponPriceUpperLimit = undefined
+      break
+    case 'activityTag':
+      queryParams.activityTag = undefined
+      queryParams.channelCode = undefined
+      break
+    case 'shopType':
+      queryParams.shopType = undefined
+      queryParams.tmallOnly = undefined
+      queryParams.tchaoshiOnly = undefined
+      queryParams.goldSellerOnly = undefined
+      break
+    case 'goodsPerformance':
+      queryParams.goodsPerformance = undefined
+      break
+    default:
+      if (key in queryParams) {
+        ;(queryParams as Record<string, unknown>)[key] = undefined
+      }
+      break
+  }
+  handleSearch()
 }
 
 const handleCouponOnlyChange = (checked: string | number | boolean) => {
@@ -967,10 +1205,10 @@ onMounted(async () => {
 
 <style scoped>
 .qlist-shell {
+  padding: 24px 28px 30px;
   background:
     radial-gradient(circle at 28% 0%, rgb(255 255 255 / 90%) 0, rgb(255 255 255 / 0%) 320px),
     linear-gradient(135deg, #eefaff 0%, #edf4ff 52%, #e7f0ff 100%);
-  padding: 24px 28px 30px;
 }
 
 .qlist-hero {
@@ -990,10 +1228,10 @@ onMounted(async () => {
 }
 
 .brand-main {
-  color: #1d6dff;
   font-size: 34px;
   font-weight: 800;
   line-height: 1;
+  color: #1d6dff;
 }
 
 .qlist-search {
@@ -1003,17 +1241,17 @@ onMounted(async () => {
 
 .qlist-search :deep(.el-input__wrapper) {
   height: 54px;
+  padding-left: 24px;
   border-radius: 999px 0 0 999px;
   box-shadow: 0 0 0 2px #2f7dff inset;
-  padding-left: 24px;
 }
 
 .qlist-search :deep(.el-input-group__append) {
-  overflow: hidden;
-  border-radius: 0 999px 999px 0;
-  background: #fff;
-  box-shadow: 0 0 0 2px #2f7dff inset;
   padding: 0;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 0 999px 999px 0;
+  box-shadow: 0 0 0 2px #2f7dff inset;
 }
 
 .search-actions {
@@ -1031,20 +1269,20 @@ onMounted(async () => {
 
 .qlist-search :deep(.el-input-group__append .search-action-btn) {
   width: 54px;
-  min-width: 54px;
   height: 54px;
+  min-width: 54px;
+  padding: 0;
   margin: 0 !important;
+  font-size: 22px;
+  color: #8a93a3;
+  background: transparent;
   border: 0;
   border-radius: 0;
-  background: transparent;
-  color: #8a93a3;
-  font-size: 22px;
-  padding: 0;
 }
 
 .qlist-search :deep(.el-input-group__append .search-action-btn:hover) {
-  background: #f4f8ff;
   color: #2f7dff;
+  background: #f4f8ff;
 }
 
 .search-action-divider {
@@ -1067,11 +1305,11 @@ onMounted(async () => {
 
 .headline-chip {
   display: inline-flex;
+  font-size: 14px;
+  color: #697386;
+  cursor: pointer;
   align-items: center;
   gap: 4px;
-  color: #697386;
-  font-size: 14px;
-  cursor: pointer;
 }
 
 .headline-chip.danger {
@@ -1087,13 +1325,47 @@ onMounted(async () => {
 }
 
 .suggestion-row,
+.search-platform-bar,
+.active-filter-row,
 .selection-panel,
+.advanced-toggle-row,
 .advanced-filter,
+.results-toolbar,
 .goods-grid,
 .el-pagination {
   max-width: 1500px;
   margin-right: auto;
   margin-left: auto;
+}
+
+.search-platform-bar {
+  display: flex;
+  padding: 12px 16px;
+  margin-top: 18px;
+  background: rgb(255 255 255 / 86%);
+  border-radius: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.search-platform-tabs,
+.search-mode-group {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-platform-tabs :deep(.el-radio-button__inner),
+.search-mode-group :deep(.el-radio-button__inner) {
+  min-width: 72px;
+}
+
+.vendor-select {
+  width: 168px;
 }
 
 .suggestion-row {
@@ -1105,13 +1377,26 @@ onMounted(async () => {
 }
 
 .suggestion-label {
-  color: var(--el-text-color-secondary);
   font-size: 12px;
+  color: var(--el-text-color-secondary);
 }
 
 .suggestion-desc {
   margin-left: 4px;
   color: var(--el-text-color-placeholder);
+}
+
+.active-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.active-filter-label {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
 }
 
 .selection-panel {
@@ -1121,12 +1406,12 @@ onMounted(async () => {
 .selection-card {
   display: flex;
   min-height: 52px;
+  padding: 13px 24px;
+  background: rgb(255 255 255 / 82%);
+  border-radius: 12px;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  border-radius: 12px;
-  background: rgb(255 255 255 / 82%);
-  padding: 13px 24px;
 }
 
 .selection-card + .selection-card {
@@ -1142,31 +1427,31 @@ onMounted(async () => {
 .topic-card {
   margin-top: 0;
   border-top: 1px solid #edf2f7;
-  border-top-left-radius: 0;
   border-top-right-radius: 0;
+  border-top-left-radius: 0;
 }
 
 .selection-label {
   display: inline-flex;
   width: 76px;
+  font-size: 14px;
+  color: #8a93a3;
   flex: 0 0 auto;
   align-items: center;
   gap: 4px;
-  color: #8a93a3;
-  font-size: 14px;
 }
 
 .activity-banner {
-  min-width: 136px;
   height: 42px;
-  border: 0;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #ff3f4c 0%, #ff8a2a 100%);
-  color: #fff;
-  cursor: pointer;
+  min-width: 136px;
+  padding: 0 14px;
   font-size: 15px;
   font-weight: 700;
-  padding: 0 14px;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ff3f4c 0%, #ff8a2a 100%);
+  border: 0;
+  border-radius: 6px;
 }
 
 .activity-banner:nth-of-type(2n) {
@@ -1181,13 +1466,13 @@ onMounted(async () => {
   display: inline-flex;
   height: 18px;
   min-width: 18px;
+  margin-right: 4px;
+  font-size: 12px;
+  color: #fff;
+  background: rgb(255 255 255 / 22%);
+  border-radius: 4px;
   align-items: center;
   justify-content: center;
-  margin-right: 4px;
-  border-radius: 4px;
-  background: rgb(255 255 255 / 22%);
-  color: #fff;
-  font-size: 12px;
 }
 
 .hot-label {
@@ -1203,21 +1488,36 @@ onMounted(async () => {
 
 .more-link {
   margin-left: auto;
-  border: 0;
-  background: transparent;
   color: #2378ff;
   cursor: pointer;
+  background: transparent;
+  border: 0;
 }
 
 .clickable-tag {
   cursor: pointer;
 }
 
-.advanced-filter {
+.advanced-toggle-row {
+  display: flex;
+  padding: 8px 16px;
   margin-top: 12px;
-  border-radius: 12px;
-  background: rgb(255 255 255 / 82%);
+  background: rgb(255 255 255 / 70%);
+  border-radius: 8px;
+  align-items: center;
+  gap: 8px;
+}
+
+.advanced-toggle-hint {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.advanced-filter {
   padding: 18px 24px 14px;
+  margin-top: 12px;
+  background: rgb(255 255 255 / 82%);
+  border-radius: 12px;
 }
 
 .quick-filter-row,
@@ -1232,6 +1532,38 @@ onMounted(async () => {
   margin-top: 4px;
 }
 
+.results-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.result-summary {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.result-summary b {
+  font-size: 16px;
+  color: var(--el-text-color-primary);
+}
+
+.result-summary span {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .goods-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -1241,9 +1573,9 @@ onMounted(async () => {
 
 .goods-card {
   overflow: hidden;
+  background: var(--el-bg-color);
   border: 1px solid var(--el-border-color-light);
   border-radius: 8px;
-  background: var(--el-bg-color);
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
@@ -1267,11 +1599,11 @@ onMounted(async () => {
 .goods-image-placeholder {
   display: flex;
   height: 100%;
-  align-items: center;
-  justify-content: center;
-  color: #606266;
   font-size: 18px;
   font-weight: 600;
+  color: #606266;
+  align-items: center;
+  justify-content: center;
 }
 
 .image-tags {
@@ -1290,21 +1622,21 @@ onMounted(async () => {
   display: -webkit-box;
   height: 42px;
   overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  color: var(--el-text-color-primary);
   font-size: 14px;
   font-weight: 600;
   line-height: 21px;
+  color: var(--el-text-color-primary);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .selling-point {
   height: 18px;
-  overflow: hidden;
   margin-top: 6px;
-  color: var(--el-text-color-secondary);
+  overflow: hidden;
   font-size: 12px;
   line-height: 18px;
+  color: var(--el-text-color-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1326,8 +1658,8 @@ onMounted(async () => {
 }
 
 .meta-label {
-  color: var(--el-text-color-secondary);
   font-size: 12px;
+  color: var(--el-text-color-secondary);
 }
 
 .price-main,
@@ -1357,11 +1689,11 @@ onMounted(async () => {
 .metrics-grid div {
   display: flex;
   min-width: 0;
+  padding: 6px 8px;
+  background: var(--el-fill-color-lighter);
+  border-radius: 6px;
   justify-content: space-between;
   gap: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  background: var(--el-fill-color-lighter);
 }
 
 .metrics-grid span {
@@ -1370,8 +1702,8 @@ onMounted(async () => {
 
 .metrics-grid b {
   overflow: hidden;
-  color: var(--el-text-color-primary);
   font-weight: 600;
+  color: var(--el-text-color-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1379,15 +1711,15 @@ onMounted(async () => {
 .shop-line,
 .coupon-time {
   display: flex;
-  align-items: center;
-  gap: 5px;
   height: 20px;
   margin-top: 8px;
   overflow: hidden;
-  color: var(--el-text-color-secondary);
   font-size: 12px;
+  color: var(--el-text-color-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
+  align-items: center;
+  gap: 5px;
 }
 
 .card-actions {
@@ -1397,7 +1729,7 @@ onMounted(async () => {
   margin-top: 12px;
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .qlist-shell {
     padding: 16px;
   }
@@ -1414,6 +1746,23 @@ onMounted(async () => {
 
   .selection-label {
     width: 100%;
+  }
+
+  .search-platform-bar,
+  .results-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .search-mode-group,
+  .result-actions,
+  .vendor-select {
+    width: 100%;
+  }
+
+  .search-platform-tabs :deep(.el-radio-button__inner),
+  .search-mode-group :deep(.el-radio-button__inner) {
+    min-width: auto;
   }
 }
 </style>

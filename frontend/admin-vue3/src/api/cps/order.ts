@@ -20,6 +20,10 @@ export interface CpsOrderVO {
   realRebate?: number
   adzoneId?: string
   externalInfo?: string
+  specialId?: string
+  relationId?: string
+  orderScene?: number
+  attributionSource?: string
   orderStatus: string
   syncTime?: Date
   settleTime?: Date

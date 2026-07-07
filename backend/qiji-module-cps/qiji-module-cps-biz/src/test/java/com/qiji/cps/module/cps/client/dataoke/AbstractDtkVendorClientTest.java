@@ -364,8 +364,8 @@ class AbstractDtkVendorClientTest {
     }
 
     @Test
-    @DisplayName("Taobao Dataoke link should not send member attribution as channelId")
-    void testTaobaoPromotionLinkDoesNotSendMemberAttributionAsChannelId() throws Exception {
+    @DisplayName("Taobao Dataoke link should send member specialId separately from channelId")
+    void testTaobaoPromotionLinkSendsSpecialIdAndChannelIdSeparately() throws Exception {
         class CapturingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {
             private String requestedPath;
             private Map<String, Object> requestedParams;
@@ -396,7 +396,8 @@ class AbstractDtkVendorClientTest {
         request.setGoodsId("625171500599");
         request.setAdzoneId("mm_111_222_333");
         request.setExternalId("285");
-        request.setChannelId("285");
+        request.setSpecialId("SPECIAL-285");
+        request.setChannelId("REL-8001");
 
         var result = client.generatePromotionLink(request, CpsVendorConfig.builder().build());
 
@@ -404,7 +405,8 @@ class AbstractDtkVendorClientTest {
         assertEquals("625171500599", client.requestedParams.get("goodsId"));
         assertEquals("mm_111_222_333", client.requestedParams.get("pid"));
         assertEquals("285", client.requestedParams.get("externalId"));
-        assertFalse(client.requestedParams.containsKey("channelId"));
+        assertEquals("SPECIAL-285", client.requestedParams.get("specialId"));
+        assertEquals("REL-8001", client.requestedParams.get("channelId"));
         assertEquals("https://s.click.taobao.com/abc", result.getShortUrl());
     }
 
@@ -542,17 +544,22 @@ class AbstractDtkVendorClientTest {
         request.setStartTime("2026-07-06 00:00:00");
         request.setEndTime("2026-07-06 12:00:00");
         request.setPageSize(50);
+        request.setOrderScene(3);
 
         var orders = client.queryOrders(request, CpsVendorConfig.builder().build());
 
         assertEquals("/tb-service/get-order-details", client.requestedPath);
         assertEquals(4, client.requestedParams.get("queryType"));
         assertEquals("2026-07-06 00:00:00", client.requestedParams.get("startTime"));
+        assertEquals(3, client.requestedParams.get("orderScene"));
         assertEquals("v1.0.0", client.requestedParams.get("version"));
         assertEquals(1, orders.size());
         var order = orders.get(0);
         assertEquals("1234567890", order.getPlatformOrderId());
-        assertEquals("1002", order.getExternalId());
+        assertEquals("1002", order.getSpecialId());
+        assertEquals("2002", order.getRelationId());
+        assertEquals(3, order.getOrderScene());
+        assertEquals(null, order.getExternalId());
         assertEquals(3, order.getPlatformStatus());
         assertEquals("2026-07-08 12:00:00", order.getReceiveTime());
         assertEquals("2026-07-10 12:00:00", order.getSettleTime());
@@ -598,6 +605,8 @@ class AbstractDtkVendorClientTest {
 
         assertEquals(1, orders.size());
         assertEquals("1001", orders.get(0).getExternalId());
+        assertEquals("SPECIAL-999", orders.get(0).getSpecialId());
+        assertEquals("REL-888", orders.get(0).getRelationId());
     }
 
     @Test
@@ -692,7 +701,8 @@ class AbstractDtkVendorClientTest {
         assertEquals(new BigDecimal("399.00"), order.getFinalPrice());
         assertEquals(new BigDecimal("4.5"), order.getCommissionRate());
         assertEquals(new BigDecimal("17.96"), order.getCommissionAmount());
-        assertEquals("1002", order.getExternalId());
+        assertEquals("1002", order.getSpecialId());
+        assertEquals(null, order.getExternalId());
         assertEquals(1, order.getPlatformStatus());
     }
 

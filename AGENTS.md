@@ -315,6 +315,27 @@ To add a new platform (e.g., Weibo), implement this interface and register as a 
 
 开发好单库相关功能时，先读取 `haodanku-openapi-docs/AI使用说明.md` 和 `haodanku-openapi-docs/接口目录.md`，按意图路由到对应分类文档再编码。
 
+### Dataoke High-Efficiency Link Attribution
+
+开发大淘客淘宝高效转链、订单同步、推广位管理或 MCP/App 转链归因时，先读取 `docs/dataoke-high-efficiency-link-attribution.md`。
+
+- `pid` is the commission adzone. Channel/member attribution requires a matching dedicated PID, not a normal PID.
+- `channelId` / `relationId` identifies channel orders. It must be passed with a channel-dedicated PID, and order sync must query channel orders with `orderScene=2`.
+- `specialId` identifies member-operation orders. It must use a member-dedicated PID, and order sync must query member orders with `orderScene=3`.
+- `externalId` is only a developer-defined binding marker used to obtain/map `specialId`; do not treat it as a standalone order-attribution guarantee.
+- App and MCP link generation must prefer trusted login context or ToolContext over request-body `memberId`; never let user-supplied member IDs decide rebate ownership.
+- Orders without `specialId`, `relationId`, or a verified external mapping can be stored for reconciliation, but must not automatically mutate member rebate assets.
+
+### Dataoke Search Page / Goods Square
+
+开发大淘客搜索页、商品广场、热搜记录、搜索联想词、搜索召回或搜索结果转链前，先读取 `docs/dataoke-search-page-implementation.md`。
+
+- 大淘客官方搜索页由热搜记录、搜索联想词、超级搜索、大淘客搜索、联盟搜索组合实现；默认优先使用大淘客搜索，超级搜索/联盟搜索只作为扩展召回或补量策略。
+- 当前管理后台商品广场入口是 `frontend/admin-vue3/src/views/cps/goods/square/index.vue`，后端入口是 `CpsGoodsSquareController` 和 `CpsGoodsSquareServiceImpl`。
+- 淘宝 dataoke 搜索默认走 `DtkTaobaoVendorClient` 的 `/goods/get-dtk-search-goods`；热搜走 `/category/get-top100`；联想词走 `/goods/search-suggestion`。
+- 搜索结果只用于导购展示、运营选品和转链前置展示，不得直接驱动订单归因、返利入账、冻结/扣减或 Token 兑换。
+- 前端搜索页必须覆盖首屏热搜、输入联想、提交搜索、空状态、加载中、接口失败、平台切换和转链成功/失败状态。
+
 ### Activity Center / Rebate Activity Cards
 
 The admin activity center is backed by `cps_rebate_activity` and `CpsRebateActivityService`. It is an operations-configured source of truth with optional vendor metadata enhancement only; do not add external SDK dependencies just to populate activity cards.
@@ -543,6 +564,7 @@ with open('local/path/to/file.sql', 'w', encoding='utf-8', newline='') as f:
 - **Cross-system Token exchange**: `CpsRebateTokenExchangeServiceImpl`, `CpsAitokenExchangeClient`, and OpenAPI signature code form the P0 saga. Preserve create-order -> freeze -> aitoken submit -> confirm deduct/unfreeze -> PROCESSING-on-timeout semantics.
 - **OpenAPI signature and replay protection**: current HMAC verification depends on `X-App-Id`, `X-Tenant-Id`, `X-Timestamp`, `X-Nonce`, `X-Signature`, and `X-Idempotency-Key`. Any change must consider timestamp windows, nonce replay, tenant isolation, and body canonicalization.
 - **Member identity trust boundary**: never trust request-body `memberId` / `userId` for user-facing asset operations. Use login context or verified service signatures. MCP link generation is especially sensitive because attribution affects rebates.
+- **Dataoke attribution fields**: `externalId` alone does not prove who placed an order. For Taobao Dataoke links, preserve and validate dedicated PID + `relationId` (`orderScene=2`) or dedicated PID + `specialId` (`orderScene=3`) before member rebate mutation.
 - **Platform adapter completeness**: official vendor clients may be partial; switching `active_vendor_code` can turn unimplemented adapters into silent empty results or null link failures.
 - **Activity center data boundary**: operation-configured cards are the stable source; vendor/source metadata is optional enhancement. Keep `search/url/none` jump semantics safe, and do not make card availability depend on external platform calls.
 - **Selection library snapshot boundary**: theme items and ranking shelves are marketing/operations snapshots, not financial truth. Refresh/import must preserve tenant isolation, item dedupe, source/status fields, and explainable ranking fields; AI copy must not mutate platform facts.

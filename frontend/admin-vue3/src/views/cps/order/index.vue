@@ -139,6 +139,13 @@
           <span>{{ scope.row.memberNickname || scope.row.memberId || '-' }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="归因" align="center" width="105">
+        <template #default="scope">
+          <el-tag size="small" type="info">
+            {{ attributionSourceLabel(scope.row.attributionSource) }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="券后价" align="center" width="90">
         <template #default="scope">
           ¥{{ formatAmount(scope.row.finalPrice) }}
@@ -200,23 +207,121 @@
   <el-dialog
     v-model="detailVisible"
     title="订单详情"
-    width="700px"
+    width="960px"
+    class="order-detail-dialog"
     destroy-on-close
   >
-    <el-descriptions :column="2" border v-if="detailData">
+    <el-descriptions
+      v-loading="detailLoading"
+      :column="2"
+      border
+      class="order-detail-descriptions"
+      v-if="detailData"
+    >
       <el-descriptions-item label="订单ID">{{ detailData.id }}</el-descriptions-item>
       <el-descriptions-item label="平台">{{ platformLabel(detailData.platformCode) }}</el-descriptions-item>
       <el-descriptions-item label="平台单号" :span="2">{{ detailData.platformOrderId }}</el-descriptions-item>
       <el-descriptions-item label="父订单号" :span="2">{{ detailData.parentOrderId || '-' }}</el-descriptions-item>
       <el-descriptions-item label="会员名">{{ detailData.memberNickname || detailData.memberId || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="归因来源">{{ attributionSourceLabel(detailData.attributionSource) }}</el-descriptions-item>
+      <el-descriptions-item label="推广位ID" :span="2">{{ detailData.adzoneId || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="外部追踪">{{ detailData.externalInfo || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="淘宝订单场景">{{ orderSceneLabel(detailData.orderScene) }}</el-descriptions-item>
+      <el-descriptions-item label="会员运营ID">{{ detailData.specialId || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="渠道关系ID">{{ detailData.relationId || '-' }}</el-descriptions-item>
       <el-descriptions-item label="商品标题" :span="2">{{ detailData.itemTitle || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="商品原价">¥{{ formatAmount(detailData.itemPrice) }}</el-descriptions-item>
-      <el-descriptions-item label="券后价">¥{{ formatAmount(detailData.finalPrice) }}</el-descriptions-item>
-      <el-descriptions-item label="优惠券金额">¥{{ formatAmount(detailData.couponAmount) }}</el-descriptions-item>
-      <el-descriptions-item label="佣金比例">{{ detailData.commissionRate }}%</el-descriptions-item>
-      <el-descriptions-item label="预估佣金">¥{{ formatAmount(detailData.commissionAmount) }}</el-descriptions-item>
-      <el-descriptions-item label="预估返利">¥{{ formatAmount(detailData.estimateRebate) }}</el-descriptions-item>
-      <el-descriptions-item label="实际返利">¥{{ formatAmount(detailData.realRebate) }}</el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          <span class="detail-label-with-tip">
+            商品原价
+            <el-tooltip
+              content="平台订单返回的商品原价；若平台未返回原价且返回券后价/优惠券金额，后端会用券后价 + 优惠券金额推导。"
+              placement="top"
+            >
+              <Icon icon="ep:question-filled" class="detail-tip-icon" />
+            </el-tooltip>
+          </span>
+        </template>
+        ¥{{ formatAmount(detailData.itemPrice) }}
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          <span class="detail-label-with-tip">
+            券后价
+            <el-tooltip
+              content="平台订单返回的实付/付款金额，优先用于订单展示和佣金核对。"
+              placement="top"
+            >
+              <Icon icon="ep:question-filled" class="detail-tip-icon" />
+            </el-tooltip>
+          </span>
+        </template>
+        ¥{{ formatAmount(detailData.finalPrice) }}
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          <span class="detail-label-with-tip">
+            优惠券金额
+            <el-tooltip
+              content="平台返回的优惠券金额；若缺失且原价/券后价齐全，后端会用商品原价 - 券后价推导。"
+              placement="top"
+            >
+              <Icon icon="ep:question-filled" class="detail-tip-icon" />
+            </el-tooltip>
+          </span>
+        </template>
+        ¥{{ formatAmount(detailData.couponAmount) }}
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          <span class="detail-label-with-tip">
+            佣金比例
+            <el-tooltip content="平台返回或商品快照中的佣金比例，用于估算佣金展示。" placement="top">
+              <Icon icon="ep:question-filled" class="detail-tip-icon" />
+            </el-tooltip>
+          </span>
+        </template>
+        {{ detailData.commissionRate }}%
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          <span class="detail-label-with-tip">
+            预估佣金
+            <el-tooltip
+              content="平台预估佣金：优先使用平台订单返回的佣金金额；商品搜索/转链场景可能按券后价 x 佣金比例估算。"
+              placement="top"
+            >
+              <Icon icon="ep:question-filled" class="detail-tip-icon" />
+            </el-tooltip>
+          </span>
+        </template>
+        ¥{{ formatAmount(detailData.commissionAmount) }}
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          <span class="detail-label-with-tip">
+            预估返利
+            <el-tooltip content="预估返利 = 预估佣金 x 80%，用于订单未正式结算前展示。" placement="top">
+              <Icon icon="ep:question-filled" class="detail-tip-icon" />
+            </el-tooltip>
+          </span>
+        </template>
+        ¥{{ formatAmount(detailData.estimateRebate) }}
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          <span class="detail-label-with-tip">
+            实际返利
+            <el-tooltip
+              content="实际返利按返利配置结算后入账，可能受会员等级、平台配置、封顶/保底和退款扣回影响。"
+              placement="top"
+            >
+              <Icon icon="ep:question-filled" class="detail-tip-icon" />
+            </el-tooltip>
+          </span>
+        </template>
+        ¥{{ formatAmount(detailData.realRebate) }}
+      </el-descriptions-item>
       <el-descriptions-item label="订单状态">
         <el-tag :type="orderStatusTagType(detailData.orderStatus)" size="small">
           {{ orderStatusLabel(detailData.orderStatus) }}
@@ -339,6 +444,26 @@ const resetQuery = () => {
   handleQuery()
 }
 
+const attributionSourceLabel = (source?: string) => {
+  const map: Record<string, string> = {
+    specialId: '会员运营ID',
+    relationId: '渠道ID',
+    externalId: '外部追踪',
+    adzone: '专属PID',
+    transferRecord: '转链记录'
+  }
+  return source ? map[source] || source : '-'
+}
+
+const orderSceneLabel = (scene?: number) => {
+  const map: Record<number, string> = {
+    1: '常规订单',
+    2: '渠道订单',
+    3: '会员运营订单'
+  }
+  return scene ? map[scene] || String(scene) : '-'
+}
+
 /** 表格选择 */
 const handleSelectionChange = (rows: CpsOrderVO[]) => {
   selectedOrderIds.value = rows.map((row) => row.id)
@@ -385,11 +510,53 @@ const handleSync = async (command: string) => {
 
 /** 详情弹窗 */
 const detailVisible = ref(false)
+const detailLoading = ref(false)
 const detailData = ref<CpsOrderVO | null>(null)
-const openDetail = (row: CpsOrderVO) => {
+const openDetail = async (row: CpsOrderVO) => {
   detailData.value = row
   detailVisible.value = true
+  detailLoading.value = true
+  try {
+    detailData.value = await OrderApi.getCpsOrder(row.id)
+  } finally {
+    detailLoading.value = false
+  }
 }
 
 onMounted(getList)
 </script>
+
+<style scoped>
+.order-detail-descriptions :deep(.el-descriptions__label) {
+  width: 112px;
+  min-width: 112px;
+  white-space: nowrap;
+}
+
+.order-detail-descriptions :deep(.el-descriptions__content) {
+  min-width: 220px;
+}
+
+.detail-label-with-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.detail-tip-icon {
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .order-detail-dialog {
+    width: calc(100vw - 24px) !important;
+  }
+
+  .order-detail-descriptions :deep(.el-descriptions__label) {
+    width: 96px;
+    min-width: 96px;
+  }
+}
+</style>

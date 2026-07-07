@@ -4,6 +4,7 @@ import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
+import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
 import com.qiji.cps.module.cps.service.platform.CpsPlatformService;
@@ -58,7 +59,7 @@ class CpsGoodsServiceImplTest {
         ArgumentCaptor<CpsPromotionLinkRequest> captor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
         verify(platformClient).generatePromotionLink(captor.capture());
         assertEquals("platform-default-pid", captor.getValue().getAdzoneId());
-        verifyNoInteractions(adzoneService);
+        verify(adzoneService).getMemberAdzone("jd", 100L);
     }
 
     @Test
@@ -77,14 +78,47 @@ class CpsGoodsServiceImplTest {
     }
 
     @Test
-    @DisplayName("resolvePromotionAdzoneId - 会员专属推广位不覆盖平台默认推广位")
-    void resolvePromotionAdzoneId_doesNotUseMemberAdzoneAsDefault() {
+    @DisplayName("resolvePromotionAdzoneId - 会员专属推广位优先于平台默认推广位")
+    void resolvePromotionAdzoneId_usesMemberAdzoneBeforePlatformDefault() {
         mockEnabledPlatform("jd", "platform-default-pid");
+        when(adzoneService.getMemberAdzone("jd", 100L)).thenReturn(CpsAdzoneDO.builder()
+                .platformCode("jd")
+                .adzoneId("member-pid")
+                .relationType("member")
+                .relationId(100L)
+                .status(1)
+                .build());
 
         String adzoneId = service.resolvePromotionAdzoneId("jd", 100L, null);
 
-        assertEquals("platform-default-pid", adzoneId);
-        verifyNoInteractions(adzoneService);
+        assertEquals("member-pid", adzoneId);
+        verify(adzoneService).getMemberAdzone("jd", 100L);
+    }
+
+    @Test
+    @DisplayName("generatePromotionLink - 未传推广位且存在会员专属推广位时使用会员专属推广位")
+    void generatePromotionLink_usesMemberAdzoneWhenAvailable() {
+        mockEnabledPlatform("taobao", "platform-default-pid");
+        when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);
+        when(platformClient.generatePromotionLink(any())).thenReturn(CpsPromotionLinkResult.builder().build());
+        when(adzoneService.getMemberAdzone("taobao", 100L)).thenReturn(CpsAdzoneDO.builder()
+                .platformCode("taobao")
+                .adzoneId("member-taobao-pid")
+                .relationType("member")
+                .relationId(100L)
+                .externalSpecialId("SPECIAL-100")
+                .status(1)
+                .build());
+
+        service.generatePromotionLink("taobao", "goods-1", null, 100L, null);
+
+        ArgumentCaptor<CpsPromotionLinkRequest> captor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
+        verify(platformClient).generatePromotionLink(captor.capture());
+        assertEquals("member-taobao-pid", captor.getValue().getAdzoneId());
+        assertEquals("100", captor.getValue().getExternalId());
+        assertEquals("SPECIAL-100", captor.getValue().getSpecialId());
+        assertEquals(3, captor.getValue().getOrderScene());
+        assertEquals(null, captor.getValue().getChannelId());
     }
 
     @Test
@@ -113,6 +147,33 @@ class CpsGoodsServiceImplTest {
         verify(platformClient).generatePromotionLink(captor.capture());
         assertEquals("100", captor.getValue().getExternalId());
         assertEquals("100", captor.getValue().getChannelId());
+    }
+
+    @Test
+    @DisplayName("generatePromotionLink - 淘宝渠道推广位使用 relationId/channelId 场景归因")
+    void generatePromotionLink_setsTaobaoChannelRelationAttribution() {
+        mockEnabledPlatform("taobao", "platform-default-pid");
+        when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);
+        when(platformClient.generatePromotionLink(any())).thenReturn(CpsPromotionLinkResult.builder().build());
+        when(adzoneService.getMemberAdzone("taobao", 100L)).thenReturn(CpsAdzoneDO.builder()
+                .platformCode("taobao")
+                .adzoneId("channel-taobao-pid")
+                .relationType("channel")
+                .relationId(9001L)
+                .externalRelationId("REL-9001")
+                .status(1)
+                .build());
+
+        service.generatePromotionLink("taobao", "goods-1", null, 100L, null);
+
+        ArgumentCaptor<CpsPromotionLinkRequest> captor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
+        verify(platformClient).generatePromotionLink(captor.capture());
+        assertEquals("channel-taobao-pid", captor.getValue().getAdzoneId());
+        assertEquals("100", captor.getValue().getExternalId());
+        assertEquals("REL-9001", captor.getValue().getRelationId());
+        assertEquals("REL-9001", captor.getValue().getChannelId());
+        assertEquals(2, captor.getValue().getOrderScene());
+        assertEquals(null, captor.getValue().getSpecialId());
     }
 
     private void mockEnabledPlatform(String platformCode, String defaultAdzoneId) {

@@ -111,6 +111,21 @@ public class CpsOrderDTO {
     private String externalId;
 
     /**
+     * 淘宝会员运营ID
+     */
+    private String specialId;
+
+    /**
+     * 淘宝渠道关系ID
+     */
+    private String relationId;
+
+    /**
+     * 淘宝订单场景（1-常规订单，2-渠道订单，3-会员运营订单）
+     */
+    private Integer orderScene;
+
+    /**
      * 是否退款（0-否，1-是）
      */
     private Integer refundTag;

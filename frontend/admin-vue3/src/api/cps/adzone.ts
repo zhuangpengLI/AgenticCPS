@@ -9,6 +9,8 @@ export interface CpsAdzoneVO {
   adzoneType?: string
   relationType?: string
   relationId?: number
+  externalRelationId?: string
+  externalSpecialId?: string
   isDefault: number
   status: number
   createTime: Date
@@ -23,6 +25,8 @@ export interface CpsAdzoneSaveVO {
   adzoneType?: string
   relationType?: string
   relationId?: number
+  externalRelationId?: string
+  externalSpecialId?: string
   isDefault?: number
   status: number
 }
