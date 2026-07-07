@@ -5,6 +5,7 @@ export interface CpsGoodsSquareSearchReqVO {
   searchMode?: string
   searchField?: string
   imageBase64?: string
+  goodsSign?: string
   platformCode?: string
   vendorCode?: string
   pageNo: number

@@ -68,6 +68,13 @@ public interface CpsAdzoneMapper extends BaseMapperX<CpsAdzoneDO> {
                 .last("LIMIT 1"));
     }
 
+    default CpsAdzoneDO selectBySpecialId(String platformCode, String specialId) {
+        return selectOne(new LambdaQueryWrapperX<CpsAdzoneDO>()
+                .eq(CpsAdzoneDO::getPlatformCode, platformCode)
+                .eq(CpsAdzoneDO::getExternalSpecialId, specialId)
+                .last("LIMIT 1"));
+    }
+
     default CpsAdzoneDO selectActiveMemberAdzoneByExternalRelationId(String platformCode, String relationId) {
         return selectOne(new LambdaQueryWrapperX<CpsAdzoneDO>()
                 .eq(CpsAdzoneDO::getPlatformCode, platformCode)

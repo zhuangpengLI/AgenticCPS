@@ -1,5 +1,6 @@
 package com.qiji.cps.module.cps.service.order;
 
+import com.qiji.cps.framework.common.exception.ServiceException;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.dto.CpsOrderDTO;
@@ -409,6 +410,58 @@ class CpsOrderServiceImplTest {
                         && "我是喵团员".equals(order.getMemberNickname())
                         && "mm_111_222_333".equals(order.getAdzoneId())));
         verify(transferRecordMapper, never()).selectAttributionCandidates(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("bindSpecialIdToMember - 手动绑定 specialId 应写入会员专属推广位并更新订单归因")
+    void bindSpecialIdToMember_createsMemberAdzoneAndUpdatesOrderAttribution() {
+        when(orderMapper.selectById(7L)).thenReturn(CpsOrderDO.builder()
+                .id(7L)
+                .platformCode("taobao")
+                .platformOrderId("TB-BIND-1")
+                .adzoneId("mm_111_222_333")
+                .specialId("SPECIAL-1001")
+                .build());
+        when(adzoneMapper.selectBySpecialId("taobao", "SPECIAL-1001")).thenReturn(null);
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(1001L);
+        member.setNickname("绑定会员");
+        when(memberUserApi.getUser(1001L)).thenReturn(member);
+
+        orderService.bindSpecialIdToMember(7L, 1001L);
+
+        verify(adzoneMapper).insert(org.mockito.ArgumentMatchers.<CpsAdzoneDO>argThat(adzone ->
+                "taobao".equals(adzone.getPlatformCode())
+                        && "mm_111_222_333".equals(adzone.getAdzoneId())
+                        && "member".equals(adzone.getAdzoneType())
+                        && "member".equals(adzone.getRelationType())
+                        && Long.valueOf(1001L).equals(adzone.getRelationId())
+                        && "SPECIAL-1001".equals(adzone.getExternalSpecialId())
+                        && Integer.valueOf(1).equals(adzone.getStatus())));
+        verify(orderMapper).updateById(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
+                Long.valueOf(7L).equals(order.getId())
+                        && Long.valueOf(1001L).equals(order.getMemberId())
+                        && "绑定会员".equals(order.getMemberNickname())
+                        && "specialId".equals(order.getAttributionSource())));
+    }
+
+    @Test
+    @DisplayName("bindSpecialIdToMember - 会员不存在时不应写入绑定关系")
+    void bindSpecialIdToMember_rejectsMissingMemberBeforeWritingAttribution() {
+        when(orderMapper.selectById(7L)).thenReturn(CpsOrderDO.builder()
+                .id(7L)
+                .platformCode("taobao")
+                .platformOrderId("TB-BIND-1")
+                .adzoneId("mm_111_222_333")
+                .specialId("SPECIAL-1001")
+                .build());
+        when(memberUserApi.getUser(1001L)).thenReturn(null);
+
+        assertThrows(ServiceException.class, () -> orderService.bindSpecialIdToMember(7L, 1001L));
+
+        verify(adzoneMapper, never()).selectBySpecialId(any(), any());
+        verify(adzoneMapper, never()).insert(any());
+        verify(orderMapper, never()).updateById(any());
     }
 
     @Test

@@ -227,8 +227,22 @@
       <el-descriptions-item label="推广位ID" :span="2">{{ detailData.adzoneId || '-' }}</el-descriptions-item>
       <el-descriptions-item label="外部追踪">{{ detailData.externalInfo || '-' }}</el-descriptions-item>
       <el-descriptions-item label="淘宝订单场景">{{ orderSceneLabel(detailData.orderScene) }}</el-descriptions-item>
-      <el-descriptions-item label="会员运营ID">{{ detailData.specialId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="渠道关系ID">{{ detailData.relationId || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="special_id">
+        <div class="attribution-field">
+          <span>{{ detailData.specialId || '-' }}</span>
+          <el-button
+            v-if="detailData.specialId"
+            type="primary"
+            link
+            :disabled="!detailData.adzoneId || bindSpecialIdLoading"
+            @click="handleBindSpecialId"
+            v-hasPermi="['cps:order:sync']"
+          >
+            手动绑定会员
+          </el-button>
+        </div>
+      </el-descriptions-item>
+      <el-descriptions-item label="relation_id">{{ detailData.relationId || '-' }}</el-descriptions-item>
       <el-descriptions-item label="商品标题" :span="2">{{ detailData.itemTitle || '-' }}</el-descriptions-item>
       <el-descriptions-item>
         <template #label>
@@ -338,12 +352,53 @@
       <el-button @click="detailVisible = false">关 闭</el-button>
     </template>
   </el-dialog>
+
+  <el-dialog
+    v-model="bindSpecialIdDialogVisible"
+    title="手动绑定会员"
+    width="420px"
+    destroy-on-close
+  >
+    <el-form label-width="88px">
+      <el-form-item label="special_id">
+        <el-input :model-value="bindSpecialIdForm.specialId" disabled />
+      </el-form-item>
+      <el-form-item label="会员">
+        <el-select
+          v-model="bindSpecialIdForm.memberId"
+          filterable
+          remote
+          reserve-keyword
+          clearable
+          class="w-full"
+          placeholder="请输入会员名搜索"
+          :remote-method="searchBindMemberOptions"
+          :loading="bindMemberLoading"
+          @visible-change="handleBindMemberVisibleChange"
+        >
+          <el-option
+            v-for="item in bindMemberOptions"
+            :key="item.id"
+            :label="formatMemberLabel(item)"
+            :value="item.id"
+          />
+        </el-select>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="bindSpecialIdDialogVisible = false">取消</el-button>
+      <el-button type="primary" :loading="bindSpecialIdLoading" @click="handleConfirmBindSpecialId">
+        确定
+      </el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { dateFormatter } from '@/utils/formatTime'
 import * as OrderApi from '@/api/cps/order'
 import type { CpsOrderVO, CpsOrderPageReqVO } from '@/api/cps/order'
+import { getUserPage, type UserVO } from '@/api/member/user/index'
 
 defineOptions({ name: 'CpsOrder' })
 
@@ -511,6 +566,16 @@ const handleSync = async (command: string) => {
 /** 详情弹窗 */
 const detailVisible = ref(false)
 const detailLoading = ref(false)
+const bindSpecialIdLoading = ref(false)
+const bindSpecialIdDialogVisible = ref(false)
+const bindMemberLoading = ref(false)
+const bindMemberOptions = ref<UserVO[]>([])
+const bindSpecialIdForm = reactive<{
+  orderId?: number
+  specialId?: string
+  memberId?: number
+}>({})
+const MEMBER_OPTION_PAGE_SIZE = 100
 const detailData = ref<CpsOrderVO | null>(null)
 const openDetail = async (row: CpsOrderVO) => {
   detailData.value = row
@@ -521,6 +586,84 @@ const openDetail = async (row: CpsOrderVO) => {
   } finally {
     detailLoading.value = false
   }
+}
+
+const handleBindSpecialId = async () => {
+  if (!detailData.value?.id || !detailData.value.specialId) return
+  if (!detailData.value.adzoneId) {
+    message.warning('订单缺少推广位ID，不能建立 special_id 绑定关系')
+    return
+  }
+  bindSpecialIdForm.orderId = detailData.value.id
+  bindSpecialIdForm.specialId = detailData.value.specialId
+  bindSpecialIdForm.memberId = undefined
+  bindSpecialIdDialogVisible.value = true
+  await searchBindMemberOptions('')
+}
+
+const searchBindMemberOptions = async (keyword: string) => {
+  bindMemberLoading.value = true
+  try {
+    const queryText = keyword?.trim()
+    const params = {
+      mobile: /^\d+$/.test(queryText || '') ? queryText : undefined,
+      nickname: queryText && !/^\d+$/.test(queryText) ? queryText : undefined
+    }
+    const firstPage = await getUserPage({
+      pageNo: 1,
+      pageSize: MEMBER_OPTION_PAGE_SIZE,
+      ...params
+    })
+    const options = firstPage?.list || []
+    const total = firstPage?.total || options.length
+    const pageCount = Math.ceil(total / MEMBER_OPTION_PAGE_SIZE)
+    for (let pageNo = 2; pageNo <= pageCount; pageNo++) {
+      const data = await getUserPage({
+        pageNo,
+        pageSize: MEMBER_OPTION_PAGE_SIZE,
+        ...params
+      })
+      options.push(...(data?.list || []))
+    }
+    bindMemberOptions.value = options
+  } finally {
+    bindMemberLoading.value = false
+  }
+}
+
+const handleBindMemberVisibleChange = (visible: boolean) => {
+  if (visible && bindMemberOptions.value.length === 0) {
+    searchBindMemberOptions('')
+  }
+}
+
+const handleConfirmBindSpecialId = async () => {
+  if (!bindSpecialIdForm.orderId || !bindSpecialIdForm.memberId) {
+    message.warning('请选择会员')
+    return
+  }
+  try {
+    bindSpecialIdLoading.value = true
+    await OrderApi.bindSpecialIdToMember({
+      orderId: bindSpecialIdForm.orderId,
+      memberId: bindSpecialIdForm.memberId
+    })
+    message.success('绑定成功')
+    bindSpecialIdDialogVisible.value = false
+    detailData.value = await OrderApi.getCpsOrder(bindSpecialIdForm.orderId)
+    await getList()
+  } catch {
+  } finally {
+    bindSpecialIdLoading.value = false
+  }
+}
+
+const formatMemberLabel = (item: UserVO) => {
+  const parts = [`ID: ${item.id}`]
+  if (item.nickname) parts.push(item.nickname)
+  if (item.name && item.name !== item.nickname) parts.push(item.name)
+  if (item.mobile) parts.push(item.mobile)
+  return parts.join(' / ')
 }
 
 onMounted(getList)
@@ -547,6 +690,19 @@ onMounted(getList)
 .detail-tip-icon {
   color: var(--el-text-color-secondary);
   font-size: 14px;
+}
+
+.attribution-field {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.attribution-field span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 768px) {

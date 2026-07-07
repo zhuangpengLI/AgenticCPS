@@ -349,14 +349,18 @@
     <el-empty v-if="!loading && goodsList.length === 0" description="暂无商品" />
     <div v-else v-loading="loading" class="goods-grid">
       <div v-for="item in goodsList" :key="`${item.platformCode}:${item.goodsId}`" class="goods-card">
-        <div class="goods-image">
+        <button
+          type="button"
+          class="goods-image detail-entry"
+          @click="openGoodsDetail(item)"
+        >
           <el-image v-if="item.mainPic" :src="item.mainPic" fit="cover" lazy />
           <div v-else class="goods-image-placeholder">{{ platformLabel(item.platformCode) }}</div>
           <div class="image-tags">
             <el-tag size="small" type="danger" effect="dark">{{ platformLabel(item.platformCode) }}</el-tag>
             <el-tag v-if="item.rankTag" size="small" type="warning" effect="dark">{{ item.rankTag }}</el-tag>
           </div>
-        </div>
+        </button>
         <div class="goods-body">
           <div class="goods-title">{{ item.title || '-' }}</div>
           <div v-if="item.sellingPoint" class="selling-point">{{ item.sellingPoint }}</div>
@@ -531,6 +535,8 @@ defineOptions({ name: 'CpsGoodsSquare' })
 const message = useMessage()
 const { copy } = useClipboard()
 const route = useRoute()
+const router = useRouter()
+const goodsSquareDetailCacheKey = 'cps:goods-square:detail'
 
 const loading = ref(false)
 const metaLoading = ref(false)
@@ -1080,6 +1086,19 @@ const openLinkDialog = async (item: CpsGoodsSquareGoodsVO) => {
   nextTick(() => linkFormRef.value?.clearValidate())
 }
 
+const openGoodsDetail = (item: CpsGoodsSquareGoodsVO) => {
+  sessionStorage.setItem(goodsSquareDetailCacheKey, JSON.stringify(item))
+  router.push({
+    name: 'CpsGoodsSquareDetail',
+    query: {
+      platformCode: item.platformCode,
+      vendorCode: effectiveVendorCode(item),
+      goodsId: item.goodsId,
+      goodsSign: item.goodsSign
+    }
+  })
+}
+
 const handleGenerateLink = async () => {
   await linkFormRef.value?.validate()
   linkLoading.value = true
@@ -1613,9 +1632,18 @@ onMounted(async () => {
 
 .goods-image {
   position: relative;
+  display: block;
+  width: 100%;
   height: 176px;
+  padding: 0;
   overflow: hidden;
   background: #f5f7fa;
+  border: 0;
+  text-align: left;
+}
+
+.detail-entry {
+  cursor: pointer;
 }
 
 .goods-image :deep(.el-image) {

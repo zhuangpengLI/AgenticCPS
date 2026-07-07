@@ -22,6 +22,7 @@ public interface CpsErrorCodeConstants {
     ErrorCode ORDER_NOT_EXISTS = new ErrorCode(1_100_003_000, "CPS订单不存在");
     ErrorCode ORDER_ALREADY_EXISTS = new ErrorCode(1_100_003_001, "CPS订单[{}]已存在");
     ErrorCode ORDER_STATUS_INVALID = new ErrorCode(1_100_003_002, "CPS订单状态不合法");
+    ErrorCode ORDER_ATTRIBUTION_BIND_INVALID = new ErrorCode(1_100_003_003, "订单归因绑定失败：{}");
 
     // ========== 返利配置 1-100-004-000 ==========
     ErrorCode REBATE_CONFIG_NOT_EXISTS = new ErrorCode(1_100_004_000, "返利配置不存在");

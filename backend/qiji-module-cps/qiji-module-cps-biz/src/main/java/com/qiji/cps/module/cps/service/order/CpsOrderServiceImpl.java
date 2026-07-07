@@ -1,5 +1,6 @@
 package com.qiji.cps.module.cps.service.order;
 
+import com.qiji.cps.framework.common.exception.ServiceException;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
@@ -38,6 +39,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ORDER_ATTRIBUTION_BIND_INVALID;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ORDER_NOT_EXISTS;
 
 /**
@@ -113,6 +115,56 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     @Override
     public CpsOrderDO getOrderByPlatformOrderId(String platformOrderId) {
         return orderMapper.selectByPlatformOrderId(platformOrderId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void bindSpecialIdToMember(Long orderId, Long memberId) {
+        CpsOrderDO order = getOrder(orderId);
+        if (memberId == null) {
+            throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "会员ID不能为空");
+        }
+        if (memberId <= 0) {
+            throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "会员ID必须为正数");
+        }
+        if (isBlank(order.getPlatformCode()) || isBlank(order.getSpecialId())) {
+            throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "订单缺少 special_id，不能手动绑定会员");
+        }
+        if (isBlank(order.getAdzoneId())) {
+            throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "订单缺少推广位ID，不能建立 special_id 绑定关系");
+        }
+
+        MemberUserRespDTO member = requireMemberForBind(memberId);
+        CpsAdzoneDO existing = adzoneMapper.selectBySpecialId(order.getPlatformCode(), order.getSpecialId());
+        if (existing == null) {
+            adzoneMapper.insert(CpsAdzoneDO.builder()
+                    .platformCode(order.getPlatformCode())
+                    .adzoneId(order.getAdzoneId())
+                    .adzoneName("手动绑定 special_id " + order.getSpecialId())
+                    .adzoneType("member")
+                    .relationType("member")
+                    .relationId(memberId)
+                    .externalSpecialId(order.getSpecialId())
+                    .isDefault(0)
+                    .status(1)
+                    .build());
+        } else {
+            adzoneMapper.updateById(CpsAdzoneDO.builder()
+                    .id(existing.getId())
+                    .adzoneType("member")
+                    .relationType("member")
+                    .relationId(memberId)
+                    .externalSpecialId(order.getSpecialId())
+                    .status(1)
+                    .build());
+        }
+
+        orderMapper.updateById(CpsOrderDO.builder()
+                .id(order.getId())
+                .memberId(memberId)
+                .memberNickname(member.getNickname())
+                .attributionSource("specialId")
+                .build());
     }
 
     // ==================== 订单保存/更新 ====================
@@ -614,6 +666,21 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         } catch (Exception e) {
             log.warn("[resolveMemberNickname] 获取会员昵称失败: memberId={}", memberId, e);
             return null;
+        }
+    }
+
+    private MemberUserRespDTO requireMemberForBind(Long memberId) {
+        try {
+            MemberUserRespDTO user = memberUserApi.getUser(memberId);
+            if (user == null) {
+                throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "会员不存在");
+            }
+            return user;
+        } catch (ServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("[requireMemberForBind] 校验会员失败: memberId={}", memberId, e);
+            throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "会员校验失败");
         }
     }
 

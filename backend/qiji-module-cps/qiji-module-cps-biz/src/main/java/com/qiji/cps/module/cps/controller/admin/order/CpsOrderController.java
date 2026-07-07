@@ -3,6 +3,7 @@ package com.qiji.cps.module.cps.controller.admin.order;
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
+import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderBindSpecialIdReqVO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderRespVO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
@@ -80,6 +81,14 @@ public class CpsOrderController {
                                            @RequestParam(value = "queryType", defaultValue = "1") Integer queryType) {
         String result = orderService.manualSync(platformCode, hours, queryType);
         return success(result);
+    }
+
+    @PostMapping("/bind-special-id-member")
+    @Operation(summary = "手动绑定 special_id 到会员")
+    @PreAuthorize("@ss.hasPermission('cps:order:sync')")
+    public CommonResult<Boolean> bindSpecialIdToMember(@Valid @RequestBody CpsOrderBindSpecialIdReqVO reqVO) {
+        orderService.bindSpecialIdToMember(reqVO.getOrderId(), reqVO.getMemberId());
+        return success(true);
     }
 
 }

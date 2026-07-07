@@ -448,6 +448,26 @@ const remainingRouter: AppRouteRecordRaw[] = [
     ]
   },
   {
+    path: '/cps/goods',
+    component: Layout,
+    name: 'CpsGoodsHidden',
+    meta: { hidden: true },
+    children: [
+      {
+        path: 'detail',
+        name: 'CpsGoodsSquareDetail',
+        component: () => import('@/views/cps/goods/detail/index.vue'),
+        meta: {
+          title: '商品详情',
+          noCache: true,
+          hidden: true,
+          canTo: true,
+          activeMenu: '/cps/goods/square'
+        }
+      }
+    ]
+  },
+  {
     path: '/pay',
     component: Layout,
     name: 'pay',

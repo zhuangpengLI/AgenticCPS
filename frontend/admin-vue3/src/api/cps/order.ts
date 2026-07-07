@@ -48,6 +48,11 @@ export interface CpsOrderPageReqVO {
   createTime?: [Date, Date]
 }
 
+export interface CpsOrderBindSpecialIdReqVO {
+  orderId: number
+  memberId: number
+}
+
 // 查询订单分页列表
 export const getCpsOrderPage = async (params: CpsOrderPageReqVO) => {
   return await request.get({ url: '/cps/order/page', params })
@@ -74,4 +79,9 @@ export const syncCpsOrders = async (platformCode: string, hours = 2, queryType =
     url: '/cps/order/sync',
     params: { platformCode, hours, queryType }
   })
+}
+
+// 手动绑定订单 special_id 到会员
+export const bindSpecialIdToMember = async (data: CpsOrderBindSpecialIdReqVO) => {
+  return await request.post({ url: '/cps/order/bind-special-id-member', data })
 }
