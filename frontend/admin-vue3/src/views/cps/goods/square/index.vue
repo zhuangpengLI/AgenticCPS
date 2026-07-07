@@ -14,21 +14,31 @@
           @keyup.enter="handleSearch"
         >
           <template #append>
-            <el-upload
-              :show-file-list="false"
-              :auto-upload="false"
-              :on-change="handleImageFileChange"
-              accept="image/png,image/jpeg,image/webp"
-            >
-              <el-tooltip content="图片搜商品" placement="top">
-                <el-button :loading="imageSearchLoading">
-                  <Icon icon="ep:picture" />
+            <div class="search-actions">
+              <el-upload
+                class="image-search-upload"
+                :show-file-list="false"
+                :auto-upload="false"
+                :on-change="handleImageFileChange"
+                accept="image/png,image/jpeg,image/webp"
+              >
+                <el-tooltip content="图片搜商品" placement="top">
+                  <el-button class="search-action-btn" :loading="imageSearchLoading">
+                    <Icon icon="ep:picture" />
+                  </el-button>
+                </el-tooltip>
+              </el-upload>
+              <span class="search-action-divider"></span>
+              <el-tooltip content="搜索" placement="top">
+                <el-button
+                  class="search-action-btn search-submit-btn"
+                  :loading="loading"
+                  @click="handleSearch"
+                >
+                  <Icon icon="ep:search" />
                 </el-button>
               </el-tooltip>
-            </el-upload>
-            <el-button type="primary" :loading="loading" @click="handleSearch">
-              <Icon icon="ep:search" />
-            </el-button>
+            </div>
           </template>
         </el-input>
         <div class="hero-search-tips">
@@ -964,10 +974,9 @@ onMounted(async () => {
 }
 
 .qlist-hero {
-  display: grid;
-  grid-template-columns: minmax(260px, 320px) minmax(360px, 1fr);
-  gap: 28px;
-  align-items: center;
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
   max-width: 1500px;
   margin: 0 auto;
 }
@@ -976,6 +985,7 @@ onMounted(async () => {
   display: flex;
   align-items: baseline;
   gap: 20px;
+  margin-top: 10px;
   white-space: nowrap;
 }
 
@@ -984,6 +994,11 @@ onMounted(async () => {
   font-size: 34px;
   font-weight: 800;
   line-height: 1;
+}
+
+.qlist-search {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .qlist-search :deep(.el-input__wrapper) {
@@ -998,13 +1013,46 @@ onMounted(async () => {
   border-radius: 0 999px 999px 0;
   background: #fff;
   box-shadow: 0 0 0 2px #2f7dff inset;
+  padding: 0;
 }
 
-.qlist-search :deep(.el-input-group__append .el-button) {
-  min-width: 52px;
+.search-actions {
+  display: inline-flex;
   height: 54px;
+  align-items: center;
+}
+
+.image-search-upload,
+.image-search-upload :deep(.el-upload) {
+  display: inline-flex;
+  height: 54px;
+  align-items: center;
+}
+
+.qlist-search :deep(.el-input-group__append .search-action-btn) {
+  width: 54px;
+  min-width: 54px;
+  height: 54px;
+  margin: 0 !important;
   border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #8a93a3;
   font-size: 22px;
+  padding: 0;
+}
+
+.qlist-search :deep(.el-input-group__append .search-action-btn:hover) {
+  background: #f4f8ff;
+  color: #2f7dff;
+}
+
+.search-action-divider {
+  display: block;
+  width: 1px;
+  height: 30px;
+  flex: 0 0 1px;
+  background: #2f7dff;
 }
 
 .hero-search-tips {
@@ -1355,8 +1403,9 @@ onMounted(async () => {
   }
 
   .qlist-hero {
-    grid-template-columns: 1fr;
     gap: 14px;
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .brand-main {

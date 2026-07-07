@@ -118,6 +118,7 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         if (orderDTO == null || orderDTO.getPlatformOrderId() == null) {
             return 0;
         }
+        normalizeOrderAmountSnapshot(orderDTO);
 
         CpsOrderDO existing = orderMapper.selectByPlatformOrderId(orderDTO.getPlatformOrderId());
         if (existing == null) {
@@ -641,6 +642,32 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         }
         // 默认 80% 佣金作为返利预估（实际由返利配置决定）
         return dto.getCommissionAmount().multiply(new BigDecimal("0.8")).setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    private void normalizeOrderAmountSnapshot(CpsOrderDTO dto) {
+        BigDecimal itemPrice = dto.getItemPrice();
+        BigDecimal finalPrice = dto.getFinalPrice();
+        BigDecimal couponAmount = dto.getCouponAmount();
+
+        if (!isPositive(itemPrice) && isPositive(finalPrice) && isPositive(couponAmount)) {
+            itemPrice = finalPrice.add(couponAmount).setScale(2, java.math.RoundingMode.HALF_UP);
+            dto.setItemPrice(itemPrice);
+        }
+        if (!isPositive(finalPrice) && isPositive(itemPrice) && isPositive(couponAmount)) {
+            BigDecimal derivedFinalPrice = itemPrice.subtract(couponAmount);
+            if (derivedFinalPrice.signum() >= 0) {
+                finalPrice = derivedFinalPrice.setScale(2, java.math.RoundingMode.HALF_UP);
+                dto.setFinalPrice(finalPrice);
+            }
+        }
+        if (!isPositive(couponAmount) && isPositive(itemPrice) && isPositive(finalPrice)
+                && itemPrice.compareTo(finalPrice) > 0) {
+            dto.setCouponAmount(itemPrice.subtract(finalPrice).setScale(2, java.math.RoundingMode.HALF_UP));
+        }
+    }
+
+    private boolean isPositive(BigDecimal value) {
+        return value != null && value.compareTo(BigDecimal.ZERO) > 0;
     }
 
     private LocalDateTime parseDateTime(String dateStr) {

@@ -200,6 +200,30 @@ class CpsOrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("saveOrUpdateOrder - 平台未返回券额时应由原价和券后价推导优惠金额")
+    void saveOrUpdateOrder_derivesCouponAmountFromOriginalAndFinalPrice() {
+        when(orderMapper.selectByPlatformOrderId("TB-COUPON-1")).thenReturn(null);
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .platformOrderId("TB-COUPON-1")
+                .platformCode("taobao")
+                .itemPrice(new BigDecimal("689.00"))
+                .finalPrice(new BigDecimal("89.00"))
+                .couponAmount(BigDecimal.ZERO)
+                .commissionAmount(new BigDecimal("6.68"))
+                .platformStatus(1)
+                .build();
+
+        int result = orderService.saveOrUpdateOrder(dto);
+
+        assertEquals(1, result);
+        verify(orderMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
+                new BigDecimal("689.00").compareTo(order.getItemPrice()) == 0
+                        && new BigDecimal("89.00").compareTo(order.getFinalPrice()) == 0
+                        && new BigDecimal("600.00").compareTo(order.getCouponAmount()) == 0));
+    }
+
+    @Test
     @DisplayName("saveOrUpdateOrder - externalId 为空时唯一转链记录应兜底归因并回写订单号")
     void saveOrUpdateOrder_attributesByUniqueTransferRecordWhenExternalIdMissing() {
         when(orderMapper.selectByPlatformOrderId("TB-FALLBACK-1")).thenReturn(null);
