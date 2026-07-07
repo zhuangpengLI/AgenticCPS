@@ -7,11 +7,14 @@ import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchResult;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.controller.app.goods.vo.*;
+import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
+import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
 import com.qiji.cps.module.cps.service.goods.CpsGoodsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +36,8 @@ public class AppCpsGoodsController {
 
     @Resource
     private CpsGoodsService cpsGoodsService;
+    @Resource
+    private CpsTransferRecordMapper transferRecordMapper;
 
     @GetMapping("/search")
     @Operation(summary = "搜索商品（单平台）")
@@ -69,16 +74,30 @@ public class AppCpsGoodsController {
     @Operation(summary = "生成推广链接（转链）")
     public CommonResult<AppCpsLinkRespVO> generateLink(@Valid @RequestBody AppCpsLinkReqVO reqVO) {
         Long memberId = SecurityFrameworkUtils.getLoginUserId();
+        String adzoneId = cpsGoodsService.resolvePromotionAdzoneId(
+                reqVO.getPlatformCode(), memberId, reqVO.getAdzoneId());
         CpsPromotionLinkResult result = cpsGoodsService.generatePromotionLink(
                 reqVO.getPlatformCode(),
                 reqVO.getGoodsId(),
                 reqVO.getGoodsSign(),
                 memberId,
-                reqVO.getAdzoneId()
+                adzoneId
         );
         if (result == null) {
             return success(null);
         }
+        CpsTransferRecordDO record = CpsTransferRecordDO.builder()
+                .memberId(memberId)
+                .platformCode(reqVO.getPlatformCode())
+                .originalContent(firstText(reqVO.getGoodsId(), reqVO.getGoodsSign()))
+                .itemId(firstText(reqVO.getGoodsId(), reqVO.getGoodsSign()))
+                .promotionUrl(firstText(result.getShortUrl(), result.getLongUrl(), result.getMobileUrl()))
+                .taoCommand(result.getTpwd())
+                .adzoneId(adzoneId)
+                .status(1)
+                .build();
+        transferRecordMapper.insert(record);
+
         AppCpsLinkRespVO vo = new AppCpsLinkRespVO();
         vo.setShortUrl(result.getShortUrl());
         vo.setLongUrl(result.getLongUrl());
@@ -121,6 +140,18 @@ public class AppCpsGoodsController {
         vo.setItemLink(item.getItemLink());
         vo.setBrandName(item.getBrandName());
         return vo;
+    }
+
+    private String firstText(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
     }
 
 }

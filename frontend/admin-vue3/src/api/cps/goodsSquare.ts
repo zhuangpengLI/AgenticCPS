@@ -2,6 +2,9 @@ import request from '@/config/axios'
 
 export interface CpsGoodsSquareSearchReqVO {
   keyword?: string
+  searchMode?: string
+  searchField?: string
+  imageBase64?: string
   platformCode?: string
   vendorCode?: string
   pageNo: number
@@ -16,9 +19,22 @@ export interface CpsGoodsSquareSearchReqVO {
   minCommissionAmount?: number
   minMonthSales?: number
   couponAmountMin?: number
+  couponPriceUpperLimit?: number
+  hotRankMin?: number
+  couponExpireDays?: number
   tmallOnly?: boolean
   brandOnly?: boolean
+  haitaoOnly?: boolean
+  goldSellerOnly?: boolean
+  tchaoshiOnly?: boolean
+  juhuasuanOnly?: boolean
+  taoqianggouOnly?: boolean
+  inspectedGoodsOnly?: boolean
+  freeshipRemoteDistrict?: boolean
   shopType?: string
+  goodsPerformance?: string
+  commercialOnly?: boolean
+  preSaleOnly?: boolean
   activityTag?: string
 }
 
@@ -109,19 +125,41 @@ export interface CpsGoodsSquareMetaRespVO {
 }
 
 export const GOODS_SORT_TYPE_OPTIONS = [
-  { label: '综合排序', value: 0 },
-  { label: '销量优先', value: 1 },
+  { label: '综合', value: 0 },
+  { label: '月热销', value: 1 },
   { label: '券后价升序', value: 2 },
   { label: '券后价降序', value: 3 },
-  { label: '佣金优先', value: 4 }
+  { label: '佣金比例', value: 4 },
+  { label: '领券量', value: 5 },
+  { label: '最新上架', value: 6 }
 ]
 
 export const CpsGoodsSquareApi = {
   getMeta: (params: { platformCode?: string; vendorCode?: string }) =>
     request.get<CpsGoodsSquareMetaRespVO>({ url: '/cps/goods-square/meta', params }),
 
+  getHotKeywords: (params: { platformCode?: string; vendorCode?: string; type?: number }) =>
+    request.get<CpsGoodsSquareMetaItemVO[]>({ url: '/cps/goods-square/hot-keywords', params }),
+
+  suggestKeywords: (params: {
+    platformCode?: string
+    vendorCode?: string
+    keyword: string
+    type?: number
+  }) => request.get<CpsGoodsSquareMetaItemVO[]>({ url: '/cps/goods-square/suggestions', params }),
+
+  getVendorGoods: (params: {
+    sourceCode: string
+    platformCode?: string
+    vendorCode?: string
+    pageSize?: number
+  }) => request.get<CpsGoodsSquareSearchRespVO>({ url: '/cps/goods-square/vendor-goods', params }),
+
   searchGoods: (params: CpsGoodsSquareSearchReqVO) =>
     request.get<CpsGoodsSquareSearchRespVO>({ url: '/cps/goods-square/search', params }),
+
+  searchByImage: (data: CpsGoodsSquareSearchReqVO) =>
+    request.post<CpsGoodsSquareSearchRespVO>({ url: '/cps/goods-square/search-by-image', data }),
 
   generateLink: (data: CpsGoodsSquareLinkReqVO) =>
     request.post<CpsGoodsSquareLinkRespVO>({ url: '/cps/goods-square/link', data })

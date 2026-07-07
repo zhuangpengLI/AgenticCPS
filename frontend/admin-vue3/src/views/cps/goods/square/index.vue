@@ -1,115 +1,143 @@
 <template>
-  <ContentWrap>
-    <div class="square-toolbar">
-      <div class="toolbar-title">
-        <div class="text-18px font-600">返利商品广场</div>
-        <div class="mt-4px text-12px text-gray-500">
-          {{ metaInfo?.capabilityDesc || '淘宝选品优先，其他平台保留通用搜索与转链' }}
-        </div>
+  <ContentWrap class="qlist-shell">
+    <div class="qlist-hero">
+      <div class="brand-line">
+        <span class="brand-main">返利商品广场</span>
       </div>
-      <div class="toolbar-status">
-        <el-tag :type="metaInfo?.usingVendorMeta ? 'success' : 'info'" effect="plain">
-          {{ metaInfo?.usingVendorMeta ? `实时接口 · ${vendorLabel(metaInfo.vendorCode)}` : '默认推荐' }}
-        </el-tag>
-        <el-tag effect="plain">共 {{ total }} 个结果</el-tag>
-        <el-button type="primary" @click="goToolbox">
-          <Icon icon="ep:tools" class="mr-5px" /> 返利工具箱
-        </el-button>
+      <div class="qlist-search">
+        <el-input
+          v-model="queryParams.keyword"
+          size="large"
+          placeholder="请输入关键词/商品加密ID/商品链接"
+          clearable
+          @input="handleKeywordInput"
+          @keyup.enter="handleSearch"
+        >
+          <template #append>
+            <el-upload
+              :show-file-list="false"
+              :auto-upload="false"
+              :on-change="handleImageFileChange"
+              accept="image/png,image/jpeg,image/webp"
+            >
+              <el-tooltip content="图片搜商品" placement="top">
+                <el-button :loading="imageSearchLoading">
+                  <Icon icon="ep:picture" />
+                </el-button>
+              </el-tooltip>
+            </el-upload>
+            <el-button type="primary" :loading="loading" @click="handleSearch">
+              <Icon icon="ep:search" />
+            </el-button>
+          </template>
+        </el-input>
+        <div class="hero-search-tips">
+          <span
+            v-for="item in headlineKeywords"
+            :key="item.label"
+            :class="['headline-chip', item.tone]"
+            @click="selectKeyword(item.label)"
+          >
+            <Icon :icon="item.icon" />
+            {{ item.label }}
+          </span>
+        </div>
       </div>
     </div>
 
-    <el-form :model="queryParams" label-width="72px" class="mt-18px">
-      <el-row :gutter="12">
-        <el-col :xs="24" :sm="12" :lg="7">
-          <el-form-item label="关键词">
-            <el-input
-              v-model="queryParams.keyword"
-              placeholder="默认今日精选"
-              clearable
-              @keyup.enter="handleSearch"
-            >
-              <template #prepend>
-                <Icon icon="ep:search" />
-              </template>
-            </el-input>
-          </el-form-item>
-        </el-col>
-        <el-col :xs="24" :sm="12" :lg="5">
-          <el-form-item label="平台">
-            <el-select
-              v-model="queryParams.platformCode"
-              placeholder="选择平台"
-              filterable
-              class="w-full"
-              @change="handlePlatformChange"
-            >
-              <el-option
-                v-for="item in platformOptions"
-                :key="item.platformCode"
-                :label="item.platformName || platformLabel(item.platformCode)"
-                :value="item.platformCode"
-              />
-            </el-select>
-          </el-form-item>
-        </el-col>
-        <el-col :xs="24" :sm="12" :lg="5">
-          <el-form-item label="供应商">
-            <el-select
-              v-model="queryParams.vendorCode"
-              placeholder="默认路由"
-              clearable
-              filterable
-              class="w-full"
-              :loading="vendorLoading"
-              @change="handleVendorChange"
-            >
-              <el-option
-                v-for="item in vendorOptions"
-                :key="`${item.vendorCode}:${item.platformCode}`"
-                :label="formatVendorLabel(item)"
-                :value="item.vendorCode"
-              />
-            </el-select>
-          </el-form-item>
-        </el-col>
-        <el-col :xs="24" :sm="12" :lg="7">
-          <el-form-item label-width="0">
-            <div class="toolbar-actions">
-              <el-button type="primary" :loading="loading" @click="handleSearch">
-                <Icon icon="ep:search" class="mr-5px" /> 搜索
-              </el-button>
-              <el-button @click="handleReset">
-                <Icon icon="ep:refresh" class="mr-5px" /> 重置
-              </el-button>
-              <el-checkbox
-                :model-value="queryParams.hasCoupon === 1"
-                @change="handleCouponOnlyChange"
-              >
-                只看有券
-              </el-checkbox>
-            </div>
-          </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
+    <div v-if="searchSuggestionOptions.length > 0" class="suggestion-row">
+      <span class="suggestion-label">联想词</span>
+      <el-tag
+        v-for="item in searchSuggestionOptions"
+        :key="item.value"
+        class="clickable-tag"
+        effect="plain"
+        @click="selectKeyword(item.label)"
+      >
+        {{ item.label }}
+        <span v-if="item.description" class="suggestion-desc">{{ item.description }}</span>
+      </el-tag>
+    </div>
 
     <div v-if="showTaobaoSelection" class="selection-panel" v-loading="metaLoading">
-      <div class="selection-row">
-        <span class="selection-label">活动入口</span>
-        <el-button
+      <div class="selection-card activity-card">
+        <span class="selection-label">推荐活动</span>
+        <button
           v-for="item in metaInfo?.activities || []"
           :key="item.value"
-          :type="queryParams.channelCode === item.value ? 'primary' : 'default'"
-          plain
+          type="button"
+          :class="['activity-banner', queryParams.channelCode === item.value ? 'active' : '']"
           @click="selectActivity(item)"
         >
-          <span v-if="item.tag" class="activity-tag">{{ item.tag }}</span>{{ item.label }}
-        </el-button>
+          <span v-if="item.tag" class="activity-tag">{{ item.tag }}</span>
+          {{ item.label }}
+        </button>
       </div>
-      <div class="selection-row">
+      <div class="selection-card topic-card">
+        <span class="selection-label">更多主题</span>
+        <el-tag
+          v-for="item in topicOptions"
+          :key="item.value"
+          class="clickable-tag"
+          :type="queryParams.activityTag === item.value ? 'danger' : 'info'"
+          effect="plain"
+          @click="selectTopic(item.value, item.label)"
+        >
+          {{ item.label }}
+        </el-tag>
+      </div>
+      <div class="selection-card category-card">
+        <span class="selection-label">热门分类</span>
+        <el-button
+          v-for="item in categorySegmentOptions"
+          :key="item.value"
+          :type="queryParams.categoryId === item.value ? 'primary' : 'default'"
+          plain
+          @click="selectCategory(String(item.value))"
+        >
+          {{ item.label }}
+        </el-button>
+        <button type="button" class="more-link">+多选</button>
+      </div>
+      <div class="selection-card hot-card">
+        <span class="selection-label hot-label"><Icon icon="ep:hot-water" /> 持续热销</span>
+        <el-tag
+          v-for="item in lastingHotKeywords"
+          :key="item"
+          class="clickable-tag"
+          effect="plain"
+          @click="selectKeyword(item)"
+        >
+          {{ item }}
+        </el-tag>
+        <span class="selection-label hot-label"><Icon icon="ep:trend-charts" /> 短期飙升</span>
+        <el-tag
+          v-for="item in risingKeywords"
+          :key="item"
+          class="clickable-tag"
+          effect="plain"
+          @click="selectKeyword(item)"
+        >
+          {{ item }}
+        </el-tag>
+      </div>
+      <div class="selection-card ranking-card">
+        <span class="selection-label">爆品榜单</span>
+        <el-tag
+          v-for="item in rankingOptions"
+          :key="item.value"
+          class="clickable-tag"
+          :type="queryParams.activityTag === item.value ? 'warning' : 'info'"
+          effect="plain"
+          @click="selectRanking(item)"
+        >
+          {{ item.label }}
+        </el-tag>
+      </div>
+      <div class="selection-card keyword-card">
         <span class="selection-label">热词</span>
         <el-tag
-          v-for="item in metaInfo?.hotKeywords || []"
+          v-for="item in displayHotKeywords"
           :key="item.value"
           class="clickable-tag"
           :type="queryParams.keyword === item.label ? 'success' : 'info'"
@@ -119,15 +147,7 @@
           {{ item.label }}
         </el-tag>
       </div>
-      <div class="selection-row">
-        <span class="selection-label">类目</span>
-        <el-segmented
-          v-model="queryParams.categoryId"
-          :options="categorySegmentOptions"
-          @change="handleSearch"
-        />
-      </div>
-      <div class="selection-row">
+      <div class="selection-card sort-card">
         <span class="selection-label">排序</span>
         <el-radio-group v-model="queryParams.sortType" @change="handleSearch">
           <el-radio-button
@@ -141,11 +161,7 @@
       </div>
     </div>
 
-    <el-collapse v-if="showTaobaoSelection" class="advanced-filter">
-      <el-collapse-item name="filter">
-        <template #title>
-          <Icon icon="ep:filter" class="mr-6px" /> 高级筛选
-        </template>
+    <div v-if="showTaobaoSelection" class="advanced-filter">
         <el-form :model="queryParams" label-width="96px">
           <el-row :gutter="12">
             <el-col :xs="24" :sm="12" :lg="4">
@@ -174,20 +190,83 @@
               </el-form-item>
             </el-col>
             <el-col :xs="24" :sm="12" :lg="4">
+              <el-form-item label="最高券额">
+                <el-input-number v-model="queryParams.couponPriceUpperLimit" :min="0" :precision="2" class="w-full" />
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="12" :lg="4">
+              <el-form-item label="热销排名≥">
+                <el-input-number v-model="queryParams.hotRankMin" :min="0" :precision="0" class="w-full" />
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="12" :lg="4">
+              <el-form-item label="券到期≤">
+                <el-input-number v-model="queryParams.couponExpireDays" :min="0" :precision="0" class="w-full" />
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="12" :lg="4">
+              <el-form-item label="店铺类型">
+                <el-select v-model="queryParams.shopType" clearable class="w-full" @change="handleShopTypeChange">
+                  <el-option label="淘宝" value="taobao" />
+                  <el-option label="天猫" value="tmall" />
+                  <el-option label="天猫超市" value="tchaoshi" />
+                  <el-option label="金牌卖家" value="gold" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="12" :lg="4">
+              <el-form-item label="商品表现">
+                <el-select
+                  v-model="queryParams.goodsPerformance"
+                  clearable
+                  class="w-full"
+                  @change="handleGoodsPerformanceChange"
+                >
+                  <el-option label="今日热销" value="daily" />
+                  <el-option label="近2小时热销" value="two_hours" />
+                  <el-option label="推广人数" value="promoter" />
+                  <el-option label="推广社群数" value="community" />
+                  <el-option label="领券量" value="coupon" />
+                  <el-option label="最新上架" value="new" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="12" :lg="4">
               <el-form-item label="商品属性">
                 <div class="switch-group">
-                  <el-switch v-model="queryParams.tmallOnly" active-text="天猫" />
-                  <el-switch v-model="queryParams.brandOnly" active-text="品牌" />
+                  <el-switch v-model="queryParams.commercialOnly" active-text="商单" @change="handleSearch" />
+                  <el-switch v-model="queryParams.preSaleOnly" active-text="预告" @change="handleSearch" />
+                  <el-switch v-model="queryParams.tmallOnly" active-text="天猫" @change="handleSearch" />
+                  <el-switch v-model="queryParams.brandOnly" active-text="品牌" @change="handleSearch" />
+                  <el-switch v-model="queryParams.haitaoOnly" active-text="海淘" @change="handleSearch" />
+                  <el-switch v-model="queryParams.goldSellerOnly" active-text="金牌" @change="handleSearch" />
+                  <el-switch v-model="queryParams.tchaoshiOnly" active-text="天猫超市" @change="handleSearch" />
+                  <el-switch v-model="queryParams.juhuasuanOnly" active-text="聚划算" @change="handleSearch" />
+                  <el-switch v-model="queryParams.taoqianggouOnly" active-text="淘抢购" @change="handleSearch" />
+                  <el-switch v-model="queryParams.inspectedGoodsOnly" active-text="验货" @change="handleSearch" />
+                  <el-switch
+                    v-model="queryParams.freeshipRemoteDistrict"
+                    active-text="偏远包邮"
+                    @change="handleSearch"
+                  />
                 </div>
               </el-form-item>
             </el-col>
           </el-row>
+          <div class="quick-filter-row">
+            <el-checkbox :model-value="queryParams.hasCoupon === 1" @change="handleCouponOnlyChange">
+              只看有券
+            </el-checkbox>
+            <el-button @click="loadTopKeywords">
+              <Icon icon="ep:refresh-right" class="mr-5px" /> 热搜
+            </el-button>
+            <el-button @click="handleReset">
+              <Icon icon="ep:refresh" class="mr-5px" /> 重置
+            </el-button>
+          </div>
         </el-form>
-      </el-collapse-item>
-    </el-collapse>
-  </ContentWrap>
+    </div>
 
-  <ContentWrap>
     <el-empty v-if="!loading && goodsList.length === 0" description="暂无商品" />
     <div v-else v-loading="loading" class="goods-grid">
       <div v-for="item in goodsList" :key="`${item.platformCode}:${item.goodsId}`" class="goods-card">
@@ -351,7 +430,7 @@
 
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
-import type { FormInstance, FormRules } from 'element-plus'
+import type { FormInstance, FormRules, UploadFile } from 'element-plus'
 import { CpsAdzoneApi, type CpsAdzoneVO } from '@/api/cps/adzone'
 import { CpsApiVendorApi, VENDOR_CODE_OPTIONS, type CpsApiVendorVO } from '@/api/cps/apiVendor'
 import { CpsPlatformApi, type CpsPlatformVO } from '@/api/cps/platform'
@@ -372,13 +451,13 @@ defineOptions({ name: 'CpsGoodsSquare' })
 const message = useMessage()
 const { copy } = useClipboard()
 const route = useRoute()
-const router = useRouter()
 
 const loading = ref(false)
 const metaLoading = ref(false)
 const vendorLoading = ref(false)
 const adzoneLoading = ref(false)
 const memberLoading = ref(false)
+const imageSearchLoading = ref(false)
 const goodsList = ref<CpsGoodsSquareGoodsVO[]>([])
 const total = ref(0)
 const metaInfo = ref<CpsGoodsSquareMetaRespVO>()
@@ -386,6 +465,9 @@ const platformOptions = ref<CpsPlatformVO[]>([])
 const vendorOptions = ref<CpsApiVendorVO[]>([])
 const adzoneOptions = ref<CpsAdzoneVO[]>([])
 const memberOptions = ref<UserVO[]>([])
+const hotKeywordOptions = ref<CpsGoodsSquareMetaItemVO[]>([])
+const searchSuggestionOptions = ref<CpsGoodsSquareMetaItemVO[]>([])
+let suggestionTimer: ReturnType<typeof setTimeout> | undefined
 
 const routeText = (value: unknown) => {
   if (Array.isArray(value)) {
@@ -401,11 +483,38 @@ const queryParams = reactive<CpsGoodsSquareSearchReqVO>({
   pageNo: 1,
   pageSize: 20,
   sortType: 0,
+  searchField: 'title',
   hasCoupon: undefined,
   categoryId: '0',
   channelCode: routeText(route.query.activityTag),
   activityTag: routeText(route.query.activityTag)
 })
+
+const headlineKeywords = [
+  { label: '高佣肉单精选集', icon: 'ep:money', tone: 'danger' },
+  { label: '佣金补贴', icon: 'ep:coin', tone: 'warning' },
+  { label: '爆款早餐', icon: 'ep:hot-water', tone: 'danger' },
+  { label: '社群热推风扇', icon: 'ep:promotion', tone: 'default' },
+  { label: '夏季清凉内裤', icon: 'ep:sunny', tone: 'success' }
+]
+
+const topicOptions = [
+  { value: 'prediction', label: '爆品预测' },
+  { value: 'return', label: '爆品返场' },
+  { value: 'selection', label: '小客精选单' },
+  { value: 'gift', label: '淘礼金补贴' },
+  { value: 'vip', label: '88VIP立减' }
+]
+const rankingOptions = [
+  { value: 'top', label: '爆品榜单', sortType: 0, keyword: '爆款', sourceCode: 'RANKING' },
+  { value: 'two-hour-hot', label: '2小时热销榜', sortType: 1, keyword: '热销', sourceCode: 'HOT_SALE_RANK' },
+  { value: 'must-promote', label: '必推榜', sortType: 4, keyword: '高佣' },
+  { value: 'day-hot', label: '全天热销榜', sortType: 1, keyword: '销量' },
+  { value: 'new-potential', label: '新品潜力榜', sortType: 6, keyword: '新品' },
+  { value: 'hot-push', label: '热推榜', sortType: 5, keyword: '领券' }
+]
+const lastingHotKeywords = ['卫生巾', '纸巾', '软辅', '牛奶', '洗衣液']
+const risingKeywords = ['防晒霜', '酱油', '面膜', '拖鞋', '口红']
 
 const linkVisible = ref(false)
 const linkLoading = ref(false)
@@ -442,6 +551,9 @@ const categorySegmentOptions = computed(() => {
     : [{ value: '0', label: '全部' }]
   return categories.map((item) => ({ label: item.label, value: item.value }))
 })
+const displayHotKeywords = computed(() =>
+  hotKeywordOptions.value.length > 0 ? hotKeywordOptions.value : metaInfo.value?.hotKeywords || []
+)
 const linkRows = computed(() => [
   { label: '短链', value: linkResult.value?.shortUrl || '' },
   { label: '长链', value: linkResult.value?.longUrl || '' },
@@ -478,6 +590,75 @@ const handleSearch = () => {
   getGoodsList()
 }
 
+const loadTopKeywords = () => {
+  const first = displayHotKeywords.value?.[0]?.label || headlineKeywords[0].label
+  queryParams.keyword = first
+  handleSearch()
+}
+
+const loadVendorGoods = async (sourceCode: string, label: string) => {
+  loading.value = true
+  try {
+    const data = await CpsGoodsSquareApi.getVendorGoods({
+      sourceCode,
+      platformCode: 'taobao',
+      vendorCode: queryParams.vendorCode || 'dataoke',
+      pageSize: queryParams.pageSize
+    })
+    queryParams.platformCode = 'taobao'
+    queryParams.vendorCode = queryParams.vendorCode || 'dataoke'
+    queryParams.keyword = label
+    queryParams.activityTag = sourceCode
+    queryParams.channelCode = sourceCode
+    queryParams.pageNo = 1
+    goodsList.value = data.list || []
+    total.value = data.total || 0
+  } finally {
+    loading.value = false
+  }
+}
+
+const selectVendorSource = (sourceCode: string, label: string) => {
+  loadVendorGoods(sourceCode, label)
+}
+
+const loadHotKeywords = async () => {
+  try {
+    hotKeywordOptions.value = await CpsGoodsSquareApi.getHotKeywords({
+      platformCode: queryParams.platformCode,
+      vendorCode: queryParams.vendorCode || 'dataoke',
+      type: 1
+    })
+  } catch {
+    hotKeywordOptions.value = []
+  }
+}
+
+const handleKeywordInput = () => {
+  if (suggestionTimer) {
+    clearTimeout(suggestionTimer)
+  }
+  suggestionTimer = setTimeout(loadSuggestions, 250)
+}
+
+const loadSuggestions = async () => {
+  const keyword = queryParams.keyword?.trim()
+  if (!keyword || keyword.length < 2 || queryParams.searchField === 'goods_id') {
+    searchSuggestionOptions.value = []
+    return
+  }
+  try {
+    searchSuggestionOptions.value = await CpsGoodsSquareApi.suggestKeywords({
+      platformCode: queryParams.platformCode,
+      vendorCode: queryParams.vendorCode || 'dataoke',
+      keyword,
+      type: 1
+    })
+  } catch {
+    searchSuggestionOptions.value = []
+  }
+}
+
 const handleReset = async () => {
   Object.assign(queryParams, {
     keyword: '今日精选',
@@ -486,6 +667,7 @@ const handleReset = async () => {
     pageNo: 1,
     pageSize: 20,
     sortType: 0,
+    searchField: 'title',
     hasCoupon: undefined,
     priceLowerLimit: undefined,
     priceUpperLimit: undefined,
@@ -495,34 +677,33 @@ const handleReset = async () => {
     minCommissionAmount: undefined,
     minMonthSales: undefined,
     couponAmountMin: undefined,
+    couponPriceUpperLimit: undefined,
+    hotRankMin: undefined,
+    couponExpireDays: undefined,
     tmallOnly: undefined,
     brandOnly: undefined,
+    haitaoOnly: undefined,
+    goldSellerOnly: undefined,
+    tchaoshiOnly: undefined,
+    juhuasuanOnly: undefined,
+    taoqianggouOnly: undefined,
+    inspectedGoodsOnly: undefined,
+    freeshipRemoteDistrict: undefined,
     shopType: undefined,
+    goodsPerformance: undefined,
+    commercialOnly: undefined,
+    preSaleOnly: undefined,
     activityTag: undefined
   })
   await loadVendorOptions('taobao')
   await loadMeta()
+  await loadHotKeywords()
   await getGoodsList()
-}
-
-const handlePlatformChange = async () => {
-  queryParams.vendorCode = undefined
-  vendorOptions.value = []
-  resetTaobaoOnlyFilters()
-  if (queryParams.platformCode) {
-    await loadVendorOptions(queryParams.platformCode)
-  }
-  await loadMeta()
-  handleSearch()
-}
-
-const handleVendorChange = async () => {
-  await loadMeta()
-  handleSearch()
 }
 
 const handleCouponOnlyChange = (checked: string | number | boolean) => {
   queryParams.hasCoupon = checked ? 1 : undefined
+  handleSearch()
 }
 
 const selectActivity = (item: CpsGoodsSquareMetaItemVO) => {
@@ -536,18 +717,100 @@ const selectKeyword = (keyword: string) => {
   handleSearch()
 }
 
-const resetTaobaoOnlyFilters = () => {
-  queryParams.channelCode = undefined
-  queryParams.categoryId = queryParams.platformCode === 'taobao' ? '0' : undefined
-  queryParams.minCommissionRate = undefined
-  queryParams.minCommissionAmount = undefined
-  queryParams.minMonthSales = undefined
-  queryParams.couponAmountMin = undefined
-  queryParams.tmallOnly = undefined
-  queryParams.brandOnly = undefined
-  queryParams.shopType = undefined
-  queryParams.activityTag = undefined
+const selectTopic = (value: string, label: string) => {
+  queryParams.activityTag = queryParams.activityTag === value ? undefined : value
+  queryParams.channelCode = queryParams.activityTag
+  queryParams.keyword = label
+  handleSearch()
 }
+
+const selectRanking = (item: {
+  value: string
+  label: string
+  sortType: number
+  keyword: string
+  sourceCode?: string
+}) => {
+  if (item.sourceCode) {
+    selectVendorSource(item.sourceCode, item.label)
+    return
+  }
+  queryParams.activityTag = queryParams.activityTag === item.value ? undefined : item.value
+  queryParams.channelCode = queryParams.activityTag
+  queryParams.sortType = item.sortType
+  queryParams.keyword = item.keyword
+  handleSearch()
+}
+
+const selectCategory = (value: string) => {
+  queryParams.categoryId = value
+  handleSearch()
+}
+
+const handleShopTypeChange = () => {
+  queryParams.tmallOnly = queryParams.shopType === 'tmall' ? true : queryParams.tmallOnly
+  queryParams.tchaoshiOnly = queryParams.shopType === 'tchaoshi' ? true : queryParams.tchaoshiOnly
+  queryParams.goldSellerOnly = queryParams.shopType === 'gold' ? true : queryParams.goldSellerOnly
+  if (queryParams.shopType === 'taobao') {
+    queryParams.tmallOnly = undefined
+    queryParams.tchaoshiOnly = undefined
+  }
+  handleSearch()
+}
+
+const handleGoodsPerformanceChange = () => {
+  const performanceSortMap: Record<string, number> = {
+    daily: 1,
+    two_hours: 1,
+    promoter: 0,
+    community: 0,
+    coupon: 5,
+    new: 6
+  }
+  if (queryParams.goodsPerformance && performanceSortMap[queryParams.goodsPerformance] !== undefined) {
+    queryParams.sortType = performanceSortMap[queryParams.goodsPerformance]
+  }
+  handleSearch()
+}
+
+const handleImageFileChange = async (uploadFile: UploadFile) => {
+  const raw = uploadFile.raw
+  if (!raw) return
+  if (raw.size > 1024 * 1024) {
+    message.warning('图片不能超过 1MB')
+    return
+  }
+  imageSearchLoading.value = true
+  try {
+    const imageBase64 = await readFileAsDataUrl(raw)
+    const data = await CpsGoodsSquareApi.searchByImage({
+      ...queryParams,
+      platformCode: 'taobao',
+      vendorCode: queryParams.vendorCode || 'dataoke',
+      searchMode: 'dataoke_image',
+      imageBase64,
+      pageNo: 1,
+      pageSize: queryParams.pageSize
+    })
+    queryParams.platformCode = 'taobao'
+    queryParams.vendorCode = queryParams.vendorCode || 'dataoke'
+    queryParams.keyword = '图片搜商品'
+    queryParams.pageNo = 1
+    goodsList.value = data.list || []
+    total.value = data.total || 0
+    message.success(`图片搜商品完成，找到 ${total.value} 个结果`)
+  } finally {
+    imageSearchLoading.value = false
+  }
+}
+
+const readFileAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
 
 const openLinkDialog = async (item: CpsGoodsSquareGoodsVO) => {
   selectedGoods.value = item
@@ -637,10 +900,6 @@ const handleCopy = async (text?: string) => {
   message.success('复制成功')
 }
 
-const goToolbox = () => {
-  router.push('/cps/toolbox?tool=goods-square')
-}
-
 const effectiveVendorCode = (item: CpsGoodsSquareGoodsVO) => {
   return item.vendorCode || queryParams.vendorCode || metaInfo.value?.vendorCode
 }
@@ -662,10 +921,6 @@ const platformLabel = (platformCode?: string) => {
 const vendorLabel = (vendorCode?: string) => {
   if (!vendorCode) return '默认'
   return VENDOR_CODE_OPTIONS.find((item) => item.value === vendorCode)?.label || vendorCode
-}
-
-const formatVendorLabel = (item: CpsApiVendorVO) => {
-  return `${item.vendorName || vendorLabel(item.vendorCode)} · ${item.vendorCode}`
 }
 
 const formatAdzoneLabel = (item: CpsAdzoneVO) => {
@@ -695,49 +950,183 @@ onMounted(async () => {
   await loadPlatformOptions()
   await loadVendorOptions('taobao')
   await loadMeta()
+  await loadHotKeywords()
   await getGoodsList()
 })
 </script>
 
 <style scoped>
-.square-toolbar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+.qlist-shell {
+  background:
+    radial-gradient(circle at 28% 0%, rgb(255 255 255 / 90%) 0, rgb(255 255 255 / 0%) 320px),
+    linear-gradient(135deg, #eefaff 0%, #edf4ff 52%, #e7f0ff 100%);
+  padding: 24px 28px 30px;
 }
 
-.toolbar-status,
-.toolbar-actions {
+.qlist-hero {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(360px, 1fr);
+  gap: 28px;
+  align-items: center;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.brand-line {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  white-space: nowrap;
+}
+
+.brand-main {
+  color: #1d6dff;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.qlist-search :deep(.el-input__wrapper) {
+  height: 54px;
+  border-radius: 999px 0 0 999px;
+  box-shadow: 0 0 0 2px #2f7dff inset;
+  padding-left: 24px;
+}
+
+.qlist-search :deep(.el-input-group__append) {
+  overflow: hidden;
+  border-radius: 0 999px 999px 0;
+  background: #fff;
+  box-shadow: 0 0 0 2px #2f7dff inset;
+}
+
+.qlist-search :deep(.el-input-group__append .el-button) {
+  min-width: 52px;
+  height: 54px;
+  border: 0;
+  font-size: 22px;
+}
+
+.hero-search-tips {
+  display: flex;
+  min-height: 32px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 8px;
+}
+
+.headline-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #697386;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.headline-chip.danger {
+  color: #ff4d6d;
+}
+
+.headline-chip.warning {
+  color: #f39800;
+}
+
+.headline-chip.success {
+  color: #16c979;
+}
+
+.suggestion-row,
+.selection-panel,
+.advanced-filter,
+.goods-grid,
+.el-pagination {
+  max-width: 1500px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.suggestion-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  margin-top: 12px;
 }
 
-.toolbar-title {
-  min-width: 0;
+.suggestion-label {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.suggestion-desc {
+  margin-left: 4px;
+  color: var(--el-text-color-placeholder);
 }
 
 .selection-panel {
-  margin-top: 8px;
-  padding: 12px 0 4px;
-  border-top: 1px solid var(--el-border-color-lighter);
+  margin-top: 18px;
 }
 
-.selection-row {
+.selection-card {
   display: flex;
-  min-height: 36px;
+  min-height: 52px;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 10px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 82%);
+  padding: 13px 24px;
+}
+
+.selection-card + .selection-card {
+  margin-top: 12px;
+}
+
+.activity-card,
+.topic-card {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.topic-card {
+  margin-top: 0;
+  border-top: 1px solid #edf2f7;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .selection-label {
-  width: 64px;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
+  display: inline-flex;
+  width: 76px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  color: #8a93a3;
+  font-size: 14px;
+}
+
+.activity-banner {
+  min-width: 136px;
+  height: 42px;
+  border: 0;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #ff3f4c 0%, #ff8a2a 100%);
+  color: #fff;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 0 14px;
+}
+
+.activity-banner:nth-of-type(2n) {
+  background: linear-gradient(135deg, #ff6aa2 0%, #ffb12a 100%);
+}
+
+.activity-banner.active {
+  box-shadow: 0 0 0 3px rgb(35 120 255 / 22%);
 }
 
 .activity-tag {
@@ -748,9 +1137,28 @@ onMounted(async () => {
   justify-content: center;
   margin-right: 4px;
   border-radius: 4px;
-  background: var(--el-color-danger-light-9);
-  color: var(--el-color-danger);
+  background: rgb(255 255 255 / 22%);
+  color: #fff;
   font-size: 12px;
+}
+
+.hot-label {
+  width: auto;
+  margin-left: 8px;
+  color: #606266;
+}
+
+.hot-label:first-child {
+  margin-left: 0;
+  color: #ff4d6d;
+}
+
+.more-link {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #2378ff;
+  cursor: pointer;
 }
 
 .clickable-tag {
@@ -758,21 +1166,29 @@ onMounted(async () => {
 }
 
 .advanced-filter {
-  margin-top: 6px;
-  border-top: 1px solid var(--el-border-color-lighter);
-  border-bottom: 0;
+  margin-top: 12px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 82%);
+  padding: 18px 24px 14px;
 }
 
+.quick-filter-row,
 .switch-group {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 12px;
+}
+
+.quick-filter-row {
+  margin-top: 4px;
 }
 
 .goods-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 14px;
+  margin-top: 18px;
 }
 
 .goods-card {
@@ -934,8 +1350,17 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
-  .square-toolbar {
-    flex-direction: column;
+  .qlist-shell {
+    padding: 16px;
+  }
+
+  .qlist-hero {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .brand-main {
+    font-size: 28px;
   }
 
   .selection-label {

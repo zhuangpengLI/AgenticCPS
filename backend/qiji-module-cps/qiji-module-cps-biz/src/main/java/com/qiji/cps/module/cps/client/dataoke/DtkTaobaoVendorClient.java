@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.client.dataoke;
 
 import com.qiji.cps.module.cps.client.dto.*;
+import com.qiji.cps.module.cps.client.selection.CpsSearchAssistVendorClient;
 import com.qiji.cps.module.cps.client.selection.CpsTaobaoSelectionVendorClient;
 import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,10 +22,14 @@ import java.util.*;
 @Slf4j
 @Component
 public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
-        implements CpsTaobaoSelectionVendorClient, CpsCouponInfoVendorClient {
+        implements CpsTaobaoSelectionVendorClient, CpsSearchAssistVendorClient, CpsCouponInfoVendorClient {
 
     private static final String PARSE_CONTENT_PATH = "/tb-service/parse-content";
     private static final String COUPON_INFO_PATH = "/dels/taobao/kit/coupon/get-coupon-info";
+    private static final String HOT_KEYWORDS_PATH = "/category/get-top100";
+    private static final String SEARCH_SUGGESTION_PATH = "/goods/search-suggestion";
+    private static final String IMAGE_SEARCH_URL = "https://openapiv2.dataoke.com/open-api/goods/search-by-image";
+    private static final String SEARCH_MODE_IMAGE = "dataoke_image";
 
     @Override
     public String getPlatformCode() {
@@ -32,6 +37,14 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
     }
 
     // ==================== 商品搜索 ====================
+
+    @Override
+    public CpsGoodsSearchResult searchGoods(CpsGoodsSearchRequest request, CpsVendorConfig config) {
+        if (SEARCH_MODE_IMAGE.equals(request.getSearchMode())) {
+            return searchGoodsByImage(request, config);
+        }
+        return super.searchGoods(request, config);
+    }
 
     @Override
     protected String getSearchApiPath() {
@@ -68,11 +81,47 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
         if (request.getCouponAmountMin() != null) {
             params.put("couponPriceLowerLimit", request.getCouponAmountMin());
         }
+        if (request.getCouponPriceUpperLimit() != null) {
+            params.put("couponPriceUpperLimit", request.getCouponPriceUpperLimit());
+        }
+        if (request.getHotRankMin() != null) {
+            params.put("hotRankLowerLimit", request.getHotRankMin());
+        }
+        if (request.getCouponExpireDays() != null) {
+            params.put("couponExpireDays", request.getCouponExpireDays());
+        }
+        if (Boolean.TRUE.equals(request.getJuhuasuanOnly())) {
+            params.put("juHuaSuan", 1);
+        }
+        if (Boolean.TRUE.equals(request.getTaoqianggouOnly())) {
+            params.put("taoQiangGou", 1);
+        }
         if (Boolean.TRUE.equals(request.getTmallOnly())) {
             params.put("tmall", 1);
         }
+        if (Boolean.TRUE.equals(request.getTchaoshiOnly())) {
+            params.put("tchaoshi", 1);
+        }
+        if (Boolean.TRUE.equals(request.getGoldSellerOnly())) {
+            params.put("goldSeller", 1);
+        }
         if (Boolean.TRUE.equals(request.getBrandOnly())) {
             params.put("brand", 1);
+        }
+        if (Boolean.TRUE.equals(request.getHaitaoOnly())) {
+            params.put("haitao", 1);
+        }
+        if (Boolean.TRUE.equals(request.getCommercialOnly())) {
+            params.put("directCommissionType", 3);
+        }
+        if (Boolean.TRUE.equals(request.getPreSaleOnly())) {
+            params.put("pre", 1);
+        }
+        if (Boolean.TRUE.equals(request.getFreeshipRemoteDistrict())) {
+            params.put("freeshipRemoteDistrict", 1);
+        }
+        if (Boolean.TRUE.equals(request.getInspectedGoodsOnly())) {
+            params.put("inspectedGoods", 1);
         }
         params.put("version", "v2.1.2");
         return params;
@@ -92,6 +141,36 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
         return CpsGoodsSearchResult.builder()
                 .list(goodsList)
                 .total(totalCount)
+                .pageNo(request.getPageNo())
+                .pageSize(request.getPageSize())
+                .build();
+    }
+
+    private CpsGoodsSearchResult searchGoodsByImage(CpsGoodsSearchRequest request, CpsVendorConfig config) {
+        if (!hasText(request.getImageBase64())) {
+            return buildEmptyResult(request);
+        }
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("version", "v1.0.0");
+        params.put("img_base64", request.getImageBase64());
+        JsonNode response = unwrapResponse(executePostRequest(IMAGE_SEARCH_URL, params, config));
+        if (response == null || !isSuccessResponse(response)) {
+            log.warn("[{}:{}] 图片搜商品失败: {}", getVendorCode(), getPlatformCode(), response);
+            return buildEmptyResult(request);
+        }
+        JsonNode data = response.path("data");
+        JsonNode list = data.isArray() ? data : data.path("list");
+        List<CpsGoodsItem> goodsList = new ArrayList<>();
+        if (list.isArray()) {
+            for (JsonNode item : list) {
+                goodsList.add(parseTaobaoGoodsItem(item));
+            }
+        } else if (data.isObject() && hasText(firstText(data, "goodsId", "id", "goodsSign"))) {
+            goodsList.add(parseTaobaoGoodsItem(data));
+        }
+        return CpsGoodsSearchResult.builder()
+                .list(goodsList)
+                .total((long) goodsList.size())
                 .pageNo(request.getPageNo())
                 .pageSize(request.getPageSize())
                 .build();
@@ -256,6 +335,63 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
                 .build();
     }
 
+    @Override
+    public List<CpsGoodsSelectionOption> getHotKeywords(Integer type, CpsVendorConfig config) {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("version", "v1.0.1");
+        params.put("type", type == null ? 1 : type);
+        JsonNode response = executeRequest(HOT_KEYWORDS_PATH, params, config);
+        if (response == null || !isSuccessResponse(response)) {
+            return Collections.emptyList();
+        }
+        JsonNode hotWords = response.path("data").path("hotWords");
+        if (!hotWords.isArray()) {
+            return Collections.emptyList();
+        }
+        List<CpsGoodsSelectionOption> result = new ArrayList<>();
+        for (JsonNode item : hotWords) {
+            String keyword = item.asText(null);
+            if (hasText(keyword)) {
+                result.add(CpsGoodsSelectionOption.of(keyword, keyword));
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public List<CpsGoodsSelectionOption> suggestKeywords(String keyword, Integer type, CpsVendorConfig config) {
+        if (!hasText(keyword)) {
+            return Collections.emptyList();
+        }
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("version", "v1.0.2");
+        params.put("keyWords", keyword);
+        params.put("type", type == null ? 1 : type);
+        JsonNode response = executeRequest(SEARCH_SUGGESTION_PATH, params, config);
+        if (response == null || !isSuccessResponse(response)) {
+            return Collections.emptyList();
+        }
+        JsonNode data = response.path("data");
+        if (!data.isArray()) {
+            return Collections.emptyList();
+        }
+        List<CpsGoodsSelectionOption> result = new ArrayList<>();
+        for (JsonNode item : data) {
+            String kw = firstText(item, "kw", "keyword", "word");
+            if (!hasText(kw)) {
+                continue;
+            }
+            long total = item.path("total").asLong(-1);
+            String description = total >= 0 ? total + " 个商品" : null;
+            result.add(CpsGoodsSelectionOption.builder()
+                    .value(kw)
+                    .label(kw)
+                    .description(description)
+                    .build());
+        }
+        return result;
+    }
+
     // ==================== 私有方法 ====================
 
     private CpsGoodsItem parseTaobaoGoodsItem(JsonNode item) {
@@ -267,20 +403,36 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
                 .originalPrice(parseDecimal(item, "originalPrice"))
                 .actualPrice(parseDecimal(item, "actualPrice"))
                 .couponPrice(parseDecimal(item, "couponPrice"))
+                .couponConditions(parseDecimal(item, "couponConditions"))
+                .couponTotalNum(parseLong(item, "couponTotalNum", "coupon_total_num"))
+                .couponRemainNum(parseLong(item, "couponRemainNum", "couponRemainCount", "coupon_remain_num"))
+                .couponReceiveNum(parseLong(item, "couponReceiveNum", "coupon_receive_num"))
                 .commissionRate(parseDecimal(item, "commissionRate"))
+                .commissionAmount(parseCommissionAmount(item))
                 .monthSales(item.path("monthSales").asLong(0))
                 .shopName(item.path("shopName").asText(null))
                 .shopType(item.path("shopType").asInt(0))
                 .itemLink(item.path("itemLink").asText(null))
+                .goodsSign(firstText(item, "goodsSign", "sign"))
                 .brandName(item.path("brandName").asText(null))
                 .vendorCode(getVendorCode())
                 .source("大淘客")
                 .activityTag(firstText(item, "activityType", "activityTag", "marketingTag"))
                 .categoryName(firstText(item, "cidName", "categoryName", "subcidName"))
                 .couponEndTime(firstText(item, "couponEndTime", "couponEndTimeStr"))
+                .couponStartTime(firstText(item, "couponStartTime", "couponStartTimeStr"))
                 .rankTag(firstText(item, "ranking", "rankTag"))
                 .sellingPoint(firstText(item, "desc", "marketingMainPic", "dtitle"))
                 .build();
+    }
+
+    private BigDecimal parseCommissionAmount(JsonNode item) {
+        BigDecimal actualPrice = parseDecimal(item, "actualPrice");
+        BigDecimal commissionRate = parseDecimal(item, "commissionRate");
+        if (actualPrice == null || commissionRate == null) {
+            return parseDecimal(item, "commissionAmount", "commission");
+        }
+        return actualPrice.multiply(commissionRate).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
     }
 
     private CpsOrderDTO parseTaobaoOrder(JsonNode item, String nextPositionIndex) {
@@ -363,6 +515,8 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
             case 2 -> "6";  // 价格升序
             case 3 -> "5";  // 价格降序
             case 4 -> "4";  // 佣金率降序
+            case 5 -> "3";  // 领券量降序
+            case 6 -> "1";  // 最新上架
             default -> "0"; // 综合排序
         };
     }

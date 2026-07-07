@@ -18,24 +18,31 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CpsOrderServiceImplTest {
+
+    private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @InjectMocks
     private CpsOrderServiceImpl orderService;
@@ -230,6 +237,45 @@ class CpsOrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("saveOrUpdateOrder - 淘宝订单推广位为数字ID时应降级用唯一转链记录归因")
+    void saveOrUpdateOrder_attributesByUniqueTransferRecordWhenTaobaoAdzoneIdDiffersFromPid() {
+        when(orderMapper.selectByPlatformOrderId("3311726376544025983")).thenReturn(null);
+        when(transferRecordMapper.selectAttributionCandidates(eq("taobao"), eq("ITEM-1"),
+                eq("333"), any(), any())).thenReturn(List.of());
+        when(transferRecordMapper.selectAttributionCandidates(eq("taobao"), eq("ITEM-1"),
+                eq(null), any(), any())).thenReturn(List.of(CpsTransferRecordDO.builder()
+                .id(10L)
+                .memberId(1001L)
+                .platformCode("taobao")
+                .itemId("ITEM-1")
+                .adzoneId("mm_111_222_333")
+                .build()));
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(1001L);
+        member.setNickname("我是喵团员");
+        when(memberUserApi.getUser(1001L)).thenReturn(member);
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .platformOrderId("3311726376544025983")
+                .platformCode("taobao")
+                .itemId("ITEM-1")
+                .adzoneId("333")
+                .externalId("沉碧7秒")
+                .orderTime("2026-07-07 09:39:45")
+                .platformStatus(1)
+                .build();
+
+        int result = orderService.saveOrUpdateOrder(dto);
+
+        assertEquals(1, result);
+        verify(orderMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
+                Long.valueOf(1001L).equals(order.getMemberId())
+                        && "我是喵团员".equals(order.getMemberNickname())
+                        && "3311726376544025983".equals(order.getPlatformOrderId())));
+        verify(transferRecordMapper).updatePlatformOrderId(10L, "3311726376544025983");
+    }
+
+    @Test
     @DisplayName("saveOrUpdateOrder - 多条转链候选不做兜底归因避免误绑")
     void saveOrUpdateOrder_doesNotAttributeWhenTransferCandidatesAreAmbiguous() {
         when(orderMapper.selectByPlatformOrderId("TB-FALLBACK-2")).thenReturn(null);
@@ -267,7 +313,7 @@ class CpsOrderServiceImplTest {
                 .build()));
         when(orderMapper.selectByPlatformOrderId("TB-STATUS-1")).thenReturn(null);
 
-        String result = orderService.manualSync("taobao", 6, 4);
+        String result = orderService.manualSync("taobao", 2, 4);
 
         verify(platformClient).queryOrders(argThat(req ->
                 Integer.valueOf(4).equals(req.getQueryType())
@@ -278,6 +324,43 @@ class CpsOrderServiceImplTest {
                 Integer.valueOf(4).equals(log.getQueryType())
                         && Integer.valueOf(1).equals(log.getSyncStatus())
                         && Integer.valueOf(1).equals(log.getTotalCount())));
+        assertEquals("平台[taobao] 手动同步完成: 共1条，新增1，更新0，跳过0", result);
+    }
+
+    @Test
+    @DisplayName("manualSync - 淘宝长时间窗口应拆成不超过3小时的小窗口")
+    void manualSync_splitsTaobaoLongRangeIntoThreeHourWindows() {
+        when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);
+        when(platformClient.queryOrders(any(CpsOrderQueryRequest.class)))
+                .thenReturn(List.of())
+                .thenReturn(List.of(CpsOrderDTO.builder()
+                        .platformCode("taobao")
+                        .platformOrderId("3311726376544025983")
+                        .platformStatus(1)
+                        .commissionAmount(new BigDecimal("6.68"))
+                        .build()))
+                .thenReturn(List.of())
+                .thenReturn(List.of())
+                .thenReturn(List.of())
+                .thenReturn(List.of())
+                .thenReturn(List.of())
+                .thenReturn(List.of());
+        when(orderMapper.selectByPlatformOrderId("3311726376544025983")).thenReturn(null);
+
+        String result = orderService.manualSync("taobao", 24, 4);
+
+        ArgumentCaptor<CpsOrderQueryRequest> captor = ArgumentCaptor.forClass(CpsOrderQueryRequest.class);
+        verify(platformClient, times(8)).queryOrders(captor.capture());
+        captor.getAllValues().forEach(req -> {
+            LocalDateTime start = LocalDateTime.parse(req.getStartTime(), DTF);
+            LocalDateTime end = LocalDateTime.parse(req.getEndTime(), DTF);
+            assertTrue(!end.isBefore(start));
+            assertTrue(Duration.between(start, end).compareTo(Duration.ofHours(3)) <= 0);
+            assertEquals(4, req.getQueryType());
+        });
+        verify(syncLogMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderSyncLogDO>argThat(log ->
+                Integer.valueOf(1).equals(log.getTotalCount())
+                        && Integer.valueOf(1).equals(log.getNewCount())));
         assertEquals("平台[taobao] 手动同步完成: 共1条，新增1，更新0，跳过0", result);
     }
 }

@@ -26,6 +26,7 @@ import org.springframework.validation.annotation.Validated;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -48,6 +49,9 @@ import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ORDER_NOT_EXIS
 public class CpsOrderServiceImpl implements CpsOrderService {
 
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final int ORDER_QUERY_WINDOW_HOURS = 3;
+    private static final int ORDER_QUERY_PAGE_SIZE = 50;
+    private static final int ORDER_QUERY_MAX_PAGES = 20;
 
     @Resource
     private CpsOrderMapper orderMapper;
@@ -246,13 +250,7 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         try {
             CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
 
-            CpsOrderQueryRequest req = new CpsOrderQueryRequest();
-            req.setQueryType(effectiveQueryType);
-            req.setStartTime(startTime.format(DTF));
-            req.setEndTime(endTime.format(DTF));
-            req.setPageSize(50);
-
-            List<CpsOrderDTO> orders = client.queryOrders(req);
+            List<CpsOrderDTO> orders = pullOrdersByWindow(client, effectiveQueryType, startTime, endTime);
             total = orders.size();
             int[] stats = batchSaveOrUpdateOrders(orders);
             newCount = stats[0];
@@ -277,6 +275,56 @@ public class CpsOrderServiceImpl implements CpsOrderService {
 
         return String.format("平台[%s] 手动同步完成: 共%d条，新增%d，更新%d，跳过%d",
                 platformCode, total, newCount, updateCount, skipCount);
+    }
+
+    private List<CpsOrderDTO> pullOrdersByWindow(CpsPlatformClient client, int queryType,
+                                                  LocalDateTime startTime, LocalDateTime endTime) {
+        List<CpsOrderDTO> allOrders = new ArrayList<>();
+        LocalDateTime windowStart = startTime;
+        while (windowStart.isBefore(endTime)) {
+            LocalDateTime windowEnd = min(windowStart.plusHours(ORDER_QUERY_WINDOW_HOURS), endTime);
+            allOrders.addAll(pullAllOrderPages(client, queryType, windowStart, windowEnd));
+            windowStart = windowEnd;
+        }
+        return allOrders;
+    }
+
+    private List<CpsOrderDTO> pullAllOrderPages(CpsPlatformClient client, int queryType,
+                                                LocalDateTime startTime, LocalDateTime endTime) {
+        List<CpsOrderDTO> allOrders = new ArrayList<>();
+        String positionIndex = null;
+        for (int page = 1; page <= ORDER_QUERY_MAX_PAGES; page++) {
+            CpsOrderQueryRequest req = new CpsOrderQueryRequest();
+            req.setQueryType(queryType);
+            req.setStartTime(startTime.format(DTF));
+            req.setEndTime(endTime.format(DTF));
+            req.setPageSize(ORDER_QUERY_PAGE_SIZE);
+            req.setPageNo(page);
+            if (positionIndex != null) {
+                req.setPositionIndex(positionIndex);
+            }
+
+            List<CpsOrderDTO> pageOrders = client.queryOrders(req);
+            if (pageOrders == null || pageOrders.isEmpty()) {
+                break;
+            }
+            allOrders.addAll(pageOrders);
+
+            String nextPositionIndex = pageOrders.get(pageOrders.size() - 1).getNextPositionIndex();
+            if (nextPositionIndex == null || nextPositionIndex.equals(positionIndex)) {
+                break;
+            }
+            positionIndex = nextPositionIndex;
+
+            if (pageOrders.size() < ORDER_QUERY_PAGE_SIZE) {
+                break;
+            }
+        }
+        return allOrders;
+    }
+
+    private LocalDateTime min(LocalDateTime a, LocalDateTime b) {
+        return a.isBefore(b) ? a : b;
     }
 
     // ==================== 私有辅助方法 ====================
@@ -391,6 +439,10 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         LocalDateTime endTime = orderTime.plusMinutes(30);
         List<CpsTransferRecordDO> candidates = transferRecordMapper.selectAttributionCandidates(
                 dto.getPlatformCode(), dto.getItemId(), dto.getAdzoneId(), startTime, endTime);
+        if ((candidates == null || candidates.isEmpty()) && !isBlank(dto.getAdzoneId())) {
+            candidates = transferRecordMapper.selectAttributionCandidates(
+                    dto.getPlatformCode(), dto.getItemId(), null, startTime, endTime);
+        }
         if (candidates == null || candidates.size() != 1) {
             if (candidates != null && candidates.size() > 1) {
                 log.warn("[resolveAttribution] 订单存在多条转链候选，跳过兜底归因: platform={}, orderId={}, itemId={}, adzoneId={}, count={}",

@@ -3,6 +3,7 @@ package com.qiji.cps.module.cps.controller.admin.goods;
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareLinkReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareLinkRespVO;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareMetaItemRespVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareMetaRespVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 import static com.qiji.cps.framework.common.pojo.CommonResult.success;
 
@@ -40,11 +43,50 @@ public class CpsGoodsSquareController {
         return success(goodsSquareService.getMeta(platformCode, vendorCode));
     }
 
+    @GetMapping("/hot-keywords")
+    @Operation(summary = "获取大淘客热搜记录")
+    @PreAuthorize("@ss.hasPermission('cps:goods-square:query')")
+    public CommonResult<List<CpsGoodsSquareMetaItemRespVO>> getHotKeywords(
+            @RequestParam(value = "platformCode", required = false, defaultValue = "taobao") String platformCode,
+            @RequestParam(value = "vendorCode", required = false, defaultValue = "dataoke") String vendorCode,
+            @RequestParam(value = "type", required = false, defaultValue = "1") Integer type) {
+        return success(goodsSquareService.getHotKeywords(platformCode, vendorCode, type));
+    }
+
+    @GetMapping("/suggestions")
+    @Operation(summary = "获取大淘客搜索联想词")
+    @PreAuthorize("@ss.hasPermission('cps:goods-square:query')")
+    public CommonResult<List<CpsGoodsSquareMetaItemRespVO>> suggestKeywords(
+            @RequestParam(value = "platformCode", required = false, defaultValue = "taobao") String platformCode,
+            @RequestParam(value = "vendorCode", required = false, defaultValue = "dataoke") String vendorCode,
+            @RequestParam("keyword") String keyword,
+            @RequestParam(value = "type", required = false, defaultValue = "1") Integer type) {
+        return success(goodsSquareService.suggestKeywords(platformCode, vendorCode, keyword, type));
+    }
+
+    @GetMapping("/vendor-goods")
+    @Operation(summary = "获取大淘客清单商品")
+    @PreAuthorize("@ss.hasPermission('cps:goods-square:query')")
+    public CommonResult<CpsGoodsSquareSearchRespVO> getVendorGoods(
+            @RequestParam("sourceCode") String sourceCode,
+            @RequestParam(value = "platformCode", required = false, defaultValue = "taobao") String platformCode,
+            @RequestParam(value = "vendorCode", required = false, defaultValue = "dataoke") String vendorCode,
+            @RequestParam(value = "pageSize", required = false, defaultValue = "20") Integer pageSize) {
+        return success(goodsSquareService.getVendorGoods(sourceCode, platformCode, vendorCode, pageSize));
+    }
+
     @GetMapping("/search")
     @Operation(summary = "搜索返利商品广场")
     @PreAuthorize("@ss.hasPermission('cps:goods-square:query')")
     public CommonResult<CpsGoodsSquareSearchRespVO> searchGoods(@Valid CpsGoodsSquareSearchReqVO reqVO) {
         return success(goodsSquareService.searchGoods(reqVO));
+    }
+
+    @PostMapping("/search-by-image")
+    @Operation(summary = "图片搜商品")
+    @PreAuthorize("@ss.hasPermission('cps:goods-square:query')")
+    public CommonResult<CpsGoodsSquareSearchRespVO> searchByImage(@Valid @RequestBody CpsGoodsSquareSearchReqVO reqVO) {
+        return success(goodsSquareService.searchByImage(reqVO));
     }
 
     @PostMapping("/link")

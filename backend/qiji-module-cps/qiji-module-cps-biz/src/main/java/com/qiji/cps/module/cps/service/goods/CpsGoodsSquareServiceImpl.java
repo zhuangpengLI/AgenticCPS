@@ -10,6 +10,8 @@ import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchResult;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
+import com.qiji.cps.module.cps.client.dataoke.DtkSelectionLibraryClient;
+import com.qiji.cps.module.cps.client.selection.CpsSearchAssistVendorClient;
 import com.qiji.cps.module.cps.client.selection.CpsTaobaoSelectionVendorClient;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsRespVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareLinkReqVO;
@@ -20,13 +22,16 @@ import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchReq
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
+import com.qiji.cps.module.cps.service.selection.CpsSelectionRule;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Validated
@@ -35,6 +40,7 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
     private static final String DEFAULT_KEYWORD = "今日精选";
     private static final String PLATFORM_TAOBAO = "taobao";
     private static final String DEFAULT_VENDOR_CODE = "dataoke";
+    private static final String SEARCH_MODE_IMAGE = "dataoke_image";
     private static final String LINK_STATUS_SUCCESS = "SUCCESS";
     private static final String LINK_STATUS_FAILED = "FAILED";
 
@@ -46,6 +52,9 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
 
     @Resource
     private CpsPlatformClientFactory platformClientFactory;
+
+    @Resource
+    private DtkSelectionLibraryClient dtkSelectionLibraryClient;
 
     @Override
     public CpsGoodsSquareMetaRespVO getMeta(String platformCode, String vendorCode) {
@@ -112,6 +121,62 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
     }
 
     @Override
+    public List<CpsGoodsSquareMetaItemRespVO> getHotKeywords(String platformCode, String vendorCode, Integer type) {
+        List<CpsGoodsSelectionOption> options = callSearchAssist(platformCode, vendorCode,
+                (client, config) -> client.getHotKeywords(type == null ? 1 : type, config));
+        if (!isEmpty(options)) {
+            return toMetaItemRespList(options);
+        }
+        return toMetaItemRespList(buildDefaultMeta().getHotKeywords());
+    }
+
+    @Override
+    public List<CpsGoodsSquareMetaItemRespVO> suggestKeywords(String platformCode, String vendorCode, String keyword, Integer type) {
+        if (!StringUtils.hasText(keyword)) {
+            return Collections.emptyList();
+        }
+        List<CpsGoodsSelectionOption> options = callSearchAssist(platformCode, vendorCode,
+                (client, config) -> client.suggestKeywords(keyword, type == null ? 1 : type, config));
+        return toMetaItemRespList(options);
+    }
+
+    @Override
+    public CpsGoodsSquareSearchRespVO getVendorGoods(String sourceCode, String platformCode, String vendorCode, Integer pageSize) {
+        String effectivePlatformCode = StringUtils.hasText(platformCode) ? platformCode : PLATFORM_TAOBAO;
+        String effectiveVendorCode = StringUtils.hasText(vendorCode) ? vendorCode : DEFAULT_VENDOR_CODE;
+        int pullCount = pageSize == null ? 20 : Math.max(1, Math.min(pageSize, 100));
+        if (!PLATFORM_TAOBAO.equals(effectivePlatformCode) || !DEFAULT_VENDOR_CODE.equals(effectiveVendorCode)) {
+            return CpsGoodsSquareSearchRespVO.builder()
+                    .list(Collections.emptyList())
+                    .total(0L)
+                    .pageNo(1)
+                    .pageSize(pullCount)
+                    .build();
+        }
+        CpsVendorConfig config = platformClientFactory.getVendorConfig(effectiveVendorCode, effectivePlatformCode);
+        CpsSelectionRule rule = buildVendorGoodsRule(sourceCode, effectiveVendorCode, effectivePlatformCode);
+        List<CpsGoodsSquareGoodsRespVO> list = dtkSelectionLibraryClient.fetchThemeGoods(rule, pullCount, config);
+        if (list == null) {
+            list = Collections.emptyList();
+        }
+        return CpsGoodsSquareSearchRespVO.builder()
+                .list(list)
+                .total((long) list.size())
+                .pageNo(1)
+                .pageSize(pullCount)
+                .build();
+    }
+
+    @Override
+    public CpsGoodsSquareSearchRespVO searchByImage(CpsGoodsSquareSearchReqVO reqVO) {
+        reqVO.setPlatformCode(PLATFORM_TAOBAO);
+        reqVO.setVendorCode(StringUtils.hasText(reqVO.getVendorCode()) ? reqVO.getVendorCode() : DEFAULT_VENDOR_CODE);
+        reqVO.setSearchMode(SEARCH_MODE_IMAGE);
+        reqVO.setImageBase64(normalizeImageBase64(reqVO.getImageBase64()));
+        return searchGoods(reqVO);
+    }
+
+    @Override
     public CpsGoodsSquareLinkRespVO generateLink(CpsGoodsSquareLinkReqVO reqVO) {
         String adzoneId = goodsService.resolvePromotionAdzoneId(
                 reqVO.getPlatformCode(), reqVO.getMemberId(), reqVO.getAdzoneId());
@@ -160,6 +225,9 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
     private CpsGoodsSearchRequest buildSearchRequest(CpsGoodsSquareSearchReqVO reqVO) {
         CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
         request.setKeyword(StringUtils.hasText(reqVO.getKeyword()) ? reqVO.getKeyword() : DEFAULT_KEYWORD);
+        request.setSearchMode(reqVO.getSearchMode());
+        request.setSearchField(reqVO.getSearchField());
+        request.setImageBase64(normalizeImageBase64(reqVO.getImageBase64()));
         request.setPageNo(reqVO.getPageNo() == null ? 1 : reqVO.getPageNo());
         request.setPageSize(reqVO.getPageSize() == null ? 20 : reqVO.getPageSize());
         request.setPriceLowerLimit(reqVO.getPriceLowerLimit());
@@ -173,9 +241,22 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
             request.setMinCommissionAmount(reqVO.getMinCommissionAmount());
             request.setMinMonthSales(reqVO.getMinMonthSales());
             request.setCouponAmountMin(reqVO.getCouponAmountMin());
+            request.setCouponPriceUpperLimit(reqVO.getCouponPriceUpperLimit());
+            request.setHotRankMin(reqVO.getHotRankMin());
+            request.setCouponExpireDays(reqVO.getCouponExpireDays());
             request.setTmallOnly(reqVO.getTmallOnly());
             request.setBrandOnly(reqVO.getBrandOnly());
+            request.setHaitaoOnly(reqVO.getHaitaoOnly());
+            request.setGoldSellerOnly(reqVO.getGoldSellerOnly());
+            request.setTchaoshiOnly(reqVO.getTchaoshiOnly());
+            request.setJuhuasuanOnly(reqVO.getJuhuasuanOnly());
+            request.setTaoqianggouOnly(reqVO.getTaoqianggouOnly());
+            request.setInspectedGoodsOnly(reqVO.getInspectedGoodsOnly());
+            request.setFreeshipRemoteDistrict(reqVO.getFreeshipRemoteDistrict());
             request.setShopType(reqVO.getShopType());
+            request.setGoodsPerformance(reqVO.getGoodsPerformance());
+            request.setCommercialOnly(reqVO.getCommercialOnly());
+            request.setPreSaleOnly(reqVO.getPreSaleOnly());
             request.setActivityTag(reqVO.getActivityTag());
         }
         return request;
@@ -189,6 +270,58 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
             }
         });
         return result;
+    }
+
+    private CpsSelectionRule buildVendorGoodsRule(String sourceCode, String vendorCode, String platformCode) {
+        String normalizedSourceCode = StringUtils.hasText(sourceCode) ? sourceCode.trim().toUpperCase() : "DAILY_EXPLOSIVE";
+        CpsSelectionRule rule = new CpsSelectionRule();
+        rule.setPlatforms(List.of(platformCode));
+        rule.setVendorCode(vendorCode);
+        rule.setVendorThemeSource(normalizedSourceCode);
+        rule.setExternalThemeName(vendorGoodsTitle(normalizedSourceCode));
+        rule.setGoodsListParams(new LinkedHashMap<>(vendorGoodsParams(normalizedSourceCode)));
+        rule.setGoodsListUrl(vendorGoodsUrl(normalizedSourceCode));
+        return rule;
+    }
+
+    private String vendorGoodsUrl(String sourceCode) {
+        return switch (sourceCode) {
+            case "FRIENDS_CIRCLE" -> "/api/goods/friends-circle-list";
+            case "RANKING", "HOT_SALE_RANK", "INDUSTRY_TREND_RANK" -> "/api/goods/get-ranking-list";
+            case "TIP_OFF" -> "/api/dels/spider/list-tip-off";
+            case "NINE_NINE" -> "/api/goods/nine/op-goods-list";
+            case "EXPLOSIVE_RADAR" -> "/open-api/goods/radar";
+            case "FEATURE_GOODS" -> "/open-api/goods/get-feature-goods";
+            default -> "/api/goods/explosive-goods-list";
+        };
+    }
+
+    private Map<String, Object> vendorGoodsParams(String sourceCode) {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("version", "v1.0.0");
+        switch (sourceCode) {
+            case "FRIENDS_CIRCLE" -> params.put("sort", 0);
+            case "RANKING", "HOT_SALE_RANK" -> params.put("rankType", 1);
+            case "INDUSTRY_TREND_RANK" -> params.put("rankType", 2);
+            case "TIP_OFF" -> params.put("platform", 0);
+            case "NINE_NINE" -> params.put("nineCid", -1);
+            case "FEATURE_GOODS" -> params.put("pallet_type", 1);
+            default -> params.put("PriceCid", 1);
+        }
+        return params;
+    }
+
+    private String vendorGoodsTitle(String sourceCode) {
+        return switch (sourceCode) {
+            case "FRIENDS_CIRCLE" -> "朋友圈文案";
+            case "RANKING", "HOT_SALE_RANK" -> "商品热销榜";
+            case "INDUSTRY_TREND_RANK" -> "行业趋势榜";
+            case "TIP_OFF" -> "线报中心";
+            case "NINE_NINE" -> "9.9包邮";
+            case "EXPLOSIVE_RADAR" -> "爆品雷达";
+            case "FEATURE_GOODS" -> "品牌优选";
+            default -> "爆品清单";
+        };
     }
 
     private String resolveVendorCode(String platformCode, String vendorCode) {
@@ -208,6 +341,25 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
 
     private boolean isEmpty(List<?> list) {
         return list == null || list.isEmpty();
+    }
+
+    private List<CpsGoodsSelectionOption> callSearchAssist(
+            String platformCode,
+            String vendorCode,
+            java.util.function.BiFunction<CpsSearchAssistVendorClient, CpsVendorConfig, List<CpsGoodsSelectionOption>> callback) {
+        String effectivePlatformCode = StringUtils.hasText(platformCode) ? platformCode : PLATFORM_TAOBAO;
+        String effectiveVendorCode = resolveVendorCode(effectivePlatformCode, vendorCode);
+        try {
+            CpsApiVendorClient vendorClient = platformClientFactory.getVendorClient(effectiveVendorCode, effectivePlatformCode);
+            if (vendorClient instanceof CpsSearchAssistVendorClient searchAssistVendorClient) {
+                CpsVendorConfig config = platformClientFactory.getVendorConfig(effectiveVendorCode, effectivePlatformCode);
+                List<CpsGoodsSelectionOption> result = callback.apply(searchAssistVendorClient, config);
+                return result == null ? Collections.emptyList() : result;
+            }
+        } catch (Exception ignored) {
+            // Fallback below keeps the page usable when the vendor API is unavailable.
+        }
+        return Collections.emptyList();
     }
 
     private CpsGoodsSelectionMeta mergeWithDefaultMeta(CpsGoodsSelectionMeta vendorMeta) {
@@ -304,6 +456,14 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
             }
         }
         return null;
+    }
+
+    private String normalizeImageBase64(String imageBase64) {
+        if (!StringUtils.hasText(imageBase64)) {
+            return null;
+        }
+        int commaIndex = imageBase64.indexOf(',');
+        return commaIndex >= 0 ? imageBase64.substring(commaIndex + 1) : imageBase64;
     }
 
 }

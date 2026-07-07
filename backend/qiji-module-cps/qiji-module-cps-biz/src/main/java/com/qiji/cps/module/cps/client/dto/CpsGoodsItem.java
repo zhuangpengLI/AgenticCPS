@@ -51,6 +51,26 @@ public class CpsGoodsItem {
     private BigDecimal couponPrice;
 
     /**
+     * 优惠券使用门槛（元）
+     */
+    private BigDecimal couponConditions;
+
+    /**
+     * 优惠券总量
+     */
+    private Long couponTotalNum;
+
+    /**
+     * 优惠券剩余量
+     */
+    private Long couponRemainNum;
+
+    /**
+     * 优惠券领取量
+     */
+    private Long couponReceiveNum;
+
+    /**
      * 佣金比例（百分比，如10.5表示10.5%）
      */
     private BigDecimal commissionRate;
@@ -114,6 +134,11 @@ public class CpsGoodsItem {
      * 优惠券结束时间
      */
     private String couponEndTime;
+
+    /**
+     * 优惠券开始时间
+     */
+    private String couponStartTime;
 
     /**
      * 榜单或热销标签

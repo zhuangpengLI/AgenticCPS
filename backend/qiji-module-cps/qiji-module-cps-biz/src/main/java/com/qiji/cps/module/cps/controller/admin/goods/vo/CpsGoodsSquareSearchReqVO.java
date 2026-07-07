@@ -14,6 +14,15 @@ public class CpsGoodsSquareSearchReqVO {
     @Schema(description = "关键词", example = "今日精选")
     private String keyword;
 
+    @Schema(description = "搜索模式（keyword/dataoke_image）")
+    private String searchMode;
+
+    @Schema(description = "搜索字段模式（title/title_content/goods_id）")
+    private String searchField;
+
+    @Schema(description = "图片 BASE64，支持 data:image 前缀")
+    private String imageBase64;
+
     @Schema(description = "平台编码", example = "taobao")
     private String platformCode;
 
@@ -59,14 +68,53 @@ public class CpsGoodsSquareSearchReqVO {
     @Schema(description = "最低优惠券金额")
     private BigDecimal couponAmountMin;
 
+    @Schema(description = "最高优惠券金额")
+    private BigDecimal couponPriceUpperLimit;
+
+    @Schema(description = "最低热销排名")
+    private Long hotRankMin;
+
+    @Schema(description = "券到期天数上限")
+    private Integer couponExpireDays;
+
     @Schema(description = "是否只看天猫")
     private Boolean tmallOnly;
 
     @Schema(description = "是否只看品牌")
     private Boolean brandOnly;
 
+    @Schema(description = "是否只看海淘")
+    private Boolean haitaoOnly;
+
+    @Schema(description = "是否只看金牌卖家")
+    private Boolean goldSellerOnly;
+
+    @Schema(description = "是否只看天猫超市")
+    private Boolean tchaoshiOnly;
+
+    @Schema(description = "是否只看聚划算")
+    private Boolean juhuasuanOnly;
+
+    @Schema(description = "是否只看淘抢购")
+    private Boolean taoqianggouOnly;
+
+    @Schema(description = "是否只看验货商品")
+    private Boolean inspectedGoodsOnly;
+
+    @Schema(description = "是否偏远地区包邮")
+    private Boolean freeshipRemoteDistrict;
+
     @Schema(description = "店铺类型")
     private String shopType;
+
+    @Schema(description = "商品表现筛选：hot/daily/two_hours/coupon/new")
+    private String goodsPerformance;
+
+    @Schema(description = "是否只看商单")
+    private Boolean commercialOnly;
+
+    @Schema(description = "是否只看预告")
+    private Boolean preSaleOnly;
 
     @Schema(description = "活动标签")
     private String activityTag;

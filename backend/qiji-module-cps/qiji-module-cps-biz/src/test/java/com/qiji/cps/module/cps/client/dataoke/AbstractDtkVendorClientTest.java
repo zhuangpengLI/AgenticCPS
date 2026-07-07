@@ -212,6 +212,9 @@ class AbstractDtkVendorClientTest {
         request.setCouponAmountMin(new BigDecimal("5"));
         request.setTmallOnly(true);
         request.setBrandOnly(true);
+        request.setHaitaoOnly(true);
+        request.setCommercialOnly(true);
+        request.setPreSaleOnly(true);
 
         Map<String, Object> params = new DtkTaobaoVendorClient().buildSearchParams(request, CpsVendorConfig.builder().build());
 
@@ -221,6 +224,92 @@ class AbstractDtkVendorClientTest {
         assertEquals(new BigDecimal("5"), params.get("couponPriceLowerLimit"));
         assertEquals(1, params.get("tmall"));
         assertEquals(1, params.get("brand"));
+        assertEquals(1, params.get("haitao"));
+        assertEquals(3, params.get("directCommissionType"));
+        assertEquals(1, params.get("pre"));
+    }
+
+    @Test
+    @DisplayName("大淘客热搜记录应调用 get-top100 并映射热词")
+    void testTaobaoHotKeywordsUsesTop100Api() {
+        class CapturingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {
+            private String requestedPath;
+            private Map<String, Object> requestedParams;
+
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                this.requestedPath = path;
+                this.requestedParams = params;
+                try {
+                    return new ObjectMapper().readTree("""
+                            {
+                              "status": 200,
+                              "data": {
+                                "code": 0,
+                                "msg": "成功",
+                                "data": {
+                                  "hotWords": ["螺蛳粉", "耳机"]
+                                }
+                              }
+                            }
+                            """);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        CapturingDtkTaobaoVendorClient client = new CapturingDtkTaobaoVendorClient();
+
+        var result = client.getHotKeywords(1, CpsVendorConfig.builder().build());
+
+        assertEquals("/category/get-top100", client.requestedPath);
+        assertEquals("v1.0.1", client.requestedParams.get("version"));
+        assertEquals(1, client.requestedParams.get("type"));
+        assertEquals(2, result.size());
+        assertEquals("螺蛳粉", result.get(0).getLabel());
+    }
+
+    @Test
+    @DisplayName("大淘客联想词应调用 search-suggestion 并映射商品数量")
+    void testTaobaoSearchSuggestionUsesSuggestionApi() {
+        class CapturingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {
+            private String requestedPath;
+            private Map<String, Object> requestedParams;
+
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                this.requestedPath = path;
+                this.requestedParams = params;
+                try {
+                    return new ObjectMapper().readTree("""
+                            {
+                              "status": 200,
+                              "data": {
+                                "code": 0,
+                                "msg": "成功",
+                                "data": [
+                                  {"kw": "裙子套装", "total": 128},
+                                  {"kw": "裙子半身裙", "total": 110}
+                                ]
+                              }
+                            }
+                            """);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        CapturingDtkTaobaoVendorClient client = new CapturingDtkTaobaoVendorClient();
+
+        var result = client.suggestKeywords("裙子", 1, CpsVendorConfig.builder().build());
+
+        assertEquals("/goods/search-suggestion", client.requestedPath);
+        assertEquals("v1.0.2", client.requestedParams.get("version"));
+        assertEquals("裙子", client.requestedParams.get("keyWords"));
+        assertEquals(1, client.requestedParams.get("type"));
+        assertEquals(2, result.size());
+        assertEquals("裙子套装", result.get(0).getLabel());
+        assertEquals("128 个商品", result.get(0).getDescription());
     }
 
     @Test

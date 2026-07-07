@@ -18,6 +18,21 @@ public class CpsGoodsSearchRequest {
     private String keyword;
 
     /**
+     * 搜索模式：keyword/dataoke_image
+     */
+    private String searchMode;
+
+    /**
+     * 搜索字段模式：title/title_content/goods_id
+     */
+    private String searchField;
+
+    /**
+     * 图片搜索 BASE64，不包含 data:image 前缀
+     */
+    private String imageBase64;
+
+    /**
      * 页码（从1开始）
      */
     private Integer pageNo = 1;
@@ -88,6 +103,21 @@ public class CpsGoodsSearchRequest {
     private BigDecimal couponAmountMin;
 
     /**
+     * 最高优惠券金额（元）
+     */
+    private BigDecimal couponPriceUpperLimit;
+
+    /**
+     * 热销排名最小值，用于页面筛选透传
+     */
+    private Long hotRankMin;
+
+    /**
+     * 券到期天数上限
+     */
+    private Integer couponExpireDays;
+
+    /**
      * 是否只看天猫
      */
     private Boolean tmallOnly;
@@ -98,9 +128,59 @@ public class CpsGoodsSearchRequest {
     private Boolean brandOnly;
 
     /**
+     * 是否只看海淘商品
+     */
+    private Boolean haitaoOnly;
+
+    /**
+     * 是否只看金牌卖家
+     */
+    private Boolean goldSellerOnly;
+
+    /**
+     * 是否只看天猫超市
+     */
+    private Boolean tchaoshiOnly;
+
+    /**
+     * 是否只看聚划算
+     */
+    private Boolean juhuasuanOnly;
+
+    /**
+     * 是否只看淘抢购
+     */
+    private Boolean taoqianggouOnly;
+
+    /**
+     * 是否只看验货商品
+     */
+    private Boolean inspectedGoodsOnly;
+
+    /**
+     * 是否偏远地区包邮
+     */
+    private Boolean freeshipRemoteDistrict;
+
+    /**
      * 店铺类型
      */
     private String shopType;
+
+    /**
+     * 商品表现筛选：hot/daily/two_hours/coupon/new
+     */
+    private String goodsPerformance;
+
+    /**
+     * 是否只看商单
+     */
+    private Boolean commercialOnly;
+
+    /**
+     * 是否只看预告
+     */
+    private Boolean preSaleOnly;
 
     /**
      * 活动标签
