@@ -23,6 +23,7 @@ public class CpsSelectionThemeRespVO {
     private String aiPrompt;
     private String aiSummary;
     private String status;
+    private Integer goodsSquareVisible;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String refreshStatus;

@@ -36,6 +36,7 @@ public interface CpsSelectionThemeMapper extends BaseMapperX<CpsSelectionThemeDO
                 .eqIfPresent(CpsSelectionThemeDO::getThemeType, reqVO.getThemeType())
                 .eqIfPresent(CpsSelectionThemeDO::getPromotionEvent, reqVO.getPromotionEvent())
                 .eqIfPresent(CpsSelectionThemeDO::getStatus, StringUtils.hasText(status) ? status : reqVO.getStatus())
+                .eqIfPresent(CpsSelectionThemeDO::getGoodsSquareVisible, reqVO.getGoodsSquareVisible())
                 .likeIfPresent(CpsSelectionThemeDO::getPlatformCodes, reqVO.getPlatformCode())
                 .eqIfPresent(CpsSelectionThemeDO::getVendorCode, reqVO.getVendorCode());
     }

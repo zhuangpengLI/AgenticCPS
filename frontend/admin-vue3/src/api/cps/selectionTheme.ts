@@ -23,6 +23,7 @@ export interface CpsSelectionThemeVO {
   aiPrompt?: string
   aiSummary?: string
   status: SelectionThemeStatus
+  goodsSquareVisible?: number
   startTime?: string
   endTime?: string
   refreshStatus?: string
@@ -47,6 +48,7 @@ export interface CpsSelectionThemeSaveVO {
   aiPrompt?: string
   aiSummary?: string
   status?: SelectionThemeStatus
+  goodsSquareVisible?: number
   startTime?: string
   endTime?: string
   sort?: number
@@ -63,6 +65,7 @@ export interface CpsSelectionThemePageReqVO {
   platformCode?: string
   vendorCode?: string
   status?: SelectionThemeStatus | ''
+  goodsSquareVisible?: number
 }
 
 export interface CpsSelectionThemeStatsVO {

@@ -127,23 +127,10 @@
     </div>
 
     <div v-if="showTaobaoSelection" class="selection-panel" v-loading="metaLoading">
-      <div class="selection-card activity-card">
-        <span class="selection-label">推荐活动</span>
-        <button
-          v-for="item in metaInfo?.activities || []"
-          :key="item.value"
-          type="button"
-          :class="['activity-banner', queryParams.channelCode === item.value ? 'active' : '']"
-          @click="selectActivity(item)"
-        >
-          <span v-if="item.tag" class="activity-tag">{{ item.tag }}</span>
-          {{ item.label }}
-        </button>
-      </div>
-      <div class="selection-card topic-card">
-        <span class="selection-label">更多主题</span>
+      <div v-if="goodsSquareThemeOptions.length > 0" class="selection-card topic-card">
+        <span class="selection-label">选品库主题</span>
         <el-tag
-          v-for="item in topicOptions"
+          v-for="item in goodsSquareThemeOptions"
           :key="item.value"
           class="clickable-tag"
           :type="queryParams.activityTag === item.value ? 'danger' : 'info'"
@@ -307,9 +294,9 @@
                 </el-select>
               </el-form-item>
             </el-col>
-            <el-col :xs="24" :sm="12" :lg="4">
+            <el-col :xs="24" :sm="24" :lg="24" class="property-filter-col">
               <el-form-item label="商品属性">
-                <div class="switch-group">
+                <div class="switch-group property-switch-group">
                   <el-switch v-model="queryParams.commercialOnly" active-text="商单" @change="handleSearch" />
                   <el-switch v-model="queryParams.preSaleOnly" active-text="预告" @change="handleSearch" />
                   <el-switch v-model="queryParams.tmallOnly" active-text="天猫" @change="handleSearch" />
@@ -536,6 +523,7 @@ import {
   type CpsGoodsSquareMetaRespVO,
   type CpsGoodsSquareSearchReqVO
 } from '@/api/cps/goodsSquare'
+import { CpsSelectionThemeApi } from '@/api/cps/selectionTheme'
 import { getUserPage, type UserVO } from '@/api/member/user/index'
 
 defineOptions({ name: 'CpsGoodsSquare' })
@@ -560,6 +548,7 @@ const adzoneOptions = ref<CpsAdzoneVO[]>([])
 const memberOptions = ref<UserVO[]>([])
 const hotKeywordOptions = ref<CpsGoodsSquareMetaItemVO[]>([])
 const searchSuggestionOptions = ref<CpsGoodsSquareMetaItemVO[]>([])
+const goodsSquareThemeOptions = ref<CpsGoodsSquareMetaItemVO[]>([])
 let suggestionTimer: ReturnType<typeof setTimeout> | undefined
 
 const routeText = (value: unknown) => {
@@ -597,13 +586,6 @@ const SEARCH_FIELD_OPTIONS = [
   { label: '链接口令', value: 'link', placeholder: '粘贴商品链接、淘口令或活动链接' }
 ]
 
-const topicOptions = [
-  { value: 'prediction', label: '爆品预测' },
-  { value: 'return', label: '爆品返场' },
-  { value: 'selection', label: '小客精选单' },
-  { value: 'gift', label: '淘礼金补贴' },
-  { value: 'vip', label: '88VIP立减' }
-]
 const rankingOptions = [
   { value: 'top', label: '爆品榜单', sortType: 0, keyword: '爆款', sourceCode: 'RANKING' },
   { value: 'two-hour-hot', label: '2小时热销榜', sortType: 1, keyword: '热销', sourceCode: 'HOT_SALE_RANK' },
@@ -754,6 +736,29 @@ const loadMeta = async () => {
   }
 }
 
+const loadGoodsSquareThemes = async () => {
+  if (!showTaobaoSelection.value) {
+    goodsSquareThemeOptions.value = []
+    return
+  }
+  try {
+    const data = await CpsSelectionThemeApi.getThemePage({
+      pageNo: 1,
+      pageSize: 20,
+      status: 'PUBLISHED',
+      goodsSquareVisible: 1
+    })
+    goodsSquareThemeOptions.value = (data.list || [])
+      .filter((item) => item.themeCode && item.themeName)
+      .map((item) => ({
+        value: item.themeCode,
+        label: item.themeName
+      }))
+  } catch {
+    goodsSquareThemeOptions.value = []
+  }
+}
+
 const handleSearch = () => {
   queryParams.pageNo = 1
   getGoodsList()
@@ -768,6 +773,7 @@ const handlePlatformChange = async () => {
   searchSuggestionOptions.value = []
   await loadVendorOptions(queryParams.platformCode || 'taobao')
   await loadMeta()
+  await loadGoodsSquareThemes()
   await loadHotKeywords()
   await getGoodsList()
 }
@@ -778,6 +784,7 @@ const handleVendorChange = async () => {
   }
   queryParams.pageNo = 1
   await loadMeta()
+  await loadGoodsSquareThemes()
   await loadHotKeywords()
   await getGoodsList()
 }
@@ -897,6 +904,7 @@ const handleReset = async () => {
   })
   await loadVendorOptions('taobao')
   await loadMeta()
+  await loadGoodsSquareThemes()
   await loadHotKeywords()
   await getGoodsList()
 }
@@ -951,12 +959,6 @@ const clearFilterChip = (key: string) => {
 
 const handleCouponOnlyChange = (checked: string | number | boolean) => {
   queryParams.hasCoupon = checked ? 1 : undefined
-  handleSearch()
-}
-
-const selectActivity = (item: CpsGoodsSquareMetaItemVO) => {
-  queryParams.channelCode = queryParams.channelCode === item.value ? undefined : item.value
-  queryParams.activityTag = queryParams.channelCode
   handleSearch()
 }
 
@@ -1198,6 +1200,7 @@ onMounted(async () => {
   await loadPlatformOptions()
   await loadVendorOptions('taobao')
   await loadMeta()
+  await loadGoodsSquareThemes()
   await loadHotKeywords()
   await getGoodsList()
 })
@@ -1530,6 +1533,30 @@ onMounted(async () => {
 
 .quick-filter-row {
   margin-top: 4px;
+}
+
+.property-filter-col {
+  flex-basis: 100%;
+}
+
+.property-switch-group {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 12px 20px;
+}
+
+.property-switch-group :deep(.el-switch) {
+  min-width: 0;
+  margin-right: 0;
+  justify-content: flex-start;
+}
+
+.property-switch-group :deep(.el-switch__label) {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .results-toolbar {

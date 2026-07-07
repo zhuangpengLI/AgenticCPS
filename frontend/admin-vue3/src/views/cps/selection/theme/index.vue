@@ -172,6 +172,9 @@
                 <el-tag size="small" :type="themeStatusMeta(item.status).type" effect="plain">
                   {{ themeStatusMeta(item.status).label }}
                 </el-tag>
+                <el-tag v-if="item.goodsSquareVisible === 1" size="small" type="primary" effect="plain">
+                  商品广场
+                </el-tag>
               </div>
               <div class="theme-meta">
                 {{ item.themeCode }} · {{ item.platformCodes || '全平台' }}
@@ -526,6 +529,17 @@
                   :value="item.value"
                 />
               </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="商品广场">
+              <el-switch
+                v-model="themeForm.goodsSquareVisible"
+                :active-value="1"
+                :inactive-value="0"
+                active-text="展示"
+                inactive-text="隐藏"
+              />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -1505,6 +1519,7 @@ function buildDefaultThemeForm(): CpsSelectionThemeSaveVO {
     platformCodes: 'taobao',
     vendorCode: 'dataoke',
     status: 'DRAFT',
+    goodsSquareVisible: 1,
     sort: 0,
     ruleJson: defaultRuleJson()
   }

@@ -54,6 +54,9 @@ public class CpsSelectionThemeSaveReqVO {
     @Schema(description = "状态")
     private String status;
 
+    @Schema(description = "是否展示到返利商品广场：0否 1是")
+    private Integer goodsSquareVisible;
+
     @Schema(description = "上线时间")
     private LocalDateTime startTime;
 

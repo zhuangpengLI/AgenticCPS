@@ -100,6 +100,7 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
         validateTimeWindow(createReqVO.getStartTime(), createReqVO.getEndTime());
         CpsSelectionThemeDO theme = BeanUtils.toBean(createReqVO, CpsSelectionThemeDO.class);
         theme.setStatus(firstText(createReqVO.getStatus(), CpsSelectionConstants.ThemeStatus.DRAFT));
+        theme.setGoodsSquareVisible(firstInt(createReqVO.getGoodsSquareVisible(), 1));
         theme.setRefreshStatus(firstText(theme.getRefreshStatus(), CpsSelectionConstants.ImportTaskStatus.SUCCESS));
         theme.setSort(theme.getSort() == null ? 0 : theme.getSort());
         themeMapper.insert(theme);
@@ -114,6 +115,7 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
         validateTimeWindow(updateReqVO.getStartTime(), updateReqVO.getEndTime());
         CpsSelectionThemeDO updateObj = BeanUtils.toBean(updateReqVO, CpsSelectionThemeDO.class);
         updateObj.setStatus(firstText(updateReqVO.getStatus(), existing.getStatus(), CpsSelectionConstants.ThemeStatus.DRAFT));
+        updateObj.setGoodsSquareVisible(firstInt(updateReqVO.getGoodsSquareVisible(), existing.getGoodsSquareVisible(), 1));
         if (CpsSelectionConstants.ThemeStatus.PUBLISHED.equals(updateObj.getStatus())) {
             validateThemeHasEnabledItems(updateReqVO.getId());
         }
@@ -336,6 +338,7 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
                 } else {
                     theme.setId(existing.getId());
                     theme.setStatus(resolveSyncedThemeStatus(existing.getStatus()));
+                    theme.setGoodsSquareVisible(firstInt(existing.getGoodsSquareVisible(), theme.getGoodsSquareVisible(), 1));
                     themeMapper.updateById(theme);
                     updatedThemes++;
                 }
@@ -403,6 +406,7 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
                 } else {
                     theme.setId(existing.getId());
                     theme.setStatus(resolveSyncedThemeStatus(existing.getStatus()));
+                    theme.setGoodsSquareVisible(firstInt(existing.getGoodsSquareVisible(), theme.getGoodsSquareVisible(), 1));
                     themeMapper.updateById(theme);
                     updatedThemes++;
                 }
@@ -500,6 +504,7 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
                 .ruleJson(buildVendorRuleJson(activity, vendorCode, platformCode, goodsPullCount))
                 .aiPrompt("围绕" + displayName + "主题“" + themeName + "”筛选高券、高佣、高转化商品，排序以佣金、券额和销量为主。")
                 .status(CpsSelectionConstants.ThemeStatus.PUBLISHED)
+                .goodsSquareVisible(1)
                 .startTime(activity.getStartTime())
                 .endTime(activity.getEndTime())
                 .refreshStatus(CpsSelectionConstants.ImportTaskStatus.SUCCESS)
@@ -1012,6 +1017,15 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
     private String firstText(String... values) {
         for (String value : values) {
             if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private Integer firstInt(Integer... values) {
+        for (Integer value : values) {
+            if (value != null) {
                 return value;
             }
         }

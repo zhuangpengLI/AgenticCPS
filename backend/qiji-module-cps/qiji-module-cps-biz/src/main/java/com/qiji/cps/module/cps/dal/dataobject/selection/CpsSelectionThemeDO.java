@@ -55,6 +55,8 @@ public class CpsSelectionThemeDO extends TenantBaseDO {
 
     private String status;
 
+    private Integer goodsSquareVisible;
+
     private LocalDateTime startTime;
 
     private LocalDateTime endTime;

@@ -94,6 +94,7 @@ class CpsSelectionThemeServiceImplTest {
         assertEquals(100L, id);
         assertEquals("618_PRE", captor.getValue().getThemeCode());
         assertEquals(CpsSelectionConstants.ThemeStatus.DRAFT, captor.getValue().getStatus());
+        assertEquals(1, captor.getValue().getGoodsSquareVisible());
         assertEquals("{\"keywords\":[\"防晒霜\"]}", captor.getValue().getRuleJson());
     }
 
@@ -199,6 +200,27 @@ class CpsSelectionThemeServiceImplTest {
         assertEquals(100L, captor.getValue().getId());
         assertEquals("618抢先购精选", captor.getValue().getThemeName());
         assertEquals(CpsSelectionConstants.ThemeStatus.PUBLISHED, captor.getValue().getStatus());
+    }
+
+    @Test
+    @DisplayName("updateTheme - 可关闭返利商品广场展示")
+    void updateTheme_canDisableGoodsSquareVisible() {
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder()
+                .id(100L)
+                .themeCode("618_PRE")
+                .status(CpsSelectionConstants.ThemeStatus.DRAFT)
+                .goodsSquareVisible(1)
+                .build());
+        CpsSelectionThemeSaveReqVO reqVO = buildThemeReq();
+        reqVO.setId(100L);
+        reqVO.setGoodsSquareVisible(0);
+
+        service.updateTheme(reqVO);
+
+        ArgumentCaptor<CpsSelectionThemeDO> captor = ArgumentCaptor.forClass(CpsSelectionThemeDO.class);
+        verify(themeMapper).updateById(captor.capture());
+        assertEquals(100L, captor.getValue().getId());
+        assertEquals(0, captor.getValue().getGoodsSquareVisible());
     }
 
     @Test
@@ -355,6 +377,7 @@ class CpsSelectionThemeServiceImplTest {
                 .id(200L)
                 .themeCode("DTK_SCENE_PALLET_3")
                 .status(CpsSelectionConstants.ThemeStatus.DRAFT)
+                .goodsSquareVisible(0)
                 .build());
         when(dtkSelectionLibraryClient.fetchThemeGoods(any(), eq(1), any()))
                 .thenReturn(List.of(buildPulledGoods("taobao", "goods-1")))
@@ -376,15 +399,17 @@ class CpsSelectionThemeServiceImplTest {
         assertEquals("VENDOR_COLUMN", insertCaptor.getValue().getThemeType());
         assertEquals("dataoke", insertCaptor.getValue().getVendorCode());
         assertEquals(CpsSelectionConstants.ThemeStatus.PUBLISHED, insertCaptor.getValue().getStatus());
+        assertEquals(1, insertCaptor.getValue().getGoodsSquareVisible());
         assertEquals(true, insertCaptor.getValue().getRuleJson().contains("/open-api/goods/scene-pallet"));
         assertEquals(true, insertCaptor.getValue().getRuleJson().contains("\"id\":2"));
         ArgumentCaptor<CpsSelectionThemeDO> updateCaptor = ArgumentCaptor.forClass(CpsSelectionThemeDO.class);
         verify(themeMapper, times(5)).updateById(updateCaptor.capture());
-        assertEquals(CpsSelectionConstants.ThemeStatus.PUBLISHED, updateCaptor.getAllValues().stream()
+        CpsSelectionThemeDO syncedExistingTheme = updateCaptor.getAllValues().stream()
                 .filter(item -> Long.valueOf(200L).equals(item.getId()))
                 .findFirst()
-                .orElseThrow()
-                .getStatus());
+                .orElseThrow();
+        assertEquals(CpsSelectionConstants.ThemeStatus.PUBLISHED, syncedExistingTheme.getStatus());
+        assertEquals(0, syncedExistingTheme.getGoodsSquareVisible());
         verify(itemMapper, times(2)).insert(any(CpsSelectionThemeItemDO.class));
         verify(dtkActivityVendorClient, never()).fetchActivities(any(), any());
         verify(goodsSquareService, never()).searchGoods(any());
