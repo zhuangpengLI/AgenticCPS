@@ -758,7 +758,7 @@ const buildPromotionUrl = (activity?: CpsRebateActivityCenterCardVO) => {
     keyword: activity?.searchKeyword || activity?.activityName || '',
     activityTag: activity?.tagText || activity?.externalActivityId || activity?.activityName || ''
   })
-  return `${window.location.origin}/cps/goods/square?${params.toString()}`
+  return `${window.location.origin}/cps-ops/goods/square?${params.toString()}`
 }
 
 const buildPromotionContent = (activity: CpsRebateActivityCenterCardVO | undefined, promotionUrl: string) => {
@@ -782,7 +782,7 @@ const handleCardClick = (item: CpsRebateActivityCenterCardVO) => {
   }
   if (item.jumpType === 'search') {
     router.push({
-      path: '/cps/goods/square',
+      name: 'CpsGoodsSquare',
       query: {
         platformCode: item.platformCode,
         keyword: item.searchKeyword || item.activityName,

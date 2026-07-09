@@ -6,11 +6,14 @@ import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzonePageReqVO;
 import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzoneSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.mysql.adzone.CpsAdzoneMapper;
+import com.qiji.cps.module.cps.enums.CpsAdzoneTypeEnum;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.*;
@@ -24,11 +27,16 @@ import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.*;
 @Validated
 public class CpsAdzoneServiceImpl implements CpsAdzoneService {
 
+    private static final String PLATFORM_TAOBAO = "taobao";
+    private static final Pattern TAOBAO_PID_PATTERN = Pattern.compile("^mm_\\d+_\\d+_\\d+$");
+    private static final Pattern TAOBAO_SPECIAL_ID_PATTERN = Pattern.compile("^\\d+$");
+
     @Resource
     private CpsAdzoneMapper adzoneMapper;
 
     @Override
     public Long createAdzone(CpsAdzoneSaveReqVO createReqVO) {
+        validateAdzoneConfig(createReqVO);
         CpsAdzoneDO adzone = BeanUtils.toBean(createReqVO, CpsAdzoneDO.class);
         adzoneMapper.insert(adzone);
         return adzone.getId();
@@ -37,6 +45,7 @@ public class CpsAdzoneServiceImpl implements CpsAdzoneService {
     @Override
     public void updateAdzone(CpsAdzoneSaveReqVO updateReqVO) {
         validateAdzoneExists(updateReqVO.getId());
+        validateAdzoneConfig(updateReqVO);
         CpsAdzoneDO updateObj = BeanUtils.toBean(updateReqVO, CpsAdzoneDO.class);
         adzoneMapper.updateById(updateObj);
     }
@@ -74,6 +83,31 @@ public class CpsAdzoneServiceImpl implements CpsAdzoneService {
         if (adzoneMapper.selectById(id) == null) {
             throw exception(ADZONE_NOT_EXISTS);
         }
+    }
+
+    private void validateAdzoneConfig(CpsAdzoneSaveReqVO reqVO) {
+        if (!isMemberAdzone(reqVO)) {
+            return;
+        }
+        if (reqVO.getRelationId() == null) {
+            throw exception(ADZONE_CONFIG_INVALID, "会员专属推广位必须选择关联会员");
+        }
+        if (!PLATFORM_TAOBAO.equalsIgnoreCase(reqVO.getPlatformCode())) {
+            return;
+        }
+        if (!StringUtils.hasText(reqVO.getAdzoneId())
+                || !TAOBAO_PID_PATTERN.matcher(reqVO.getAdzoneId().trim()).matches()) {
+            throw exception(ADZONE_CONFIG_INVALID, "淘宝会员 PID 必须使用 mm_数字_数字_数字 格式");
+        }
+        if (!StringUtils.hasText(reqVO.getExternalSpecialId())
+                || !TAOBAO_SPECIAL_ID_PATTERN.matcher(reqVO.getExternalSpecialId().trim()).matches()) {
+            throw exception(ADZONE_CONFIG_INVALID, "淘宝会员专属推广位必须填写数字会员运营ID specialId");
+        }
+    }
+
+    private boolean isMemberAdzone(CpsAdzoneSaveReqVO reqVO) {
+        return CpsAdzoneTypeEnum.MEMBER.getType().equalsIgnoreCase(reqVO.getAdzoneType())
+                || CpsAdzoneTypeEnum.MEMBER.getType().equalsIgnoreCase(reqVO.getRelationType());
     }
 
 }

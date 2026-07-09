@@ -142,7 +142,7 @@
   >
     <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px">
       <el-form-item label="平台" prop="platformCode">
-        <el-select v-model="formData.platformCode" placeholder="请选择平台" class="w-full">
+        <el-select v-model="formData.platformCode" placeholder="请选择平台" class="w-full" @change="handlePlatformChange">
           <el-option label="淘宝" value="taobao" />
           <el-option label="京东" value="jd" />
           <el-option label="拼多多" value="pdd" />
@@ -321,11 +321,49 @@ const defaultFormData = (): CpsAdzoneSaveVO => ({
 
 const formData = reactive<CpsAdzoneSaveVO>(defaultFormData())
 
+const TAOBAO_PID_PATTERN = /^mm_\d+_\d+_\d+$/
+const NUMERIC_ID_PATTERN = /^\d+$/
+
+const isTaobaoMemberAdzone = () => formData.platformCode === 'taobao' && formData.adzoneType === 'member'
+
+const validateAdzoneId = (_rule: unknown, value: string | undefined, callback: (error?: Error) => void) => {
+  if (!value) {
+    callback(new Error('推广位ID不能为空'))
+    return
+  }
+  if (isTaobaoMemberAdzone() && !TAOBAO_PID_PATTERN.test(value.trim())) {
+    callback(new Error('淘宝会员 PID 必须使用 mm_数字_数字_数字 格式'))
+    return
+  }
+  callback()
+}
+
+const validateRelationId = (_rule: unknown, value: number | undefined, callback: (error?: Error) => void) => {
+  if ((formData.adzoneType === 'channel' || formData.adzoneType === 'member') && !value) {
+    callback(new Error(formData.adzoneType === 'member' ? '请选择关联用户' : '关联渠道ID不能为空'))
+    return
+  }
+  callback()
+}
+
+const validateExternalSpecialId = (_rule: unknown, value: string | undefined, callback: (error?: Error) => void) => {
+  if (!isTaobaoMemberAdzone()) {
+    callback()
+    return
+  }
+  if (!value || !NUMERIC_ID_PATTERN.test(value.trim())) {
+    callback(new Error('淘宝会员专属推广位必须填写数字会员运营ID specialId'))
+    return
+  }
+  callback()
+}
+
 const formRules = reactive({
   platformCode: [{ required: true, message: '平台不能为空', trigger: 'change' }],
-  adzoneId: [{ required: true, message: '推广位ID不能为空', trigger: 'blur' }],
+  adzoneId: [{ validator: validateAdzoneId, trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'change' }],
-  relationId: [{ required: true, message: '关联ID不能为空', trigger: 'blur', type: 'number' as const }]
+  relationId: [{ validator: validateRelationId, trigger: 'change' }],
+  externalSpecialId: [{ validator: validateExternalSpecialId, trigger: 'blur' }]
 })
 
 /** 平台标签 */
@@ -373,6 +411,11 @@ const handleTypeChange = (val: string) => {
   if (val !== 'channel') {
     formData.externalRelationId = undefined
   }
+  formRef.value?.clearValidate(['adzoneId', 'relationId', 'externalSpecialId'])
+}
+
+const handlePlatformChange = () => {
+  formRef.value?.clearValidate(['adzoneId', 'externalSpecialId'])
 }
 
 // ==================== 用户选择弹窗 ====================

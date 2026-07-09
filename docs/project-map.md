@@ -192,7 +192,7 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 - 批量转链忽略空行，最多支持 20 条非空内容，保留原始输入序号，单条失败不阻断整批。
 - P1/P2 接口包含 `POST /cps/goods/ownership-check`、`POST /cps/goods/coupon-query`、`POST /cps/goods/cash-gift/plan`；淘礼金当前只生成运营计划和预算检查，不调用真实发放接口。
 - 前端工具箱包含万能转链、口令解析、归属检测、优惠券查询、商品广场、淘礼金计划与推广文案编辑区，商品广场入口可通过 `/cps/toolbox?tool=goods-square` 直达。
-- 菜单与权限 SQL 放在 `backend/sql/mysql/cps-all-in-one.sql`；不要把 CPS 菜单、权限或种子数据写回 `ruoyi-vue-pro.sql`。
+- 菜单与权限全量 SQL 放在 `backend/sql/module/cps-all-in-one.sql`，现有库增量更新放在 `backend/sql/module/cps-update.sql`，每段更新必须记录修改时间；不要在 `backend/sql/mysql` 新建 CPS all-in-one 或临时 CPS SQL，避免脚本不同步；不要把 CPS 菜单、权限或种子数据写回 `ruoyi-vue-pro.sql`。
 
 ### 3.1.4 选品库主题与商品快照
 
@@ -474,11 +474,11 @@ docker-compose down
 - 代码生成规则：`agent_improvement/memory/codegen-rules.md`
 - CPS always 级 AI 规则：`agent_improvement/memory/cps-ai-coding-rules.md`
 - CPS 需求/PRD：`docs/CPS系统需求文档.md`、`docs/CPS系统PRD文档.md`
-- CPS MySQL 模块脚本：`backend/sql/mysql/cps-all-in-one.sql`，集中维护 CPS 表、种子数据、菜单与权限；`ruoyi-vue-pro.sql` 保持系统基础 SQL。
+- CPS 模块脚本：`backend/sql/module/cps-all-in-one.sql` 维护新库全量脚本，`backend/sql/module/cps-update.sql` 维护现有库增量更新；不要创建 `backend/sql/mysql/cps-all-in-one.sql`，`ruoyi-vue-pro.sql` 保持系统基础 SQL。
 
 ## 本次未做的事
 
 - 未运行全量测试或前端生产构建；活动中心、返利工具箱与选品库均已通过目标后端测试，前端全量类型检查仍受仓库既有无关类型错误影响。
-- 未全面验证数据库脚本是否与所有当前 DO/Mapper 完全一致；活动中心、返利工具箱菜单权限与选品库表字段已按本轮实现静态同步，CPS SQL 集中在 MySQL `cps-all-in-one.sql`。
+- 未全面验证数据库脚本是否与所有当前 DO/Mapper 完全一致；活动中心、返利工具箱菜单权限与选品库表字段已按本轮实现静态同步，CPS 新库全量 SQL 集中在 `backend/sql/module/cps-all-in-one.sql`，现有库增量 SQL 集中在 `backend/sql/module/cps-update.sql`。
 - 未验证 MCP Server 实际启动后的工具列表是否与配置声明完全一致。
 - 本次刷新仅更新文档说明，不改动业务代码。

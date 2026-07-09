@@ -391,7 +391,7 @@ const handleCopy = async (value: string) => {
 }
 
 const goToolbox = () => {
-  router.push('/cps/toolbox')
+  router.push({ name: 'CpsRebateToolbox' })
 }
 
 const platformLabel = (platformCode?: string) => {

@@ -454,7 +454,8 @@ cd AgenticCPS/backend
 
 # 2. 初始化数据库
 #    先导入 sql/mysql/ruoyi-vue-pro.sql（主库表结构）
-#    再导入 sql/mysql/cps-all-in-one.sql（CPS 表、种子数据、菜单和权限）
+#    新库再导入 sql/module/cps-all-in-one.sql（CPS 全量表、种子数据、菜单和权限）
+#    现有库升级执行 sql/module/cps-update.sql（每段更新含修改时间记录）
 #    配置 application-local.yaml 中的数据库连接信息
 
 # 3. 启动后端

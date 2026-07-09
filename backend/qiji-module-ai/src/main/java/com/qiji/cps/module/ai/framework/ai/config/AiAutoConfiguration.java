@@ -316,6 +316,7 @@ public class AiAutoConfiguration {
      * 参考自 <a href="https://docs.spring.io/spring-ai/reference/api/mcp/mcp-client-boot-starter-docs.html">MCP Server Boot Starter</>
      */
     @Bean
+    @ConditionalOnProperty(value = "qiji.ai.mcp.demo-tools.enabled", havingValue = "true")
     public List<ToolCallback> toolCallbacks(PersonService personService) {
         return List.of(ToolCallbacks.from(personService));
     }

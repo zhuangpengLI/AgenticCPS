@@ -442,7 +442,8 @@ See `agent_improvement/memory/codegen-rules.md` for full details.
 - Soft delete via `deleted` bit field
 - Multi-tenancy via `tenant_id` column
 - CPS module tables: `cps_*` prefix
-- CPS business SQL lives in `backend/sql/mysql/cps-all-in-one.sql`; do not add CPS tables, seed data, menus, or permissions to `backend/sql/mysql/ruoyi-vue-pro.sql`.
+- CPS database scripts live under `backend/sql/module/`: `cps-all-in-one.sql` is the full baseline script for new databases, and `cps-update.sql` is the incremental upgrade script for existing databases. Every update block in `cps-update.sql` must include its modification date/time record.
+- Do not create or update `backend/sql/mysql/cps-all-in-one.sql` or one-off CPS SQL scripts under `backend/sql/mysql`; keep CPS tables, seed data, menus, permissions, and incremental updates in the module scripts to prevent drift. Do not add CPS tables, seed data, menus, or permissions to `backend/sql/mysql/ruoyi-vue-pro.sql`.
 
 ## Configuration
 
@@ -512,7 +513,8 @@ replacements = [
     # add more pairs...
 ]
 files = [
-    'backend/sql/mysql/cps-all-in-one.sql',  # CPS business SQL
+    'backend/sql/module/cps-all-in-one.sql',  # CPS full baseline SQL
+    'backend/sql/module/cps-update.sql',  # CPS existing-database update SQL
     'backend/sql/mysql/ruoyi-vue-pro.sql',  # non-CPS base SQL only
     'backend/sql/oracle/ruoyi-vue-pro.sql',
     # add more files...

@@ -508,7 +508,7 @@ const openOriginalLink = (url?: string) => {
 }
 
 const goBack = () => {
-  router.push({ path: '/cps/goods/square' })
+  router.push({ name: 'CpsGoodsSquare' })
 }
 
 const platformLabel = (platformCode?: string) => {

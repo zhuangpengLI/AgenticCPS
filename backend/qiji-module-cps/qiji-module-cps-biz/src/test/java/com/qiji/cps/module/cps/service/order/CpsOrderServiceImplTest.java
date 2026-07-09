@@ -460,8 +460,8 @@ class CpsOrderServiceImplTest {
         assertThrows(ServiceException.class, () -> orderService.bindSpecialIdToMember(7L, 1001L));
 
         verify(adzoneMapper, never()).selectBySpecialId(any(), any());
-        verify(adzoneMapper, never()).insert(any());
-        verify(orderMapper, never()).updateById(any());
+        verify(adzoneMapper, never()).insert(org.mockito.ArgumentMatchers.<CpsAdzoneDO>any());
+        verify(orderMapper, never()).updateById(org.mockito.ArgumentMatchers.<CpsOrderDO>any());
     }
 
     @Test

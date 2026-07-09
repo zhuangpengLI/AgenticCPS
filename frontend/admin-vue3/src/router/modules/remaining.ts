@@ -462,7 +462,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
           noCache: true,
           hidden: true,
           canTo: true,
-          activeMenu: '/cps/goods/square'
+          activeMenu: '/cps-ops/goods/square'
         }
       }
     ]

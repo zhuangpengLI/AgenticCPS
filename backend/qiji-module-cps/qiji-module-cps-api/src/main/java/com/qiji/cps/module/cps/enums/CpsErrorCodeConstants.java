@@ -17,6 +17,7 @@ public interface CpsErrorCodeConstants {
     // ========== 推广位 1-100-002-000 ==========
     ErrorCode ADZONE_NOT_EXISTS = new ErrorCode(1_100_002_000, "推广位不存在");
     ErrorCode ADZONE_DEFAULT_EXISTS = new ErrorCode(1_100_002_001, "平台[{}]已存在默认推广位");
+    ErrorCode ADZONE_CONFIG_INVALID = new ErrorCode(1_100_002_002, "推广位配置不合法：{}");
 
     // ========== 订单 1-100-003-000 ==========
     ErrorCode ORDER_NOT_EXISTS = new ErrorCode(1_100_003_000, "CPS订单不存在");
