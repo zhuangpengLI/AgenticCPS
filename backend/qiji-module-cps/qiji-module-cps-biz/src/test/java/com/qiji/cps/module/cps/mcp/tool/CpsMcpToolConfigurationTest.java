@@ -2,13 +2,18 @@ package com.qiji.cps.module.cps.mcp.tool;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.beans.factory.annotation.Qualifier;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -64,5 +69,37 @@ class CpsMcpToolConfigurationTest {
                 .collect(Collectors.joining("\n"));
         assertTrue(joinedDefinitions.contains("券"));
         assertTrue(joinedDefinitions.contains("返利") || joinedDefinitions.contains("佣金"));
+    }
+
+    @Test
+    void cpsMcpToolCallbacks_qualifiesCpxListTasksBeanBecauseSceneRecommendationExtendsIt() throws Exception {
+        Method method = CpsMcpToolConfiguration.class.getDeclaredMethod("cpsMcpToolCallbacks",
+                CpsSearchGoodsToolFunction.class,
+                CpsComparePricesToolFunction.class,
+                CpsGenerateLinkToolFunction.class,
+                CpsQueryOrdersToolFunction.class,
+                CpsGetRebateSummaryToolFunction.class,
+                CpsRecommendBySceneToolFunction.class,
+                CpsPurchaseDecisionToolFunction.class,
+                CpsListSelectionThemesToolFunction.class,
+                CpsRecommendFromSelectionThemeToolFunction.class,
+                CpsGetRebateBalanceToolFunction.class,
+                CpsCreateTokenExchangeToolFunction.class,
+                CpsQueryExchangeStatusToolFunction.class,
+                CpxListTasksToolFunction.class,
+                CpxGetTaskDetailToolFunction.class,
+                CpxGenerateTrackingLinkToolFunction.class,
+                CpxQueryConversionsToolFunction.class,
+                CpxRecommendTasksBySceneToolFunction.class,
+                CpxSearchArticlesToolFunction.class);
+
+        Parameter listTasksParameter = Arrays.stream(method.getParameters())
+                .filter(parameter -> parameter.getType().equals(CpxListTasksToolFunction.class))
+                .findFirst()
+                .orElseThrow();
+
+        Qualifier qualifier = listTasksParameter.getAnnotation(Qualifier.class);
+        assertNotNull(qualifier);
+        assertEquals("cpx_list_tasks", qualifier.value());
     }
 }

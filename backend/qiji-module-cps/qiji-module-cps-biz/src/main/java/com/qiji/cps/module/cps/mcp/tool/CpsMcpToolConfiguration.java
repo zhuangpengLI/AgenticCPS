@@ -2,6 +2,7 @@ package com.qiji.cps.module.cps.mcp.tool;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -27,7 +28,7 @@ public class CpsMcpToolConfiguration {
             CpsGetRebateBalanceToolFunction getRebateBalanceToolFunction,
             CpsCreateTokenExchangeToolFunction createTokenExchangeToolFunction,
             CpsQueryExchangeStatusToolFunction queryExchangeStatusToolFunction,
-            CpxListTasksToolFunction listTasksToolFunction,
+            @Qualifier("cpx_list_tasks") CpxListTasksToolFunction listTasksToolFunction,
             CpxGetTaskDetailToolFunction getTaskDetailToolFunction,
             CpxGenerateTrackingLinkToolFunction generateTrackingLinkToolFunction,
             CpxQueryConversionsToolFunction queryConversionsToolFunction,
