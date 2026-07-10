@@ -49,7 +49,15 @@ final class CpsMcpToolAuditSupport {
 
     private static String toSanitizedJson(Object value) {
         try {
-            JsonNode node = value instanceof String string ? parseStringNode(string) : OBJECT_MAPPER.valueToTree(value);
+            if (value instanceof String string) {
+                JsonNode parsed = parseStringNode(string);
+                if (parsed.isTextual()) {
+                    return OBJECT_MAPPER.writeValueAsString(redactString(string));
+                }
+                redact(parsed);
+                return OBJECT_MAPPER.writeValueAsString(parsed);
+            }
+            JsonNode node = OBJECT_MAPPER.valueToTree(value);
             redact(node);
             return OBJECT_MAPPER.writeValueAsString(node);
         } catch (Exception e) {
@@ -96,7 +104,7 @@ final class CpsMcpToolAuditSupport {
         String normalized = key == null ? "" : key.replaceAll("[^A-Za-z0-9]", "").toLowerCase(Locale.ROOT);
         return normalized.contains("signature") || normalized.contains("apikey") || normalized.contains("secret")
                 || normalized.contains("nonce") || normalized.contains("authorization") || normalized.contains("token")
-                || normalized.contains("identityenvelope") || normalized.contains("mcpidentity");
+                || normalized.contains("envelope") || normalized.contains("mcpidentity");
     }
 
     private static String redactString(String value) {

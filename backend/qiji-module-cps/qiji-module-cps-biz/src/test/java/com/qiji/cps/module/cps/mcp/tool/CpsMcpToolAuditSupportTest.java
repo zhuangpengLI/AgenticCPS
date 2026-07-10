@@ -33,6 +33,7 @@ class CpsMcpToolAuditSupportTest {
                 "memberId", 999L,
                 "keyword", "phone",
                 "apiKey", "api-key-secret",
+                "envelope", "envelope-secret",
                 "nested", Map.of("signature", "signature-secret", "normal", "kept"),
                 "items", List.of(Map.of("nonce", "nonce-secret")));
 
@@ -51,8 +52,23 @@ class CpsMcpToolAuditSupportTest {
         assertTrue(log.getRequestParams().contains("phone"));
         assertTrue(log.getRequestParams().contains("kept"));
         assertTrue(log.getResponseData().contains("kept response"));
-        assertRedacted(log.getRequestParams(), "api-key-secret", "signature-secret", "nonce-secret");
+        assertRedacted(log.getRequestParams(), "api-key-secret", "envelope-secret", "signature-secret", "nonce-secret");
         assertRedacted(log.getResponseData(), "response-token");
+    }
+
+    @Test
+    void record_redactsSensitiveAliasesFromPojoAndPlainTextValues() {
+        CpsMcpAccessLogMapper mapper = mock(CpsMcpAccessLogMapper.class);
+        SensitivePayload request = new SensitivePayload("pojo-api-key", "pojo-envelope",
+                new NestedPayload("nested-secret"));
+
+        CpsMcpToolAuditSupport.record(mapper, "cps_search_goods", request,
+                "signature=plain-signature token=plain-token nonce=plain-nonce apiKey=plain-api-key",
+                null, null, System.currentTimeMillis());
+
+        CpsMcpAccessLogDO log = captured(mapper);
+        assertRedacted(log.getRequestParams(), "pojo-api-key", "pojo-envelope", "nested-secret");
+        assertRedacted(log.getResponseData(), "plain-signature", "plain-token", "plain-nonce", "plain-api-key");
     }
 
     @Test
@@ -91,5 +107,11 @@ class CpsMcpToolAuditSupportTest {
             assertFalse(value.contains(secret));
         }
         assertTrue(value.contains("***"));
+    }
+
+    private record SensitivePayload(String apiKey, String envelope, NestedPayload nested) {
+    }
+
+    private record NestedPayload(String secret) {
     }
 }
