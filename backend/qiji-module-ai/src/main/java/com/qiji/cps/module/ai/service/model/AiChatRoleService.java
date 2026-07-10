@@ -95,6 +95,21 @@ public interface AiChatRoleService {
     AiChatRoleDO validateChatRole(Long id);
 
     /**
+     * 获得会员可使用的聊天角色列表。
+     *
+     * @return 聊天角色列表
+     */
+    List<AiChatRoleDO> getMemberEnabledChatRoleList();
+
+    /**
+     * 校验聊天角色是否允许会员使用。
+     *
+     * @param id 角色编号
+     * @return 聊天角色
+     */
+    AiChatRoleDO validateMemberEnabledChatRole(Long id);
+
+    /**
      * 获得聊天角色分页
      *
      * @param pageReqVO 分页查询

@@ -57,6 +57,9 @@ public class AiChatRoleSaveReqVO {
     @NotNull(message = "是否公开不能为空")
     private Boolean publicStatus;
 
+    @Schema(description = "是否允许会员使用", example = "false", defaultValue = "false")
+    private Boolean memberEnabled = false;
+
     @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     @NotNull(message = "状态不能为空")
     @InEnum(CommonStatusEnum.class)

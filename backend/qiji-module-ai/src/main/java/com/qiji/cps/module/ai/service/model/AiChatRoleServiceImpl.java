@@ -6,6 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import com.qiji.cps.framework.common.enums.CommonStatusEnum;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
+import com.qiji.cps.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.qiji.cps.module.ai.controller.admin.model.vo.chatRole.AiChatRolePageReqVO;
 import com.qiji.cps.module.ai.controller.admin.model.vo.chatRole.AiChatRoleSaveMyReqVO;
 import com.qiji.cps.module.ai.controller.admin.model.vo.chatRole.AiChatRoleSaveReqVO;
@@ -23,6 +24,7 @@ import java.util.List;
 import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.qiji.cps.framework.common.util.collection.CollectionUtils.convertList;
 import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.CHAT_ROLE_DISABLE;
+import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.CHAT_ROLE_MEMBER_DISABLED;
 import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.CHAT_ROLE_NOT_EXISTS;
 
 /**
@@ -173,6 +175,31 @@ public class AiChatRoleServiceImpl implements AiChatRoleService {
             throw exception(CHAT_ROLE_DISABLE, chatRole.getName());
         }
         return chatRole;
+    }
+
+    @Override
+    public List<AiChatRoleDO> getMemberEnabledChatRoleList() {
+        List<AiChatRoleDO> roles = chatRoleMapper.selectList(new LambdaQueryWrapperX<AiChatRoleDO>()
+                .eq(AiChatRoleDO::getStatus, CommonStatusEnum.ENABLE.getStatus())
+                .eq(AiChatRoleDO::getPublicStatus, true)
+                .eq(AiChatRoleDO::getMemberEnabled, true)
+                .orderByAsc(AiChatRoleDO::getSort));
+        return roles.stream().filter(this::isMemberEnabledChatRole).toList();
+    }
+
+    @Override
+    public AiChatRoleDO validateMemberEnabledChatRole(Long id) {
+        AiChatRoleDO chatRole = validateChatRoleExists(id);
+        if (!isMemberEnabledChatRole(chatRole)) {
+            throw exception(CHAT_ROLE_MEMBER_DISABLED);
+        }
+        return chatRole;
+    }
+
+    private boolean isMemberEnabledChatRole(AiChatRoleDO chatRole) {
+        return CommonStatusEnum.isEnable(chatRole.getStatus())
+                && Boolean.TRUE.equals(chatRole.getPublicStatus())
+                && Boolean.TRUE.equals(chatRole.getMemberEnabled());
     }
 
     @Override

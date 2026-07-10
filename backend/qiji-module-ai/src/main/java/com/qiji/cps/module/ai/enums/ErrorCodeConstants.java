@@ -18,10 +18,16 @@ public interface ErrorCodeConstants {
     ErrorCode MODEL_DISABLE = new ErrorCode(1_040_001_001, "模型({})已禁用!");
     ErrorCode MODEL_DEFAULT_NOT_EXISTS = new ErrorCode(1_040_001_002, "操作失败，找不到默认模型");
     ErrorCode MODEL_USE_TYPE_ERROR = new ErrorCode(1_040_001_003, "操作失败，该模型的模型类型不正确");
+    ErrorCode MODEL_TOOL_CALL_UNSUPPORTED = new ErrorCode(1_040_001_004, "模型平台({})不支持工具调用");
 
     // ========== API 聊天角色 1-040-002-000 ==========
     ErrorCode CHAT_ROLE_NOT_EXISTS = new ErrorCode(1_040_002_000, "聊天角色不存在");
-    ErrorCode CHAT_ROLE_DISABLE = new ErrorCode(1_040_001_001, "聊天角色({})已禁用!");
+    ErrorCode CHAT_ROLE_DISABLE = new ErrorCode(1_040_002_001, "聊天角色({})已禁用!");
+    ErrorCode CHAT_ROLE_MEMBER_DISABLED = new ErrorCode(1_040_002_002, "该聊天角色未开放给会员使用");
+    ErrorCode CHAT_ROLE_IDENTITY_IMMUTABLE = new ErrorCode(1_040_002_003, "聊天角色身份不可修改");
+    ErrorCode CHAT_ROLE_SELF_MCP_UNAVAILABLE = new ErrorCode(1_040_002_004, "自建 MCP 服务不可用");
+    ErrorCode CHAT_ROLE_MCP_IDENTITY_INVALID = new ErrorCode(1_040_002_005, "MCP 身份标识不合法");
+    ErrorCode CHAT_ROLE_MUTATION_DENIED = new ErrorCode(1_040_002_006, "不允许修改该聊天角色");
 
     // ========== API 聊天会话 1-040-003-000 ==========
     ErrorCode CHAT_CONVERSATION_NOT_EXISTS = new ErrorCode(1_040_003_000, "对话不存在!");

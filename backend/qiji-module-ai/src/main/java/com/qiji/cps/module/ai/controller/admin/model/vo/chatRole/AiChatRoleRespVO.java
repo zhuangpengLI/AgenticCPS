@@ -58,6 +58,9 @@ public class AiChatRoleRespVO implements VO {
     @Schema(description = "是否公开", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     private Boolean publicStatus;
 
+    @Schema(description = "是否允许会员使用", example = "false")
+    private Boolean memberEnabled;
+
     @Schema(description = "状态", example = "1")
     private Integer status;
 

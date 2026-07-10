@@ -23,6 +23,9 @@ import org.springframework.ai.zhipuai.ZhiPuAiChatOptions;
 
 import java.util.*;
 
+import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.MODEL_TOOL_CALL_UNSUPPORTED;
+
 /**
  * Spring AI 工具类
  *
@@ -41,6 +44,9 @@ public class AiUtils {
                                                List<ToolCallback> toolCallbacks, Map<String, Object> toolContext) {
         toolCallbacks = ObjUtil.defaultIfNull(toolCallbacks, Collections.emptyList());
         toolContext = ObjUtil.defaultIfNull(toolContext, Collections.emptyMap());
+        if (!toolCallbacks.isEmpty() && !supportsToolCalling(platform)) {
+            throw exception(MODEL_TOOL_CALL_UNSUPPORTED, platform.getName());
+        }
         // noinspection EnhancedSwitchMigration
         switch (platform) {
             case TONG_YI:
@@ -83,6 +89,23 @@ public class AiUtils {
             default:
                 throw new IllegalArgumentException(StrUtil.format("未知平台({})", platform));
         }
+    }
+
+    /**
+     * 判断平台对应的 Spring AI ChatOptions 是否支持工具回调。
+     * <p>
+     * 此处必须显式列举全部平台，新增平台时不能静默继承工具能力。
+     *
+     * @param platform 模型平台
+     * @return 是否支持工具调用
+     */
+    public static boolean supportsToolCalling(AiPlatformEnum platform) {
+        return switch (platform) {
+            case TONG_YI, DEEP_SEEK, ZHI_PU, XING_HUO, DOU_BAO, HUN_YUAN, SILICON_FLOW,
+                    MINI_MAX, MOONSHOT, BAI_CHUAN, OPENAI, AZURE_OPENAI, ANTHROPIC, GEMINI,
+                    OLLAMA, GROK -> true;
+            case YI_YAN, STABLE_DIFFUSION, MIDJOURNEY, SUNO -> false;
+        };
     }
 
     public static Message buildMessage(String type, String content) {
