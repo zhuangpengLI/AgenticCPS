@@ -6,6 +6,7 @@ import com.qiji.cps.framework.tenant.core.context.TenantContextHolder;
 import com.qiji.cps.module.ai.framework.ai.config.QijiAiProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -20,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CpsMcpIdentityVerifierTest {
@@ -30,6 +32,19 @@ class CpsMcpIdentityVerifierTest {
     @AfterEach
     void tearDown() {
         TenantContextHolder.clear();
+    }
+
+    @Test
+    void springContext_createsVerifierWithProductionConstructor() {
+        assertDoesNotThrow(() -> {
+            try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+                context.registerBean(QijiAiProperties.class, () -> properties(SECRET));
+                context.registerBean(CpsMcpNonceStore.class, InMemoryNonceStore::new);
+                context.register(CpsMcpIdentityVerifier.class);
+                context.refresh();
+                context.getBean(CpsMcpIdentityVerifier.class);
+            }
+        });
     }
 
     @Test
