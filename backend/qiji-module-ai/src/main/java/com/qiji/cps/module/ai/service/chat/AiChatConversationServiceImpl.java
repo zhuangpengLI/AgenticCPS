@@ -5,8 +5,9 @@ import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.qiji.cps.module.ai.enums.model.AiModelTypeEnum;
+import com.qiji.cps.module.ai.enums.chat.AiChatModeEnum;
+import com.qiji.cps.module.ai.enums.chat.AiChatOwnerTypeEnum;
 import com.qiji.cps.framework.common.pojo.PageResult;
-import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationCreateMyReqVO;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationPageReqVO;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationUpdateMyReqVO;
@@ -53,8 +54,23 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
 
     @Override
     public Long createChatConversationMy(AiChatConversationCreateMyReqVO createReqVO, Long userId) {
+        return createConversation(createReqVO, userId, AiChatOwnerTypeEnum.ADMIN, null);
+    }
+
+    @Override
+    public Long createMemberConversation(AiChatConversationCreateMyReqVO createReqVO, Long memberId) {
+        return createConversation(createReqVO, memberId, AiChatOwnerTypeEnum.MEMBER, memberId);
+    }
+
+    private Long createConversation(AiChatConversationCreateMyReqVO createReqVO, Long ownerId,
+                                    AiChatOwnerTypeEnum ownerType, Long memberId) {
         // 1.1 获得 AiChatRoleDO 聊天角色
-        AiChatRoleDO role = createReqVO.getRoleId() != null ? chatRoleService.validateChatRole(createReqVO.getRoleId()) : null;
+        AiChatRoleDO role = null;
+        if (createReqVO.getRoleId() != null) {
+            role = ownerType == AiChatOwnerTypeEnum.MEMBER
+                    ? chatRoleService.validateMemberEnabledChatRole(createReqVO.getRoleId())
+                    : chatRoleService.validateChatRole(createReqVO.getRoleId());
+        }
         // 1.2 获得 AiModelDO 聊天模型
         AiModelDO model = role != null && role.getModelId() != null ? modalService.validateModel(role.getModelId())
                 : modalService.getRequiredDefaultModel(AiModelTypeEnum.CHAT.getType());
@@ -67,7 +83,9 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
         }
 
         // 2. 创建 AiChatConversationDO 聊天对话
-        AiChatConversationDO conversation = new AiChatConversationDO().setUserId(userId).setPinned(false)
+        AiChatConversationDO conversation = new AiChatConversationDO().setUserId(ownerId)
+                .setOwnerUserType(ownerType.name()).setMemberId(memberId)
+                .setChatMode(AiChatModeEnum.STANDARD.name()).setAllowMutation(false).setPinned(false)
                 .setModelId(model.getId()).setModel(model.getModel())
                 .setTemperature(model.getTemperature()).setMaxTokens(model.getMaxTokens()).setMaxContexts(model.getMaxContexts());
         if (role != null) {
@@ -81,11 +99,13 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
 
     @Override
     public void updateChatConversationMy(AiChatConversationUpdateMyReqVO updateReqVO, Long userId) {
+        updateChatConversation(updateReqVO, AiChatOwnerTypeEnum.ADMIN.name(), userId);
+    }
+
+    @Override
+    public void updateChatConversation(AiChatConversationUpdateMyReqVO updateReqVO, String ownerUserType, Long ownerId) {
         // 1.1 校验对话是否存在
-        AiChatConversationDO conversation = validateChatConversationExists(updateReqVO.getId());
-        if (ObjUtil.notEqual(conversation.getUserId(), userId)) {
-            throw exception(CHAT_CONVERSATION_NOT_EXISTS);
-        }
+        AiChatConversationDO conversation = getOwnedConversation(updateReqVO.getId(), ownerUserType, ownerId);
         // 1.2 校验模型是否存在（修改模型的情况）
         AiModelDO model = null;
         if (updateReqVO.getModelId() != null) {
@@ -98,7 +118,29 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
         }
 
         // 2. 更新对话信息
-        AiChatConversationDO updateObj = BeanUtils.toBean(updateReqVO, AiChatConversationDO.class);
+        // Identity fields are intentionally omitted.  Only mutable conversation settings may be patched.
+        AiChatConversationDO updateObj = new AiChatConversationDO().setId(updateReqVO.getId());
+        if (updateReqVO.getTitle() != null) {
+            updateObj.setTitle(updateReqVO.getTitle());
+        }
+        if (updateReqVO.getPinned() != null) {
+            updateObj.setPinned(updateReqVO.getPinned());
+        }
+        if (updateReqVO.getModelId() != null) {
+            updateObj.setModelId(updateReqVO.getModelId());
+        }
+        if (updateReqVO.getSystemMessage() != null) {
+            updateObj.setSystemMessage(updateReqVO.getSystemMessage());
+        }
+        if (updateReqVO.getTemperature() != null) {
+            updateObj.setTemperature(updateReqVO.getTemperature());
+        }
+        if (updateReqVO.getMaxTokens() != null) {
+            updateObj.setMaxTokens(updateReqVO.getMaxTokens());
+        }
+        if (updateReqVO.getMaxContexts() != null) {
+            updateObj.setMaxContexts(updateReqVO.getMaxContexts());
+        }
         if (Boolean.TRUE.equals(updateReqVO.getPinned())) {
             updateObj.setPinnedTime(LocalDateTime.now());
         }
@@ -110,22 +152,45 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
 
     @Override
     public List<AiChatConversationDO> getChatConversationListByUserId(Long userId) {
-        return chatConversationMapper.selectListByUserId(userId);
+        return getChatConversationListByOwner(AiChatOwnerTypeEnum.ADMIN.name(), userId);
+    }
+
+    @Override
+    public List<AiChatConversationDO> getChatConversationListByOwner(String ownerUserType, Long ownerId) {
+        validateOwner(ownerUserType, ownerId);
+        return normalizeHistoricalIdentity(chatConversationMapper
+                .selectListByOwnerUserTypeAndUserId(ownerUserType, ownerId));
     }
 
     @Override
     public AiChatConversationDO getChatConversation(Long id) {
-        return chatConversationMapper.selectById(id);
+        return normalizeHistoricalIdentity(chatConversationMapper.selectById(id));
+    }
+
+    @Override
+    public AiChatConversationDO getOwnedConversation(Long id, String ownerUserType, Long ownerId) {
+        validateOwner(ownerUserType, ownerId);
+        AiChatConversationDO conversation = chatConversationMapper
+                .selectByIdAndOwnerUserTypeAndUserId(id, ownerUserType, ownerId);
+        if (conversation == null) {
+            throw exception(CHAT_CONVERSATION_NOT_EXISTS);
+        }
+        conversation = normalizeHistoricalIdentity(conversation);
+        if (AiChatOwnerTypeEnum.MEMBER.name().equals(ownerUserType)
+                && ObjUtil.notEqual(conversation.getMemberId(), ownerId)) {
+            throw exception(CHAT_CONVERSATION_NOT_EXISTS);
+        }
+        return conversation;
     }
 
     @Override
     public void deleteChatConversationMy(Long id, Long userId) {
-        // 1. 校验对话是否存在
-        AiChatConversationDO conversation = validateChatConversationExists(id);
-        if (conversation == null || ObjUtil.notEqual(conversation.getUserId(), userId)) {
-            throw exception(CHAT_CONVERSATION_NOT_EXISTS);
-        }
-        // 2. 执行删除
+        deleteChatConversation(id, AiChatOwnerTypeEnum.ADMIN.name(), userId);
+    }
+
+    @Override
+    public void deleteChatConversation(Long id, String ownerUserType, Long ownerId) {
+        getOwnedConversation(id, ownerUserType, ownerId);
         chatConversationMapper.deleteById(id);
     }
 
@@ -153,12 +218,13 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
         if (conversation == null) {
             throw exception(CHAT_CONVERSATION_NOT_EXISTS);
         }
-        return conversation;
+        return normalizeHistoricalIdentity(conversation);
     }
 
     @Override
     public void deleteChatConversationMyByUnpinned(Long userId) {
-        List<AiChatConversationDO> list = chatConversationMapper.selectListByUserIdAndPinned(userId, false);
+        List<AiChatConversationDO> list = chatConversationMapper.selectListByOwnerUserTypeAndUserIdAndPinned(
+                AiChatOwnerTypeEnum.ADMIN.name(), userId, false);
         if (CollUtil.isEmpty(list)) {
             return;
         }
@@ -167,7 +233,38 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
 
     @Override
     public PageResult<AiChatConversationDO> getChatConversationPage(AiChatConversationPageReqVO pageReqVO) {
-        return chatConversationMapper.selectChatConversationPage(pageReqVO);
+        PageResult<AiChatConversationDO> result = chatConversationMapper.selectChatConversationPage(pageReqVO);
+        if (result != null) {
+            result.setList(normalizeHistoricalIdentity(result.getList()));
+        }
+        return result;
+    }
+
+    private List<AiChatConversationDO> normalizeHistoricalIdentity(List<AiChatConversationDO> conversations) {
+        if (conversations == null) {
+            return null;
+        }
+        conversations.forEach(this::normalizeHistoricalIdentity);
+        return conversations;
+    }
+
+    private AiChatConversationDO normalizeHistoricalIdentity(AiChatConversationDO conversation) {
+        if (conversation == null) {
+            return null;
+        }
+        if (conversation.getOwnerUserType() == null) {
+            conversation.setOwnerUserType(AiChatOwnerTypeEnum.ADMIN.name());
+        }
+        if (conversation.getChatMode() == null) {
+            conversation.setChatMode(AiChatModeEnum.STANDARD.name());
+        }
+        return conversation;
+    }
+
+    private void validateOwner(String ownerUserType, Long ownerId) {
+        if (ownerUserType == null || ownerId == null) {
+            throw exception(CHAT_CONVERSATION_NOT_EXISTS);
+        }
     }
 
 }

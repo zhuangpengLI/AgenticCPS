@@ -9,6 +9,8 @@ import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
 
+import static com.qiji.cps.module.ai.enums.chat.AiChatOwnerTypeEnum.ADMIN;
+
 /**
  * AI 聊天对话 Mapper
  *
@@ -22,15 +24,49 @@ public interface AiChatConversationMapper extends BaseMapperX<AiChatConversation
     }
 
     default List<AiChatConversationDO> selectListByOwnerUserTypeAndUserId(String ownerUserType, Long userId) {
-        return selectList(new LambdaQueryWrapperX<AiChatConversationDO>()
-                .eq(AiChatConversationDO::getOwnerUserType, ownerUserType)
-                .eq(AiChatConversationDO::getUserId, userId));
+        LambdaQueryWrapperX<AiChatConversationDO> query = new LambdaQueryWrapperX<AiChatConversationDO>()
+                .eq(AiChatConversationDO::getUserId, userId);
+        if (ADMIN.name().equals(ownerUserType)) {
+            query.and(wrapper -> wrapper.eq(AiChatConversationDO::getOwnerUserType, ownerUserType)
+                    .or().isNull(AiChatConversationDO::getOwnerUserType));
+        } else {
+            query.eq(AiChatConversationDO::getOwnerUserType, ownerUserType);
+        }
+        return selectList(query);
+    }
+
+    default AiChatConversationDO selectByIdAndOwnerUserTypeAndUserId(Long id, String ownerUserType, Long userId) {
+        LambdaQueryWrapperX<AiChatConversationDO> query = new LambdaQueryWrapperX<AiChatConversationDO>()
+                .eq(AiChatConversationDO::getId, id)
+                .eq(AiChatConversationDO::getUserId, userId);
+        if (ADMIN.name().equals(ownerUserType)) {
+            query.and(wrapper -> wrapper.eq(AiChatConversationDO::getOwnerUserType, ownerUserType)
+                    .or().isNull(AiChatConversationDO::getOwnerUserType));
+        } else {
+            query.eq(AiChatConversationDO::getOwnerUserType, ownerUserType);
+        }
+        return selectOne(query);
     }
 
     default List<AiChatConversationDO> selectListByUserIdAndPinned(Long userId, boolean pinned) {
         return selectList(new LambdaQueryWrapperX<AiChatConversationDO>()
                 .eq(AiChatConversationDO::getUserId, userId)
                 .eq(AiChatConversationDO::getPinned, pinned));
+    }
+
+    default List<AiChatConversationDO> selectListByOwnerUserTypeAndUserIdAndPinned(String ownerUserType,
+                                                                                     Long userId,
+                                                                                     boolean pinned) {
+        LambdaQueryWrapperX<AiChatConversationDO> query = new LambdaQueryWrapperX<AiChatConversationDO>()
+                .eq(AiChatConversationDO::getUserId, userId)
+                .eq(AiChatConversationDO::getPinned, pinned);
+        if (ADMIN.name().equals(ownerUserType)) {
+            query.and(wrapper -> wrapper.eq(AiChatConversationDO::getOwnerUserType, ownerUserType)
+                    .or().isNull(AiChatConversationDO::getOwnerUserType));
+        } else {
+            query.eq(AiChatConversationDO::getOwnerUserType, ownerUserType);
+        }
+        return selectList(query);
     }
 
     default PageResult<AiChatConversationDO> selectChatConversationPage(AiChatConversationPageReqVO pageReqVO) {

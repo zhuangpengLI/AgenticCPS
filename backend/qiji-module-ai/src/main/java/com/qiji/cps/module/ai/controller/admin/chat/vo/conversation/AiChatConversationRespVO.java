@@ -20,6 +20,24 @@ public class AiChatConversationRespVO implements VO {
     @Schema(description = "用户编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "2048")
     private Long userId;
 
+    @Schema(description = "对话所有者类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "ADMIN")
+    private String ownerUserType;
+
+    @Schema(description = "会员编号，仅会员对话使用", example = "2048")
+    private Long memberId;
+
+    @Schema(description = "对话模式", requiredMode = Schema.RequiredMode.REQUIRED, example = "STANDARD")
+    private String chatMode;
+
+    @Schema(description = "MCP Client 名称", example = "cps")
+    private String mcpClientName;
+
+    @Schema(description = "是否允许执行变更类工具", example = "false")
+    private Boolean allowMutation;
+
+    @Schema(description = "身份绑定时间")
+    private LocalDateTime identityBoundTime;
+
     @Schema(description = "对话标题", requiredMode = Schema.RequiredMode.REQUIRED, example = "我是一个标题")
     private String title;
 
