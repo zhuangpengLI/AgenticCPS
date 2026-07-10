@@ -3,6 +3,9 @@ package com.qiji.cps.module.cps.mcp.tool;
 import com.qiji.cps.module.cps.dal.dataobject.mcp.CpsMcpAccessLogDO;
 import com.qiji.cps.module.cps.dal.mysql.mcp.CpsMcpAccessLogMapper;
 import com.qiji.cps.module.cps.mcp.security.CpsMcpAuthorizationService;
+import com.qiji.cps.framework.tenant.core.context.TenantContextHolder;
+import com.qiji.cps.module.ai.dal.dataobject.chat.AiChatConversationDO;
+import com.qiji.cps.module.ai.service.chat.AiChatIdentityContextService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.model.ToolContext;
@@ -90,6 +93,31 @@ class CpsMcpToolAuditSupportTest {
                 Map.of("ok", true), null, toolContext, System.currentTimeMillis());
 
         assertEquals("EXTERNAL_MCP", captured(mapper).getInvocationSource());
+    }
+
+    @Test
+    void record_persistsIdentityFromTrustedLocalConversationContext() {
+        TenantContextHolder.setTenantId(20L);
+        try {
+            AiChatConversationDO conversation = new AiChatConversationDO().setId(99L).setUserId(7L)
+                    .setOwnerUserType("MEMBER").setMemberId(42L).setChatMode("STANDARD");
+            ToolContext toolContext = new ToolContext(new AiChatIdentityContextService().buildToolContext(conversation));
+            CpsMcpAccessLogMapper mapper = mock(CpsMcpAccessLogMapper.class);
+
+            CpsMcpToolAuditSupport.record(mapper, "cps_search_goods", Map.of("keyword", "phone"),
+                    Map.of("ok", true), null, toolContext, System.currentTimeMillis());
+
+            CpsMcpAccessLogDO log = captured(mapper);
+            assertEquals(42L, log.getMemberId());
+            assertEquals(7L, log.getActorUserId());
+            assertEquals("MEMBER", log.getActorUserType());
+            assertEquals(99L, log.getConversationId());
+            assertNull(log.getMcpClientName());
+            assertEquals("LOCAL", log.getInvocationSource());
+            assertTrue(log.getTraceId() != null && !log.getTraceId().isBlank());
+        } finally {
+            TenantContextHolder.clear();
+        }
     }
 
     @Test

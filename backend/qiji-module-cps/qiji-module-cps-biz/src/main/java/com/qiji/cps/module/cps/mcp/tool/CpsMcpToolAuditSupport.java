@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import com.qiji.cps.module.cps.dal.dataobject.mcp.CpsMcpAccessLogDO;
 import com.qiji.cps.module.cps.dal.mysql.mcp.CpsMcpAccessLogMapper;
 import com.qiji.cps.module.cps.mcp.security.CpsMcpAuthorizationService;
+import com.qiji.cps.module.ai.service.chat.AiChatIdentityContextService;
 import org.springframework.ai.chat.model.ToolContext;
 
 import java.util.Iterator;
@@ -26,7 +27,7 @@ final class CpsMcpToolAuditSupport {
         if (mapper == null) {
             return;
         }
-        Map<String, Object> context = CpsMcpAuthorizationService.isTrustedSelfTestContext(toolContext)
+        Map<String, Object> context = isTrustedIdentityContext(toolContext)
                 ? toolContext.getContext() : null;
         CpsMcpAccessLogDO log = CpsMcpAccessLogDO.builder()
                 .memberId(getLong(context, CpsMcpAuthorizationService.TOOL_CONTEXT_LOGIN_USER_ID))
@@ -167,6 +168,14 @@ final class CpsMcpToolAuditSupport {
         if (CpsMcpAuthorizationService.isTrustedSelfTestContext(toolContext)) {
             return "SELF_MCP_TEST";
         }
+        if (AiChatIdentityContextService.isTrustedLocalToolContext(toolContext)) {
+            return "LOCAL";
+        }
         return toolContext == null ? "LOCAL" : "EXTERNAL_MCP";
+    }
+
+    private static boolean isTrustedIdentityContext(ToolContext toolContext) {
+        return CpsMcpAuthorizationService.isTrustedSelfTestContext(toolContext)
+                || AiChatIdentityContextService.isTrustedLocalToolContext(toolContext);
     }
 }

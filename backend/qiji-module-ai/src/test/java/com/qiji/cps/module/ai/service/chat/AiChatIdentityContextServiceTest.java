@@ -5,6 +5,7 @@ import com.qiji.cps.module.ai.dal.dataobject.chat.AiChatConversationDO;
 import com.qiji.cps.module.ai.util.AiUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.model.ToolContext;
 
 import java.util.Map;
 import java.util.Set;
@@ -12,6 +13,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AiChatIdentityContextServiceTest {
 
@@ -33,7 +35,7 @@ class AiChatIdentityContextServiceTest {
         assertEquals(Set.of(AiUtils.TOOL_CONTEXT_LOGIN_USER_ID, AiUtils.TOOL_CONTEXT_TENANT_ID,
                 AiUtils.TOOL_CONTEXT_ACTOR_USER_ID, AiUtils.TOOL_CONTEXT_ACTOR_USER_TYPE,
                 AiUtils.TOOL_CONTEXT_CONVERSATION_ID, AiUtils.TOOL_CONTEXT_CHAT_MODE,
-                AiUtils.TOOL_CONTEXT_TRACE_ID), context.keySet());
+                AiUtils.TOOL_CONTEXT_TRACE_ID, AiChatIdentityContextService.TRUSTED_LOCAL_CONTEXT_MARKER), context.keySet());
         assertEquals(42L, context.get(AiUtils.TOOL_CONTEXT_LOGIN_USER_ID));
         assertEquals(7L, context.get(AiUtils.TOOL_CONTEXT_TENANT_ID));
         assertEquals(42L, context.get(AiUtils.TOOL_CONTEXT_ACTOR_USER_ID));
@@ -41,6 +43,7 @@ class AiChatIdentityContextServiceTest {
         assertEquals(99L, context.get(AiUtils.TOOL_CONTEXT_CONVERSATION_ID));
         assertEquals("STANDARD", context.get(AiUtils.TOOL_CONTEXT_CHAT_MODE));
         assertFalse(((String) context.get(AiUtils.TOOL_CONTEXT_TRACE_ID)).isBlank());
+        assertTrue(AiChatIdentityContextService.isTrustedLocalToolContext(new ToolContext(context)));
     }
 
     @Test
@@ -55,6 +58,13 @@ class AiChatIdentityContextServiceTest {
         assertEquals(5L, context.get(AiUtils.TOOL_CONTEXT_ACTOR_USER_ID));
         assertEquals("ADMIN", context.get(AiUtils.TOOL_CONTEXT_ACTOR_USER_TYPE));
         assertEquals("STANDARD", context.get(AiUtils.TOOL_CONTEXT_CHAT_MODE));
+        assertTrue(AiChatIdentityContextService.isTrustedLocalToolContext(new ToolContext(context)));
+    }
+
+    @Test
+    void isTrustedLocalToolContext_rejectsCallerSuppliedMarkerText() {
+        assertFalse(AiChatIdentityContextService.isTrustedLocalToolContext(new ToolContext(Map.of(
+                AiChatIdentityContextService.TRUSTED_LOCAL_CONTEXT_MARKER, "true"))));
     }
 
 }
