@@ -42,6 +42,31 @@ public class AiChatConversationDO extends BaseDO {
     private Long userId;
 
     /**
+     * 对话所有者用户类型（ADMIN/MEMBER）
+     */
+    private String ownerUserType;
+    /**
+     * 会员编号，仅会员对话使用
+     */
+    private Long memberId;
+    /**
+     * 对话模式（STANDARD/SELF_MCP_TEST）
+     */
+    private String chatMode;
+    /**
+     * MCP Client 名称
+     */
+    private String mcpClientName;
+    /**
+     * 是否允许执行变更类工具
+     */
+    private Boolean allowMutation;
+    /**
+     * 身份绑定时间
+     */
+    private LocalDateTime identityBoundTime;
+
+    /**
      * 对话标题
      *
      * 默认由系统自动生成，可用户手动修改

@@ -21,6 +21,12 @@ public interface AiChatConversationMapper extends BaseMapperX<AiChatConversation
         return selectList(AiChatConversationDO::getUserId, userId);
     }
 
+    default List<AiChatConversationDO> selectListByOwnerUserTypeAndUserId(String ownerUserType, Long userId) {
+        return selectList(new LambdaQueryWrapperX<AiChatConversationDO>()
+                .eq(AiChatConversationDO::getOwnerUserType, ownerUserType)
+                .eq(AiChatConversationDO::getUserId, userId));
+    }
+
     default List<AiChatConversationDO> selectListByUserIdAndPinned(Long userId, boolean pinned) {
         return selectList(new LambdaQueryWrapperX<AiChatConversationDO>()
                 .eq(AiChatConversationDO::getUserId, userId)

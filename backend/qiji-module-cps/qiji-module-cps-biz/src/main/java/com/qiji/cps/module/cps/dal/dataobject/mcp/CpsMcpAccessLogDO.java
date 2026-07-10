@@ -31,6 +31,34 @@ public class CpsMcpAccessLogDO extends TenantBaseDO {
      */
     private Long apiKeyId;
     /**
+     * 会员编号
+     */
+    private Long memberId;
+    /**
+     * 实际调用用户编号
+     */
+    private Long actorUserId;
+    /**
+     * 实际调用用户类型
+     */
+    private String actorUserType;
+    /**
+     * AI 对话编号
+     */
+    private Long conversationId;
+    /**
+     * MCP Client 名称
+     */
+    private String mcpClientName;
+    /**
+     * 调用来源
+     */
+    private String invocationSource;
+    /**
+     * 链路追踪编号
+     */
+    private String traceId;
+    /**
      * 调用的Tool名称
      */
     private String toolName;

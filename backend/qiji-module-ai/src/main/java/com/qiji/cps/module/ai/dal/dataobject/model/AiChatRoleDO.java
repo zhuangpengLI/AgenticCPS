@@ -96,6 +96,10 @@ public class AiChatRoleDO extends BaseDO {
      * 2. false - 私有；由个人在【我的角色】所创建
      */
     private Boolean publicStatus;
+    /**
+     * 是否允许会员使用
+     */
+    private Boolean memberEnabled;
 
     /**
      * 排序值
