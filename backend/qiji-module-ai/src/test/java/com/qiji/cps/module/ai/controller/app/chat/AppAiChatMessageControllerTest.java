@@ -2,6 +2,7 @@ package com.qiji.cps.module.ai.controller.app.chat;
 
 import com.qiji.cps.module.ai.controller.app.chat.vo.message.AppAiChatMessageSendReqVO;
 import com.qiji.cps.module.ai.service.chat.AiChatMessageService;
+import com.qiji.cps.module.ai.service.chat.AiChatConversationService;
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.message.AiChatMessageSendRespVO;
 import com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils;
