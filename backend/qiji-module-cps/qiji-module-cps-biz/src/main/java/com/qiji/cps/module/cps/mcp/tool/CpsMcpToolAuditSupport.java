@@ -26,7 +26,8 @@ final class CpsMcpToolAuditSupport {
         if (mapper == null) {
             return;
         }
-        Map<String, Object> context = toolContext == null ? null : toolContext.getContext();
+        Map<String, Object> context = CpsMcpAuthorizationService.isTrustedSelfTestContext(toolContext)
+                ? toolContext.getContext() : null;
         CpsMcpAccessLogDO log = CpsMcpAccessLogDO.builder()
                 .memberId(getLong(context, CpsMcpAuthorizationService.TOOL_CONTEXT_LOGIN_USER_ID))
                 .actorUserId(getLong(context, CpsMcpAuthorizationService.TOOL_CONTEXT_ACTOR_USER_ID))

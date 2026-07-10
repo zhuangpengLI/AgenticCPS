@@ -20,7 +20,7 @@ import static org.mockito.Mockito.verify;
 class CpsMcpToolAuditSupportTest {
 
     @Test
-    void record_usesToolContextIdentityInsteadOfRequestAndRedactsSensitiveValuesRecursively() {
+    void record_doesNotPersistSpoofableIdentityFromOrdinaryMcpContextAndRedactsSensitiveValuesRecursively() {
         CpsMcpAccessLogMapper mapper = mock(CpsMcpAccessLogMapper.class);
         ToolContext toolContext = new ToolContext(Map.of(
                 CpsMcpAuthorizationService.TOOL_CONTEXT_LOGIN_USER_ID, 42L,
@@ -44,13 +44,13 @@ class CpsMcpToolAuditSupportTest {
                 null, toolContext, System.currentTimeMillis());
 
         CpsMcpAccessLogDO log = captured(mapper);
-        assertEquals(42L, log.getMemberId());
-        assertEquals(7L, log.getActorUserId());
-        assertEquals("ADMIN", log.getActorUserType());
-        assertEquals(99L, log.getConversationId());
-        assertEquals("external-mcp", log.getMcpClientName());
+        assertNull(log.getMemberId());
+        assertNull(log.getActorUserId());
+        assertNull(log.getActorUserType());
+        assertNull(log.getConversationId());
+        assertNull(log.getMcpClientName());
         assertEquals("EXTERNAL_MCP", log.getInvocationSource());
-        assertEquals("trace-1", log.getTraceId());
+        assertNull(log.getTraceId());
         assertTrue(log.getRequestParams().contains("phone"));
         assertTrue(log.getRequestParams().contains("kept"));
         assertTrue(log.getResponseData().contains("kept response"));
