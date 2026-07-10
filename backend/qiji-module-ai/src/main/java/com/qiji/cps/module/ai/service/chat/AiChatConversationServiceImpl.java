@@ -158,8 +158,12 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
     @Override
     public List<AiChatConversationDO> getChatConversationListByOwner(String ownerUserType, Long ownerId) {
         validateOwner(ownerUserType, ownerId);
-        return normalizeHistoricalIdentity(chatConversationMapper
-                .selectListByOwnerUserTypeAndUserId(ownerUserType, ownerId));
+        List<AiChatConversationDO> list = chatConversationMapper
+                .selectListByOwnerUserTypeAndUserId(ownerUserType, ownerId);
+        if (AiChatOwnerTypeEnum.MEMBER.name().equals(ownerUserType)) {
+            list = list.stream().filter(conversation -> ObjUtil.equal(conversation.getMemberId(), ownerId)).toList();
+        }
+        return normalizeHistoricalIdentity(list);
     }
 
     @Override
@@ -228,6 +232,8 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
         if (CollUtil.isEmpty(list)) {
             return;
         }
+        list = list.stream().filter(conversation -> ObjUtil.equal(conversation.getMemberId(), userId)
+                || !AiChatOwnerTypeEnum.MEMBER.name().equals(conversation.getOwnerUserType())).toList();
         chatConversationMapper.deleteByIds(convertList(list, AiChatConversationDO::getId));
     }
 

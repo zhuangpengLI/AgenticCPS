@@ -22,6 +22,7 @@ import com.qiji.cps.module.ai.dal.dataobject.model.AiModelDO;
 import com.qiji.cps.module.ai.dal.dataobject.model.AiToolDO;
 import com.qiji.cps.module.ai.dal.mysql.chat.AiChatMessageMapper;
 import com.qiji.cps.module.ai.enums.ErrorCodeConstants;
+import com.qiji.cps.module.ai.enums.chat.AiChatOwnerTypeEnum;
 import com.qiji.cps.module.ai.enums.model.AiPlatformEnum;
 import com.qiji.cps.module.ai.framework.ai.core.webserch.AiWebSearchClient;
 import com.qiji.cps.module.ai.framework.ai.core.webserch.AiWebSearchRequest;
@@ -68,7 +69,6 @@ import static com.qiji.cps.framework.common.pojo.CommonResult.error;
 import static com.qiji.cps.framework.common.pojo.CommonResult.success;
 import static com.qiji.cps.framework.common.util.collection.CollectionUtils.convertList;
 import static com.qiji.cps.framework.common.util.collection.CollectionUtils.convertSet;
-import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.CHAT_CONVERSATION_NOT_EXISTS;
 import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.CHAT_MESSAGE_NOT_EXIST;
 
 /**
@@ -141,10 +141,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
     public AiChatMessageSendRespVO sendMessage(AiChatMessageSendReqVO sendReqVO, Long userId) {
         // 1.1 校验对话存在
         AiChatConversationDO conversation = chatConversationService
-                .validateChatConversationExists(sendReqVO.getConversationId());
-        if (ObjUtil.notEqual(conversation.getUserId(), userId)) {
-            throw exception(CHAT_CONVERSATION_NOT_EXISTS);
-        }
+                .getOwnedConversation(sendReqVO.getConversationId(), AiChatOwnerTypeEnum.ADMIN.name(), userId);
         List<AiChatMessageDO> historyMessages = chatMessageMapper.selectListByConversationId(conversation.getId());
         // 1.2 校验模型
         AiModelDO model = modalService.validateModel(conversation.getModelId());
@@ -198,10 +195,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
             Long userId) {
         // 1.1 校验对话存在
         AiChatConversationDO conversation = chatConversationService
-                .validateChatConversationExists(sendReqVO.getConversationId());
-        if (ObjUtil.notEqual(conversation.getUserId(), userId)) {
-            throw exception(CHAT_CONVERSATION_NOT_EXISTS);
-        }
+                .getOwnedConversation(sendReqVO.getConversationId(), AiChatOwnerTypeEnum.ADMIN.name(), userId);
         List<AiChatMessageDO> historyMessages = chatMessageMapper.selectListByConversationId(conversation.getId());
         // 1.2 校验模型
         AiModelDO model = modalService.validateModel(conversation.getModelId());

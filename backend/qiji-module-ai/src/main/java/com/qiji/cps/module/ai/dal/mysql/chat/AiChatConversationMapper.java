@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.Mapper;
 import java.util.List;
 
 import static com.qiji.cps.module.ai.enums.chat.AiChatOwnerTypeEnum.ADMIN;
+import static com.qiji.cps.module.ai.enums.chat.AiChatOwnerTypeEnum.MEMBER;
 
 /**
  * AI 聊天对话 Mapper
@@ -31,6 +32,9 @@ public interface AiChatConversationMapper extends BaseMapperX<AiChatConversation
                     .or().isNull(AiChatConversationDO::getOwnerUserType));
         } else {
             query.eq(AiChatConversationDO::getOwnerUserType, ownerUserType);
+            if (MEMBER.name().equals(ownerUserType)) {
+                query.eq(AiChatConversationDO::getMemberId, userId);
+            }
         }
         return selectList(query);
     }
@@ -44,6 +48,9 @@ public interface AiChatConversationMapper extends BaseMapperX<AiChatConversation
                     .or().isNull(AiChatConversationDO::getOwnerUserType));
         } else {
             query.eq(AiChatConversationDO::getOwnerUserType, ownerUserType);
+            if (MEMBER.name().equals(ownerUserType)) {
+                query.eq(AiChatConversationDO::getMemberId, userId);
+            }
         }
         return selectOne(query);
     }
@@ -65,6 +72,9 @@ public interface AiChatConversationMapper extends BaseMapperX<AiChatConversation
                     .or().isNull(AiChatConversationDO::getOwnerUserType));
         } else {
             query.eq(AiChatConversationDO::getOwnerUserType, ownerUserType);
+            if (MEMBER.name().equals(ownerUserType)) {
+                query.eq(AiChatConversationDO::getMemberId, userId);
+            }
         }
         return selectList(query);
     }

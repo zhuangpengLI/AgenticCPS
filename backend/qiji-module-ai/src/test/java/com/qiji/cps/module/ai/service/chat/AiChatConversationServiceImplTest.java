@@ -112,6 +112,18 @@ class AiChatConversationServiceImplTest extends BaseMockitoUnitTest {
     }
 
     @Test
+    void getChatConversationListByOwner_excludesMemberRowsWithMismatchedMemberId() {
+        AiChatConversationDO owned = new AiChatConversationDO().setId(1L).setUserId(42L)
+                .setOwnerUserType("MEMBER").setMemberId(42L);
+        AiChatConversationDO inconsistent = new AiChatConversationDO().setId(2L).setUserId(42L)
+                .setOwnerUserType("MEMBER").setMemberId(99L);
+        when(conversationMapper.selectListByOwnerUserTypeAndUserId("MEMBER", 42L))
+                .thenReturn(List.of(owned, inconsistent));
+
+        assertEquals(List.of(owned), conversationService.getChatConversationListByOwner("MEMBER", 42L));
+    }
+
+    @Test
     void updateChatConversation_copiesOnlyMutableFieldsAndRetainsIdentity() {
         AiChatConversationDO conversation = new AiChatConversationDO().setId(1L).setUserId(42L)
                 .setOwnerUserType("MEMBER").setMemberId(42L).setChatMode("SELF_MCP_TEST")

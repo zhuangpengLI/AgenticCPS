@@ -1,7 +1,6 @@
 package com.qiji.cps.module.ai.controller.admin.chat;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.ObjUtil;
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.collection.MapUtils;
@@ -38,6 +37,7 @@ import java.util.Map;
 import static com.qiji.cps.framework.common.pojo.CommonResult.success;
 import static com.qiji.cps.framework.common.util.collection.CollectionUtils.*;
 import static com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
+import static com.qiji.cps.module.ai.enums.chat.AiChatOwnerTypeEnum.ADMIN;
 
 @Tag(name = "管理后台 - 聊天消息")
 @RestController
@@ -73,10 +73,8 @@ public class AiChatMessageController {
     @Parameter(name = "conversationId", required = true, description = "对话编号", example = "1024")
     public CommonResult<List<AiChatMessageRespVO>> getChatMessageListByConversationId(
             @RequestParam("conversationId") Long conversationId) {
-        AiChatConversationDO conversation = chatConversationService.getChatConversation(conversationId);
-        if (conversation == null || ObjUtil.notEqual(conversation.getUserId(), getLoginUserId())) {
-            return success(Collections.emptyList());
-        }
+        AiChatConversationDO conversation = chatConversationService.getOwnedConversation(
+                conversationId, ADMIN.name(), getLoginUserId());
         // 1. 获取消息列表
         List<AiChatMessageDO> messageList = chatMessageService.getChatMessageListByConversationId(conversationId);
         if (CollUtil.isEmpty(messageList)) {

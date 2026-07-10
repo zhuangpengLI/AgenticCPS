@@ -1,7 +1,6 @@
 package com.qiji.cps.module.ai.controller.admin.chat;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.ObjUtil;
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
@@ -28,6 +27,7 @@ import java.util.Map;
 import static com.qiji.cps.framework.common.pojo.CommonResult.success;
 import static com.qiji.cps.framework.common.util.collection.CollectionUtils.convertList;
 import static com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
+import static com.qiji.cps.module.ai.enums.chat.AiChatOwnerTypeEnum.ADMIN;
 
 @Tag(name = "管理后台 - AI 聊天对话")
 @RestController
@@ -66,10 +66,7 @@ public class AiChatConversationController {
     @Parameter(name = "id", required = true, description = "对话编号", example = "1024")
     @TransMethodResult
     public CommonResult<AiChatConversationRespVO> getChatConversationMy(@RequestParam("id") Long id) {
-        AiChatConversationDO conversation = chatConversationService.getChatConversation(id);
-        if (conversation != null && ObjUtil.notEqual(conversation.getUserId(), getLoginUserId())) {
-            conversation = null;
-        }
+        AiChatConversationDO conversation = chatConversationService.getOwnedConversation(id, ADMIN.name(), getLoginUserId());
         return success(BeanUtils.toBean(conversation, AiChatConversationRespVO.class));
     }
 
