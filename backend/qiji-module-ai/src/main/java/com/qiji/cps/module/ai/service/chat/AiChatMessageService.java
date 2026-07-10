@@ -26,7 +26,11 @@ public interface AiChatMessageService {
      * @param userId 用户编号
      * @return 发送结果
      */
-    AiChatMessageSendRespVO sendMessage(AiChatMessageSendReqVO sendReqVO, Long userId);
+    default AiChatMessageSendRespVO sendMessage(AiChatMessageSendReqVO sendReqVO, Long userId) {
+        return sendMessage(sendReqVO, com.qiji.cps.module.ai.enums.chat.AiChatOwnerTypeEnum.ADMIN.name(), userId);
+    }
+
+    AiChatMessageSendRespVO sendMessage(AiChatMessageSendReqVO sendReqVO, String ownerUserType, Long ownerId);
 
     /**
      * 发送消息
@@ -35,7 +39,14 @@ public interface AiChatMessageService {
      * @param userId 用户编号
      * @return 发送结果
      */
-    Flux<CommonResult<AiChatMessageSendRespVO>> sendChatMessageStream(AiChatMessageSendReqVO sendReqVO, Long userId);
+    default Flux<CommonResult<AiChatMessageSendRespVO>> sendChatMessageStream(AiChatMessageSendReqVO sendReqVO,
+                                                                                Long userId) {
+        return sendChatMessageStream(sendReqVO,
+                com.qiji.cps.module.ai.enums.chat.AiChatOwnerTypeEnum.ADMIN.name(), userId);
+    }
+
+    Flux<CommonResult<AiChatMessageSendRespVO>> sendChatMessageStream(AiChatMessageSendReqVO sendReqVO,
+                                                                       String ownerUserType, Long ownerId);
 
     /**
      * 获得指定对话的消息列表

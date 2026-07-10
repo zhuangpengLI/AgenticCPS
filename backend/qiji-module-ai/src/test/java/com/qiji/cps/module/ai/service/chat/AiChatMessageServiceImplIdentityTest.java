@@ -45,4 +45,26 @@ class AiChatMessageServiceImplIdentityTest extends BaseMockitoUnitTest {
         verify(conversationService).getOwnedConversation(7L, "ADMIN", 42L);
     }
 
+    @Test
+    void sendMessage_bindsConversationLookupToMemberOwner() {
+        when(conversationService.getOwnedConversation(7L, "MEMBER", 99L))
+                .thenThrow(exception(CHAT_CONVERSATION_NOT_EXISTS));
+
+        assertThrows(RuntimeException.class, () -> messageService.sendMessage(
+                new AiChatMessageSendReqVO().setConversationId(7L), "MEMBER", 99L));
+
+        verify(conversationService).getOwnedConversation(7L, "MEMBER", 99L);
+    }
+
+    @Test
+    void sendMessageStream_bindsConversationLookupToMemberOwner() {
+        when(conversationService.getOwnedConversation(7L, "MEMBER", 99L))
+                .thenThrow(exception(CHAT_CONVERSATION_NOT_EXISTS));
+
+        assertThrows(RuntimeException.class, () -> messageService.sendChatMessageStream(
+                new AiChatMessageSendReqVO().setConversationId(7L), "MEMBER", 99L));
+
+        verify(conversationService).getOwnedConversation(7L, "MEMBER", 99L);
+    }
+
 }

@@ -22,7 +22,6 @@ import com.qiji.cps.module.ai.dal.dataobject.model.AiModelDO;
 import com.qiji.cps.module.ai.dal.dataobject.model.AiToolDO;
 import com.qiji.cps.module.ai.dal.mysql.chat.AiChatMessageMapper;
 import com.qiji.cps.module.ai.enums.ErrorCodeConstants;
-import com.qiji.cps.module.ai.enums.chat.AiChatOwnerTypeEnum;
 import com.qiji.cps.module.ai.enums.model.AiPlatformEnum;
 import com.qiji.cps.module.ai.framework.ai.core.webserch.AiWebSearchClient;
 import com.qiji.cps.module.ai.framework.ai.core.webserch.AiWebSearchRequest;
@@ -138,10 +137,10 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
     private ToolCallbackResolver toolCallbackResolver;
 
     @Transactional(rollbackFor = Exception.class)
-    public AiChatMessageSendRespVO sendMessage(AiChatMessageSendReqVO sendReqVO, Long userId) {
+    public AiChatMessageSendRespVO sendMessage(AiChatMessageSendReqVO sendReqVO, String ownerUserType, Long userId) {
         // 1.1 校验对话存在
         AiChatConversationDO conversation = chatConversationService
-                .getOwnedConversation(sendReqVO.getConversationId(), AiChatOwnerTypeEnum.ADMIN.name(), userId);
+                .getOwnedConversation(sendReqVO.getConversationId(), ownerUserType, userId);
         List<AiChatMessageDO> historyMessages = chatMessageMapper.selectListByConversationId(conversation.getId());
         // 1.2 校验模型
         AiModelDO model = modalService.validateModel(conversation.getModelId());
@@ -192,10 +191,10 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
 
     @Override
     public Flux<CommonResult<AiChatMessageSendRespVO>> sendChatMessageStream(AiChatMessageSendReqVO sendReqVO,
-            Long userId) {
+            String ownerUserType, Long userId) {
         // 1.1 校验对话存在
         AiChatConversationDO conversation = chatConversationService
-                .getOwnedConversation(sendReqVO.getConversationId(), AiChatOwnerTypeEnum.ADMIN.name(), userId);
+                .getOwnedConversation(sendReqVO.getConversationId(), ownerUserType, userId);
         List<AiChatMessageDO> historyMessages = chatMessageMapper.selectListByConversationId(conversation.getId());
         // 1.2 校验模型
         AiModelDO model = modalService.validateModel(conversation.getModelId());
