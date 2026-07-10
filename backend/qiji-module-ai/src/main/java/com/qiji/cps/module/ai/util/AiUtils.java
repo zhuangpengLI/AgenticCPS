@@ -2,8 +2,6 @@ package com.qiji.cps.module.ai.util;
 
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
-import com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils;
-import com.qiji.cps.framework.tenant.core.context.TenantContextHolder;
 import com.qiji.cps.module.ai.enums.model.AiPlatformEnum;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import org.springaicommunity.moonshot.MoonshotChatOptions;
@@ -34,7 +32,13 @@ import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.MODEL_TOOL_CALL_UN
 public class AiUtils {
 
     public static final String TOOL_CONTEXT_LOGIN_USER = "LOGIN_USER";
+    public static final String TOOL_CONTEXT_LOGIN_USER_ID = "LOGIN_USER_ID";
     public static final String TOOL_CONTEXT_TENANT_ID = "TENANT_ID";
+    public static final String TOOL_CONTEXT_ACTOR_USER_ID = "ACTOR_USER_ID";
+    public static final String TOOL_CONTEXT_ACTOR_USER_TYPE = "ACTOR_USER_TYPE";
+    public static final String TOOL_CONTEXT_CONVERSATION_ID = "CONVERSATION_ID";
+    public static final String TOOL_CONTEXT_CHAT_MODE = "CHAT_MODE";
+    public static final String TOOL_CONTEXT_TRACE_ID = "TRACE_ID";
 
     public static ChatOptions buildChatOptions(AiPlatformEnum platform, String model, Double temperature, Integer maxTokens) {
         return buildChatOptions(platform, model, temperature, maxTokens, null, null);
@@ -122,13 +126,6 @@ public class AiUtils {
             throw new UnsupportedOperationException("暂不支持 tool 消息：" + content);
         }
         throw new IllegalArgumentException(StrUtil.format("未知消息类型({})", type));
-    }
-
-    public static Map<String, Object> buildCommonToolContext() {
-        Map<String, Object> context = new HashMap<>();
-        context.put(TOOL_CONTEXT_LOGIN_USER, SecurityFrameworkUtils.getLoginUser());
-        context.put(TOOL_CONTEXT_TENANT_ID, TenantContextHolder.getTenantId());
-        return context;
     }
 
     @SuppressWarnings("ConstantValue")

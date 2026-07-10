@@ -19,7 +19,6 @@ import com.qiji.cps.module.ai.dal.dataobject.chat.AiChatMessageDO;
 import com.qiji.cps.module.ai.dal.dataobject.knowledge.AiKnowledgeDocumentDO;
 import com.qiji.cps.module.ai.dal.dataobject.model.AiChatRoleDO;
 import com.qiji.cps.module.ai.dal.dataobject.model.AiModelDO;
-import com.qiji.cps.module.ai.dal.dataobject.model.AiToolDO;
 import com.qiji.cps.module.ai.dal.mysql.chat.AiChatMessageMapper;
 import com.qiji.cps.module.ai.enums.ErrorCodeConstants;
 import com.qiji.cps.module.ai.enums.model.AiPlatformEnum;
@@ -32,11 +31,9 @@ import com.qiji.cps.module.ai.service.knowledge.bo.AiKnowledgeSegmentSearchReqBO
 import com.qiji.cps.module.ai.service.knowledge.bo.AiKnowledgeSegmentSearchRespBO;
 import com.qiji.cps.module.ai.service.model.AiChatRoleService;
 import com.qiji.cps.module.ai.service.model.AiModelService;
-import com.qiji.cps.module.ai.service.model.AiToolService;
 import com.qiji.cps.module.ai.util.AiUtils;
 import com.qiji.cps.module.ai.util.FileTypeUtils;
 import com.google.common.collect.Maps;
-import io.modelcontextprotocol.client.McpSyncClient;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.Message;
@@ -48,10 +45,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
-import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -119,22 +113,11 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
     @Resource
     private AiKnowledgeDocumentService knowledgeDocumentService;
     @Resource
-    private AiToolService toolService;
-
-    @SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
-    @Autowired(required = false) // 由于 qiji.ai.web-search.enable 配置项，可以关闭 AiWebSearchClient 的功能，所以这里只能不强制注入
-    private AiWebSearchClient webSearchClient;
-
-    @SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
-    @Autowired(required = false) // 由于 qiji.ai.mcp.client.enable 配置项，可以关闭 McpSyncClient 的功能，所以这里只能不强制注入
-    private List<McpSyncClient> mcpClients;
-
-    @SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
-    @Autowired(required = false) // 由于 qiji.ai.mcp.client.enable 配置项，可以关闭 McpSyncClient 的功能，所以这里只能不强制注入
-    private McpClientCommonProperties mcpClientCommonProperties;
-
+    private AiChatIdentityContextService identityContextService;
     @Resource
-    private ToolCallbackResolver toolCallbackResolver;
+    private AiChatToolCallbackService toolCallbackService;
+    @Autowired(required = false)
+    private AiWebSearchClient webSearchClient;
 
     @Transactional(rollbackFor = Exception.class)
     public AiChatMessageSendRespVO sendMessage(AiChatMessageSendReqVO sendReqVO, String ownerUserType, Long userId) {
@@ -369,8 +352,8 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         }
 
         // 2.1 查询 tool 工具
-        List<ToolCallback> toolCallbacks = getToolCallbackListByRoleId(conversation.getRoleId());
-        Map<String,Object> toolContext = CollUtil.isNotEmpty(toolCallbacks) ? AiUtils.buildCommonToolContext()
+        List<ToolCallback> toolCallbacks = toolCallbackService.getToolCallbacks(conversation);
+        Map<String,Object> toolContext = CollUtil.isNotEmpty(toolCallbacks) ? identityContextService.buildToolContext(conversation)
                 : Map.of();
         // 2.2 构建 ChatOptions 对象
         AiPlatformEnum platform = AiPlatformEnum.validatePlatform(model.getPlatform());
@@ -378,43 +361,6 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                 conversation.getTemperature(), conversation.getMaxTokens(),
                 toolCallbacks, toolContext);
         return new Prompt(chatMessages, chatOptions);
-    }
-
-    private List<ToolCallback> getToolCallbackListByRoleId(Long roleId) {
-        if (roleId == null) {
-            return null;
-        }
-        AiChatRoleDO chatRole = chatRoleService.getChatRole(roleId);
-        if (chatRole == null) {
-            return null;
-        }
-        List<ToolCallback> toolCallbacks = new ArrayList<>();
-        // 1. 通过 toolIds
-        if (CollUtil.isNotEmpty(chatRole.getToolIds())) {
-            Set<String> toolNames = convertSet(toolService.getToolList(chatRole.getToolIds()), AiToolDO::getName);
-            toolNames.forEach(toolName -> {
-                ToolCallback toolCallback = toolCallbackResolver.resolve(toolName);
-                if (toolCallback != null) {
-                    toolCallbacks.add(toolCallback);
-                }
-            });
-        }
-        // 2. 通过 mcpClients
-        if (CollUtil.isNotEmpty(mcpClients) && CollUtil.isNotEmpty(chatRole.getMcpClientNames())) {
-            chatRole.getMcpClientNames().forEach(mcpClientName -> {
-                // 2.1 标准化名字，参考 McpClientAutoConfiguration 的 connectedClientName 方法
-                String finalMcpClientName = mcpClientCommonProperties.getName() + " - " + mcpClientName;
-                // 2.2 匹配对应的 McpSyncClient
-                mcpClients.forEach(mcpClient -> {
-                    if (ObjUtil.notEqual(mcpClient.getClientInfo().name(), finalMcpClientName)) {
-                        return;
-                    }
-                    ToolCallback[] mcpToolCallBacks = new SyncMcpToolCallbackProvider(mcpClient).getToolCallbacks();
-                    CollUtil.addAll(toolCallbacks, mcpToolCallBacks);
-                });
-            });
-        }
-        return toolCallbacks;
     }
 
     /**

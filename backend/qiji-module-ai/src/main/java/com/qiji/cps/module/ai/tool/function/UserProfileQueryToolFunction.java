@@ -77,16 +77,27 @@ public class UserProfileQueryToolFunction
             return new Response();
         }
         if (request.getId() == null) {
+            Long loginUserId = getLongContextValue(toolContext, AiUtils.TOOL_CONTEXT_LOGIN_USER_ID);
+            if (loginUserId != null) {
+                request.setId(loginUserId);
+            }
             LoginUser loginUser = (LoginUser) toolContext.getContext().get(AiUtils.TOOL_CONTEXT_LOGIN_USER);
-            if (loginUser == null) {
+            if (request.getId() == null && loginUser == null) {
                 return new Response();
             }
-            request.setId(loginUser.getId());
+            if (request.getId() == null) {
+                request.setId(loginUser.getId());
+            }
         }
         return TenantUtils.execute(tenantId, () -> {
             AdminUserRespDTO user = adminUserApi.getUser(request.getId());
             return BeanUtils.toBean(user, Response.class);
         });
+    }
+
+    private Long getLongContextValue(ToolContext toolContext, String key) {
+        Object value = toolContext.getContext().get(key);
+        return value instanceof Number ? ((Number) value).longValue() : null;
     }
 
 }
