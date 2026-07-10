@@ -9,14 +9,11 @@ import com.qiji.cps.module.ai.controller.admin.chat.vo.message.AiChatMessageSend
 import com.qiji.cps.module.ai.controller.app.chat.vo.message.AppAiChatMessageRespVO;
 import com.qiji.cps.module.ai.controller.app.chat.vo.message.AppAiChatMessageSendReqVO;
 import com.qiji.cps.module.ai.controller.app.chat.vo.message.AppAiChatMessageSendRespVO;
-import com.qiji.cps.module.ai.controller.app.chat.vo.role.AppAiChatRoleSimpleRespVO;
 import com.qiji.cps.module.ai.dal.dataobject.chat.AiChatConversationDO;
 import com.qiji.cps.module.ai.dal.dataobject.chat.AiChatMessageDO;
-import com.qiji.cps.module.ai.dal.dataobject.model.AiChatRoleDO;
 import com.qiji.cps.module.ai.enums.chat.AiChatOwnerTypeEnum;
 import com.qiji.cps.module.ai.service.chat.AiChatConversationService;
 import com.qiji.cps.module.ai.service.chat.AiChatMessageService;
-import com.qiji.cps.module.ai.service.model.AiChatRoleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,8 +38,6 @@ public class AppAiChatMessageController {
     private AiChatMessageService chatMessageService;
     @Resource
     private AiChatConversationService chatConversationService;
-    @Resource
-    private AiChatRoleService chatRoleService;
 
     @PostMapping("/send")
     @Operation(summary = "发送会员 AI 聊天消息")
@@ -55,10 +50,15 @@ public class AppAiChatMessageController {
 
     @PostMapping(value = "/send-stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "流式发送会员 AI 聊天消息")
-    public Flux<CommonResult<AiChatMessageSendRespVO>> sendChatMessageStream(
+    public Flux<CommonResult<AppAiChatMessageSendRespVO>> sendChatMessageStream(
             @Valid @RequestBody AppAiChatMessageSendReqVO reqVO) {
         return chatMessageService.sendChatMessageStream(toAdminReq(reqVO),
-                AiChatOwnerTypeEnum.MEMBER.name(), getLoginUserId());
+                AiChatOwnerTypeEnum.MEMBER.name(), getLoginUserId()).map(result -> {
+            if (!result.isSuccess()) {
+                return CommonResult.error(result);
+            }
+            return success(toAppResponse(result.getData()));
+        });
     }
 
     @GetMapping("/list")
@@ -72,14 +72,20 @@ public class AppAiChatMessageController {
                 : BeanUtils.toBean(messages, AppAiChatMessageRespVO.class));
     }
 
-    @GetMapping("/role/simple-list")
-    @Operation(summary = "获取会员可用 AI 聊天角色")
-    public CommonResult<List<AppAiChatRoleSimpleRespVO>> getRoleSimpleList() {
-        List<AiChatRoleDO> roles = chatRoleService.getMemberEnabledChatRoleList();
-        return success(BeanUtils.toBean(roles, AppAiChatRoleSimpleRespVO.class));
-    }
-
     private AiChatMessageSendReqVO toAdminReq(AppAiChatMessageSendReqVO reqVO) {
         return BeanUtils.toBean(reqVO, AiChatMessageSendReqVO.class);
+    }
+
+    private AppAiChatMessageSendRespVO toAppResponse(AiChatMessageSendRespVO response) {
+        if (response == null) {
+            return null;
+        }
+        return new AppAiChatMessageSendRespVO()
+                .setSend(toAppMessage(response.getSend()))
+                .setReceive(toAppMessage(response.getReceive()));
+    }
+
+    private AppAiChatMessageSendRespVO.Message toAppMessage(AiChatMessageSendRespVO.Message message) {
+        return message == null ? null : BeanUtils.toBean(message, AppAiChatMessageSendRespVO.Message.class);
     }
 }
