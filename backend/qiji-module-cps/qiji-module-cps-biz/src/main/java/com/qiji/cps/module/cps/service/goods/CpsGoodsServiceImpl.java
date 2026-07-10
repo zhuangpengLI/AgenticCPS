@@ -19,6 +19,7 @@ import java.util.List;
 
 import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.PLATFORM_IS_DISABLE;
+import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.PLATFORM_CAPABILITY_UNSUPPORTED;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.PLATFORM_NOT_EXISTS;
 
 /**
@@ -50,6 +51,9 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
         validatePlatform(platformCode);
         // 获取适配器
         CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
+        if (!client.supportsGoodsSearch()) {
+            throw exception(PLATFORM_CAPABILITY_UNSUPPORTED, platformCode);
+        }
         return platformClientFactory.withVendorCode(vendorCode, () -> client.searchGoods(request));
     }
 
@@ -59,6 +63,9 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
         List<CpsGoodsItem> allItems = new ArrayList<>();
 
         for (CpsPlatformClient client : enabledClients) {
+            if (!client.supportsGoodsSearch()) {
+                continue;
+            }
             try {
                 // 每个平台最多取前10条用于比价
                 CpsGoodsSearchRequest platformReq = cloneRequestWithPageSize(request, 10);

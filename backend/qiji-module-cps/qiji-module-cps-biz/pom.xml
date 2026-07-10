@@ -24,6 +24,11 @@
             <artifactId>qiji-module-cps-api</artifactId>
             <version>${revision}</version>
         </dependency>
+        <dependency>
+            <groupId>com.qiji.cps</groupId>
+            <artifactId>qiji-module-cps-sdk-dunion</artifactId>
+            <version>${revision}</version>
+        </dependency>
 
         <!-- 依赖 member 模块：获取会员等级、用户信息 -->
         <dependency>

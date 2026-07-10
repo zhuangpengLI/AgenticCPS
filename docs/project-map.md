@@ -1,7 +1,7 @@
 # AgenticCPS 项目地图（草稿）
 
 > 生成日期：2026-05-24
-> 生成方式：只读扫描仓库结构、配置、POM、前端 `package.json`、CPS 核心代码与既有技术债文档后整理；2026-05-24 补充活动中心、返利工具箱与选品库落地信息；2026-05-26 补充 CPS 主导型 CPX 任务/资讯/平台资料库骨架、后台页面、看板骨架与 OpenAPI 签名校验。
+> 生成方式：只读扫描仓库结构、配置、POM、前端 `package.json`、CPS 核心代码与既有技术债文档后整理；2026-05-24 补充活动中心、返利工具箱与选品库落地信息；2026-05-26 补充 CPS 主导型 CPX 任务/资讯/平台资料库骨架、后台页面、看板骨架与 OpenAPI 签名校验；2026-07-10 补充滴滴联盟 DUnion SDK 子模块、官方适配器和后台诊断接口。
 > 约束：仓库当前已有多处未提交改动，见“风险与注意事项”。后续编辑需继续区分既有改动和本次改动。
 
 ## 1. 项目入口在哪里
@@ -71,17 +71,19 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 
 - `qiji-module-cps-api`
   - 暴露枚举、错误码、API DTO 等给其他模块使用。
+- `qiji-module-cps-sdk-dunion`
+  - 仓内加固的滴滴联盟 DUnion Java SDK，保留 `cn.didi.union` 包和签名算法，提供可配置地址/超时、HTTP 与业务错误处理、参数编码和脱敏日志。
 - `qiji-module-cps-biz`
-  - CPS 业务实现，依赖 `member`、`pay`、`system`、tenant、security、mybatis、redis、job、ai 等。
+  - CPS 业务实现，依赖 `qiji-module-cps-sdk-dunion`、`member`、`pay`、`system`、tenant、security、mybatis、redis、job、ai 等。
 
 `qiji-module-cps-biz` 主要包：
 
 | 包 | 当前职责 |
 |---|---|
-| `controller/admin` | 后台管理：活动中心、返利工具箱、商品广场、平台、推广位、订单、返利配置/记录、冻结、风控、统计、供应商、提现、转账、选品库，以及新增 CPX 任务/资讯/平台对接中心和 CPX 看板汇总。 |
+| `controller/admin` | 后台管理：活动中心、返利工具箱、商品广场、平台、推广位、订单、返利配置/记录、冻结、风控、统计、供应商、提现、转账、选品库、滴滴联盟素材/连接测试/归因诊断，以及新增 CPX 任务/资讯/平台对接中心和 CPX 看板汇总。 |
 | `controller/app` | 用户端：商品搜索/转链、我的返利账户/记录、返利兑换 Token。 |
 | `controller/openapi` | 服务间 OpenAPI：返利余额、冻结、解冻、确认扣减；CPX 曝光、点击、线索、动作/转化事件上报，统一 HMAC 签名与幂等键。 |
-| `client` | CPS 平台与供应商适配器，包含大淘客、好单库、官方 API、淘宝/京东/拼多多/抖音/美团/唯品会适配器。 |
+| `client` | CPS 平台与供应商适配器，包含大淘客、好单库、官方 API、淘宝/京东/拼多多/抖音/美团/唯品会适配器，以及 `didi + official` 的 `DidiOfficialVendorClient` 和 `DidiPlatformClientAdapter`。 |
 | `service` | 核心业务：goods、toolbox、activity、order、rebate、freeze、exchange、risk、statistics、withdraw、transfer、vendor、adzone、selection、cpx。 |
 | `dal/dataobject` + `dal/mysql` | CPS 表 DO 与 MyBatis Mapper，包括 `cps_rebate_activity` 活动卡片配置、`cps_selection_theme` 选品主题、`cps_selection_theme_item` 主题商品快照；CPX 新增 `cpx_task`、`cpx_offer`、`cpx_material`、`cpx_article`、`cpx_platform_profile`、`cpx_tracking_link`、`cpx_event`、`cpx_conversion`、`cpx_settlement_record`、`cpx_lead_detail`。 |
 | `job` | 定时任务：订单同步、返利结算、冻结解冻、统计聚合。 |
@@ -110,6 +112,7 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 - `CpsGenerateLinkToolFunction`：`@Component("cps_generate_link")`，通过 ToolContext 或请求参数取得 memberId 后调用转链。
 - `CpsPlatformClient`：定义 `searchGoods`、`generatePromotionLink`、`queryOrders`、`testConnection`。
 - `CpsPlatformClientFactory`：启动时注册平台客户端与 `vendorCode:platformCode` 供应商客户端，并从平台配置选择 active vendor。
+- 滴滴联盟适配器不支持商品搜索：全平台搜索自动跳过 `didi`，直接指定滴滴搜索返回 `PLATFORM_CAPABILITY_UNSUPPORTED`；标准转链把 `goodsId` 作为 `activityId`，默认生成 H5 链接。
 - 大淘客淘宝高效转链归因规则见 `docs/dataoke-high-efficiency-link-attribution.md`：`externalId` 只用于绑定 `specialId` 的外部标记，渠道订单依赖渠道专属 PID + `relationId` + `orderScene=2`，会员订单依赖会员专属 PID + `specialId` + `orderScene=3`。
 - 大淘客搜索页与商品广场实现规则见 `docs/dataoke-search-page-implementation.md`：搜索页由热搜记录、搜索联想词、大淘客搜索、超级搜索和联盟搜索组合；当前默认优先 dataoke 大淘客搜索，超级搜索/联盟搜索适合作为扩展召回或补量策略。
 
@@ -215,6 +218,37 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 - `CpsSelectionThemeServiceImpl`：保存主题规则 JSON 与商品快照，发布前校验启用商品，导入时按 `themeId + platformCode + vendorCode + goodsId + goodsSign` 去重更新。
 - `CpsSelectionAiRecommendService`：规则评分决定排序，LLM/文案能力不可用时仍可返回稳定推荐；文案不得覆盖商品 ID、价格、佣金等第三方事实字段。
 - `cps_selection_theme` / `cps_selection_theme_item`：选品主题主表与主题商品快照表，均带租户、软删、状态与排序索引。
+
+### 3.1.5 滴滴联盟 DUnion 集成
+
+```text
+App / MCP 可信会员上下文
+  -> CpsGoodsService.generatePromotionLink()
+  -> DidiPlatformClientAdapter
+  -> DidiOfficialVendorClient
+  -> qiji-module-cps-sdk-dunion
+  -> DUnion H5 取链接口
+  -> 现有转链记录与 sourceId 归因
+
+后台运营
+  -> /admin-api/cps/didi-union/*
+  -> 素材生成 / 连接测试 / 订单归因诊断
+  -> DUnion SDK
+```
+
+后台接口与权限：
+
+| 接口 | 权限 | 边界 |
+|---|---|---|
+| `POST /admin-api/cps/didi-union/material/generate` | `cps:toolbox:link` | 生成 H5/小程序链接、二维码、海报或券码；服务端使用不可归因的 `ops-UUID` |
+| `GET /admin-api/cps/didi-union/connection-test` | `cps:api-vendor:query` | 验证当前租户启用的 `didi + official` 配置和上游连通性 |
+| `GET /admin-api/cps/didi-union/order-attribution` | `cps:order:query` | 调用 `selfQueryOrder` 诊断，不修改订单或返利资产 |
+
+配置由目标租户在平台管理和 API 供应商管理中创建，不在 SQL 中写固定租户种子。`appKey` 映射 App-Key，`appSecret` 映射 accessKey，`defaultAdzoneId` 映射推广位 ID，`apiBaseUrl` 映射 SDK 基础地址；`extraConfig.timeoutMs` 允许 `1000-30000` 毫秒，默认 `5000` 毫秒。
+
+滴滴订单复用现有同步与返利链路。`sourceId` 映射 `externalId`，CPA 与 CPS 返佣按分求和后转元；退款、风控、取消和结算失败映射退款/失效，只有 SDK 状态 7 映射已结算，其余处理中状态最高映射已付款，避免提前入账。生产 API 不开放模拟订单回调。
+
+完整配置、字段映射和排错说明见 `docs/didi-union-sdk-integration.md`。
 
 ### 3.2 订单同步与返利结算
 
@@ -416,6 +450,8 @@ docker-compose down
 | OpenAPI 签名缺少重放窗口/nonce 存储证据 | 高 | `CpsOpenApiSignatureService` 校验 HMAC、timestamp、nonce、signature，但当前扫描未看到 timestamp 窗口与 nonce 防重放落库/缓存。 |
 | 本地配置含开发密钥/默认密码/第三方测试 secret | 高 | `application-local.yaml` 含 MySQL、Redis、RabbitMQ、Wx、OAuth 等本地/测试凭据；不得直接用于生产。 |
 | 官方 vendor 多处可能未完全实现 | 中高 | 既有技术债文档记录 official client 多处 `return null` / 待实现；active vendor 切换时可能表现为静默空结果。 |
+| 滴滴联盟凭证、日志与归因边界 | 高 | DUnion accessKey 和签名不得出现在日志；后台素材必须使用 `ops-UUID`，只有 App 登录上下文或 MCP 可信上下文可生成会员归因 `sourceId`。 |
+| 滴滴联盟状态提前结算 | 高 | DUnion 处理中状态不能直接映射为已结算；只有 SDK 状态 7 可进入已结算，退款、风控、取消和失败必须阻断返利入账。 |
 | 订单同步状态机和幂等边界 | 中高 | 订单同步按平台回写订单；既有技术债指出平台状态可能直接覆盖本地状态，需要防乱序/回退/重复入账。 |
 | 统计 SQL 可能不走索引 | 中 | `CpsOrderMapper.xml` 对 `create_time` 使用 `DATE(create_time)`，大表统计可能导致索引失效。 |
 | MCP 审计闭环不足 | 中 | 存在 `CpsMcpAccessLogDO` / Mapper；新选品库 Tool 已接入审计，但历史基础 Tool 仍需逐步补齐统一访问日志写入与脱敏结构。 |
@@ -451,6 +487,8 @@ docker-compose down
 - 返利 OpenAPI Controller：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/openapi/rebate/OpenApiCpsRebateController.java`
 - 平台策略接口：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/client/CpsPlatformClient.java`
 - 平台/供应商工厂：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/client/CpsPlatformClientFactory.java`
+- 滴滴联盟 SDK：`backend/qiji-module-cps/qiji-module-cps-sdk-dunion/`
+- 滴滴联盟适配器：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/client/didi/`
 - 商品服务：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/goods/CpsGoodsServiceImpl.java`
 - 订单服务：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/order/CpsOrderServiceImpl.java`
 - 返利结算：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/rebate/CpsRebateSettleServiceImpl.java`
@@ -466,6 +504,8 @@ docker-compose down
 - 大淘客高效转链与订单归因：`docs/dataoke-high-efficiency-link-attribution.md`
 - 大淘客搜索页面与商品广场：`docs/dataoke-search-page-implementation.md`
 - 大淘客与好单库配置测试：`docs/大淘客与好单库配置及接口测试指南.md`
+- 滴滴联盟 SDK 集成：`docs/didi-union-sdk-integration.md`
+- 滴滴联盟实施计划：`docs/superpowers/plans/2026-07-10-didi-union-sdk-integration.md`
 - CPS 技术债：`docs/cps-tech-debt-inventory.md`
 - CPS 主 R 打样 SOP：`docs/cps-refactor-sop.md`
 - CPS 订单同步打样报告：`docs/cps-order-sync-pilot-pre-pr.md`
@@ -481,4 +521,5 @@ docker-compose down
 - 未运行全量测试或前端生产构建；活动中心、返利工具箱与选品库均已通过目标后端测试，前端全量类型检查仍受仓库既有无关类型错误影响。
 - 未全面验证数据库脚本是否与所有当前 DO/Mapper 完全一致；活动中心、返利工具箱菜单权限与选品库表字段已按本轮实现静态同步，CPS 新库全量 SQL 集中在 `backend/sql/module/cps-all-in-one.sql`，现有库增量 SQL 集中在 `backend/sql/module/cps-update.sql`。
 - 未验证 MCP Server 实际启动后的工具列表是否与配置声明完全一致。
+- 滴滴联盟真实接口尚需使用有效 App-Key、accessKey、活动 ID 和推广位 ID，在专用测试租户完成冒烟验证；模拟订单回调不属于生产验收入口。
 - 本次刷新仅更新文档说明，不改动业务代码。

@@ -20,6 +20,7 @@
     </description>
     <modules>
         <module>qiji-module-cps-api</module>
+        <module>qiji-module-cps-sdk-dunion</module>
         <module>qiji-module-cps-biz</module>
     </modules>
 

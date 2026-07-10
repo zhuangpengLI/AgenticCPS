@@ -21,6 +21,13 @@ public interface CpsPlatformClient {
     String getPlatformCode();
 
     /**
+     * 当前平台是否支持商品搜索。非商品型联盟可覆盖为 false。
+     */
+    default boolean supportsGoodsSearch() {
+        return true;
+    }
+
+    /**
      * 搜索商品
      *
      * @param request 搜索请求

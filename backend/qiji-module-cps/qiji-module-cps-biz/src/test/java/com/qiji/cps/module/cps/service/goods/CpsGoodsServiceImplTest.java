@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -174,6 +175,27 @@ class CpsGoodsServiceImplTest {
         assertEquals("REL-9001", captor.getValue().getChannelId());
         assertEquals(2, captor.getValue().getOrderScene());
         assertEquals(null, captor.getValue().getSpecialId());
+    }
+
+    @Test
+    void searchGoods_rejectsPlatformWithoutSearchCapability() {
+        mockEnabledPlatform("didi", "2002");
+        when(platformClientFactory.getRequiredClient("didi")).thenReturn(platformClient);
+        when(platformClient.supportsGoodsSearch()).thenReturn(false);
+
+        assertThrows(RuntimeException.class,
+                () -> service.searchGoods("didi", new com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest()));
+        verify(platformClient, never()).searchGoods(any());
+    }
+
+    @Test
+    void searchGoodsAllPlatforms_skipsClientsWithoutSearchCapability() {
+        when(platformClientFactory.getEnabledClients()).thenReturn(java.util.List.of(platformClient));
+        when(platformClient.supportsGoodsSearch()).thenReturn(false);
+
+        assertEquals(java.util.List.of(), service.searchGoodsAllPlatforms(
+                new com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest()));
+        verify(platformClient, never()).searchGoods(any());
     }
 
     private void mockEnabledPlatform(String platformCode, String defaultAdzoneId) {

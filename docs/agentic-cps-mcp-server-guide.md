@@ -83,7 +83,7 @@ mvn spring-boot:run -pl qiji-server -Dspring-boot.run.profiles=local
 curl.exe -N http://127.0.0.1:48080/sse
 ```
 
-看到 `text/event-stream` 或连接保持不退出，说明 SSE 端点已启动。`/mcp/message` 是 MCP 消息端点，不建议用浏览器 GET 判断；它通常由 MCP client 按协议调用。
+看到 `text/event-stream` 或连接保持不退出，说明 SSE 端点已启动。`/mcp/message` 是 MCP 消息端点，不建议用浏览器 GET 判断；它通常由 MCP client 按协议 POST 调用，浏览器 GET 会返回 405 提示。
 
 3. 重启 Codex App / IDE 扩展，或重新打开 Codex CLI 会话。
 

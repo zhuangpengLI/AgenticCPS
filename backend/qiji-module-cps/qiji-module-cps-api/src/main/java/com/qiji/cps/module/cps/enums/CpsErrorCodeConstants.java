@@ -13,6 +13,7 @@ public interface CpsErrorCodeConstants {
     ErrorCode PLATFORM_NOT_EXISTS = new ErrorCode(1_100_001_000, "CPS平台配置不存在");
     ErrorCode PLATFORM_CODE_DUPLICATE = new ErrorCode(1_100_001_001, "平台编码[{}]已存在");
     ErrorCode PLATFORM_IS_DISABLE = new ErrorCode(1_100_001_002, "CPS平台[{}]已禁用");
+    ErrorCode PLATFORM_CAPABILITY_UNSUPPORTED = new ErrorCode(1_100_001_003, "平台[{}]不支持商品搜索");
 
     // ========== 推广位 1-100-002-000 ==========
     ErrorCode ADZONE_NOT_EXISTS = new ErrorCode(1_100_002_000, "推广位不存在");
@@ -66,6 +67,8 @@ public interface CpsErrorCodeConstants {
     // ========== API供应商 1-100-013-000 ==========
     ErrorCode VENDOR_NOT_EXISTS = new ErrorCode(1_100_013_000, "API供应商配置不存在");
     ErrorCode VENDOR_PLATFORM_DUPLICATE = new ErrorCode(1_100_013_001, "供应商[{}]+平台[{}]的配置已存在");
+    ErrorCode DIDI_UNION_REQUEST_FAILED = new ErrorCode(1_100_013_002, "滴滴联盟请求失败：{}");
+    ErrorCode DIDI_UNION_CONFIG_INVALID = new ErrorCode(1_100_013_003, "滴滴联盟配置不合法：{}");
 
     // ========== 返利兑换 Token 1-100-014-000 ==========
     ErrorCode REBATE_EXCHANGE_NOT_EXISTS = new ErrorCode(1_100_014_000, "返利兑换订单不存在");
