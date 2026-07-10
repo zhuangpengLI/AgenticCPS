@@ -63,12 +63,14 @@ class CpsMcpToolAuditSupportTest {
                 new NestedPayload("nested-secret"));
 
         CpsMcpToolAuditSupport.record(mapper, "cps_search_goods", request,
-                "signature=plain-signature token=plain-token nonce=plain-nonce apiKey=plain-api-key",
+                "signature=plain-signature token=plain-token nonce=plain-nonce apiKey=plain-api-key "
+                        + "authorization=Bearer bearer-secret api key=space-api-key",
                 null, null, System.currentTimeMillis());
 
         CpsMcpAccessLogDO log = captured(mapper);
         assertRedacted(log.getRequestParams(), "pojo-api-key", "pojo-envelope", "nested-secret");
-        assertRedacted(log.getResponseData(), "plain-signature", "plain-token", "plain-nonce", "plain-api-key");
+        assertRedacted(log.getResponseData(), "plain-signature", "plain-token", "plain-nonce", "plain-api-key",
+                "bearer-secret", "space-api-key");
     }
 
     @Test

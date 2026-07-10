@@ -120,7 +120,10 @@ final class CpsMcpToolAuditSupport {
         } catch (Exception ignored) {
             // Fall through to key/value pattern redaction for non-JSON exception messages.
         }
-        return value.replaceAll("(?i)(signature|api[_-]?key|secret|nonce|authorization|token)\\s*[=:]\\s*[^,\\s]+", "$1=***");
+        String redacted = value.replaceAll("(?i)(authorization)\\s*[=:]\\s*"
+                + "(?:bearer|basic|token|apikey)\\s+[^,\\s]+", "$1=***");
+        return redacted.replaceAll("(?i)(signature|api[\\s_-]?key|secret|nonce|authorization|token)"
+                + "\\s*[=:]\\s*[^,\\s]+", "$1=***");
     }
 
     private static Long getLong(Map<String, Object> context, String key) {
