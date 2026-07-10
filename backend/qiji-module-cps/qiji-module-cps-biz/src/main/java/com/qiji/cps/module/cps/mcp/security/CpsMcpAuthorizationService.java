@@ -26,6 +26,10 @@ public class CpsMcpAuthorizationService {
     public static final String TOOL_CONTEXT_MCP_CLIENT_NAME = "MCP_CLIENT_NAME";
     public static final String TOOL_CONTEXT_ALLOW_MUTATION = "ALLOW_MUTATION";
     public static final String TOOL_CONTEXT_TRACE_ID = "TRACE_ID";
+    /** Audit-only source value written after the self-test envelope has been verified. */
+    public static final String TOOL_CONTEXT_INVOCATION_SOURCE = "INVOCATION_SOURCE";
+    private static final Object TRUSTED_SELF_TEST_MARKER = new Object();
+    private static final String TRUSTED_SELF_TEST_MARKER_CONTEXT_KEY = "CPS_MCP_TRUSTED_SELF_TEST_MARKER";
 
     private final CpsMcpIdentityVerifier identityVerifier;
     private final CpsMcpToolRiskRegistry toolRiskRegistry;
@@ -54,6 +58,19 @@ public class CpsMcpAuthorizationService {
             throw new SecurityException("MCP self-test tool is not authorized");
         }
         return new ToolContext(buildTrustedContext(claims));
+    }
+
+    /**
+     * Returns true only for a context rebuilt after a verified self-test envelope. A caller supplied
+     * {@value #TOOL_CONTEXT_INVOCATION_SOURCE} string alone is deliberately not trusted.
+     */
+    public static boolean isTrustedSelfTestContext(ToolContext toolContext) {
+        if (toolContext == null || toolContext.getContext() == null) {
+            return false;
+        }
+        Map<String, Object> context = toolContext.getContext();
+        return context.get(TRUSTED_SELF_TEST_MARKER_CONTEXT_KEY) == TRUSTED_SELF_TEST_MARKER
+                && "SELF_MCP_TEST".equals(context.get(TOOL_CONTEXT_INVOCATION_SOURCE));
     }
 
     private static boolean isSelfTestInvocation(ToolContext toolContext) {
@@ -88,6 +105,8 @@ public class CpsMcpAuthorizationService {
         context.put(TOOL_CONTEXT_MCP_CLIENT_NAME, claims.clientName());
         context.put(TOOL_CONTEXT_ALLOW_MUTATION, claims.allowMutation());
         context.put(TOOL_CONTEXT_TRACE_ID, claims.traceId());
+        context.put(TOOL_CONTEXT_INVOCATION_SOURCE, "SELF_MCP_TEST");
+        context.put(TRUSTED_SELF_TEST_MARKER_CONTEXT_KEY, TRUSTED_SELF_TEST_MARKER);
         return context;
     }
 

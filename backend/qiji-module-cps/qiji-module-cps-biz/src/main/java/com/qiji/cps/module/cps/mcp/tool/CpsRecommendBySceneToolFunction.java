@@ -70,10 +70,10 @@ public class CpsRecommendBySceneToolFunction
             reqVO.setSortBy(request.getSortBy());
             reqVO.setRebateOwnerType(request.getRebateOwnerType());
             OpenApiCpsSceneRecommendRespVO response = sceneRecommendationService.recommendByScene(reqVO);
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_recommend_by_scene", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_recommend_by_scene", request, response, null, null, startedAt);
             return response;
         } catch (Exception e) {
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_recommend_by_scene", request, null, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_recommend_by_scene", request, null, e, null, startedAt);
             throw e;
         }
     }

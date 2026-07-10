@@ -128,7 +128,7 @@ public class CpsComparePricesToolFunction
         if (request.getKeyword() == null || request.getKeyword().isBlank()) {
             Response response = new Response(0, null, null, null, null, "关键词不能为空");
             CpsMcpToolAuditSupport.record(accessLogMapper, "cps_compare_prices", request, response,
-                    new IllegalArgumentException("keyword required"), startedAt);
+                    new IllegalArgumentException("keyword required"), null, startedAt);
             return response;
         }
         try {
@@ -146,7 +146,7 @@ public class CpsComparePricesToolFunction
             }
             if (allItems == null || allItems.isEmpty()) {
                 Response response = new Response(0, null, null, null, new ArrayList<>(), null);
-                CpsMcpToolAuditSupport.record(accessLogMapper, "cps_compare_prices", request, response, null, startedAt);
+                CpsMcpToolAuditSupport.record(accessLogMapper, "cps_compare_prices", request, response, null, null, startedAt);
                 return response;
             }
 
@@ -190,11 +190,11 @@ public class CpsComparePricesToolFunction
                     .orElse(null);
 
             Response response = new Response(priceItems.size(), cheapest, highestRebate, bestValue, priceItems, null);
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_compare_prices", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_compare_prices", request, response, null, null, startedAt);
             return response;
         } catch (Exception e) {
             Response response = new Response(0, null, null, null, new ArrayList<>(), "比价失败，请稍后重试");
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_compare_prices", request, response, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_compare_prices", request, response, e, null, startedAt);
             return response;
         }
     }

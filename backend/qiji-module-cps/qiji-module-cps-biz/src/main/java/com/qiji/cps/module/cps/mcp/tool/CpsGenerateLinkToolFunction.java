@@ -108,7 +108,7 @@ public class CpsGenerateLinkToolFunction
         if (request.getPlatformCode() == null || request.getGoodsId() == null) {
             Response response = new Response(null, null, null, null, null, null, null, null, "platform_code 和 goods_id 不能为空");
             CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response,
-                    new IllegalArgumentException("platform_code/goods_id required"), startedAt);
+                    new IllegalArgumentException("platform_code/goods_id required"), toolContext, startedAt);
             return response;
         }
         try {
@@ -138,7 +138,7 @@ public class CpsGenerateLinkToolFunction
             if (result == null) {
                 Response response = new Response(null, null, null, null, null, null, null, null, "转链失败，请检查商品ID是否正确");
                 CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response,
-                        new IllegalStateException("empty promotion link result"), startedAt);
+                        new IllegalStateException("empty promotion link result"), toolContext, startedAt);
                 return response;
             }
 
@@ -152,11 +152,11 @@ public class CpsGenerateLinkToolFunction
                     result.getCommissionAmount(),
                     result.getCouponInfo(),
                     null);
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response, null, toolContext, startedAt);
             return response;
         } catch (Exception e) {
             Response response = new Response(null, null, null, null, null, null, null, null, "转链失败，请稍后重试");
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response, e, toolContext, startedAt);
             return response;
         }
     }

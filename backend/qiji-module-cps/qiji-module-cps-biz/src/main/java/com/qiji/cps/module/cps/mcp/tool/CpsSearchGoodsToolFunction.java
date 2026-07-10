@@ -131,7 +131,7 @@ public class CpsSearchGoodsToolFunction
         if (request.getKeyword() == null || request.getKeyword().isBlank()) {
             Response response = new Response(0, Collections.emptyList(), "关键词不能为空");
             CpsMcpToolAuditSupport.record(accessLogMapper, "cps_search_goods", request, response,
-                    new IllegalArgumentException("keyword required"), startedAt);
+                    new IllegalArgumentException("keyword required"), null, startedAt);
             return response;
         }
         try {
@@ -179,11 +179,11 @@ public class CpsSearchGoodsToolFunction
                     }).collect(Collectors.toList());
 
             Response response = new Response(voList.size(), voList, null);
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_search_goods", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_search_goods", request, response, null, null, startedAt);
             return response;
         } catch (Exception e) {
             Response response = new Response(0, Collections.emptyList(), "搜索失败，请稍后重试");
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_search_goods", request, response, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_search_goods", request, response, e, null, startedAt);
             return response;
         }
     }

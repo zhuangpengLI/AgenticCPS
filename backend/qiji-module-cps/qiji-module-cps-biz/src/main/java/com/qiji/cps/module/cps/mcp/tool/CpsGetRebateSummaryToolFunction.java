@@ -115,7 +115,7 @@ public class CpsGetRebateSummaryToolFunction
         if (memberId == null) {
             Response response = new Response(null, null, null, null, null, Collections.emptyList(), "未登录或无法获取用户信息，请先登录");
             CpsMcpToolAuditSupport.record(accessLogMapper, "cps_get_rebate_summary", request, response,
-                    new IllegalStateException("missing tool context user"), startedAt);
+                    new IllegalStateException("missing tool context user"), toolContext, startedAt);
             return response;
         }
         try {
@@ -152,11 +152,11 @@ public class CpsGetRebateSummaryToolFunction
                     accountStatus,
                     recentRecords,
                     null);
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_get_rebate_summary", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_get_rebate_summary", request, response, null, toolContext, startedAt);
             return response;
         } catch (Exception e) {
             Response response = new Response(null, null, null, null, null, Collections.emptyList(), "查询返利汇总失败，请稍后重试");
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_get_rebate_summary", request, response, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_get_rebate_summary", request, response, e, toolContext, startedAt);
             return response;
         }
     }

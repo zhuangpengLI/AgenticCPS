@@ -104,7 +104,7 @@ public class CpsRecommendFromSelectionThemeToolFunction
             if (request == null || request.getThemeId() == null) {
                 Response response = new Response("FAILED", "theme_id 不能为空", "selection_theme", null, List.of());
                 CpsMcpToolAuditSupport.record(accessLogMapper, "cps_recommend_from_selection_theme", request,
-                        response, new IllegalArgumentException("theme_id required"), startedAt);
+                    response, new IllegalArgumentException("theme_id required"), toolContext, startedAt);
                 return response;
             }
             CpsSelectionThemeDO theme = selectionThemeService.getTheme(request.getThemeId());
@@ -112,7 +112,7 @@ public class CpsRecommendFromSelectionThemeToolFunction
                 Response response = new Response("OFFLINE", "主题未发布或已下线", "selection_theme",
                         theme == null ? null : toTheme(theme), List.of());
                 CpsMcpToolAuditSupport.record(accessLogMapper, "cps_recommend_from_selection_theme", request,
-                        response, null, startedAt);
+                    response, null, toolContext, startedAt);
                 return response;
             }
             int limit = request.getLimit() == null || request.getLimit() <= 0 ? 10 : Math.min(request.getLimit(), 50);
@@ -123,11 +123,11 @@ public class CpsRecommendFromSelectionThemeToolFunction
                     .map(item -> toItem(item, generateLink ? memberId : null))
                     .toList();
             Response response = new Response("SUCCESS", "已返回主题商品推荐", "selection_theme", toTheme(theme), items);
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_recommend_from_selection_theme", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_recommend_from_selection_theme", request, response, null, toolContext, startedAt);
             return response;
         } catch (Exception e) {
             Response response = new Response("FAILED", "主题商品推荐失败，请稍后重试", "selection_theme", null, List.of());
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_recommend_from_selection_theme", request, response, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_recommend_from_selection_theme", request, response, e, toolContext, startedAt);
             return response;
         }
     }

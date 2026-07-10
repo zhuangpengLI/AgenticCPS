@@ -49,12 +49,12 @@ public class CpxQueryConversionsToolFunction
                     request == null ? null : request.getLimit()));
             response.setStatus("SUCCESS");
             response.setReason("已返回 CPX 转化记录");
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_query_conversions", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_query_conversions", request, response, null, toolContext, startedAt);
             return response;
         } catch (Exception e) {
             response.setStatus("FAILED");
             response.setReason("CPX 转化查询失败，请稍后重试");
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_query_conversions", request, response, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_query_conversions", request, response, e, toolContext, startedAt);
             return response;
         }
     }

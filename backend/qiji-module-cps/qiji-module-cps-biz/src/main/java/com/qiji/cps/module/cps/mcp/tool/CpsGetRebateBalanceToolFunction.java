@@ -35,10 +35,10 @@ public class CpsGetRebateBalanceToolFunction
         Long memberId = extractMemberId(toolContext);
         try {
             OpenApiCpsRebateBalanceRespVO response = exchangeService.getBalance(memberId);
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_get_rebate_balance", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_get_rebate_balance", request, response, null, toolContext, startedAt);
             return response;
         } catch (Exception e) {
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_get_rebate_balance", request, null, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_get_rebate_balance", request, null, e, toolContext, startedAt);
             throw e;
         }
     }

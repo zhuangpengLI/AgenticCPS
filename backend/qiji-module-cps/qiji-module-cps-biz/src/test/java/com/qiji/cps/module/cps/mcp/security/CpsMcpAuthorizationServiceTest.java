@@ -54,6 +54,9 @@ class CpsMcpAuthorizationServiceTest {
         assertEquals(40L, trusted.getContext().get("CONVERSATION_ID"));
         assertEquals("self-mcp", trusted.getContext().get("MCP_CLIENT_NAME"));
         assertEquals(false, trusted.getContext().get("ALLOW_MUTATION"));
+        assertEquals("SELF_MCP_TEST", trusted.getContext().get(
+                CpsMcpAuthorizationService.TOOL_CONTEXT_INVOCATION_SOURCE));
+        assertTrue(CpsMcpAuthorizationService.isTrustedSelfTestContext(trusted));
         assertFalse(trusted.getContext().containsKey("memberId"));
     }
 
@@ -102,6 +105,14 @@ class CpsMcpAuthorizationServiceTest {
         ToolContext regularContext = new ToolContext(Map.of("LOGIN_USER_ID", 99L));
 
         assertSame(regularContext, service.authorize("unknown_regular_mcp_tool", regularContext));
+    }
+
+    @Test
+    void isTrustedSelfTestContext_rejectsSpoofedInvocationSourceFromRegularMcpContext() {
+        ToolContext forgedContext = new ToolContext(Map.of(
+                CpsMcpAuthorizationService.TOOL_CONTEXT_INVOCATION_SOURCE, "SELF_MCP_TEST"));
+
+        assertFalse(CpsMcpAuthorizationService.isTrustedSelfTestContext(forgedContext));
     }
 
     @Test

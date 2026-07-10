@@ -45,10 +45,10 @@ public class CpsCreateTokenExchangeToolFunction
         try {
             CpsRebateTokenExchangeOrderDO response =
                     exchangeService.submit(extractMemberId(toolContext), request.getAmount(), request.getIdempotencyKey());
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_create_token_exchange", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_create_token_exchange", request, response, null, toolContext, startedAt);
             return response;
         } catch (Exception e) {
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_create_token_exchange", request, null, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_create_token_exchange", request, null, e, toolContext, startedAt);
             throw e;
         }
     }

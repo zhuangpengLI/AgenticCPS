@@ -69,11 +69,11 @@ public class CpxListTasksToolFunction implements Function<CpxListTasksToolFuncti
                     request == null ? null : request.getLimit());
             Response response = new Response("SUCCESS", "已返回 CPX 任务，CPS 成交返利优先",
                     tasks.stream().map(this::toTask).toList());
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_list_tasks", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_list_tasks", request, response, null, null, startedAt);
             return response;
         } catch (Exception e) {
             Response response = new Response("FAILED", "CPX 任务查询失败，请稍后重试", List.of());
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_list_tasks", request, response, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_list_tasks", request, response, e, null, startedAt);
             return response;
         }
     }

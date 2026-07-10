@@ -69,11 +69,11 @@ public class CpsListSelectionThemesToolFunction
                     request == null ? null : request.getPromotionEvent());
             Response response = new Response("SUCCESS", "已返回已发布主题库", "selection_theme",
                     themes.stream().map(this::toTheme).toList());
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_list_selection_themes", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_list_selection_themes", request, response, null, null, startedAt);
             return response;
         } catch (Exception e) {
             Response response = new Response("FAILED", "选品主题查询失败，请稍后重试", "selection_theme", List.of());
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_list_selection_themes", request, response, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_list_selection_themes", request, response, e, null, startedAt);
             return response;
         }
     }

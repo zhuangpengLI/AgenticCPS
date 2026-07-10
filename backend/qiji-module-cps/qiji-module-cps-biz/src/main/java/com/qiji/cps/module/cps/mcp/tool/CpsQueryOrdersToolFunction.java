@@ -129,7 +129,7 @@ public class CpsQueryOrdersToolFunction
         if (memberId == null) {
             Response response = new Response(0L, Collections.emptyList(), "未登录或无法获取用户信息，请先登录");
             CpsMcpToolAuditSupport.record(accessLogMapper, "cps_query_orders", request, response,
-                    new IllegalStateException("missing tool context user"), startedAt);
+                    new IllegalStateException("missing tool context user"), toolContext, startedAt);
             return response;
         }
         try {
@@ -159,11 +159,11 @@ public class CpsQueryOrdersToolFunction
             }).collect(Collectors.toList());
 
             Response response = new Response(pageResult.getTotal(), voList, null);
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_query_orders", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_query_orders", request, response, null, toolContext, startedAt);
             return response;
         } catch (Exception e) {
             Response response = new Response(0L, Collections.emptyList(), "查询订单失败，请稍后重试");
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_query_orders", request, response, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_query_orders", request, response, e, toolContext, startedAt);
             return response;
         }
     }

@@ -58,12 +58,12 @@ public class CpxGenerateTrackingLinkToolFunction
             response.setReason("已生成 CPX tracking link");
             response.setTrackingId(link.getTrackingId());
             response.setTrackingUrl(link.getTrackingUrl());
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_generate_tracking_link", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_generate_tracking_link", request, response, null, toolContext, startedAt);
             return response;
         } catch (Exception e) {
             response.setStatus("FAILED");
             response.setReason("CPX tracking link 生成失败，请稍后重试");
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_generate_tracking_link", request, response, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_generate_tracking_link", request, response, e, toolContext, startedAt);
             return response;
         }
     }

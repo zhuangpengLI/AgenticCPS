@@ -52,12 +52,12 @@ public class CpxSearchArticlesToolFunction implements Function<CpxSearchArticles
                     request == null ? null : request.getLimit()));
             response.setStatus("SUCCESS");
             response.setReason("已返回 CPX 资讯");
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_search_articles", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_search_articles", request, response, null, null, startedAt);
             return response;
         } catch (Exception e) {
             response.setStatus("FAILED");
             response.setReason("CPX 资讯查询失败，请稍后重试");
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_search_articles", request, response, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_search_articles", request, response, e, null, startedAt);
             return response;
         }
     }

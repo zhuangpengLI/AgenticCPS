@@ -35,10 +35,10 @@ public class CpsQueryExchangeStatusToolFunction
         long startedAt = System.currentTimeMillis();
         try {
             CpsRebateTokenExchangeOrderDO response = exchangeService.getExchangeOrder(request.getExchangeOrderNo());
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_query_exchange_status", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_query_exchange_status", request, response, null, null, startedAt);
             return response;
         } catch (Exception e) {
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_query_exchange_status", request, null, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_query_exchange_status", request, null, e, null, startedAt);
             throw e;
         }
     }

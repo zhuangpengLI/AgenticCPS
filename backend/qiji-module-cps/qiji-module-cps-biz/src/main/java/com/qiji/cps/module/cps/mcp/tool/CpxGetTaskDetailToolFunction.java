@@ -41,12 +41,12 @@ public class CpxGetTaskDetailToolFunction implements Function<CpxGetTaskDetailTo
             response.setTask(taskService.getTask(request.getTaskId()));
             response.setStatus(response.getTask() == null ? "FAILED" : "SUCCESS");
             response.setReason(response.getTask() == null ? "任务不存在" : "已返回任务详情");
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_get_task_detail", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_get_task_detail", request, response, null, null, startedAt);
             return response;
         } catch (Exception e) {
             response.setStatus("FAILED");
             response.setReason("CPX 任务详情查询失败，请稍后重试");
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_get_task_detail", request, response, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cpx_get_task_detail", request, response, e, null, startedAt);
             return response;
         }
     }

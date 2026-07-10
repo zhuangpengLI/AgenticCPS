@@ -69,17 +69,17 @@ public class CpsPurchaseDecisionToolFunction
         if (request == null || !StringUtils.hasText(request.getNeed())) {
             CpsPurchaseDecisionResponse response = CpsPurchaseDecisionResponse.error("购买需求不能为空");
             CpsMcpToolAuditSupport.record(accessLogMapper, "cps_purchase_decision", request, response,
-                    new IllegalArgumentException("need required"), startedAt);
+                    new IllegalArgumentException("need required"), toolContext, startedAt);
             return response;
         }
         try {
             CpsPurchaseDecisionResponse response = purchaseDecisionService.decide(toServiceRequest(request),
                     resolveTrustedMemberId(toolContext));
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_purchase_decision", request, response, null, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_purchase_decision", request, response, null, toolContext, startedAt);
             return response;
         } catch (Exception e) {
             CpsPurchaseDecisionResponse response = CpsPurchaseDecisionResponse.error("购买决策失败，请稍后重试");
-            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_purchase_decision", request, response, e, startedAt);
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_purchase_decision", request, response, e, toolContext, startedAt);
             return response;
         }
     }
