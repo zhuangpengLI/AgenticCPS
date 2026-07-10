@@ -278,6 +278,16 @@ qiji:
     web-search:
       enable: true
       api-key: sk-40500e52840f4d24b956d0b1d80d9abe
+    mcp:
+      self-test:
+        enabled: false
+        client-name: ${AI_MCP_SELF_TEST_CLIENT_NAME:}
+        base-url: ${AI_MCP_SELF_TEST_BASE_URL:}
+        endpoint: ${AI_MCP_SELF_TEST_ENDPOINT:/mcp/cps}
+        connect-timeout: ${AI_MCP_SELF_TEST_CONNECT_TIMEOUT:5s}
+        read-timeout: ${AI_MCP_SELF_TEST_READ_TIMEOUT:30s}
+        ttl: ${AI_MCP_SELF_TEST_TTL:60s}
+        secret: ${AI_MCP_SELF_TEST_SECRET:}
 
 --- #################### AgenticCPS相关配置 ####################
 

@@ -3,6 +3,8 @@ package com.qiji.cps.module.ai.framework.ai.config;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.time.Duration;
+
 /**
  * AgenticCPS AI 配置类
  *
@@ -12,6 +14,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "qiji.ai")
 @Data
 public class QijiAiProperties {
+
+    /**
+     * AI 对自身 MCP 服务的受信调用配置。
+     */
+    private Mcp mcp = new Mcp();
 
     /**
      * 谷歌 Gemini
@@ -58,6 +65,27 @@ public class QijiAiProperties {
      * 网络搜索
      */
     private WebSearch webSearch;
+
+    @Data
+    public static class Mcp {
+
+        private McpSelfTest selfTest = new McpSelfTest();
+
+    }
+
+    @Data
+    public static class McpSelfTest {
+
+        private boolean enabled;
+        private String clientName;
+        private String baseUrl;
+        private String endpoint;
+        private Duration connectTimeout = Duration.ofSeconds(5);
+        private Duration readTimeout = Duration.ofSeconds(30);
+        private Duration ttl = Duration.ofSeconds(60);
+        private String secret;
+
+    }
 
     @Data
     public static class Gemini {
