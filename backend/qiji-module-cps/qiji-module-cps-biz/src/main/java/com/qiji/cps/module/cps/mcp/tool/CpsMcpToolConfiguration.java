@@ -1,6 +1,10 @@
 package com.qiji.cps.module.cps.mcp.tool;
 
+import com.qiji.cps.module.cps.mcp.security.CpsMcpAuthorizationService;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -33,8 +37,9 @@ public class CpsMcpToolConfiguration {
             CpxGenerateTrackingLinkToolFunction generateTrackingLinkToolFunction,
             CpxQueryConversionsToolFunction queryConversionsToolFunction,
             CpxRecommendTasksBySceneToolFunction recommendTasksBySceneToolFunction,
-            CpxSearchArticlesToolFunction searchArticlesToolFunction) {
-        return List.of(
+            CpxSearchArticlesToolFunction searchArticlesToolFunction,
+            CpsMcpAuthorizationService authorizationService) {
+        List<ToolCallback> callbacks = List.of(
                 FunctionToolCallback.builder("cps_search_goods", searchGoodsToolFunction)
                         .description("多平台商品搜索，返回商品标题、价格、券后价、优惠券金额、佣金比例、预估返利和销量等信息")
                         .inputType(CpsSearchGoodsToolFunction.Request.class)
@@ -107,5 +112,42 @@ public class CpsMcpToolConfiguration {
                         .description("搜索 CPX/CPS 内容和资讯")
                         .inputType(CpxSearchArticlesToolFunction.Request.class)
                         .build());
+        return callbacks.stream().<ToolCallback>map(callback -> new AuthorizedToolCallback(callback, authorizationService))
+                .toList();
+    }
+
+    /**
+     * A callback must authorize self-test calls immediately before the actual tool receives context.
+     */
+    private static class AuthorizedToolCallback implements ToolCallback {
+
+        private final ToolCallback delegate;
+        private final CpsMcpAuthorizationService authorizationService;
+
+        private AuthorizedToolCallback(ToolCallback delegate, CpsMcpAuthorizationService authorizationService) {
+            this.delegate = delegate;
+            this.authorizationService = authorizationService;
+        }
+
+        @Override
+        public ToolDefinition getToolDefinition() {
+            return delegate.getToolDefinition();
+        }
+
+        @Override
+        public ToolMetadata getToolMetadata() {
+            return delegate.getToolMetadata();
+        }
+
+        @Override
+        public String call(String toolInput) {
+            return call(toolInput, new ToolContext(java.util.Map.of()));
+        }
+
+        @Override
+        public String call(String toolInput, ToolContext toolContext) {
+            ToolContext trustedContext = authorizationService.authorize(getToolDefinition().name(), toolContext);
+            return delegate.call(toolInput, trustedContext);
+        }
     }
 }
