@@ -2,7 +2,9 @@ package com.qiji.cps.module.cps.mcp.tool;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.qiji.cps.module.cps.dal.dataobject.mcp.CpsMcpAccessLogDO;
 import com.qiji.cps.module.cps.dal.mysql.mcp.CpsMcpAccessLogMapper;
 import com.qiji.cps.module.cps.mcp.security.CpsMcpAuthorizationService;
@@ -89,13 +91,21 @@ final class CpsMcpToolAuditSupport {
                 Map.Entry<String, JsonNode> field = fields.next();
                 if (isSensitiveKey(field.getKey())) {
                     objectNode.put(field.getKey(), "***");
+                } else if (field.getValue().isTextual()) {
+                    objectNode.put(field.getKey(), redactString(field.getValue().asText()));
                 } else {
                     redact(field.getValue());
                 }
             }
         } else if (node.isArray()) {
-            for (JsonNode item : node) {
-                redact(item);
+            ArrayNode arrayNode = (ArrayNode) node;
+            for (int i = 0; i < arrayNode.size(); i++) {
+                JsonNode item = arrayNode.get(i);
+                if (item.isTextual()) {
+                    arrayNode.set(i, TextNode.valueOf(redactString(item.asText())));
+                } else {
+                    redact(item);
+                }
             }
         }
     }

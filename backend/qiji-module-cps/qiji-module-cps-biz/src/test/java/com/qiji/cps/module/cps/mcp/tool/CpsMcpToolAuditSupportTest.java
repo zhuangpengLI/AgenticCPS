@@ -32,13 +32,15 @@ class CpsMcpToolAuditSupportTest {
         Map<String, Object> request = Map.of(
                 "memberId", 999L,
                 "keyword", "phone",
+                "details", "Authorization Bearer nested-request-secret",
                 "apiKey", "api-key-secret",
                 "envelope", "envelope-secret",
                 "nested", Map.of("signature", "signature-secret", "normal", "kept"),
-                "items", List.of(Map.of("nonce", "nonce-secret")));
+                "items", List.of(Map.of("nonce", "nonce-secret"), "envelope=nested-array-secret"));
 
         CpsMcpToolAuditSupport.record(mapper, "cps_search_goods", request,
-                "{\"authorization\":\"Bearer response-token\",\"title\":\"kept response\"}",
+                "{\"authorization\":\"Bearer response-token\",\"title\":\"kept response\","
+                        + "\"details\":\"Authorization Bearer nested-response-secret\"}",
                 null, toolContext, System.currentTimeMillis());
 
         CpsMcpAccessLogDO log = captured(mapper);
@@ -52,8 +54,9 @@ class CpsMcpToolAuditSupportTest {
         assertTrue(log.getRequestParams().contains("phone"));
         assertTrue(log.getRequestParams().contains("kept"));
         assertTrue(log.getResponseData().contains("kept response"));
-        assertRedacted(log.getRequestParams(), "api-key-secret", "envelope-secret", "signature-secret", "nonce-secret");
-        assertRedacted(log.getResponseData(), "response-token");
+        assertRedacted(log.getRequestParams(), "api-key-secret", "envelope-secret", "signature-secret", "nonce-secret",
+                "nested-request-secret", "nested-array-secret");
+        assertRedacted(log.getResponseData(), "response-token", "nested-response-secret");
     }
 
     @Test
