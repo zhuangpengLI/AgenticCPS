@@ -122,7 +122,11 @@ final class CpsMcpToolAuditSupport {
         }
         String redacted = value.replaceAll("(?i)(authorization)\\s*[=:]\\s*"
                 + "(?:bearer|basic|token|apikey)\\s+[^,\\s]+", "$1=***");
-        return redacted.replaceAll("(?i)(signature|api[\\s_-]?key|secret|nonce|authorization|token)"
+        redacted = redacted.replaceAll("(?i)(authorization)\\s+"
+                + "(?:bearer|basic|token|apikey)\\s+[^,\\s]+", "$1=***");
+        redacted = redacted.replaceAll("(?i)(envelope)\\s*[=:]\\s*[^,\\s]+", "$1=***");
+        redacted = redacted.replaceAll("(?i)(envelope)\\s+[^,\\s]+", "$1=***");
+        return redacted.replaceAll("(?i)(signature|api[\\s_-]?key|secret|nonce|authorization|token|envelope)"
                 + "\\s*[=:]\\s*[^,\\s]+", "$1=***");
     }
 

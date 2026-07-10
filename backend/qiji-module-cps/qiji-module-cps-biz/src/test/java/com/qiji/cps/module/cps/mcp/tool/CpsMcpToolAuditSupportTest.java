@@ -64,13 +64,17 @@ class CpsMcpToolAuditSupportTest {
 
         CpsMcpToolAuditSupport.record(mapper, "cps_search_goods", request,
                 "signature=plain-signature token=plain-token nonce=plain-nonce apiKey=plain-api-key "
-                        + "authorization=Bearer bearer-secret api key=space-api-key",
+                        + "authorization=Bearer bearer-secret api key=space-api-key"
+                        + " Authorization Bearer bearer-header-secret, Authorization Basic basic-header-secret,"
+                        + " Authorization Token token-header-secret, envelope=envelope-direct-secret,"
+                        + " envelope : envelope-colon-secret, envelope envelope-space-secret",
                 null, null, System.currentTimeMillis());
 
         CpsMcpAccessLogDO log = captured(mapper);
         assertRedacted(log.getRequestParams(), "pojo-api-key", "pojo-envelope", "nested-secret");
         assertRedacted(log.getResponseData(), "plain-signature", "plain-token", "plain-nonce", "plain-api-key",
-                "bearer-secret", "space-api-key");
+                "bearer-secret", "space-api-key", "bearer-header-secret", "basic-header-secret",
+                "token-header-secret", "envelope-direct-secret", "envelope-colon-secret", "envelope-space-secret");
     }
 
     @Test
