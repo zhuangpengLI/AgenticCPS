@@ -6,6 +6,7 @@ import com.qiji.cps.framework.tenant.core.context.TenantContextHolder;
 import com.qiji.cps.module.ai.framework.ai.config.QijiAiProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -20,6 +21,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CpsMcpIdentityVerifierTest {
@@ -73,6 +76,18 @@ class CpsMcpIdentityVerifierTest {
         CpsMcpIdentityVerifier blankSecretVerifier = new CpsMcpIdentityVerifier(blankSecret,
                 new InMemoryNonceStore(), Clock.fixed(NOW, ZoneOffset.UTC));
         assertThrows(SecurityException.class, () -> blankSecretVerifier.verify(envelope(valid)));
+    }
+
+    @Test
+    void spring_createsVerifierUsingItsApplicationConstructor() {
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+            context.registerBean(QijiAiProperties.class, () -> properties(SECRET));
+            context.registerBean(CpsMcpNonceStore.class, InMemoryNonceStore::new);
+            context.register(CpsMcpIdentityVerifier.class);
+
+            assertDoesNotThrow(context::refresh);
+            assertNotNull(context.getBean(CpsMcpIdentityVerifier.class));
+        }
     }
 
     private static CpsMcpIdentityVerifier verifier(CpsMcpNonceStore nonceStore) {

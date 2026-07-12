@@ -4,6 +4,7 @@ import com.qiji.cps.framework.common.mcp.McpIdentityClaims;
 import com.qiji.cps.framework.common.mcp.McpIdentityEnvelope;
 import com.qiji.cps.framework.tenant.core.context.TenantContextHolder;
 import com.qiji.cps.module.ai.framework.ai.config.QijiAiProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -26,6 +27,7 @@ public class CpsMcpIdentityVerifier {
     private final CpsMcpNonceStore nonceStore;
     private final Clock clock;
 
+    @Autowired
     public CpsMcpIdentityVerifier(QijiAiProperties properties, CpsMcpNonceStore nonceStore) {
         this(properties, nonceStore, Clock.systemUTC());
     }

@@ -133,7 +133,7 @@ const loginData = reactive({
   },
   loginForm: {
     uuid: '',
-    tenantName: 'AgenticCPS源码',
+    tenantName: 'AgenticCPS',
     mobileNumber: '',
     code: ''
   }
