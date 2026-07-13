@@ -32,16 +32,16 @@ class CpsRebateActivitySchemaTest {
     private Path findBackendSqlFile() {
         Path current = Path.of("").toAbsolutePath();
         while (current != null) {
-            Path backendCandidate = current.resolve("sql/mysql/cps-all-in-one.sql");
+            Path backendCandidate = current.resolve("sql/module/cps-all-in-one.sql");
             if (Files.exists(backendCandidate)) {
                 return backendCandidate;
             }
-            Path repoCandidate = current.resolve("backend/sql/mysql/cps-all-in-one.sql");
+            Path repoCandidate = current.resolve("backend/sql/module/cps-all-in-one.sql");
             if (Files.exists(repoCandidate)) {
                 return repoCandidate;
             }
             current = current.getParent();
         }
-        throw new AssertionError("Unable to locate backend/sql/mysql/cps-all-in-one.sql");
+        throw new AssertionError("Unable to locate backend/sql/module/cps-all-in-one.sql");
     }
 }

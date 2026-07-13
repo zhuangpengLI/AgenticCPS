@@ -2,6 +2,7 @@ package com.qiji.cps.module.ai.service.chat;
 
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationCreateMyReqVO;
+import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationCreateMcpTestReqVO;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationPageReqVO;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationUpdateMyReqVO;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.message.AiChatMessageRespVO;
@@ -33,6 +34,8 @@ public interface AiChatConversationService {
      * @return 编号
      */
     Long createMemberConversation(AiChatConversationCreateMyReqVO createReqVO, Long memberId);
+
+    Long createMcpTestConversation(AiChatConversationCreateMcpTestReqVO createReqVO, Long adminUserId);
 
     /**
      * 更新【我的】聊天对话

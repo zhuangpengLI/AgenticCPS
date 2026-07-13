@@ -55,6 +55,7 @@ public class MenuServiceImpl implements MenuService {
         validateParentMenu(createReqVO.getParentId(), null);
         // 校验菜单（自己）
         validateMenuName(createReqVO.getParentId(), createReqVO.getName(), null);
+        validateMenuPath(createReqVO.getParentId(), createReqVO.getPath(), null);
         validateMenuComponentName(createReqVO.getComponentName(), null);
 
         // 插入数据库
@@ -77,6 +78,7 @@ public class MenuServiceImpl implements MenuService {
         validateParentMenu(updateReqVO.getParentId(), updateReqVO.getId());
         // 校验菜单（自己）
         validateMenuName(updateReqVO.getParentId(), updateReqVO.getName(), updateReqVO.getId());
+        validateMenuPath(updateReqVO.getParentId(), updateReqVO.getPath(), updateReqVO.getId());
         validateMenuComponentName(updateReqVO.getComponentName(), updateReqVO.getId());
 
         // 更新到数据库
@@ -260,6 +262,20 @@ public class MenuServiceImpl implements MenuService {
         }
         if (!menu.getId().equals(id)) {
             throw exception(MENU_NAME_DUPLICATE);
+        }
+    }
+
+    @VisibleForTesting
+    void validateMenuPath(Long parentId, String path, Long id) {
+        if (StrUtil.isBlank(path)) {
+            return;
+        }
+        MenuDO menu = menuMapper.selectByParentIdAndPath(parentId, path);
+        if (menu == null) {
+            return;
+        }
+        if (id == null || !menu.getId().equals(id)) {
+            throw exception(MENU_PATH_DUPLICATE);
         }
     }
 

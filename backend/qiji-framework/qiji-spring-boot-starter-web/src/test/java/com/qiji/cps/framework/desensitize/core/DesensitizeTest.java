@@ -23,7 +23,7 @@ public class DesensitizeTest {
     public void test() {
         // 准备参数
         DesensitizeDemo desensitizeDemo = new DesensitizeDemo();
-        desensitizeDemo.setNickname("AgenticCPS源码");
+        desensitizeDemo.setNickname("芋芋芋芋");
         desensitizeDemo.setBankCard("9988002866797031");
         desensitizeDemo.setCarLicense("粤A66666");
         desensitizeDemo.setFixedPhone("01086551122");

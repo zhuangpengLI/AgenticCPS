@@ -9,6 +9,8 @@ import com.qiji.cps.module.ai.enums.chat.AiChatModeEnum;
 import com.qiji.cps.module.ai.enums.chat.AiChatOwnerTypeEnum;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationCreateMyReqVO;
+import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationCreateMcpTestReqVO;
+import com.qiji.cps.module.member.api.user.MemberUserApi;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationPageReqVO;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationUpdateMyReqVO;
 import com.qiji.cps.module.ai.dal.dataobject.chat.AiChatConversationDO;
@@ -51,6 +53,8 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
     private AiChatRoleService chatRoleService;
     @Resource
     private AiKnowledgeService knowledgeService;
+    @Resource
+    private MemberUserApi memberUserApi;
 
     @Override
     public Long createChatConversationMy(AiChatConversationCreateMyReqVO createReqVO, Long userId) {
@@ -60,6 +64,30 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
     @Override
     public Long createMemberConversation(AiChatConversationCreateMyReqVO createReqVO, Long memberId) {
         return createConversation(createReqVO, memberId, AiChatOwnerTypeEnum.MEMBER, memberId);
+    }
+
+    @Override
+    public Long createMcpTestConversation(AiChatConversationCreateMcpTestReqVO createReqVO, Long adminUserId) {
+        memberUserApi.validateUser(createReqVO.getMemberId());
+        Long roleId = createReqVO.getRoleId();
+        if (roleId == null) {
+            roleId = chatRoleService.getChatRoleListByName("CPS 联盟助手").stream()
+                    .filter(item -> Boolean.TRUE.equals(item.getPublicStatus()) && item.getStatus() == 0)
+                    .findFirst().map(AiChatRoleDO::getId).orElseThrow(() -> new IllegalStateException("CPS 联盟助手未配置"));
+        }
+        AiChatRoleDO role = chatRoleService.validateChatRole(roleId);
+        AiModelDO model = role.getModelId() != null ? modalService.validateModel(role.getModelId())
+                : modalService.getRequiredDefaultModel(AiModelTypeEnum.CHAT.getType());
+        validateChatModel(model);
+        AiChatConversationDO conversation = new AiChatConversationDO().setUserId(adminUserId)
+                .setOwnerUserType(AiChatOwnerTypeEnum.ADMIN.name()).setMemberId(createReqVO.getMemberId())
+                .setChatMode(AiChatModeEnum.SELF_MCP_TEST.name()).setMcpClientName("cps")
+                .setAllowMutation(false).setIdentityBoundTime(LocalDateTime.now()).setPinned(false)
+                .setRoleId(role.getId()).setTitle(role.getName()).setSystemMessage(role.getSystemMessage())
+                .setModelId(model.getId()).setModel(model.getModel()).setTemperature(model.getTemperature())
+                .setMaxTokens(model.getMaxTokens()).setMaxContexts(model.getMaxContexts());
+        chatConversationMapper.insert(conversation);
+        return conversation.getId();
     }
 
     private Long createConversation(AiChatConversationCreateMyReqVO createReqVO, Long ownerId,

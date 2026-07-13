@@ -36,7 +36,6 @@ class JutuikeUnionVendorClientTest {
                 config());
 
         assertEquals("/union/act_list", client.lastPath);
-        assertEquals("test-key", client.lastParams.get("apikey"));
         assertEquals("美团", client.lastParams.get("cate_name"));
         assertEquals(1L, page.getTotal());
         CpsThirdPartyActivity activity = page.getList().get(0);

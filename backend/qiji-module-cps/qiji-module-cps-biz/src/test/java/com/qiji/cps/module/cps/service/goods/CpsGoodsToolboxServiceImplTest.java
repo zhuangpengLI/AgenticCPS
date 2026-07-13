@@ -6,7 +6,6 @@ import com.qiji.cps.module.cps.client.CpsCouponInfoVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsCouponInfo;
 import com.qiji.cps.module.cps.client.dto.CpsContentParseResult;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
-import com.qiji.cps.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsBatchTransferReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsCashGiftPlanReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsCouponQueryReqVO;
@@ -316,10 +315,7 @@ class CpsGoodsToolboxServiceImplTest {
                 .taoCommand("￥FV25gmAa2SI￥")
                 .status(1)
                 .build();
-        when(transferRecordMapper.selectList(any())).thenAnswer(invocation -> {
-            LambdaQueryWrapperX<CpsTransferRecordDO> wrapper = invocation.getArgument(0);
-            return wrapper.getSqlSegment().contains("tao_command") ? List.of(record) : List.of();
-        });
+        when(transferRecordMapper.selectList(any())).thenReturn(List.of(record));
         when(memberUserService.getUser(285L)).thenReturn(MemberUserDO.builder()
                 .id(285L)
                 .nickname("我是喵团员")

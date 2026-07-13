@@ -5,6 +5,7 @@ import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationCreateMyReqVO;
+import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationCreateMcpTestReqVO;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationPageReqVO;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationRespVO;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationUpdateMyReqVO;
@@ -44,6 +45,13 @@ public class AiChatConversationController {
     @Operation(summary = "创建【我的】聊天对话")
     public CommonResult<Long> createChatConversationMy(@RequestBody @Valid AiChatConversationCreateMyReqVO createReqVO) {
         return success(chatConversationService.createChatConversationMy(createReqVO, getLoginUserId()));
+    }
+
+    @PostMapping("/create-mcp-test")
+    @Operation(summary = "创建 CPS MCP 只读自测会话")
+    @PreAuthorize("@ss.hasPermission('ai:chat:mcp-test')")
+    public CommonResult<Long> createMcpTestConversation(@RequestBody @Valid AiChatConversationCreateMcpTestReqVO createReqVO) {
+        return success(chatConversationService.createMcpTestConversation(createReqVO, getLoginUserId()));
     }
 
     @PutMapping("/update-my")

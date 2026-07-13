@@ -10,6 +10,7 @@ import com.qiji.cps.module.ai.enums.model.AiModelTypeEnum;
 import com.qiji.cps.module.ai.service.knowledge.AiKnowledgeService;
 import com.qiji.cps.module.ai.service.model.AiChatRoleService;
 import com.qiji.cps.module.ai.service.model.AiModelService;
+import com.qiji.cps.module.member.api.user.MemberUserApi;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -41,6 +42,8 @@ class AiChatConversationServiceImplTest extends BaseMockitoUnitTest {
     private AiChatRoleService chatRoleService;
     @Mock
     private AiKnowledgeService knowledgeService;
+    @Mock
+    private MemberUserApi memberUserApi;
 
     @Test
     void createChatConversationMy_persistsAdminStandardIdentity() {
@@ -86,6 +89,31 @@ class AiChatConversationServiceImplTest extends BaseMockitoUnitTest {
         assertEquals(42L, saved.getMemberId());
         assertEquals("STANDARD", saved.getChatMode());
         verify(chatRoleService).validateMemberEnabledChatRole(7L);
+    }
+
+    @Test
+    void createMcpTestConversation_bindsMemberAndDisablesMutation() {
+        AiModelDO model = model();
+        when(chatRoleService.validateChatRole(7L)).thenReturn(
+                new com.qiji.cps.module.ai.dal.dataobject.model.AiChatRoleDO().setId(7L).setName("CPS").setModelId(model.getId()));
+        when(modelService.validateModel(model.getId())).thenReturn(model);
+        doAnswer(invocation -> {
+            invocation.<AiChatConversationDO>getArgument(0).setId(102L);
+            return 1;
+        }).when(conversationMapper).insert(any(AiChatConversationDO.class));
+
+        Long id = conversationService.createMcpTestConversation(
+                new com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationCreateMcpTestReqVO()
+                        .setRoleId(7L).setMemberId(99L), 42L);
+
+        ArgumentCaptor<AiChatConversationDO> captor = ArgumentCaptor.forClass(AiChatConversationDO.class);
+        verify(memberUserApi).validateUser(99L);
+        verify(conversationMapper).insert(captor.capture());
+        assertEquals(102L, id);
+        assertEquals("ADMIN", captor.getValue().getOwnerUserType());
+        assertEquals(99L, captor.getValue().getMemberId());
+        assertEquals("SELF_MCP_TEST", captor.getValue().getChatMode());
+        assertEquals(Boolean.FALSE, captor.getValue().getAllowMutation());
     }
 
     @Test

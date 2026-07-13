@@ -243,13 +243,10 @@ class AbstractDtkVendorClientTest {
                 try {
                     return new ObjectMapper().readTree("""
                             {
-                              "status": 200,
+                              "code": 0,
+                              "msg": "成功",
                               "data": {
-                                "code": 0,
-                                "msg": "成功",
-                                "data": {
-                                  "hotWords": ["螺蛳粉", "耳机"]
-                                }
+                                "hotWords": ["螺蛳粉", "耳机"]
                               }
                             }
                             """);
@@ -283,15 +280,12 @@ class AbstractDtkVendorClientTest {
                 try {
                     return new ObjectMapper().readTree("""
                             {
-                              "status": 200,
-                              "data": {
-                                "code": 0,
-                                "msg": "成功",
-                                "data": [
-                                  {"kw": "裙子套装", "total": 128},
-                                  {"kw": "裙子半身裙", "total": 110}
-                                ]
-                              }
+                              "code": 0,
+                              "msg": "成功",
+                              "data": [
+                                {"kw": "裙子套装", "total": 128},
+                                {"kw": "裙子半身裙", "total": 110}
+                              ]
                             }
                             """);
                 } catch (Exception e) {

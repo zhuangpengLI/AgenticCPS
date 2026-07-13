@@ -36,6 +36,11 @@
             <artifactId>qiji-module-infra</artifactId>
             <version>${revision}</version>
         </dependency>
+        <dependency>
+            <groupId>com.qiji.cps</groupId>
+            <artifactId>qiji-module-member</artifactId>
+            <version>${revision}</version>
+        </dependency>
 
         <!-- 业务组件 -->
 

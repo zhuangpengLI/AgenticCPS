@@ -158,7 +158,7 @@ public class SmsChannelServiceTest extends BaseDbUnitTest {
     public void testGetSmsChannelPage() {
        // mock 数据
        SmsChannelDO dbSmsChannel = randomPojo(SmsChannelDO.class, o -> { // 等会查询到
-           o.setSignature("AgenticCPS源码");
+            o.setSignature("AgenticCPS");
            o.setStatus(CommonStatusEnum.ENABLE.getStatus());
            o.setCreateTime(buildTime(2020, 12, 12));
        });

@@ -2,7 +2,6 @@ package com.qiji.cps.module.cps.service.risk;
 
 import com.qiji.cps.module.cps.dal.dataobject.risk.CpsRiskRuleDO;
 import com.qiji.cps.module.cps.dal.mysql.risk.CpsRiskRuleMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,11 +41,6 @@ class CpsRiskServiceImplTest {
     @Mock
     private ValueOperations<String, String> valueOps;
 
-    @BeforeEach
-    void setUp() {
-        when(stringRedisTemplate.opsForValue()).thenReturn(valueOps);
-    }
-
     // ==================== 黑名单拦截测试 ====================
 
     @Test
@@ -76,6 +70,7 @@ class CpsRiskServiceImplTest {
     @DisplayName("checkTransferAllowed - clientIp 为 null 时跳过 IP 黑名单检查")
     void checkTransferAllowed_nullIpSkipped() {
         when(riskRuleMapper.existsBlacklist("member", "100")).thenReturn(false);
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOps);
         CpsRiskRuleDO rule = CpsRiskRuleDO.builder().limitCount(100).build();
         when(riskRuleMapper.selectActiveRateLimit()).thenReturn(rule);
         when(valueOps.increment(anyString())).thenReturn(1L);
@@ -93,6 +88,7 @@ class CpsRiskServiceImplTest {
     @DisplayName("checkTransferAllowed - 频率超限，返回 false")
     void checkTransferAllowed_rateLimitExceeded() {
         when(riskRuleMapper.existsBlacklist(any(), any())).thenReturn(false);
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOps);
         CpsRiskRuleDO rule = CpsRiskRuleDO.builder().limitCount(5).build();
         when(riskRuleMapper.selectActiveRateLimit()).thenReturn(rule);
         when(valueOps.increment(anyString())).thenReturn(6L); // 超过 5 次
@@ -106,6 +102,7 @@ class CpsRiskServiceImplTest {
     @DisplayName("checkTransferAllowed - 首次计数时设置 Redis TTL")
     void checkTransferAllowed_firstCountSetsTtl() {
         when(riskRuleMapper.existsBlacklist(any(), any())).thenReturn(false);
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOps);
         CpsRiskRuleDO rule = CpsRiskRuleDO.builder().limitCount(100).build();
         when(riskRuleMapper.selectActiveRateLimit()).thenReturn(rule);
         when(valueOps.increment(anyString())).thenReturn(1L); // 第 1 次
@@ -120,6 +117,7 @@ class CpsRiskServiceImplTest {
     @DisplayName("checkTransferAllowed - 非首次计数，不重复设置 TTL")
     void checkTransferAllowed_notFirstCount_noTtl() {
         when(riskRuleMapper.existsBlacklist(any(), any())).thenReturn(false);
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOps);
         CpsRiskRuleDO rule = CpsRiskRuleDO.builder().limitCount(100).build();
         when(riskRuleMapper.selectActiveRateLimit()).thenReturn(rule);
         when(valueOps.increment(anyString())).thenReturn(50L); // 第 50 次
@@ -134,6 +132,7 @@ class CpsRiskServiceImplTest {
     @DisplayName("checkTransferAllowed - 全部通过，返回 true")
     void checkTransferAllowed_allowed() {
         when(riskRuleMapper.existsBlacklist(any(), any())).thenReturn(false);
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOps);
         CpsRiskRuleDO rule = CpsRiskRuleDO.builder().limitCount(100).build();
         when(riskRuleMapper.selectActiveRateLimit()).thenReturn(rule);
         when(valueOps.increment(anyString())).thenReturn(1L);

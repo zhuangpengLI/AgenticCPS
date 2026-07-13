@@ -71,6 +71,26 @@ public class QijiAiProperties {
 
         private McpSelfTest selfTest = new McpSelfTest();
 
+        /**
+         * 同进程 MCP 回环客户端配置。
+         */
+        private McpLoopbackClient loopbackClient = new McpLoopbackClient();
+
+    }
+
+    @Data
+    public static class McpLoopbackClient {
+
+        /**
+         * 是否在应用就绪后初始化指定的回环客户端。
+         */
+        private boolean enabled;
+
+        /**
+         * Spring AI MCP 连接名，例如 cps。
+         */
+        private String connectionName;
+
     }
 
     @Data

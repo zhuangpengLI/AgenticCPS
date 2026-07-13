@@ -15,6 +15,10 @@ public interface MenuMapper extends BaseMapperX<MenuDO> {
         return selectOne(MenuDO::getParentId, parentId, MenuDO::getName, name);
     }
 
+    default MenuDO selectByParentIdAndPath(Long parentId, String path) {
+        return selectOne(MenuDO::getParentId, parentId, MenuDO::getPath, path);
+    }
+
     default Long selectCountByParentId(Long parentId) {
         return selectCount(MenuDO::getParentId, parentId);
     }

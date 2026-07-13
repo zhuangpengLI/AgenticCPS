@@ -163,6 +163,18 @@ spring:
         password: admin
       # Spring Boot Admin Server 服务端的相关配置
       context-path: /admin # 配置 Spring
+  ai:
+    mcp:
+      client:
+        enabled: true
+        initialized: false
+        toolcallback:
+          enabled: false
+        sse:
+          connections:
+            cps:
+              url: http://127.0.0.1:48080
+              sse-endpoint: /sse
 
 # 日志文件配置
 logging:
@@ -232,6 +244,9 @@ qiji:
     mock-enable: true
   ai:
     mcp:
+      loopback-client:
+        enabled: true
+        connection-name: cps
       self-test:
         enabled: ${AI_MCP_SELF_TEST_ENABLED:false}
         client-name: ${AI_MCP_SELF_TEST_CLIENT_NAME:}
