@@ -10,6 +10,10 @@
         <Icon icon="ep:plus" class="mr-5px" />
         新建对话
       </el-button>
+      <el-button class="w-1/1 mt-2" plain type="success" @click="mcpTestDialogRef.open()">
+        <Icon icon="ep:connection" class="mr-5px" />
+        CPS 自测会话
+      </el-button>
 
       <!-- 左顶部：搜索对话 -->
       <el-input
@@ -130,6 +134,7 @@
     <el-drawer v-model="roleRepositoryOpen" title="角色仓库" size="754px">
       <RoleRepository />
     </el-drawer>
+    <McpTestConversationDialog ref="mcpTestDialogRef" @success="handleMcpTestConversationCreate" />
   </el-aside>
 </template>
 
@@ -138,6 +143,7 @@ import { ChatConversationApi, ChatConversationVO } from '@/api/ai/chat/conversat
 import RoleRepository from '../role/RoleRepository.vue'
 import { Bottom, Top } from '@element-plus/icons-vue'
 import roleAvatarDefaultImg from '@/assets/ai/gpt.svg'
+import McpTestConversationDialog from '../mcp/McpTestConversationDialog.vue'
 
 const message = useMessage() // 消息弹窗
 
@@ -149,6 +155,7 @@ const conversationList = ref([] as ChatConversationVO[]) // 对话列表
 const conversationMap = ref<any>({}) // 对话分组 (置顶、今天、三天前、一星期前、一个月前)
 const loading = ref<boolean>(false) // 加载中
 const loadingTime = ref<any>() // 加载中定时器
+const mcpTestDialogRef = ref()
 
 // 定义组件 props
 const props = defineProps({
@@ -282,6 +289,11 @@ const createConversation = async () => {
   // 3. 选中对话
   await handleConversationClick(conversationId)
   // 4. 回调
+  emits('onConversationCreate')
+}
+const handleMcpTestConversationCreate = async (conversationId: number) => {
+  await getChatConversationList()
+  await handleConversationClick(conversationId)
   emits('onConversationCreate')
 }
 

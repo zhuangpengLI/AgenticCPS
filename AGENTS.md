@@ -441,6 +441,7 @@ See `agent_improvement/memory/codegen-rules.md` for full details.
 - All timestamps in **Shanghai timezone**
 - Soft delete via `deleted` bit field
 - Multi-tenancy via `tenant_id` column
+- Database script convention for every module: maintain exactly `backend/sql/module/<module>-all.sql` for new-database initialization and `backend/sql/module/<module>-update.sql` for existing-database upgrades. Do not create date-named module SQL scripts. Every update block in `<module>-update.sql` must include its modification date/time, and every schema or seed-data change must be synchronized into the matching `<module>-all.sql`.
 - CPS module tables: `cps_*` prefix
 - CPS database scripts live under `backend/sql/module/`: `cps-all-in-one.sql` is the full baseline script for new databases, and `cps-update.sql` is the incremental upgrade script for existing databases. Every update block in `cps-update.sql` must include its modification date/time record.
 - Do not create or update `backend/sql/mysql/cps-all-in-one.sql` or one-off CPS SQL scripts under `backend/sql/mysql`; keep CPS tables, seed data, menus, permissions, and incremental updates in the module scripts to prevent drift. Do not add CPS tables, seed data, menus, or permissions to `backend/sql/mysql/ruoyi-vue-pro.sql`.
