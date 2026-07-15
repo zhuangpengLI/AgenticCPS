@@ -1,11 +1,16 @@
 package com.qiji.cps.module.cps.controller.admin.growth;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.qiji.cps.module.cps.service.growth.CpsGrowthAnalyticsService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -15,6 +20,10 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
 @ExtendWith(MockitoExtension.class)
 class CpsGrowthAnalyticsControllerTest {
@@ -94,6 +103,37 @@ class CpsGrowthAnalyticsControllerTest {
 
         assertEquals(summary, result);
         verify(growthAnalyticsService).reconcileTokenEvents(request.events(), request.now(), request.processingTimeout());
+    }
+
+    @Test
+    void reconcileTokenEvents_deserializesIsoDurationAndReturnsTimeout() throws Exception {
+        CpsGrowthAnalyticsController httpController = new CpsGrowthAnalyticsController();
+        ReflectionTestUtils.setField(httpController, "growthAnalyticsService", new CpsGrowthAnalyticsService());
+        MockMvc mockMvc = standaloneSetup(httpController)
+                .setMessageConverters(new MappingJackson2HttpMessageConverter(
+                        JsonMapper.builder().findAndAddModules().build()))
+                .build();
+
+        mockMvc.perform(post("/cps/growth-analytics/token-reconciliation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "events": [{
+                                    "side": "CPS",
+                                    "businessOrderNo": "EX-HTTP-TIMEOUT",
+                                    "tenantId": "tenant-1",
+                                    "idempotencyKey": "idem-http-timeout",
+                                    "eventType": "SUBMIT",
+                                    "status": "PROCESSING",
+                                    "eventTime": "2026-07-15T11:30:00"
+                                  }],
+                                  "now": "2026-07-15T12:00:00",
+                                  "processingTimeout": "PT30M"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$['data']['diffCodesByOrderNo']['EX-HTTP-TIMEOUT'][0]")
+                        .value("PROCESSING_TIMEOUT"));
     }
 
     @Test
