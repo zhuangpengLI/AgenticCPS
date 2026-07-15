@@ -85,6 +85,9 @@ public class CpsGrowthAnalyticsService {
             if (cpsSuccessCount > 0 && tokenCreditSuccessCount == 0) {
                 diffCodes.add("TOKENHUB_MISSING_SUCCESS");
             }
+            if (tokenCreditSuccessCount > 0 && cpsSuccessCount == 0) {
+                diffCodes.add("CPS_MISSING_SUCCESS");
+            }
             if (tokenCreditSuccessCount > 1) {
                 diffCodes.add("TOKENHUB_DUPLICATE_CREDIT");
             }
@@ -114,8 +117,13 @@ public class CpsGrowthAnalyticsService {
                 || "CALCULATE_REBATE".equals(command.action())
                 || "FREEZE_REBATE".equals(command.action())
                 || "BIND_ATTRIBUTION".equals(command.action());
-        if (billingService && forbiddenWrite) {
+        if (forbiddenWrite) {
             return new BillingBoundaryDecision(false, "BILLING_MUST_NOT_WRITE_CPS_REBATE_ASSET");
+        }
+        boolean confirmedAssetConsumption = billingService
+                && "CONSUME_CONFIRMED_ASSET_EVENT".equals(command.action());
+        if (!confirmedAssetConsumption) {
+            return new BillingBoundaryDecision(false, "ONLY_CONFIRMED_ASSET_EVENT_CONSUMPTION_ALLOWED");
         }
         return new BillingBoundaryDecision(true, "ALLOWED_CONFIRMED_ASSET_EVENT_CONSUMPTION");
     }
@@ -144,9 +152,12 @@ public class CpsGrowthAnalyticsService {
 
     private boolean hasTimedOutProcessing(List<TokenEvent> events, LocalDateTime now, Duration timeout) {
         return events.stream()
-                .anyMatch(event -> "CPS".equals(event.side())
-                        && "PROCESSING".equals(event.status())
-                        && event.eventTime().plus(timeout).isBefore(now));
+                .filter(event -> "CPS".equals(event.side()))
+                .filter(event -> "SUBMIT".equals(event.eventType()))
+                .max(Comparator.comparing(TokenEvent::eventTime))
+                .filter(event -> "PROCESSING".equals(event.status()))
+                .map(event -> !event.eventTime().plus(timeout).isAfter(now))
+                .orElse(false);
     }
 
     private String eventKey(TokenEvent event) {
