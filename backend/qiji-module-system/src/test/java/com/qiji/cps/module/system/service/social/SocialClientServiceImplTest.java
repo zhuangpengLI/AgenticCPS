@@ -457,7 +457,7 @@ public class SocialClientServiceImplTest extends BaseDbUnitTest {
         reqVO.setName("芋");
         reqVO.setSocialType(SocialTypeEnum.GITEE.getType());
         reqVO.setUserType(UserTypeEnum.ADMIN.getValue());
-        reqVO.setClientId("yu");
+        reqVO.setClientId("qi");
         reqVO.setStatus(CommonStatusEnum.ENABLE.getStatus());
 
         // 调用
