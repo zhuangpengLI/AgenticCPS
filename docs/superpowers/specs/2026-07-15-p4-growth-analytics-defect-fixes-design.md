@@ -45,7 +45,7 @@ eventTime + processingTimeout <= now
 - 恰好到达超时阈值时漏报。
 - 较早的 `PROCESSING` 后已有 `SUCCESS`，却仍被旧事件误报超时。
 
-控制器回归测试使用与线上一致的 ISO-8601 JSON：`LocalDateTime` 使用日期时间字符串，`Duration` 使用 `PT...` 字符串，验证反序列化后的值能够触发领域超时判断。
+控制器回归测试使用生产环境相同的 Jackson 时间模块和 ISO-8601 JSON：`LocalDateTime` 使用日期时间字符串，`Duration` 使用 `PT...` 字符串，验证反序列化后的值能够触发领域超时判断。运行态复测确认，全局 `TimestampLocalDateTimeDeserializer` 会把 ISO 字符串按毫秒时间戳读取为 `0`，导致 `eventTime` 与 `now` 同时落到纪元时间而漏报超时。因此该接口使用独立请求 DTO，并为 `eventTime`、`now` 配置仅限接口的兼容反序列化器，同时接受 ISO-8601 字符串和既有毫秒时间戳；不修改全局 Jackson 行为。
 
 ### 2. TokenHub 反向单边成功
 
@@ -99,7 +99,7 @@ python -m pytest script/test/test_stage_four_growth_analytics_contract.py -q
 
 ## 兼容性与风险
 
-- API 路径、请求结构和响应结构不变；只新增一个可能出现的差异编码和一个拒绝原因码。
+- API 路径、请求结构和响应结构不变；`LocalDateTime` 字段继续兼容毫秒时间戳，并新增 ISO-8601 字符串支持；只新增一个可能出现的差异编码和一个拒绝原因码。
 - billing 从默认允许改为白名单允许，属于预期的安全收紧；依赖未知动作被放行的调用方会被明确拒绝。
 - 超时判断改为“最新 CPS 提交状态”，减少已成功订单被旧 `PROCESSING` 事件误报的风险。
 - 本次不解决 `diffCodesByOrderNo` 在跨租户同业务单号场景下可能覆盖的问题，避免扩大已批准的方案 A 范围。
