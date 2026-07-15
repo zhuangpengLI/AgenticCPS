@@ -21,8 +21,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CpsMcpIdentityVerifierTest {
@@ -33,6 +31,19 @@ class CpsMcpIdentityVerifierTest {
     @AfterEach
     void tearDown() {
         TenantContextHolder.clear();
+    }
+
+    @Test
+    void springContext_createsVerifierWithProductionConstructor() {
+        assertDoesNotThrow(() -> {
+            try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+                context.registerBean(QijiAiProperties.class, () -> properties(SECRET));
+                context.registerBean(CpsMcpNonceStore.class, InMemoryNonceStore::new);
+                context.register(CpsMcpIdentityVerifier.class);
+                context.refresh();
+                context.getBean(CpsMcpIdentityVerifier.class);
+            }
+        });
     }
 
     @Test
