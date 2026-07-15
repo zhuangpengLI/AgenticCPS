@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.controller.admin.growth;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.qiji.cps.framework.jackson.config.QijiJacksonAutoConfiguration;
 import com.qiji.cps.module.cps.service.growth.CpsGrowthAnalyticsService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
@@ -86,32 +88,36 @@ class CpsGrowthAnalyticsControllerTest {
     @Test
     void reconcileTokenEvents_delegatesToCrossServiceAudit() {
         LocalDateTime now = LocalDateTime.of(2026, 7, 15, 12, 0);
+        List<CpsGrowthAnalyticsService.TokenEvent> events = List.of(
+                new CpsGrowthAnalyticsService.TokenEvent(
+                        "CPS", "EX-1", "tenant-1", "idem-1", "SUBMIT", "PROCESSING", now));
         CpsGrowthAnalyticsController.TokenReconciliationReqVO request =
                 new CpsGrowthAnalyticsController.TokenReconciliationReqVO(
-                        List.of(new CpsGrowthAnalyticsService.TokenEvent(
+                        List.of(new CpsGrowthAnalyticsController.TokenEventReqVO(
                                 "CPS", "EX-1", "tenant-1", "idem-1", "SUBMIT", "PROCESSING", now)),
                         now,
                         Duration.ofMinutes(30));
         CpsGrowthAnalyticsService.TokenReconciliationSummary summary =
                 new CpsGrowthAnalyticsService.TokenReconciliationSummary(
                         0L, Map.of("EX-1", List.of("PROCESSING_TIMEOUT")));
-        when(growthAnalyticsService.reconcileTokenEvents(request.events(), request.now(), request.processingTimeout()))
+        when(growthAnalyticsService.reconcileTokenEvents(events, request.now(), request.processingTimeout()))
                 .thenReturn(summary);
 
         CpsGrowthAnalyticsService.TokenReconciliationSummary result =
                 controller.reconcileTokenEvents(request).getData();
 
         assertEquals(summary, result);
-        verify(growthAnalyticsService).reconcileTokenEvents(request.events(), request.now(), request.processingTimeout());
+        verify(growthAnalyticsService).reconcileTokenEvents(events, request.now(), request.processingTimeout());
     }
 
     @Test
     void reconcileTokenEvents_deserializesIsoDurationAndReturnsTimeout() throws Exception {
         CpsGrowthAnalyticsController httpController = new CpsGrowthAnalyticsController();
         ReflectionTestUtils.setField(httpController, "growthAnalyticsService", new CpsGrowthAnalyticsService());
+        JsonMapper objectMapper = JsonMapper.builder().findAndAddModules().build();
+        objectMapper.registerModule(new QijiJacksonAutoConfiguration().timestampSupportModuleBean());
         MockMvc mockMvc = standaloneSetup(httpController)
-                .setMessageConverters(new MappingJackson2HttpMessageConverter(
-                        JsonMapper.builder().findAndAddModules().build()))
+                .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
                 .build();
 
         mockMvc.perform(post("/cps/growth-analytics/token-reconciliation")
@@ -133,6 +139,41 @@ class CpsGrowthAnalyticsControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$['data']['diffCodesByOrderNo']['EX-HTTP-TIMEOUT'][0]")
+                        .value("PROCESSING_TIMEOUT"));
+    }
+
+    @Test
+    void reconcileTokenEvents_keepsEpochMillisCompatibility() throws Exception {
+        CpsGrowthAnalyticsController httpController = new CpsGrowthAnalyticsController();
+        ReflectionTestUtils.setField(httpController, "growthAnalyticsService", new CpsGrowthAnalyticsService());
+        JsonMapper objectMapper = JsonMapper.builder().findAndAddModules().build();
+        objectMapper.registerModule(new QijiJacksonAutoConfiguration().timestampSupportModuleBean());
+        MockMvc mockMvc = standaloneSetup(httpController)
+                .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
+                .build();
+        LocalDateTime now = LocalDateTime.of(2026, 7, 15, 12, 0);
+        long eventTimeMillis = now.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        long nowMillis = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+
+        mockMvc.perform(post("/cps/growth-analytics/token-reconciliation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "events": [{
+                                    "side": "CPS",
+                                    "businessOrderNo": "EX-HTTP-EPOCH",
+                                    "tenantId": "tenant-1",
+                                    "idempotencyKey": "idem-http-epoch",
+                                    "eventType": "SUBMIT",
+                                    "status": "PROCESSING",
+                                    "eventTime": %d
+                                  }],
+                                  "now": %d,
+                                  "processingTimeout": "PT30M"
+                                }
+                                """.formatted(eventTimeMillis, nowMillis)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$['data']['diffCodesByOrderNo']['EX-HTTP-EPOCH'][0]")
                         .value("PROCESSING_TIMEOUT"));
     }
 

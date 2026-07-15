@@ -1,5 +1,10 @@
 package com.qiji.cps.module.cps.controller.admin.growth;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.module.cps.service.growth.CpsGrowthAnalyticsService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,8 +18,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import static com.qiji.cps.framework.common.pojo.CommonResult.success;
@@ -58,7 +67,8 @@ public class CpsGrowthAnalyticsController {
     public CommonResult<CpsGrowthAnalyticsService.TokenReconciliationSummary> reconcileTokenEvents(
             @Valid @RequestBody TokenReconciliationReqVO reqVO) {
         return success(growthAnalyticsService.reconcileTokenEvents(
-                reqVO.events(), reqVO.now(), reqVO.processingTimeout()));
+                reqVO.events().stream().map(TokenEventReqVO::toTokenEvent).toList(),
+                reqVO.now(), reqVO.processingTimeout()));
     }
 
     @PostMapping("/billing-boundary/validate")
@@ -77,8 +87,48 @@ public class CpsGrowthAnalyticsController {
                                         String subjectKey) {
     }
 
-    public record TokenReconciliationReqVO(List<CpsGrowthAnalyticsService.TokenEvent> events,
+    public record TokenReconciliationReqVO(List<TokenEventReqVO> events,
+                                           @JsonDeserialize(using = EpochOrIsoLocalDateTimeDeserializer.class)
                                            LocalDateTime now,
                                            Duration processingTimeout) {
+    }
+
+    public record TokenEventReqVO(String side,
+                                  String businessOrderNo,
+                                  String tenantId,
+                                  String idempotencyKey,
+                                  String eventType,
+                                  String status,
+                                  @JsonDeserialize(using = EpochOrIsoLocalDateTimeDeserializer.class)
+                                  LocalDateTime eventTime) {
+
+        CpsGrowthAnalyticsService.TokenEvent toTokenEvent() {
+            return new CpsGrowthAnalyticsService.TokenEvent(
+                    side, businessOrderNo, tenantId, idempotencyKey, eventType, status, eventTime);
+        }
+    }
+
+    public static class EpochOrIsoLocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
+
+        @Override
+        public LocalDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+            if (parser.hasToken(JsonToken.VALUE_NUMBER_INT)) {
+                return fromEpochMillis(parser.getLongValue());
+            }
+            String value = parser.getValueAsString();
+            if (value != null && value.matches("-?\\d+")) {
+                return fromEpochMillis(Long.parseLong(value));
+            }
+            try {
+                return LocalDateTime.parse(value);
+            } catch (DateTimeParseException | NullPointerException exception) {
+                return (LocalDateTime) context.handleWeirdStringValue(
+                        LocalDateTime.class, value, "Expected epoch milliseconds or ISO-8601 local date-time");
+            }
+        }
+
+        private LocalDateTime fromEpochMillis(long epochMillis) {
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
+        }
     }
 }
