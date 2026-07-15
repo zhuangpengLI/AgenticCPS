@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.service.adzone;
 
 import com.qiji.cps.framework.common.pojo.PageResult;
+import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzoneBatchCreateRespVO;
 import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzonePageReqVO;
 import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzoneSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
@@ -19,6 +20,11 @@ public interface CpsAdzoneService {
      * 创建推广位
      */
     Long createAdzone(@Valid CpsAdzoneSaveReqVO createReqVO);
+
+    /**
+     * 批量创建推广位，保留逐条成功/失败结果
+     */
+    CpsAdzoneBatchCreateRespVO batchCreateAdzones(@Valid List<CpsAdzoneSaveReqVO> items);
 
     /**
      * 更新推广位

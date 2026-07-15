@@ -3,6 +3,8 @@ package com.qiji.cps.module.cps.controller.admin.adzone;
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
+import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzoneBatchCreateReqVO;
+import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzoneBatchCreateRespVO;
 import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzonePageReqVO;
 import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzoneRespVO;
 import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzoneSaveReqVO;
@@ -35,6 +37,14 @@ public class CpsAdzoneController {
     @PreAuthorize("@ss.hasPermission('cps:adzone:create')")
     public CommonResult<Long> createAdzone(@Valid @RequestBody CpsAdzoneSaveReqVO createReqVO) {
         return success(adzoneService.createAdzone(createReqVO));
+    }
+
+    @PostMapping("/batch-create")
+    @Operation(summary = "批量创建推广位")
+    @PreAuthorize("@ss.hasPermission('cps:adzone:create')")
+    public CommonResult<CpsAdzoneBatchCreateRespVO> batchCreateAdzones(
+            @Valid @RequestBody CpsAdzoneBatchCreateReqVO reqVO) {
+        return success(adzoneService.batchCreateAdzones(reqVO.getItems()));
     }
 
     @PutMapping("/update")

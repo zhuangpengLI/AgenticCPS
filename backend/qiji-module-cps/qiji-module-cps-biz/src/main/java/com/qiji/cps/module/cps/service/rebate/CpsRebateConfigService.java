@@ -61,4 +61,9 @@ public interface CpsRebateConfigService {
      */
     CpsRebateConfigDO matchRebateConfig(Long memberLevelId, String platformCode);
 
+    /**
+     * 按个人、等级、平台六级优先级匹配返利规则。
+     */
+    CpsRebateConfigDO matchRebateConfig(Long memberId, Long memberLevelId, String platformCode);
+
 }

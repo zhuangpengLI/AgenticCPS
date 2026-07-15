@@ -39,6 +39,8 @@ class CpsMcpToolConfigurationTest {
                 mock(CpsGetRebateSummaryToolFunction.class),
                 mock(CpsRecommendBySceneToolFunction.class),
                 mock(CpsPurchaseDecisionToolFunction.class),
+                mock(CpsPromotionStrategyAdviceToolFunction.class),
+                mock(CpsExplainRebateToolFunction.class),
                 mock(CpsListSelectionThemesToolFunction.class),
                 mock(CpsRecommendFromSelectionThemeToolFunction.class),
                 mock(CpsGetRebateBalanceToolFunction.class),
@@ -56,7 +58,8 @@ class CpsMcpToolConfigurationTest {
                 .map(callback -> callback.getToolDefinition().name())
                 .collect(Collectors.toSet());
 
-        assertTrue(names.containsAll(Set.of("cps_search_goods", "cps_compare_prices", "cps_generate_link")));
+        assertTrue(names.containsAll(Set.of("cps_search_goods", "cps_compare_prices", "cps_generate_link",
+                "cps_promotion_strategy_advice", "cps_explain_rebate")));
         assertFalse(names.stream().anyMatch(name -> name.startsWith("ps_")));
 
         ToolCallback searchGoods = callbacks.stream()
@@ -101,6 +104,8 @@ class CpsMcpToolConfigurationTest {
                 CpsGetRebateSummaryToolFunction.class,
                 CpsRecommendBySceneToolFunction.class,
                 CpsPurchaseDecisionToolFunction.class,
+                CpsPromotionStrategyAdviceToolFunction.class,
+                CpsExplainRebateToolFunction.class,
                 CpsListSelectionThemesToolFunction.class,
                 CpsRecommendFromSelectionThemeToolFunction.class,
                 CpsGetRebateBalanceToolFunction.class,

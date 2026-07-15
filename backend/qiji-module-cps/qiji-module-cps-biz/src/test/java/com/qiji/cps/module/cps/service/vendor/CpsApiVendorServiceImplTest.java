@@ -1,7 +1,10 @@
 package com.qiji.cps.module.cps.service.vendor;
 
+import com.qiji.cps.framework.common.enums.CommonStatusEnum;
 import com.qiji.cps.framework.common.exception.ServiceException;
-import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
+import com.qiji.cps.module.cps.client.CpsApiVendorClient;
+import com.qiji.cps.module.cps.client.CpsVendorCapability;
+import com.qiji.cps.module.cps.client.dto.*;
 import com.qiji.cps.module.cps.controller.admin.vendor.vo.CpsApiVendorSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.vendor.CpsApiVendorDO;
 import com.qiji.cps.module.cps.dal.mysql.vendor.CpsApiVendorMapper;
@@ -14,9 +17,13 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Field;
+import java.util.List;
+import java.util.Set;
+
+import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.VENDOR_CAPABILITY_NOT_READY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 /**
@@ -75,6 +82,20 @@ class CpsApiVendorServiceImplTest {
     }
 
     @Test
+    @DisplayName("创建供应商 - 未完成业务能力验收的 official skeleton 禁止启用")
+    void testCreateVendor_rejectsOfficialSkeletonEnable() throws Exception {
+        setVendorClients(List.of(new StubVendorClient("official", "taobao", "official",
+                Set.of(CpsVendorCapability.CONNECTION_TEST))));
+        CpsApiVendorSaveReqVO reqVO = buildOfficialReqVO("taobao", CommonStatusEnum.ENABLE.getStatus());
+
+        when(vendorMapper.selectByVendorAndPlatform("official", "taobao")).thenReturn(null);
+
+        ServiceException exception = assertThrows(ServiceException.class, () -> vendorService.createVendor(reqVO));
+        assertEquals(VENDOR_CAPABILITY_NOT_READY.getCode(), exception.getCode());
+        verify(vendorMapper, never()).insert(any(CpsApiVendorDO.class));
+    }
+
+    @Test
     @DisplayName("更新供应商 - 不存在应抛异常")
     void testUpdateVendor_notExists() {
         CpsApiVendorSaveReqVO reqVO = new CpsApiVendorSaveReqVO();
@@ -85,6 +106,26 @@ class CpsApiVendorServiceImplTest {
         when(vendorMapper.selectById(1L)).thenReturn(null);
 
         assertThrows(ServiceException.class, () -> vendorService.updateVendor(reqVO));
+    }
+
+    @Test
+    @DisplayName("更新供应商 - 未完成业务能力验收的 official skeleton 禁止启用")
+    void testUpdateVendor_rejectsOfficialSkeletonEnable() throws Exception {
+        setVendorClients(List.of(new StubVendorClient("official", "jd", "official",
+                Set.of(CpsVendorCapability.CONNECTION_TEST))));
+        CpsApiVendorSaveReqVO reqVO = buildOfficialReqVO("jd", CommonStatusEnum.ENABLE.getStatus());
+        reqVO.setId(1L);
+
+        CpsApiVendorDO existing = new CpsApiVendorDO();
+        existing.setId(1L);
+        existing.setVendorCode("official");
+        existing.setPlatformCode("jd");
+        when(vendorMapper.selectById(1L)).thenReturn(existing);
+        when(vendorMapper.selectByVendorAndPlatform("official", "jd")).thenReturn(existing);
+
+        ServiceException exception = assertThrows(ServiceException.class, () -> vendorService.updateVendor(reqVO));
+        assertEquals(VENDOR_CAPABILITY_NOT_READY.getCode(), exception.getCode());
+        verify(vendorMapper, never()).updateById(any(CpsApiVendorDO.class));
     }
 
     @Test
@@ -156,6 +197,69 @@ class CpsApiVendorServiceImplTest {
         CpsVendorConfig config = vendorService.buildVendorConfig(vendorDO);
         assertNotNull(config.getExtraConfig());
         assertTrue(config.getExtraConfig().isEmpty());
+    }
+
+    private CpsApiVendorSaveReqVO buildOfficialReqVO(String platformCode, Integer status) {
+        CpsApiVendorSaveReqVO reqVO = new CpsApiVendorSaveReqVO();
+        reqVO.setVendorCode("official");
+        reqVO.setVendorName("官方API");
+        reqVO.setVendorType("official");
+        reqVO.setPlatformCode(platformCode);
+        reqVO.setAppKey("app-key");
+        reqVO.setAppSecret("app-secret");
+        reqVO.setApiBaseUrl("https://api.example.com");
+        reqVO.setStatus(status);
+        return reqVO;
+    }
+
+    private void setVendorClients(List<CpsApiVendorClient> vendorClients) throws Exception {
+        Field field = CpsApiVendorServiceImpl.class.getDeclaredField("vendorClients");
+        field.setAccessible(true);
+        field.set(vendorService, vendorClients);
+    }
+
+    private record StubVendorClient(String vendorCode, String platformCode, String vendorType,
+                                    Set<CpsVendorCapability> capabilities) implements CpsApiVendorClient {
+
+        @Override
+        public String getVendorCode() {
+            return vendorCode;
+        }
+
+        @Override
+        public String getPlatformCode() {
+            return platformCode;
+        }
+
+        @Override
+        public String getVendorType() {
+            return vendorType;
+        }
+
+        @Override
+        public Set<CpsVendorCapability> getCapabilities() {
+            return capabilities;
+        }
+
+        @Override
+        public CpsGoodsSearchResult searchGoods(CpsGoodsSearchRequest request, CpsVendorConfig config) {
+            return null;
+        }
+
+        @Override
+        public CpsPromotionLinkResult generatePromotionLink(CpsPromotionLinkRequest request, CpsVendorConfig config) {
+            return null;
+        }
+
+        @Override
+        public List<CpsOrderDTO> queryOrders(CpsOrderQueryRequest request, CpsVendorConfig config) {
+            return List.of();
+        }
+
+        @Override
+        public boolean testConnection(CpsVendorConfig config) {
+            return true;
+        }
     }
 
 }

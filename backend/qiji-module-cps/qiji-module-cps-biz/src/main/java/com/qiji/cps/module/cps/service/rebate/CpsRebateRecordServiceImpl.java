@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -76,6 +77,12 @@ public class CpsRebateRecordServiceImpl implements CpsRebateRecordService {
         reqVO.setPageNo(pageNo != null ? pageNo : 1);
         reqVO.setPageSize(pageSize != null ? pageSize : 10);
         return rebateRecordMapper.selectPage(reqVO);
+    }
+
+    @Override
+    public BigDecimal getMemberPendingRebate(Long memberId) {
+        BigDecimal pendingRebate = rebateRecordMapper.sumMemberPendingRebate(memberId);
+        return pendingRebate != null ? pendingRebate : BigDecimal.ZERO;
     }
 
     @Override

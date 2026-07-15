@@ -26,6 +26,21 @@ public class PayTransferRespDTO {
      */
     private String channelCode;
 
+    /**
+     * 支付应用编号
+     */
+    private Long appId;
+
+    /**
+     * 业务用户编号
+     */
+    private Long userId;
+
+    /**
+     * 业务用户类型
+     */
+    private Integer userType;
+
     // ========== 商户相关字段 ==========
 
     /**
@@ -39,6 +54,16 @@ public class PayTransferRespDTO {
      * 转账金额，单位：分
      */
     private Integer price;
+
+    /**
+     * 收款账号
+     */
+    private String userAccount;
+
+    /**
+     * 收款人姓名
+     */
+    private String userName;
 
     /**
      * 转账状态

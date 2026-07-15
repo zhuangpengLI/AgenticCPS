@@ -1,12 +1,13 @@
 package com.qiji.cps.module.cps.dal.mysql.freeze;
 
-import com.qiji.cps.framework.common.enums.CommonStatusEnum;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.mybatis.core.mapper.BaseMapperX;
 import com.qiji.cps.framework.mybatis.core.query.LambdaQueryWrapperX;
 import com.qiji.cps.module.cps.controller.admin.freeze.vo.CpsFreezeConfigPageReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeConfigDO;
 import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
 
 /**
  * CPS冻结解冻配置 Mapper
@@ -36,14 +37,20 @@ public interface CpsFreezeConfigMapper extends BaseMapperX<CpsFreezeConfigDO> {
         // 先查平台专属配置
         CpsFreezeConfigDO config = selectOne(new LambdaQueryWrapperX<CpsFreezeConfigDO>()
                 .eq(CpsFreezeConfigDO::getPlatformCode, platformCode)
-                .eq(CpsFreezeConfigDO::getStatus, CommonStatusEnum.ENABLE.getStatus()));
+                .eq(CpsFreezeConfigDO::getStatus, 1));
         if (config != null) {
             return config;
         }
         // 再查全平台配置（platform_code IS NULL）
         return selectOne(new LambdaQueryWrapperX<CpsFreezeConfigDO>()
                 .isNull(CpsFreezeConfigDO::getPlatformCode)
-                .eq(CpsFreezeConfigDO::getStatus, CommonStatusEnum.ENABLE.getStatus()));
+                .eq(CpsFreezeConfigDO::getStatus, 1));
+    }
+
+    default List<CpsFreezeConfigDO> selectEnabledRules() {
+        return selectList(new LambdaQueryWrapperX<CpsFreezeConfigDO>()
+                .eq(CpsFreezeConfigDO::getStatus, 1)
+                .orderByDesc(CpsFreezeConfigDO::getId));
     }
 
 }

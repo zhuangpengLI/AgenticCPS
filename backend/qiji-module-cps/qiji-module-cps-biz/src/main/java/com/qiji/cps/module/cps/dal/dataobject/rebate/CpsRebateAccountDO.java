@@ -46,6 +46,10 @@ public class CpsRebateAccountDO extends TenantBaseDO {
      */
     private BigDecimal frozenBalance;
     /**
+     * 欠款余额。历史账户仍使用元，本阶段由统一资产服务集中执行元分转换。
+     */
+    private BigDecimal debtBalance;
+    /**
      * 已提现金额
      */
     private BigDecimal withdrawnAmount;

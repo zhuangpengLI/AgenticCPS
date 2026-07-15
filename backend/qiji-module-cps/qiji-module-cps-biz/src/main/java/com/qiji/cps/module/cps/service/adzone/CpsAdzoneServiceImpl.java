@@ -2,6 +2,7 @@ package com.qiji.cps.module.cps.service.adzone;
 
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
+import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzoneBatchCreateRespVO;
 import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzonePageReqVO;
 import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzoneSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
@@ -14,6 +15,7 @@ import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.*;
@@ -40,6 +42,22 @@ public class CpsAdzoneServiceImpl implements CpsAdzoneService {
         CpsAdzoneDO adzone = BeanUtils.toBean(createReqVO, CpsAdzoneDO.class);
         adzoneMapper.insert(adzone);
         return adzone.getId();
+    }
+
+    @Override
+    public CpsAdzoneBatchCreateRespVO batchCreateAdzones(List<CpsAdzoneSaveReqVO> items) {
+        List<CpsAdzoneBatchCreateRespVO.ItemResult> results = IntStream.range(0, items.size())
+                .mapToObj(index -> createOneForBatch(index, items.get(index)))
+                .toList();
+        int successCount = (int) results.stream()
+                .filter(result -> Boolean.TRUE.equals(result.getSuccess()))
+                .count();
+        return CpsAdzoneBatchCreateRespVO.builder()
+                .totalCount(items.size())
+                .successCount(successCount)
+                .failureCount(items.size() - successCount)
+                .results(results)
+                .build();
     }
 
     @Override
@@ -82,6 +100,25 @@ public class CpsAdzoneServiceImpl implements CpsAdzoneService {
     private void validateAdzoneExists(Long id) {
         if (adzoneMapper.selectById(id) == null) {
             throw exception(ADZONE_NOT_EXISTS);
+        }
+    }
+
+    private CpsAdzoneBatchCreateRespVO.ItemResult createOneForBatch(int index, CpsAdzoneSaveReqVO reqVO) {
+        try {
+            Long id = createAdzone(reqVO);
+            return CpsAdzoneBatchCreateRespVO.ItemResult.builder()
+                    .index(index)
+                    .adzoneId(reqVO.getAdzoneId())
+                    .id(id)
+                    .success(true)
+                    .build();
+        } catch (Exception ex) {
+            return CpsAdzoneBatchCreateRespVO.ItemResult.builder()
+                    .index(index)
+                    .adzoneId(reqVO.getAdzoneId())
+                    .success(false)
+                    .failureReason(ex.getMessage())
+                    .build();
         }
     }
 

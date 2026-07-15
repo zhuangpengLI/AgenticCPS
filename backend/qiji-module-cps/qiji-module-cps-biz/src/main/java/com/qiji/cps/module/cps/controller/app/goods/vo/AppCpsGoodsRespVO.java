@@ -38,6 +38,24 @@ public class AppCpsGoodsRespVO {
     @Schema(description = "优惠券金额（元）")
     private BigDecimal couponPrice;
 
+    @Schema(description = "优惠券使用门槛（元）")
+    private BigDecimal couponConditions;
+
+    @Schema(description = "优惠券总量")
+    private Long couponTotalNum;
+
+    @Schema(description = "优惠券剩余量")
+    private Long couponRemainNum;
+
+    @Schema(description = "优惠券领取量")
+    private Long couponReceiveNum;
+
+    @Schema(description = "优惠券开始时间")
+    private String couponStartTime;
+
+    @Schema(description = "优惠券结束时间")
+    private String couponEndTime;
+
     @Schema(description = "预估返利金额（元，已计算用户返利比例）")
     private BigDecimal estimateRebateAmount;
 
@@ -58,5 +76,23 @@ public class AppCpsGoodsRespVO {
 
     @Schema(description = "品牌名称")
     private String brandName;
+
+    @Schema(description = "实际使用的 API 供应商编码")
+    private String vendorCode;
+
+    @Schema(description = "商品来源")
+    private String source;
+
+    @Schema(description = "活动标签")
+    private String activityTag;
+
+    @Schema(description = "类目名称")
+    private String categoryName;
+
+    @Schema(description = "榜单或热销标签")
+    private String rankTag;
+
+    @Schema(description = "商品卖点文案")
+    private String sellingPoint;
 
 }

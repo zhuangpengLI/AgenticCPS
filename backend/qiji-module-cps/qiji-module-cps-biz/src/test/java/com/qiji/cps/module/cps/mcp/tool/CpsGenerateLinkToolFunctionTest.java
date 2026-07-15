@@ -63,6 +63,22 @@ class CpsGenerateLinkToolFunctionTest {
     }
 
     @Test
+    @DisplayName("apply - 无 ToolContext 时忽略请求体伪造 memberId")
+    void apply_ignoresUntrustedRequestMemberWithoutToolContext() {
+        CpsGenerateLinkToolFunction.Request request = new CpsGenerateLinkToolFunction.Request();
+        request.setPlatformCode("jd");
+        request.setGoodsId("goods-1");
+        request.setMemberId(999L);
+        when(goodsService.generatePromotionLink(eq("jd"), eq("goods-1"), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(CpsPromotionLinkResult.builder().shortUrl("https://cps.example/anonymous").build());
+
+        var response = toolFunction.apply(request, null);
+
+        assertNull(response.getError());
+        verify(goodsService).generatePromotionLink("jd", "goods-1", null, null, null, null);
+    }
+
+    @Test
     @DisplayName("apply - 转链失败时写入失败审计且不暴露内部异常")
     void apply_writesFailureAuditLogWithSanitizedError() {
         CpsGenerateLinkToolFunction.Request request = new CpsGenerateLinkToolFunction.Request();

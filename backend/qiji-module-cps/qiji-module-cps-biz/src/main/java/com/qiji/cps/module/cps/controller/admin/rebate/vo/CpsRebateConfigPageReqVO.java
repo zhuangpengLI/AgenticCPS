@@ -17,6 +17,9 @@ import lombok.ToString;
 @ToString(callSuper = true)
 public class CpsRebateConfigPageReqVO extends PageParam {
 
+    @Schema(description = "会员ID")
+    private Long memberId;
+
     @Schema(description = "会员等级ID")
     private Long memberLevelId;
 

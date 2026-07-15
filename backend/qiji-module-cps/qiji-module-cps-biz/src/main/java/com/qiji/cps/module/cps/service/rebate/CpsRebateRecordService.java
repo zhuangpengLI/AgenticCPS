@@ -4,6 +4,7 @@ import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateRecordPageReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateRecordDO;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -54,6 +55,8 @@ public interface CpsRebateRecordService {
      * @return 分页结果
      */
     PageResult<CpsRebateRecordDO> getMemberRebateRecordPage(Long memberId, Integer pageNo, Integer pageSize);
+
+    BigDecimal getMemberPendingRebate(Long memberId);
 
     /**
      * 触发订单退款回扣（管理端手动操作）

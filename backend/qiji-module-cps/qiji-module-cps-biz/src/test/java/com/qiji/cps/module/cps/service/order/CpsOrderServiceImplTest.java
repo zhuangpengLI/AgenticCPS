@@ -4,20 +4,29 @@ import com.qiji.cps.framework.common.exception.ServiceException;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.dto.CpsOrderDTO;
+import com.qiji.cps.module.cps.client.dto.CpsOrderPageResult;
 import com.qiji.cps.module.cps.client.dto.CpsOrderQueryRequest;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
+import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderAttributionLogDO;
+import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderStatusEventDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderSyncLogDO;
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.adzone.CpsAdzoneMapper;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderMapper;
+import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderAttributionLogMapper;
+import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderStatusEventMapper;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderSyncLogMapper;
+import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateRecordMapper;
 import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
 import com.qiji.cps.module.cps.enums.CpsOrderStatusEnum;
+import com.qiji.cps.module.cps.enums.CpsRebateTypeEnum;
 import com.qiji.cps.module.cps.service.rebate.CpsRebateSettleService;
+import com.qiji.cps.module.cps.service.rebate.CpsRebateConfigService;
 import com.qiji.cps.module.member.api.user.MemberUserApi;
 import com.qiji.cps.module.member.api.user.dto.MemberUserRespDTO;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -43,6 +52,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class CpsOrderServiceImplTest {
@@ -55,11 +65,19 @@ class CpsOrderServiceImplTest {
     @Mock
     private CpsOrderMapper orderMapper;
     @Mock
+    private CpsOrderAttributionLogMapper attributionLogMapper;
+    @Mock
+    private CpsOrderStatusEventMapper statusEventMapper;
+    @Mock
+    private CpsRebateRecordMapper rebateRecordMapper;
+    @Mock
     private CpsOrderSyncLogMapper syncLogMapper;
     @Mock
     private CpsPlatformClientFactory platformClientFactory;
     @Mock
     private CpsRebateSettleService rebateSettleService;
+    @Mock
+    private CpsRebateConfigService rebateConfigService;
     @Mock
     private CpsPlatformClient platformClient;
     @Mock
@@ -68,6 +86,76 @@ class CpsOrderServiceImplTest {
     private MemberUserApi memberUserApi;
     @Mock
     private CpsAdzoneMapper adzoneMapper;
+
+    @BeforeEach
+    void allowSuccessfulVersionedOrderUpdates() {
+        lenient().when(orderMapper.updateByIdAndStatusVersion(any(CpsOrderDO.class), any(Integer.class)))
+                .thenReturn(1);
+    }
+
+    @Test
+    @DisplayName("saveOrUpdateOrder - 新订单应追加不可变状态事件与原始状态摘要")
+    void saveOrUpdateOrder_appendsStatusEventForNewOrder() {
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-EVENT-NEW")).thenReturn(null);
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .platformCode("taobao")
+                .platformOrderId("TB-EVENT-NEW")
+                .platformStatus(3)
+                .refundTag(0)
+                .rawPayload("{\"tk_status\":3,\"order_scene\":1}")
+                .syncBatchNo("batch-20260714-001")
+                .build();
+
+        assertEquals(1, orderService.saveOrUpdateOrder(dto));
+
+        verify(statusEventMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderStatusEventDO>argThat(event ->
+                "taobao".equals(event.getPlatformCode())
+                        && "TB-EVENT-NEW".equals(event.getPlatformOrderId())
+                        && "3".equals(event.getRawStatus())
+                        && CpsOrderStatusEnum.SETTLED.getStatus().equals(event.getMappedStatus())
+                        && event.getPreviousStatus() == null
+                        && Integer.valueOf(0).equals(event.getStatusVersion())
+                        && !event.getDowngradeRejected()
+                        && "batch-20260714-001".equals(event.getSourceBatchNo())
+                        && event.getRawStatusSummary().contains("tk_status")));
+        verify(orderMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
+                order.getRawPlatformStatusSummary() != null
+                        && order.getRawPlatformStatusSummary().contains("platformStatus=3")));
+    }
+
+    @Test
+    @DisplayName("saveOrUpdateOrder - 拒绝平台状态降级时必须追加拒绝事件")
+    void saveOrUpdateOrder_appendsRejectedDowngradeStatusEvent() {
+        CpsOrderDO existing = CpsOrderDO.builder()
+                .id(32L)
+                .platformCode("taobao")
+                .platformOrderId("TB-DOWNGRADE-1")
+                .orderStatus(CpsOrderStatusEnum.SETTLED.getStatus())
+                .statusVersion(4)
+                .build();
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-DOWNGRADE-1")).thenReturn(existing);
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .platformCode("taobao")
+                .platformOrderId("TB-DOWNGRADE-1")
+                .platformStatus(1)
+                .syncBatchNo("batch-20260714-002")
+                .build();
+
+        assertEquals(0, orderService.saveOrUpdateOrder(dto));
+
+        verify(orderMapper, never()).updateByIdAndStatusVersion(any(CpsOrderDO.class), any(Integer.class));
+        verify(statusEventMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderStatusEventDO>argThat(event ->
+                Long.valueOf(32L).equals(event.getOrderId())
+                        && "1".equals(event.getRawStatus())
+                        && CpsOrderStatusEnum.PAID.getStatus().equals(event.getMappedStatus())
+                        && CpsOrderStatusEnum.SETTLED.getStatus().equals(event.getCurrentStatus())
+                        && CpsOrderStatusEnum.SETTLED.getStatus().equals(event.getPreviousStatus())
+                        && Integer.valueOf(4).equals(event.getStatusVersion())
+                        && event.getDowngradeRejected()
+                        && event.getRejectReason().contains("拒绝降级")));
+    }
 
     @Test
     @DisplayName("deleteOrder - 删除订单前校验订单存在")
@@ -109,10 +197,11 @@ class CpsOrderServiceImplTest {
                 .platformOrderId("TB-1")
                 .platformCode("taobao")
                 .orderStatus(CpsOrderStatusEnum.REBATE_RECEIVED.getStatus())
+                .statusVersion(7)
                 .commissionAmount(new BigDecimal("12.00"))
                 .rebateTime(LocalDateTime.now().minusDays(1))
                 .build();
-        when(orderMapper.selectByPlatformOrderId("TB-1")).thenReturn(existing);
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-1")).thenReturn(existing);
         when(rebateSettleService.reverseRebate(1L)).thenReturn(true);
 
         CpsOrderDTO dto = CpsOrderDTO.builder()
@@ -126,10 +215,69 @@ class CpsOrderServiceImplTest {
 
         assertEquals(2, result);
         verify(rebateSettleService).reverseRebate(1L);
-        verify(orderMapper).updateById(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
+        verify(orderMapper).updateByIdAndStatusVersion(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
                 order.getId().equals(1L)
                         && CpsOrderStatusEnum.REFUNDED.getStatus().equals(order.getOrderStatus())
-                        && order.getRefundTime() != null));
+                        && order.getRefundTime() != null), eq(7));
+    }
+
+    @Test
+    @DisplayName("saveOrUpdateOrder - 版本冲突时拒绝让并发结算覆盖退款状态")
+    void saveOrUpdateOrder_throwsWhenStatusVersionChangedConcurrently() {
+        CpsOrderDO existing = CpsOrderDO.builder()
+                .id(9L)
+                .platformCode("taobao")
+                .platformOrderId("TB-RACE-1")
+                .orderStatus(CpsOrderStatusEnum.SETTLED.getStatus())
+                .statusVersion(3)
+                .build();
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-RACE-1")).thenReturn(existing);
+        when(rebateRecordMapper.selectByOrderIdAndType(9L, CpsRebateTypeEnum.REBATE.getType()))
+                .thenReturn(com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateRecordDO.builder()
+                        .id(91L).orderId(9L).rebateType(CpsRebateTypeEnum.REBATE.getType()).build());
+        when(rebateSettleService.reverseRebate(9L)).thenReturn(true);
+        when(orderMapper.updateByIdAndStatusVersion(any(CpsOrderDO.class), eq(3))).thenReturn(0);
+
+        CpsOrderDTO refund = CpsOrderDTO.builder()
+                .platformCode("taobao")
+                .platformOrderId("TB-RACE-1")
+                .refundTag(1)
+                .build();
+
+        assertThrows(IllegalStateException.class, () -> orderService.saveOrUpdateOrder(refund));
+
+        verify(rebateSettleService).reverseRebate(9L);
+        verify(orderMapper).updateByIdAndStatusVersion(argThat(order ->
+                CpsOrderStatusEnum.REFUNDED.getStatus().equals(order.getOrderStatus())), eq(3));
+    }
+
+    @Test
+    @DisplayName("saveOrUpdateOrder - V2冻结返利尚未到账时收到退款也必须触发冲正")
+    void saveOrUpdateOrder_reverseRebateWhenRefundedAfterV2Freeze() {
+        CpsOrderDO existing = CpsOrderDO.builder()
+                .id(4L)
+                .platformOrderId("TB-4")
+                .platformCode("taobao")
+                .orderStatus(CpsOrderStatusEnum.SETTLED.getStatus())
+                .commissionAmount(new BigDecimal("12.00"))
+                .build();
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-4")).thenReturn(existing);
+        when(rebateRecordMapper.selectByOrderIdAndType(4L, CpsRebateTypeEnum.REBATE.getType()))
+                .thenReturn(com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateRecordDO.builder()
+                        .id(41L).orderId(4L).rebateType(CpsRebateTypeEnum.REBATE.getType())
+                        .rebateStatus("pending").build());
+        when(rebateSettleService.reverseRebate(4L)).thenReturn(true);
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .platformOrderId("TB-4")
+                .platformCode("taobao")
+                .commissionAmount(new BigDecimal("12.00"))
+                .refundTag(1)
+                .build();
+
+        assertEquals(2, orderService.saveOrUpdateOrder(dto));
+
+        verify(rebateSettleService).reverseRebate(4L);
     }
 
     @Test
@@ -143,7 +291,7 @@ class CpsOrderServiceImplTest {
                 .commissionAmount(new BigDecimal("12.00"))
                 .rebateTime(LocalDateTime.now().minusHours(2))
                 .build();
-        when(orderMapper.selectByPlatformOrderId("TB-2")).thenReturn(existing);
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-2")).thenReturn(existing);
 
         CpsOrderDTO dto = CpsOrderDTO.builder()
                 .platformOrderId("TB-2")
@@ -156,15 +304,15 @@ class CpsOrderServiceImplTest {
 
         assertEquals(2, result);
         verify(rebateSettleService, never()).reverseRebate(2L);
-        verify(orderMapper).updateById(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
+        verify(orderMapper).updateByIdAndStatusVersion(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
                 order.getId().equals(2L)
                         && CpsOrderStatusEnum.REBATE_RECEIVED.getStatus().equals(order.getOrderStatus())
-                        && new BigDecimal("15.00").compareTo(order.getCommissionAmount()) == 0));
+                        && new BigDecimal("15.00").compareTo(order.getCommissionAmount()) == 0), eq(0));
     }
 
     @Test
-    @DisplayName("saveOrUpdateOrder - 重新同步应修正已有订单金额快照和会员归因")
-    void saveOrUpdateOrder_refreshesExistingOrderSnapshotAndAttribution() {
+    @DisplayName("saveOrUpdateOrder - 数字 externalId 未经可信绑定不得作为会员ID归因")
+    void saveOrUpdateOrder_rejectsRawNumericExternalIdAttribution() {
         CpsOrderDO existing = CpsOrderDO.builder()
                 .id(3L)
                 .platformOrderId("TB-3")
@@ -176,7 +324,7 @@ class CpsOrderServiceImplTest {
                 .commissionAmount(BigDecimal.ZERO)
                 .estimateRebate(BigDecimal.ZERO)
                 .build();
-        when(orderMapper.selectByPlatformOrderId("TB-3")).thenReturn(existing);
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-3")).thenReturn(existing);
 
         CpsOrderDTO dto = CpsOrderDTO.builder()
                 .platformOrderId("TB-3")
@@ -196,20 +344,24 @@ class CpsOrderServiceImplTest {
         int result = orderService.saveOrUpdateOrder(dto);
 
         assertEquals(2, result);
-        verify(orderMapper).updateById(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
+        verify(orderMapper).updateByIdAndStatusVersion(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
                 order.getId().equals(3L)
                         && new BigDecimal("399.00").compareTo(order.getFinalPrice()) == 0
                         && new BigDecimal("17.96").compareTo(order.getCommissionAmount()) == 0
-                        && new BigDecimal("14.37").compareTo(order.getEstimateRebate()) == 0
-                        && Long.valueOf(1002L).equals(order.getMemberId())
+                        && BigDecimal.ZERO.compareTo(order.getEstimateRebate()) == 0
+                        && order.getMemberId() == null
+                        && order.getAttributionSource() == null
                         && "1002".equals(order.getExternalInfo())
-                        && "ITEM-3".equals(order.getItemId())));
+                        && "ITEM-3".equals(order.getItemId())), eq(0));
+        verify(attributionLogMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderAttributionLogDO>argThat(log -> "AUTO".equals(log.getAction())
+                && "UNATTRIBUTED".equals(log.getResult())
+                && log.getAttributedMemberId() == null));
     }
 
     @Test
     @DisplayName("saveOrUpdateOrder - 平台未返回券额时应由原价和券后价推导优惠金额")
     void saveOrUpdateOrder_derivesCouponAmountFromOriginalAndFinalPrice() {
-        when(orderMapper.selectByPlatformOrderId("TB-COUPON-1")).thenReturn(null);
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-COUPON-1")).thenReturn(null);
 
         CpsOrderDTO dto = CpsOrderDTO.builder()
                 .platformOrderId("TB-COUPON-1")
@@ -233,7 +385,7 @@ class CpsOrderServiceImplTest {
     @Test
     @DisplayName("saveOrUpdateOrder - externalId 为空时唯一转链记录应兜底归因并回写订单号")
     void saveOrUpdateOrder_attributesByUniqueTransferRecordWhenExternalIdMissing() {
-        when(orderMapper.selectByPlatformOrderId("TB-FALLBACK-1")).thenReturn(null);
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-FALLBACK-1")).thenReturn(null);
         when(transferRecordMapper.selectAttributionCandidates(eq("taobao"), eq("ITEM-1"),
                 eq("mm_111_222_333"), any(), any())).thenReturn(List.of(CpsTransferRecordDO.builder()
                 .id(10L)
@@ -270,7 +422,7 @@ class CpsOrderServiceImplTest {
     @Test
     @DisplayName("saveOrUpdateOrder - 淘宝订单推广位为数字ID时应降级用唯一转链记录归因")
     void saveOrUpdateOrder_attributesByUniqueTransferRecordWhenTaobaoAdzoneIdDiffersFromPid() {
-        when(orderMapper.selectByPlatformOrderId("3311726376544025983")).thenReturn(null);
+        when(orderMapper.selectByPlatformOrderId("taobao", "3311726376544025983")).thenReturn(null);
         when(transferRecordMapper.selectAttributionCandidates(eq("taobao"), eq("ITEM-1"),
                 eq("333"), any(), any())).thenReturn(List.of());
         when(transferRecordMapper.selectAttributionCandidates(eq("taobao"), eq("ITEM-1"),
@@ -309,7 +461,7 @@ class CpsOrderServiceImplTest {
     @Test
     @DisplayName("saveOrUpdateOrder - 多条转链候选不做兜底归因避免误绑")
     void saveOrUpdateOrder_doesNotAttributeWhenTransferCandidatesAreAmbiguous() {
-        when(orderMapper.selectByPlatformOrderId("TB-FALLBACK-2")).thenReturn(null);
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-FALLBACK-2")).thenReturn(null);
         when(transferRecordMapper.selectAttributionCandidates(eq("taobao"), eq("ITEM-1"),
                 eq("mm_111_222_333"), any(), any())).thenReturn(List.of(
                 CpsTransferRecordDO.builder().id(10L).memberId(1001L).build(),
@@ -330,12 +482,14 @@ class CpsOrderServiceImplTest {
         verify(orderMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
                 order.getMemberId() == null));
         verify(transferRecordMapper, never()).updatePlatformOrderId(any(), any());
+        verify(attributionLogMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderAttributionLogDO>argThat(log -> "CONFLICT".equals(log.getResult())
+                && "AUTO".equals(log.getAction())));
     }
 
     @Test
     @DisplayName("saveOrUpdateOrder - 淘宝会员运营ID specialId 应优先绑定本地会员")
     void saveOrUpdateOrder_attributesByTaobaoSpecialId() {
-        when(orderMapper.selectByPlatformOrderId("TB-SPECIAL-1")).thenReturn(null);
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-SPECIAL-1")).thenReturn(null);
         when(adzoneMapper.selectActiveMemberAdzoneBySpecialId("taobao", "SPECIAL-1001"))
                 .thenReturn(CpsAdzoneDO.builder()
                         .platformCode("taobao")
@@ -373,12 +527,15 @@ class CpsOrderServiceImplTest {
                         && "specialId".equals(order.getAttributionSource())));
         verify(adzoneMapper, never()).selectActiveMemberAdzone(eq("taobao"), any(String.class));
         verify(transferRecordMapper, never()).selectAttributionCandidates(any(), any(), any(), any(), any());
+        verify(attributionLogMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderAttributionLogDO>argThat(log -> "BOUND".equals(log.getResult())
+                && "specialId".equals(log.getBindingType())
+                && Long.valueOf(1001L).equals(log.getAttributedMemberId())));
     }
 
     @Test
     @DisplayName("saveOrUpdateOrder - 平台返回用户专属推广位时应确定性绑定会员")
     void saveOrUpdateOrder_attributesByMemberAdzone() {
-        when(orderMapper.selectByPlatformOrderId("TB-ADZONE-1")).thenReturn(null);
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-ADZONE-1")).thenReturn(null);
         when(adzoneMapper.selectActiveMemberAdzone("taobao", "mm_111_222_333"))
                 .thenReturn(CpsAdzoneDO.builder()
                         .platformCode("taobao")
@@ -443,6 +600,32 @@ class CpsOrderServiceImplTest {
                         && Long.valueOf(1001L).equals(order.getMemberId())
                         && "绑定会员".equals(order.getMemberNickname())
                         && "specialId".equals(order.getAttributionSource())));
+        verify(attributionLogMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderAttributionLogDO>argThat(log -> "MANUAL".equals(log.getAction())
+                && "BOUND".equals(log.getResult())
+                && Long.valueOf(1001L).equals(log.getCandidateMemberId())));
+    }
+
+    @Test
+    @DisplayName("bindSpecialIdToMember - 已产生返利资产的订单不得直接改绑并记录拒绝日志")
+    void bindSpecialIdToMember_rejectsRebindAfterRebateAssetActivity() {
+        when(orderMapper.selectById(8L)).thenReturn(CpsOrderDO.builder()
+                .id(8L)
+                .platformCode("taobao")
+                .platformOrderId("TB-BIND-2")
+                .memberId(1001L)
+                .adzoneId("mm_111_222_333")
+                .specialId("SPECIAL-1001")
+                .rebateTime(LocalDateTime.now())
+                .build());
+
+        assertThrows(ServiceException.class, () -> orderService.bindSpecialIdToMember(8L, 1002L));
+
+        verify(adzoneMapper, never()).insert(any(CpsAdzoneDO.class));
+        verify(orderMapper, never()).updateById(any(CpsOrderDO.class));
+        verify(attributionLogMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderAttributionLogDO>argThat(log -> "REBIND".equals(log.getAction())
+                && "REJECTED".equals(log.getResult())
+                && Long.valueOf(1001L).equals(log.getAttributedMemberId())
+                && Long.valueOf(1002L).equals(log.getCandidateMemberId())));
     }
 
     @Test
@@ -465,28 +648,115 @@ class CpsOrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("bindSpecialIdToMember - 相同幂等键重复提交不应重复改写归因")
+    void bindSpecialIdToMember_skipsDuplicateIdempotencyKey() {
+        when(attributionLogMapper.selectByIdempotencyKey("manual-bind-dup"))
+                .thenReturn(CpsOrderAttributionLogDO.builder()
+                        .id(99L)
+                        .idempotencyKey("manual-bind-dup")
+                        .result("BOUND")
+                        .build());
+
+        orderService.bindSpecialIdToMember(new CpsOrderManualBindCommand(
+                7L, 1001L, 9001L, "manual-bind-dup", "重复提交"));
+
+        verify(orderMapper, never()).selectById(any());
+        verify(adzoneMapper, never()).insert(any(CpsAdzoneDO.class));
+        verify(adzoneMapper, never()).updateById(any(CpsAdzoneDO.class));
+        verify(orderMapper, never()).updateById(any(CpsOrderDO.class));
+        verify(attributionLogMapper, never()).insert(any(CpsOrderAttributionLogDO.class));
+    }
+
+    @Test
+    @DisplayName("bindSpecialIdToMember - specialId 已绑定其他会员时阻断并写入复核日志")
+    void bindSpecialIdToMember_rejectsConflictingSpecialIdOwnerForReview() {
+        when(orderMapper.selectById(9L)).thenReturn(CpsOrderDO.builder()
+                .id(9L)
+                .platformCode("taobao")
+                .platformOrderId("TB-BIND-CONFLICT")
+                .adzoneId("mm_111_222_333")
+                .specialId("SPECIAL-CONFLICT")
+                .build());
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(1001L);
+        member.setNickname("目标会员");
+        when(memberUserApi.getUser(1001L)).thenReturn(member);
+        when(adzoneMapper.selectBySpecialId("taobao", "SPECIAL-CONFLICT")).thenReturn(CpsAdzoneDO.builder()
+                .id(11L)
+                .platformCode("taobao")
+                .relationType("member")
+                .relationId(2002L)
+                .externalSpecialId("SPECIAL-CONFLICT")
+                .build());
+
+        assertThrows(ServiceException.class, () -> orderService.bindSpecialIdToMember(new CpsOrderManualBindCommand(
+                9L, 1001L, 9001L, "manual-bind-conflict", "人工发现疑似漏归因")));
+
+        verify(adzoneMapper, never()).insert(any(CpsAdzoneDO.class));
+        verify(adzoneMapper, never()).updateById(any(CpsAdzoneDO.class));
+        verify(orderMapper, never()).updateById(any(CpsOrderDO.class));
+        verify(attributionLogMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderAttributionLogDO>argThat(log ->
+                "CONFLICT".equals(log.getResult())
+                        && "PENDING_REVIEW".equals(log.getReviewStatus())
+                        && Long.valueOf(1001L).equals(log.getCandidateMemberId())
+                        && Long.valueOf(2002L).equals(log.getAttributedMemberId())
+                        && Long.valueOf(9001L).equals(log.getReviewOperatorId())
+                        && "manual-bind-conflict".equals(log.getIdempotencyKey())));
+    }
+
+    @Test
+    @DisplayName("bindSpecialIdToMember - 正常人工绑定应写入幂等键、复核结论和操作人")
+    void bindSpecialIdToMember_recordsApprovedManualReviewAudit() {
+        when(orderMapper.selectById(10L)).thenReturn(CpsOrderDO.builder()
+                .id(10L)
+                .platformCode("taobao")
+                .platformOrderId("TB-BIND-AUDIT")
+                .adzoneId("mm_111_222_333")
+                .specialId("SPECIAL-APPROVED")
+                .build());
+        when(adzoneMapper.selectBySpecialId("taobao", "SPECIAL-APPROVED")).thenReturn(null);
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(1001L);
+        member.setNickname("绑定会员");
+        when(memberUserApi.getUser(1001L)).thenReturn(member);
+
+        orderService.bindSpecialIdToMember(new CpsOrderManualBindCommand(
+                10L, 1001L, 9001L, "manual-bind-approved", "平台截图与会员申诉单一致"));
+
+        ArgumentCaptor<CpsOrderAttributionLogDO> captor = ArgumentCaptor.forClass(CpsOrderAttributionLogDO.class);
+        verify(attributionLogMapper).insert(captor.capture());
+        CpsOrderAttributionLogDO log = captor.getValue();
+        assertEquals("BOUND", log.getResult());
+        assertEquals("APPROVED", log.getReviewStatus());
+        assertEquals("manual-bind-approved", log.getIdempotencyKey());
+        assertEquals("平台截图与会员申诉单一致", log.getReviewAuditNote());
+        assertEquals(Long.valueOf(9001L), log.getReviewOperatorId());
+        assertEquals("9001", log.getOperatorId());
+    }
+
+    @Test
     @DisplayName("manualSync - 状态同步应按更新时间查询平台订单")
     void manualSync_usesUpdateTimeQueryTypeForStatusSync() {
         when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);
-        when(platformClient.queryOrders(any(CpsOrderQueryRequest.class)))
-                .thenReturn(List.of(CpsOrderDTO.builder()
+        when(platformClient.queryOrderPage(any(CpsOrderQueryRequest.class)))
+                .thenReturn(CpsOrderPageResult.page(List.of(CpsOrderDTO.builder()
                         .platformCode("taobao")
                         .platformOrderId("TB-STATUS-1")
                         .platformStatus(3)
                         .commissionAmount(new BigDecimal("8.00"))
-                        .build()))
-                .thenReturn(List.of())
-                .thenReturn(List.of());
-        when(orderMapper.selectByPlatformOrderId("TB-STATUS-1")).thenReturn(null);
+                        .build()), 2, false))
+                .thenReturn(CpsOrderPageResult.page(List.of(), 2, false))
+                .thenReturn(CpsOrderPageResult.page(List.of(), 2, false));
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-STATUS-1")).thenReturn(null);
 
         String result = orderService.manualSync("taobao", 2, 4);
 
         ArgumentCaptor<CpsOrderQueryRequest> captor = ArgumentCaptor.forClass(CpsOrderQueryRequest.class);
-        verify(platformClient, times(3)).queryOrders(captor.capture());
+        verify(platformClient, times(3)).queryOrderPage(captor.capture());
         assertEquals(List.of(1, 2, 3), captor.getAllValues().stream().map(CpsOrderQueryRequest::getOrderScene).toList());
         captor.getAllValues().forEach(req ->
                 assertEquals(4, req.getQueryType()));
-        verify(platformClient, atLeastOnce()).queryOrders(argThat(req ->
+        verify(platformClient, atLeastOnce()).queryOrderPage(argThat(req ->
                 Integer.valueOf(4).equals(req.getQueryType())
                         && Integer.valueOf(50).equals(req.getPageSize())
                         && req.getStartTime() != null
@@ -502,26 +772,24 @@ class CpsOrderServiceImplTest {
     @DisplayName("manualSync - 淘宝长时间窗口应拆成不超过3小时的小窗口")
     void manualSync_splitsTaobaoLongRangeIntoThreeHourWindows() {
         when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);
-        when(platformClient.queryOrders(any(CpsOrderQueryRequest.class)))
-                .thenReturn(List.of())
-                .thenReturn(List.of(CpsOrderDTO.builder()
+        java.util.concurrent.atomic.AtomicInteger pageCall = new java.util.concurrent.atomic.AtomicInteger();
+        when(platformClient.queryOrderPage(any(CpsOrderQueryRequest.class))).thenAnswer(invocation -> {
+            if (pageCall.getAndIncrement() == 1) {
+                return CpsOrderPageResult.page(List.of(CpsOrderDTO.builder()
                         .platformCode("taobao")
                         .platformOrderId("3311726376544025983")
                         .platformStatus(1)
                         .commissionAmount(new BigDecimal("6.68"))
-                        .build()))
-                .thenReturn(List.of())
-                .thenReturn(List.of())
-                .thenReturn(List.of())
-                .thenReturn(List.of())
-                .thenReturn(List.of())
-                .thenReturn(List.of());
-        when(orderMapper.selectByPlatformOrderId("3311726376544025983")).thenReturn(null);
+                        .build()), 2, false);
+            }
+            return CpsOrderPageResult.page(List.of(), 2, false);
+        });
+        when(orderMapper.selectByPlatformOrderId("taobao", "3311726376544025983")).thenReturn(null);
 
         String result = orderService.manualSync("taobao", 24, 4);
 
         ArgumentCaptor<CpsOrderQueryRequest> captor = ArgumentCaptor.forClass(CpsOrderQueryRequest.class);
-        verify(platformClient, times(24)).queryOrders(captor.capture());
+        verify(platformClient, times(24)).queryOrderPage(captor.capture());
         captor.getAllValues().forEach(req -> {
             LocalDateTime start = LocalDateTime.parse(req.getStartTime(), DTF);
             LocalDateTime end = LocalDateTime.parse(req.getEndTime(), DTF);

@@ -2,7 +2,9 @@ package com.qiji.cps.module.cps.client;
 
 import com.qiji.cps.module.cps.client.dto.*;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * CPS 平台客户端策略接口
@@ -25,6 +27,20 @@ public interface CpsPlatformClient {
      */
     default boolean supportsGoodsSearch() {
         return true;
+    }
+
+    /**
+     * Declares platform-level capabilities. Vendor-specific routing can further narrow this list.
+     */
+    default Set<CpsVendorCapability> getCapabilities() {
+        EnumSet<CpsVendorCapability> capabilities = EnumSet.of(
+                CpsVendorCapability.PROMOTION_LINK,
+                CpsVendorCapability.ORDER_QUERY,
+                CpsVendorCapability.CONNECTION_TEST);
+        if (supportsGoodsSearch()) {
+            capabilities.add(CpsVendorCapability.GOODS_SEARCH);
+        }
+        return capabilities;
     }
 
     /**
@@ -52,7 +68,8 @@ public interface CpsPlatformClient {
      * @return 解析结果
      */
     default CpsContentParseResult parseContent(CpsContentParseRequest request) {
-        return CpsContentParseResult.unsupported("COMMAND_UNSUPPORTED", "暂不支持该渠道口令自动解析，请粘贴商品链接或商品ID");
+        return CpsContentParseResult.unsupported("CAPABILITY_UNSUPPORTED",
+                "暂不支持该渠道口令自动解析，请粘贴商品链接或商品ID");
     }
 
     /**
@@ -62,6 +79,12 @@ public interface CpsPlatformClient {
      * @return 订单列表
      */
     List<CpsOrderDTO> queryOrders(CpsOrderQueryRequest request);
+
+    /** 查询平台订单并显式返回分页契约。平台适配器必须覆盖，禁止从 List 隐式推断。 */
+    default CpsOrderPageResult queryOrderPage(CpsOrderQueryRequest request) {
+        throw new CpsVendorException("Explicit order pagination is not implemented for platform "
+                + getPlatformCode());
+    }
 
     /**
      * 测试平台连接是否正常（用于平台配置保存时校验）

@@ -187,4 +187,49 @@ public class CpsGoodsSearchRequest {
      */
     private String activityTag;
 
+    /**
+     * 为独立的平台查询复制当前搜索条件，并覆盖分页参数。
+     *
+     * <p>显式逐字段复制，避免并发平台调用共享和修改同一个请求对象。</p>
+     */
+    public CpsGoodsSearchRequest copyForPage(Integer targetPageNo, Integer targetPageSize) {
+        CpsGoodsSearchRequest copy = new CpsGoodsSearchRequest();
+        copy.setKeyword(keyword);
+        copy.setSearchMode(searchMode);
+        copy.setSearchField(searchField);
+        copy.setImageBase64(imageBase64);
+        copy.setPageNo(targetPageNo);
+        copy.setPageSize(targetPageSize);
+        copy.setPriceLowerLimit(priceLowerLimit);
+        copy.setPriceUpperLimit(priceUpperLimit);
+        copy.setSortType(sortType);
+        copy.setHasCoupon(hasCoupon);
+        copy.setAdzoneId(adzoneId);
+        copy.setExternalId(externalId);
+        copy.setChannelCode(channelCode);
+        copy.setCategoryId(categoryId);
+        copy.setMinCommissionRate(minCommissionRate);
+        copy.setMinCommissionAmount(minCommissionAmount);
+        copy.setMinMonthSales(minMonthSales);
+        copy.setCouponAmountMin(couponAmountMin);
+        copy.setCouponPriceUpperLimit(couponPriceUpperLimit);
+        copy.setHotRankMin(hotRankMin);
+        copy.setCouponExpireDays(couponExpireDays);
+        copy.setTmallOnly(tmallOnly);
+        copy.setBrandOnly(brandOnly);
+        copy.setHaitaoOnly(haitaoOnly);
+        copy.setGoldSellerOnly(goldSellerOnly);
+        copy.setTchaoshiOnly(tchaoshiOnly);
+        copy.setJuhuasuanOnly(juhuasuanOnly);
+        copy.setTaoqianggouOnly(taoqianggouOnly);
+        copy.setInspectedGoodsOnly(inspectedGoodsOnly);
+        copy.setFreeshipRemoteDistrict(freeshipRemoteDistrict);
+        copy.setShopType(shopType);
+        copy.setGoodsPerformance(goodsPerformance);
+        copy.setCommercialOnly(commercialOnly);
+        copy.setPreSaleOnly(preSaleOnly);
+        copy.setActivityTag(activityTag);
+        return copy;
+    }
+
 }

@@ -260,6 +260,18 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
     @Override
     public List<CpsOrderDTO> queryOrders(CpsOrderQueryRequest request, CpsVendorConfig config) {
         List<CpsOrderDTO> orders = super.queryOrders(request, config);
+        applyOrderScene(request, orders);
+        return orders;
+    }
+
+    @Override
+    public CpsOrderPageResult queryOrderPage(CpsOrderQueryRequest request, CpsVendorConfig config) {
+        CpsOrderPageResult result = super.queryOrderPage(request, config);
+        applyOrderScene(request, result.getItems());
+        return result;
+    }
+
+    private void applyOrderScene(CpsOrderQueryRequest request, List<CpsOrderDTO> orders) {
         if (orders != null && request != null && request.getOrderScene() != null) {
             orders.forEach(order -> {
                 if (order.getOrderScene() == null) {
@@ -267,7 +279,6 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
                 }
             });
         }
-        return orders;
     }
 
     @Override

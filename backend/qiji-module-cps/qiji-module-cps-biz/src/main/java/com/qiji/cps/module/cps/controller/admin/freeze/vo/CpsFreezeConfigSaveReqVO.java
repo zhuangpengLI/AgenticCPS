@@ -20,6 +20,14 @@ public class CpsFreezeConfigSaveReqVO {
     @Schema(description = "平台编码（NULL表示全平台默认配置）", example = "taobao")
     private String platformCode;
 
+    @Schema(description = "返利金额下限（分，包含）", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "金额下限不能为空")
+    @Min(value = 0, message = "金额下限不能小于0")
+    private Long minAmountCent;
+
+    @Schema(description = "返利金额上限（分，不包含；NULL表示无上限）")
+    private Long maxAmountCent;
+
     @Schema(description = "解冻天数（确认收货后N天自动解冻）", requiredMode = Schema.RequiredMode.REQUIRED, example = "7")
     @NotNull(message = "解冻天数不能为空")
     @Min(value = 1, message = "解冻天数至少为1天")

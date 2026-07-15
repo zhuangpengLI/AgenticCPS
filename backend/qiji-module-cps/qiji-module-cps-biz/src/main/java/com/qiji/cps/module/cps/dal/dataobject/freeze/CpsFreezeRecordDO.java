@@ -59,6 +59,24 @@ public class CpsFreezeRecordDO extends TenantBaseDO {
      */
     private BigDecimal freezeAmount;
     /**
+     * 冻结金额（分）。V2 资产操作优先读取该字段。
+     */
+    private Long amountCent;
+    /**
+     * 冻结配置快照。
+     */
+    private Long freezeConfigId;
+    private Integer freezeDaysSnapshot;
+    /**
+     * 同时满足确认收货与平台结算后的资格时间。
+     */
+    private LocalDateTime eligibleTime;
+    /**
+     * 手工解冻审计信息。
+     */
+    private String manualUnfreezeReason;
+    private String manualUnfreezeOperatorId;
+    /**
      * 计划解冻时间
      */
     private LocalDateTime unfreezeTime;

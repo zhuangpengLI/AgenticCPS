@@ -3,6 +3,9 @@ package com.qiji.cps.module.cps.controller.admin.platform;
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
+import com.qiji.cps.module.cps.client.CpsPlatformClient;
+import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformConnectionTestRespVO;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformRespVO;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformSaveReqVO;
@@ -29,6 +32,8 @@ public class CpsPlatformController {
 
     @Resource
     private CpsPlatformService platformService;
+    @Resource
+    private CpsPlatformClientFactory platformClientFactory;
 
     @PostMapping("/create")
     @Operation(summary = "创建CPS平台配置")
@@ -77,6 +82,38 @@ public class CpsPlatformController {
     public CommonResult<List<CpsPlatformRespVO>> getEnabledPlatformList() {
         List<CpsPlatformDO> list = platformService.getEnabledPlatformList();
         return success(BeanUtils.toBean(list, CpsPlatformRespVO.class));
+    }
+
+    @GetMapping("/test-connection")
+    @Operation(summary = "测试 CPS 平台连接")
+    @Parameter(name = "platformCode", description = "平台编码", required = true)
+    @PreAuthorize("@ss.hasPermission('cps:platform:query')")
+    public CommonResult<CpsPlatformConnectionTestRespVO> testConnection(@RequestParam("platformCode") String platformCode) {
+        CpsPlatformClient client = platformClientFactory.getClient(platformCode);
+        if (client == null) {
+            return success(CpsPlatformConnectionTestRespVO.builder()
+                    .platformCode(platformCode)
+                    .supported(false)
+                    .success(false)
+                    .failureReason("未找到平台适配器")
+                    .build());
+        }
+        try {
+            boolean success = client.testConnection();
+            return success(CpsPlatformConnectionTestRespVO.builder()
+                    .platformCode(platformCode)
+                    .supported(true)
+                    .success(success)
+                    .failureReason(success ? null : "平台适配器返回连接失败")
+                    .build());
+        } catch (Exception ex) {
+            return success(CpsPlatformConnectionTestRespVO.builder()
+                    .platformCode(platformCode)
+                    .supported(true)
+                    .success(false)
+                    .failureReason(ex.getMessage())
+                    .build());
+        }
     }
 
 }

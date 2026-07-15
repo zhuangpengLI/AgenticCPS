@@ -51,6 +51,8 @@ export interface CpsOrderPageReqVO {
 export interface CpsOrderBindSpecialIdReqVO {
   orderId: number
   memberId: number
+  idempotencyKey: string
+  auditNote?: string
 }
 
 // 查询订单分页列表

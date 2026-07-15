@@ -79,6 +79,7 @@ public interface CpsAdzoneMapper extends BaseMapperX<CpsAdzoneDO> {
         return selectOne(new LambdaQueryWrapperX<CpsAdzoneDO>()
                 .eq(CpsAdzoneDO::getPlatformCode, platformCode)
                 .eq(CpsAdzoneDO::getExternalRelationId, relationId)
+                .eq(CpsAdzoneDO::getRelationType, "member")
                 .eq(CpsAdzoneDO::getStatus, 1)
                 .last("LIMIT 1"));
     }

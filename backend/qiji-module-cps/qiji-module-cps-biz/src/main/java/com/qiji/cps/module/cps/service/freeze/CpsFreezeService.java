@@ -4,6 +4,7 @@ import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.module.cps.controller.admin.freeze.vo.CpsFreezeConfigPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.freeze.vo.CpsFreezeConfigSaveReqVO;
 import com.qiji.cps.module.cps.controller.admin.freeze.vo.CpsFreezeRecordPageReqVO;
+import com.qiji.cps.module.cps.controller.admin.freeze.vo.CpsManualUnfreezeReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeConfigDO;
 import com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeRecordDO;
 
@@ -56,6 +57,8 @@ public interface CpsFreezeService {
      */
     CpsFreezeConfigDO getActiveConfig(String platformCode);
 
+    CpsFreezeConfigDO getActiveConfig(String platformCode, long rebateAmountCent);
+
     // ==================== 解冻操作 ====================
 
     /**
@@ -73,6 +76,8 @@ public interface CpsFreezeService {
      * @param recordId 冻结记录ID
      */
     void manualUnfreeze(Long recordId);
+
+    void manualUnfreeze(CpsManualUnfreezeReqVO reqVO, Long adminUserId);
 
     /**
      * 分页查询冻结记录

@@ -13,6 +13,7 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
@@ -230,6 +231,19 @@ public class CpsPlatformClientFactory {
             return getActiveVendorConfig(platformCode);
         }
         return vendorService.getVendorConfig(vendorCode, platformCode);
+    }
+
+    public List<CpsVendorDescriptor> getRegisteredVendorDescriptors() {
+        return vendorClientMap.values().stream()
+                .map(CpsApiVendorClient::describe)
+                .sorted(Comparator.comparing(CpsVendorDescriptor::getPlatformCode)
+                        .thenComparing(CpsVendorDescriptor::getVendorCode))
+                .toList();
+    }
+
+    public CpsVendorDescriptor getVendorDescriptor(String vendorCode, String platformCode) {
+        CpsApiVendorClient client = getVendorClient(vendorCode, platformCode);
+        return client == null ? null : client.describe();
     }
 
     // ==================== 内部方法 ====================

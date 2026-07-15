@@ -1,11 +1,19 @@
 package com.qiji.cps.module.cps.controller.app.goods;
 
 import com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils;
+import com.qiji.cps.module.cps.client.dto.CpsGoodsItem;
+import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchResult;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
+import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsParseRespVO;
+import com.qiji.cps.module.cps.controller.app.goods.vo.AppCpsGoodsCompareReqVO;
+import com.qiji.cps.module.cps.controller.app.goods.vo.AppCpsGoodsDetailReqVO;
+import com.qiji.cps.module.cps.controller.app.goods.vo.AppCpsGoodsParseReqVO;
+import com.qiji.cps.module.cps.controller.app.goods.vo.AppCpsGoodsSearchReqVO;
 import com.qiji.cps.module.cps.controller.app.goods.vo.AppCpsLinkReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
 import com.qiji.cps.module.cps.service.goods.CpsGoodsService;
+import com.qiji.cps.module.cps.service.goods.CpsGoodsToolboxService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +22,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -32,7 +43,129 @@ class AppCpsGoodsControllerTest {
     @Mock
     private CpsGoodsService cpsGoodsService;
     @Mock
+    private CpsGoodsToolboxService goodsToolboxService;
+    @Mock
     private CpsTransferRecordMapper transferRecordMapper;
+
+    @Test
+    @DisplayName("searchGoods maps commission amount to estimated rebate response")
+    void searchGoods_mapsCommissionAmountToEstimatedRebateResponse() {
+        AppCpsGoodsSearchReqVO reqVO = new AppCpsGoodsSearchReqVO();
+        reqVO.setKeyword("coffee");
+        reqVO.setPlatformCode("taobao");
+        reqVO.setPageNo(1);
+        reqVO.setPageSize(10);
+        when(cpsGoodsService.searchGoods(any(), any())).thenReturn(CpsGoodsSearchResult.builder()
+                .list(List.of(CpsGoodsItem.builder()
+                        .goodsId("ITEM-1")
+                        .platformCode("taobao")
+                        .title("Coffee")
+                        .commissionAmount(new BigDecimal("1.23"))
+                        .build()))
+                .total(1L)
+                .pageNo(1)
+                .pageSize(10)
+                .build());
+
+        var response = controller.searchGoods(reqVO);
+
+        assertEquals(new BigDecimal("1.23"),
+                response.getData().getList().get(0).getEstimateRebateAmount());
+    }
+
+    @Test
+    @DisplayName("compareGoods returns cheapest highest rebate and best overall goods")
+    void compareGoods_returnsCheapestHighestRebateAndBestOverallGoods() {
+        AppCpsGoodsCompareReqVO reqVO = new AppCpsGoodsCompareReqVO();
+        reqVO.setKeyword("coffee");
+        reqVO.setPageSize(10);
+        when(cpsGoodsService.searchGoodsAllPlatforms(any())).thenReturn(List.of(
+                CpsGoodsItem.builder()
+                        .goodsId("CHEAP")
+                        .platformCode("pdd")
+                        .title("Cheap Coffee")
+                        .actualPrice(new BigDecimal("9.90"))
+                        .commissionAmount(new BigDecimal("0.50"))
+                        .build(),
+                CpsGoodsItem.builder()
+                        .goodsId("REBATE")
+                        .platformCode("taobao")
+                        .title("High Rebate Coffee")
+                        .actualPrice(new BigDecimal("39.90"))
+                        .commissionAmount(new BigDecimal("6.00"))
+                        .build(),
+                CpsGoodsItem.builder()
+                        .goodsId("BEST")
+                        .platformCode("jd")
+                        .title("Best Coffee")
+                        .actualPrice(new BigDecimal("19.90"))
+                        .commissionAmount(new BigDecimal("6.00"))
+                        .build()
+        ));
+
+        var response = controller.compareGoods(reqVO);
+
+        assertEquals("CHEAP", response.getData().getCheapestGoods().getGoodsId());
+        assertEquals("REBATE", response.getData().getHighestRebateGoods().getGoodsId());
+        assertEquals("BEST", response.getData().getBestOverallGoods().getGoodsId());
+        assertEquals(3, response.getData().getList().size());
+    }
+
+    @Test
+    @DisplayName("getDetail returns one goods detail with coupon and rebate estimate fields")
+    void getDetail_returnsOneGoodsDetailWithCouponAndRebateEstimateFields() {
+        AppCpsGoodsDetailReqVO reqVO = new AppCpsGoodsDetailReqVO();
+        reqVO.setPlatformCode("taobao");
+        reqVO.setGoodsId("ITEM-1");
+        when(cpsGoodsService.searchGoods(any(), any())).thenReturn(CpsGoodsSearchResult.builder()
+                .list(List.of(CpsGoodsItem.builder()
+                        .goodsId("ITEM-1")
+                        .platformCode("taobao")
+                        .title("Coffee")
+                        .couponPrice(new BigDecimal("5.00"))
+                        .couponConditions(new BigDecimal("50.00"))
+                        .couponRemainNum(88L)
+                        .couponEndTime("2026-08-01 23:59:59")
+                        .commissionRate(new BigDecimal("12.50"))
+                        .commissionAmount(new BigDecimal("1.23"))
+                        .sellingPoint("高佣好券")
+                        .build()))
+                .total(1L)
+                .pageNo(1)
+                .pageSize(1)
+                .build());
+
+        var response = controller.getDetail(reqVO);
+
+        assertEquals("ITEM-1", response.getData().getGoodsId());
+        assertEquals(new BigDecimal("5.00"), response.getData().getCouponPrice());
+        assertEquals(new BigDecimal("50.00"), response.getData().getCouponConditions());
+        assertEquals(88L, response.getData().getCouponRemainNum());
+        assertEquals("2026-08-01 23:59:59", response.getData().getCouponEndTime());
+        assertEquals(new BigDecimal("1.23"), response.getData().getEstimateRebateAmount());
+        assertEquals("高佣好券", response.getData().getSellingPoint());
+    }
+
+    @Test
+    @DisplayName("parseContent exposes toolbox parse result through app endpoint")
+    void parseContent_exposesToolboxParseResultThroughAppEndpoint() {
+        AppCpsGoodsParseReqVO reqVO = new AppCpsGoodsParseReqVO();
+        reqVO.setPlatformCode("taobao");
+        reqVO.setOriginalContent("https://item.taobao.com/item.htm?id=ITEM-1");
+        when(goodsToolboxService.parseContent(any())).thenReturn(CpsGoodsParseRespVO.builder()
+                .platformCode("taobao")
+                .supported(true)
+                .goodsId("ITEM-1")
+                .itemLink("https://item.taobao.com/item.htm?id=ITEM-1")
+                .parseSource("local")
+                .build());
+
+        var response = controller.parseContent(reqVO);
+
+        assertEquals(true, response.getData().getSupported());
+        assertEquals("ITEM-1", response.getData().getGoodsId());
+        assertEquals("local", response.getData().getParseSource());
+    }
 
     @Test
     @DisplayName("generateLink inserts transfer record for order attribution")

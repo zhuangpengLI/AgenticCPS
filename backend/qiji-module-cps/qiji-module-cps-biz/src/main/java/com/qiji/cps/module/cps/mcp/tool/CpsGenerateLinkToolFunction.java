@@ -55,7 +55,7 @@ public class CpsGenerateLinkToolFunction
         private String goodsSign;
 
         @JsonProperty(value = "member_id")
-        @JsonPropertyDescription("会员ID，用于订单归因。不填时从当前登录用户自动获取")
+        @JsonPropertyDescription("兼容字段，不作为归因依据；会员身份只接受可信 ToolContext")
         private Long memberId;
 
         @JsonProperty(value = "adzone_id")
@@ -112,7 +112,7 @@ public class CpsGenerateLinkToolFunction
             return response;
         }
         try {
-            // ToolContext 是可信身份来源；request.memberId 仅用于没有上下文的服务端调用兜底。
+            // ToolContext 是唯一可信会员身份来源。请求体 memberId 只为协议兼容保留，禁止用于资产归因。
             Long memberId = null;
             if (toolContext != null) {
                 Map<String, Object> ctx = toolContext.getContext();
@@ -123,10 +123,6 @@ public class CpsGenerateLinkToolFunction
                     memberId = ((Number) userId).longValue();
                 }
             }
-            if (memberId == null) {
-                memberId = request.getMemberId();
-            }
-
             CpsPromotionLinkResult result = goodsService.generatePromotionLink(
                     request.getPlatformCode(),
                     request.getGoodsId(),

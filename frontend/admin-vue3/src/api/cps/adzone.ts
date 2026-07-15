@@ -40,24 +40,44 @@ export interface CpsAdzonePageReqVO {
   status?: number
 }
 
+export interface CpsAdzoneBatchCreateReqVO {
+  items: CpsAdzoneSaveVO[]
+}
+
+export interface CpsAdzoneBatchCreateRespVO {
+  totalCount: number
+  successCount: number
+  failureCount: number
+  results: Array<{
+    index: number
+    adzoneId: string
+    id?: number
+    success: boolean
+    failureReason?: string
+  }>
+}
+
 // ===== 推广位 API =====
 
 export const CpsAdzoneApi = {
   /** 创建推广位 */
-  createAdzone: (data: CpsAdzoneSaveVO) =>
-    request.post({ url: '/cps/adzone/create', data }),
+  createAdzone: (data: CpsAdzoneSaveVO) => request.post({ url: '/cps/adzone/create', data }),
+
+  /** 批量创建推广位 */
+  batchCreateAdzones: (data: CpsAdzoneBatchCreateReqVO) =>
+    request.post<CpsAdzoneBatchCreateRespVO>({
+      url: '/cps/adzone/batch-create',
+      data
+    }),
 
   /** 更新推广位 */
-  updateAdzone: (data: CpsAdzoneSaveVO) =>
-    request.put({ url: '/cps/adzone/update', data }),
+  updateAdzone: (data: CpsAdzoneSaveVO) => request.put({ url: '/cps/adzone/update', data }),
 
   /** 删除推广位 */
-  deleteAdzone: (id: number) =>
-    request.delete({ url: '/cps/adzone/delete', params: { id } }),
+  deleteAdzone: (id: number) => request.delete({ url: '/cps/adzone/delete', params: { id } }),
 
   /** 获取推广位详情 */
-  getAdzone: (id: number) =>
-    request.get<CpsAdzoneVO>({ url: '/cps/adzone/get', params: { id } }),
+  getAdzone: (id: number) => request.get<CpsAdzoneVO>({ url: '/cps/adzone/get', params: { id } }),
 
   /** 获取推广位分页列表 */
   getAdzonePage: (params: CpsAdzonePageReqVO) =>

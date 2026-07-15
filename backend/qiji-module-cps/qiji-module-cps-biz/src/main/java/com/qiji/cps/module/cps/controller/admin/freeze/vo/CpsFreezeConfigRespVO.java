@@ -15,6 +15,12 @@ public class CpsFreezeConfigRespVO {
     @Schema(description = "平台编码（null=全平台）")
     private String platformCode;
 
+    @Schema(description = "返利金额下限（分，包含）")
+    private Long minAmountCent;
+
+    @Schema(description = "返利金额上限（分，不包含）")
+    private Long maxAmountCent;
+
     @Schema(description = "解冻天数")
     private Integer unfreezeDays;
 

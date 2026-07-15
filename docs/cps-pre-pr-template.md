@@ -112,6 +112,9 @@
 
 ```bash
 # 示例
+python script/check_utf8_integrity.py
+python -m pytest script/test/test_check_utf8_integrity.py
+
 cd backend
 mvn test -pl qiji-module-cps/qiji-module-cps-biz -am -Dtest=ClassName "-Dsurefire.failIfNoSpecifiedTests=false"
 ```
@@ -119,6 +122,16 @@ mvn test -pl qiji-module-cps/qiji-module-cps-biz -am -Dtest=ClassName "-Dsurefir
 结果：
 
 - 
+
+## UTF-8 自动治理闸门
+
+- [ ] 本地执行 `python script/check_utf8_integrity.py` 通过
+- [ ] 本地执行 `python -m pytest script/test/test_check_utf8_integrity.py` 通过
+- [ ] GitHub Actions `UTF-8 Integrity` 通过
+- 扫描文件数：
+- 本地执行时间：
+- CI 运行链接：
+- 例外说明（仅允许登记经过审计的 mojibake 误报，不允许豁免非法 UTF-8、BOM 或 U+FFFD）：
 
 ## 需要人工重点 Review 的业务语义
 
@@ -133,4 +146,4 @@ mvn test -pl qiji-module-cps/qiji-module-cps-biz -am -Dtest=ClassName "-Dsurefir
 - 是否更新 `docs/cps-tech-debt-inventory.md`：
 - 是否更新 `agent_improvement/memory/cps-ai-coding-rules.md`：
 - 是否检查旧 `yudao-*` 路径：
-- 是否完成 UTF-8 解码校验：
+- 是否完成 UTF-8 自动治理闸门并附证据：

@@ -1,6 +1,5 @@
 package com.qiji.cps.module.cps.dal.dataobject.rebate;
 
-import com.qiji.cps.framework.common.enums.CommonStatusEnum;
 import com.qiji.cps.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -30,6 +29,10 @@ public class CpsRebateConfigDO extends TenantBaseDO {
     @TableId
     private Long id;
     /**
+     * 会员ID（NULL表示无个人限制）
+     */
+    private Long memberId;
+    /**
      * 会员等级ID（NULL表示无等级限制）
      */
     private Long memberLevelId;
@@ -51,8 +54,6 @@ public class CpsRebateConfigDO extends TenantBaseDO {
     private BigDecimal minRebateAmount;
     /**
      * 状态（0禁用 1启用）
-     *
-     * 枚举 {@link CommonStatusEnum}
      */
     private Integer status;
     /**

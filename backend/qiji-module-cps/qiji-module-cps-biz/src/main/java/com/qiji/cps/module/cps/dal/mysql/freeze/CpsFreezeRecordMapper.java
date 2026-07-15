@@ -9,6 +9,7 @@ import com.qiji.cps.module.cps.enums.CpsFreezeStatusEnum;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Collections;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -54,6 +55,36 @@ public interface CpsFreezeRecordMapper extends BaseMapperX<CpsFreezeRecordDO> {
                 .eq(CpsFreezeRecordDO::getBusinessType, businessType)
                 .eq(CpsFreezeRecordDO::getBusinessId, businessId)
                 .last("LIMIT 1"));
+    }
+
+    default CpsFreezeRecordDO selectForUpdateById(Long id) {
+        return selectOne(new LambdaQueryWrapperX<CpsFreezeRecordDO>()
+                .eq(CpsFreezeRecordDO::getId, id)
+                .last("FOR UPDATE"));
+    }
+
+    default CpsFreezeRecordDO selectForUpdateByBusinessId(String businessType, String businessId) {
+        return selectOne(new LambdaQueryWrapperX<CpsFreezeRecordDO>()
+                .eq(CpsFreezeRecordDO::getBusinessType, businessType)
+                .eq(CpsFreezeRecordDO::getBusinessId, businessId)
+                .last("LIMIT 1 FOR UPDATE"));
+    }
+
+    default List<CpsFreezeRecordDO> selectListByTrace(Long orderId, String platformOrderId,
+                                                      String businessId, String idempotencyKey) {
+        if (orderId == null && isBlank(platformOrderId) && isBlank(businessId) && isBlank(idempotencyKey)) {
+            return Collections.emptyList();
+        }
+        return selectList(new LambdaQueryWrapperX<CpsFreezeRecordDO>()
+                .eqIfPresent(CpsFreezeRecordDO::getOrderId, orderId)
+                .eqIfPresent(CpsFreezeRecordDO::getPlatformOrderId, platformOrderId)
+                .eqIfPresent(CpsFreezeRecordDO::getBusinessId, businessId)
+                .eqIfPresent(CpsFreezeRecordDO::getIdempotencyKey, idempotencyKey)
+                .orderByDesc(CpsFreezeRecordDO::getId));
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
 }

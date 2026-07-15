@@ -167,5 +167,23 @@ public class CpsOrderDO extends TenantBaseDO {
      * 最后同步错误信息
      */
     private String lastSyncError;
+    /**
+     * 最后同步结果
+     */
+    private String lastSyncResult;
+    /**
+     * 最近一次平台原始状态摘要
+     */
+    private String rawPlatformStatusSummary;
+    /**
+     * 订单状态乐观锁版本号
+     */
+    private Integer statusVersion;
+    /** 返利结算重试次数，用于公平调度永久待处理订单 */
+    private Integer rebateSettleRetryCount;
+    /** 下次允许尝试返利结算的时间 */
+    private LocalDateTime rebateSettleNextRetryTime;
+    /** 最近一次返利结算待处理或失败原因 */
+    private String rebateSettleLastError;
 
 }

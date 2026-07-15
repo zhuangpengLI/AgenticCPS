@@ -1,4 +1,4 @@
-﻿# AGENTS.md
+# AGENTS.md
 
 This file provides guidance to AI Agents (Qoder, Claude Code, etc.) when working with code in this repository.
 
@@ -445,6 +445,7 @@ See `agent_improvement/memory/codegen-rules.md` for full details.
 - CPS module tables: `cps_*` prefix
 - CPS database scripts live under `backend/sql/module/`: `cps-all-in-one.sql` is the full baseline script for new databases, and `cps-update.sql` is the incremental upgrade script for existing databases. Every update block in `cps-update.sql` must include its modification date/time record.
 - Do not create or update `backend/sql/mysql/cps-all-in-one.sql` or one-off CPS SQL scripts under `backend/sql/mysql`; keep CPS tables, seed data, menus, permissions, and incremental updates in the module scripts to prevent drift. Do not add CPS tables, seed data, menus, or permissions to `backend/sql/mysql/ruoyi-vue-pro.sql`.
+- Local development test records must be added to `backend/sql/module/test_data.sql`. Keep this file local-only and excluded from Git; never commit it. Append every new test-data batch to this file with its addition time, purpose, affected tables, executable SQL, and cleanup SQL. Do not place schema changes or production seed data in this file, and do not copy local test records into `cps-all-in-one.sql` or `cps-update.sql`.
 
 ## Configuration
 

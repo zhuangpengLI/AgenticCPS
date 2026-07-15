@@ -54,6 +54,8 @@ public class CpsWithdrawDO extends TenantBaseDO {
      * 提现金额
      */
     private BigDecimal amount;
+    /** 提现金额（分），V2 资金操作唯一计算字段。 */
+    private Long amountCent;
     /**
      * 手续费
      */
@@ -96,5 +98,19 @@ public class CpsWithdrawDO extends TenantBaseDO {
      * 转账错误信息
      */
     private String transferError;
+    /** 统一资产冻结记录。 */
+    private Long freezeRecordId;
+    /** 请求幂等键，租户内唯一。 */
+    private String idempotencyKey;
+    /** 提现状态 CAS 版本。 */
+    private Integer statusVersion;
+    /** Pay 模块转账单编号。 */
+    private Long payTransferId;
+    /** Pay 模块渠道编码。 */
+    private String transferChannelCode;
+    /** 补偿重试信息。 */
+    private Integer retryCount;
+    private LocalDateTime nextRetryTime;
+    private LocalDateTime lastAttemptTime;
 
 }

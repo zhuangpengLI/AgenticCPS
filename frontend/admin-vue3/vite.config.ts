@@ -24,6 +24,7 @@ export default ({command, mode}: ConfigEnv): UserConfig => {
     return {
         base: env.VITE_BASE_PATH,
         root: root,
+        cacheDir: isE2E ? 'node_modules/.vite-e2e' : 'node_modules/.vite',
         // 服务端渲染
         server: {
             port: env.VITE_PORT, // 端口号

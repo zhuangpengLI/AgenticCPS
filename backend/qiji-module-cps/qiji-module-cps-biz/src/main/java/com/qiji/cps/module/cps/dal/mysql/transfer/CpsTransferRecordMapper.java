@@ -3,6 +3,7 @@ package com.qiji.cps.module.cps.dal.mysql.transfer;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.mybatis.core.mapper.BaseMapperX;
 import com.qiji.cps.framework.mybatis.core.query.LambdaQueryWrapperX;
+import com.qiji.cps.module.cps.controller.admin.marketing.vo.CpsMarketingFunnelReqVO;
 import com.qiji.cps.module.cps.controller.admin.transfer.vo.CpsTransferRecordPageReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import org.apache.ibatis.annotations.Mapper;
@@ -68,6 +69,14 @@ public interface CpsTransferRecordMapper extends BaseMapperX<CpsTransferRecordDO
                 .id(id)
                 .platformOrderId(platformOrderId)
                 .build());
+    }
+
+    default List<CpsTransferRecordDO> selectListForMarketingFunnel(CpsMarketingFunnelReqVO reqVO) {
+        return selectList(new LambdaQueryWrapperX<CpsTransferRecordDO>()
+                .eqIfPresent(CpsTransferRecordDO::getPlatformCode, reqVO.getPlatformCode())
+                .eq(CpsTransferRecordDO::getStatus, 1)
+                .betweenIfPresent(CpsTransferRecordDO::getCreateTime, reqVO.getStartTime(), reqVO.getEndTime())
+                .orderByDesc(CpsTransferRecordDO::getId));
     }
 
 }

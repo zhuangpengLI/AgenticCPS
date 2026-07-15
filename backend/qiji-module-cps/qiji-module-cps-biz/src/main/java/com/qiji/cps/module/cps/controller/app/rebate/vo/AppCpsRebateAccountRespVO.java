@@ -23,8 +23,20 @@ public class AppCpsRebateAccountRespVO {
     @Schema(description = "可用余额")
     private BigDecimal availableBalance;
 
+    @Schema(description = "待平台结算返利")
+    private BigDecimal pendingRebate;
+
     @Schema(description = "冻结余额")
     private BigDecimal frozenBalance;
+
+    @Schema(description = "欠款余额")
+    private BigDecimal debtBalance;
+
+    @Schema(description = "可提现余额")
+    private BigDecimal withdrawableBalance;
+
+    @Schema(description = "可兑换余额")
+    private BigDecimal exchangeableBalance;
 
     @Schema(description = "已提现金额")
     private BigDecimal withdrawnAmount;

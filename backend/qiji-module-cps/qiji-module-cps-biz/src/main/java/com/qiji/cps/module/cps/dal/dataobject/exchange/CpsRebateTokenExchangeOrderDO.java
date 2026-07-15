@@ -49,4 +49,12 @@ public class CpsRebateTokenExchangeOrderDO extends TenantBaseDO {
     private String idempotencyKey;
 
     private LocalDateTime completedAt;
+
+    private Integer retryCount;
+
+    private LocalDateTime nextRetryTime;
+
+    private LocalDateTime lastCompensationAt;
+
+    private Integer statusVersion;
 }

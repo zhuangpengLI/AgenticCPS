@@ -2,14 +2,21 @@ package com.qiji.cps.module.cps.job;
 
 import cn.hutool.core.util.StrUtil;
 import com.qiji.cps.framework.quartz.core.handler.JobHandler;
+import com.qiji.cps.framework.tenant.core.job.TenantJob;
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.dto.CpsOrderDTO;
+import com.qiji.cps.module.cps.client.dto.CpsOrderPageResult;
+import com.qiji.cps.module.cps.client.dto.CpsOrderPaginationMode;
 import com.qiji.cps.module.cps.client.dto.CpsOrderQueryRequest;
+import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderSyncCheckpointDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderSyncLogDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
+import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderSyncCheckpointMapper;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderSyncLogMapper;
-import com.qiji.cps.module.cps.service.order.CpsOrderService;
+import com.qiji.cps.module.cps.service.order.CpsOrderSyncFailureRecordCommand;
+import com.qiji.cps.module.cps.service.order.CpsOrderSyncFailureRecoveryService;
+import com.qiji.cps.module.cps.service.order.CpsOrderSyncPageService;
 import com.qiji.cps.module.cps.service.platform.CpsPlatformService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -51,12 +58,19 @@ public class CpsOrderSyncJob implements JobHandler {
     private CpsPlatformClientFactory platformClientFactory;
 
     @Resource
-    private CpsOrderService orderService;
+    private CpsOrderSyncPageService pageService;
 
     @Resource
     private CpsOrderSyncLogMapper syncLogMapper;
 
+    @Resource
+    private CpsOrderSyncCheckpointMapper checkpointMapper;
+
+    @Resource
+    private CpsOrderSyncFailureRecoveryService failureRecoveryService;
+
     @Override
+    @TenantJob
     public String execute(String param) throws Exception {
         // 解析参数
         int hours = 2;
@@ -133,23 +147,32 @@ public class CpsOrderSyncJob implements JobHandler {
             long t0 = System.currentTimeMillis();
             try {
                 CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
-                List<CpsOrderDTO> orders = pullAllOrders(platformCode, client, queryType, startTimeStr, endTimeStr);
+                PlatformSyncResult platformResult = syncPlatform(platform, client, queryType,
+                        startTimeStr, endTimeStr, endTime);
 
-                int total = orders.size();
-                int[] stats = orderService.batchSaveOrUpdateOrders(orders);
-                int newCount = stats[0], updateCount = stats[1], skipCount = stats[2];
+                int total = platformResult.totalCount();
+                int newCount = platformResult.newCount();
+                int updateCount = platformResult.updateCount();
+                int skipCount = platformResult.skipCount();
 
                 syncLog.setTotalCount(total);
                 syncLog.setNewCount(newCount);
                 syncLog.setUpdateCount(updateCount);
                 syncLog.setSkipCount(skipCount);
-                syncLog.setSyncStatus(1);
+                syncLog.setSyncStatus(platformResult.status());
+                if (StrUtil.isNotBlank(platformResult.failureSummary())) {
+                    syncLog.setErrorMsg(StrUtil.subWithLength(platformResult.failureSummary(), 0, 500));
+                }
 
                 totalNew += newCount;
                 totalUpdate += updateCount;
                 totalSkip += skipCount;
-                String line = String.format("[%s] 共%d条，新增%d，更新%d，跳过%d",
-                        platformCode, total, newCount, updateCount, skipCount);
+                if (platformResult.status() != 1) {
+                    totalFailed++;
+                }
+                String line = String.format("[%s] %s，共%d条，新增%d，更新%d，跳过%d%s",
+                        platformCode, statusText(platformResult.status()), total, newCount, updateCount, skipCount,
+                        StrUtil.isBlank(platformResult.failureSummary()) ? "" : "，原因: " + platformResult.failureSummary());
                 resultLines.add(line);
                 log.info("[CpsOrderSyncJob] 平台 {} 同步完成: {}", platformCode, line);
 
@@ -174,57 +197,303 @@ public class CpsOrderSyncJob implements JobHandler {
         return summary;
     }
 
-    /**
-     * 翻页拉取平台全部订单（支持游标翻页，最多拉取 20 页防止死循环）
-     */
-    private List<CpsOrderDTO> pullAllOrders(String platformCode, CpsPlatformClient client, int queryType,
-                                             String startTime, String endTime) {
-        List<CpsOrderDTO> allOrders = new ArrayList<>();
-        for (Integer orderScene : resolveOrderScenes(platformCode)) {
-            allOrders.addAll(pullAllOrders(client, queryType, orderScene, startTime, endTime));
+    private PlatformSyncResult syncPlatform(CpsPlatformDO platform, CpsPlatformClient client, int queryType,
+                                              String defaultStartTime, String endTime,
+                                              LocalDateTime watermarkTime) {
+        int total = 0;
+        int newCount = 0;
+        int updateCount = 0;
+        int skipCount = 0;
+        int status = 1;
+        List<String> failures = new ArrayList<>();
+        for (Integer nullableScene : resolveOrderScenes(platform.getPlatformCode())) {
+            int orderScene = nullableScene == null ? 0 : nullableScene;
+            SceneSyncResult result = syncScene(platform, client, queryType, orderScene,
+                    defaultStartTime, endTime, watermarkTime);
+            total += result.totalCount();
+            newCount += result.newCount();
+            updateCount += result.updateCount();
+            skipCount += result.skipCount();
+            if (result.status() != 1) {
+                status = status == 1 ? result.status() : Math.min(status, result.status());
+                failures.add("scene=" + orderScene + ": " + result.failureSummary());
+            }
         }
-        return allOrders;
+        return new PlatformSyncResult(total, newCount, updateCount, skipCount, status,
+                String.join("; ", failures));
     }
 
-    private List<CpsOrderDTO> pullAllOrders(CpsPlatformClient client, int queryType, Integer orderScene,
-                                             String startTime, String endTime) {
-        List<CpsOrderDTO> allOrders = new ArrayList<>();
-        String positionIndex = null;
-        int maxPages = 20;
+    private SceneSyncResult syncScene(CpsPlatformDO platform, CpsPlatformClient client, int queryType,
+                                      int orderScene, String defaultStartTime, String endTime,
+                                      LocalDateTime watermarkTime) {
+        String vendorCode = StrUtil.blankToDefault(platform.getActiveVendorCode(), "OFFICIAL");
+        String checkpointQueryType = String.valueOf(queryType);
+        CpsOrderSyncCheckpointDO checkpoint = checkpointMapper.selectByKey(
+                platform.getPlatformCode(), vendorCode, orderScene, checkpointQueryType);
+        if (checkpoint == null) {
+            checkpoint = CpsOrderSyncCheckpointDO.builder()
+                    .platformCode(platform.getPlatformCode())
+                    .vendorCode(vendorCode)
+                    .orderScene(orderScene)
+                    .queryType(checkpointQueryType)
+                    .nextPageNo(1)
+                    .queryEndTime(watermarkTime)
+                    .lastSyncStatus("NEW")
+                    .lastSuccessCount(0)
+                    .lastFailureCount(0)
+                    .version(0)
+                    .build();
+            if (checkpointMapper.insert(checkpoint) != 1) {
+                throw new IllegalStateException("checkpoint insert failed for "
+                        + platform.getPlatformCode() + ":" + vendorCode + ":" + orderScene);
+            }
+        }
 
-        for (int page = 1; page <= maxPages; page++) {
+        LocalDateTime fixedQueryEndTime = checkpoint.getQueryEndTime();
+        if (fixedQueryEndTime == null) {
+            fixedQueryEndTime = watermarkTime;
+            checkpoint.setQueryEndTime(fixedQueryEndTime);
+            if (checkpoint.getNextCursor() != null
+                    || (checkpoint.getNextPageNo() != null && checkpoint.getNextPageNo() > 1)) {
+                checkpoint.setNextCursor(null);
+                checkpoint.setNextPageNo(1);
+                checkpoint.setPaginationMode(null);
+                checkpoint.setLastSyncStatus("RESTARTED");
+            }
+            saveCheckpoint(checkpoint, "initialize fixed query window");
+        }
+
+        String queryStartTime = checkpoint.getWatermarkTime() == null
+                ? defaultStartTime : checkpoint.getWatermarkTime().format(DTF);
+        String fixedQueryEndTimeText = fixedQueryEndTime.format(DTF);
+        String positionIndex = checkpoint.getNextCursor();
+        int pageNo = checkpoint.getNextPageNo() == null ? 1 : checkpoint.getNextPageNo();
+        int total = 0;
+        int newCount = 0;
+        int updateCount = 0;
+        int skipCount = 0;
+        boolean hasMore = false;
+
+        for (int pageCount = 1; pageCount <= 20; pageCount++) {
             CpsOrderQueryRequest req = new CpsOrderQueryRequest();
             req.setQueryType(queryType);
-            req.setOrderScene(orderScene);
-            req.setStartTime(startTime);
-            req.setEndTime(endTime);
+            req.setOrderScene(orderScene == 0 ? null : orderScene);
+            req.setStartTime(queryStartTime);
+            req.setEndTime(fixedQueryEndTimeText);
             req.setPageSize(50);
-            req.setPageNo(page);
+            req.setPageNo(pageNo);
             if (positionIndex != null) {
                 req.setPositionIndex(positionIndex);
             }
 
-            List<CpsOrderDTO> pageOrders = client.queryOrders(req);
-            if (pageOrders == null || pageOrders.isEmpty()) {
-                break;
+            CpsOrderPageResult pageResult;
+            try {
+                pageResult = client.queryOrderPage(req);
+            } catch (Exception ex) {
+                int failedStatus = total > 0 ? 3 : 2;
+                recordSyncFailure(platform, vendorCode, orderScene, checkpointQueryType,
+                        null, pageNo, positionIndex, "QUERY_PAGE", req, List.of(), ex.getMessage());
+                markCheckpointFailure(checkpoint, failedStatus, total, 1, ex.getMessage());
+                return new SceneSyncResult(total, newCount, updateCount, skipCount,
+                        failedStatus, ex.getMessage());
+            }
+            List<CpsOrderDTO> pageOrders = pageResult.getItems();
+            if (pageOrders.isEmpty() && pageResult.isHasMore()) {
+                String message = "上游返回空页但 hasMore=true";
+                int failedStatus = total > 0 ? 3 : 2;
+                recordSyncFailure(platform, vendorCode, orderScene, checkpointQueryType,
+                        pageResult.getPaginationMode().name(), pageNo, positionIndex, "EMPTY_HAS_MORE",
+                        req, pageOrders, message);
+                markCheckpointFailure(checkpoint, failedStatus, total, 0, message);
+                return new SceneSyncResult(total, newCount, updateCount, skipCount,
+                        failedStatus, message);
             }
 
-            allOrders.addAll(pageOrders);
-
-            // 获取下一页游标（大淘客淘宝接口使用游标翻页）
-            String nextIndex = pageOrders.get(pageOrders.size() - 1).getNextPositionIndex();
-            if (nextIndex == null || nextIndex.equals(positionIndex)) {
-                break;
+            int[] stats;
+            try {
+                attachSyncBatchNo(pageOrders, platform, vendorCode, orderScene, checkpointQueryType,
+                        fixedQueryEndTimeText, pageNo, positionIndex);
+                stats = pageOrders.isEmpty() ? new int[]{0, 0, 0} : pageService.persistPage(pageOrders);
+            } catch (Exception ex) {
+                int failedStatus = total > 0 ? 3 : 2;
+                recordSyncFailure(platform, vendorCode, orderScene, checkpointQueryType,
+                        pageResult.getPaginationMode().name(), pageNo, positionIndex, "PERSIST_PAGE",
+                        req, pageOrders, ex.getMessage());
+                markCheckpointFailure(checkpoint, failedStatus, total, pageOrders.size(), ex.getMessage());
+                return new SceneSyncResult(total, newCount, updateCount, skipCount,
+                        failedStatus, ex.getMessage());
             }
-            positionIndex = nextIndex;
 
-            // 如果返回数量小于 pageSize，说明已经是最后一页
-            if (pageOrders.size() < 50) {
-                break;
+            total += pageOrders.size();
+            newCount += stats[0];
+            updateCount += stats[1];
+            skipCount += stats[2];
+            hasMore = pageResult.isHasMore();
+            checkpoint.setPaginationMode(pageResult.getPaginationMode().name());
+            checkpoint.setLastSuccessCount(total);
+            checkpoint.setLastFailureCount(0);
+            checkpoint.setFailureSummary(null);
+
+            if (!hasMore) {
+                checkpoint.setNextCursor(null);
+                checkpoint.setNextPageNo(null);
+                checkpoint.setWatermarkTime(fixedQueryEndTime);
+                checkpoint.setQueryEndTime(null);
+                checkpoint.setLastSyncStatus("SUCCESS");
+                saveCheckpoint(checkpoint, "complete query window");
+                return new SceneSyncResult(total, newCount, updateCount, skipCount, 1, null);
             }
+            if (pageResult.getPaginationMode() == CpsOrderPaginationMode.CURSOR) {
+                String nextIndex = pageResult.getNextCursor();
+                if (nextIndex == null || nextIndex.equals(positionIndex)) {
+                    String message = "订单游标分页返回 hasMore=true 但未提供有效 nextCursor";
+                    recordSyncFailure(platform, vendorCode, orderScene, checkpointQueryType,
+                            pageResult.getPaginationMode().name(), pageNo, positionIndex, "INVALID_CURSOR",
+                            req, pageOrders, message);
+                    markCheckpointFailure(checkpoint, 3, total, 0, message);
+                    return new SceneSyncResult(total, newCount, updateCount, skipCount, 3, message);
+                }
+                positionIndex = nextIndex;
+                checkpoint.setNextCursor(nextIndex);
+                checkpoint.setNextPageNo(null);
+            } else {
+                if (pageResult.getNextPageNo() == null || pageResult.getNextPageNo() <= pageNo) {
+                    String message = "订单页码分页返回 hasMore=true 但未提供有效 nextPageNo";
+                    recordSyncFailure(platform, vendorCode, orderScene, checkpointQueryType,
+                            pageResult.getPaginationMode().name(), pageNo, positionIndex, "INVALID_PAGE",
+                            req, pageOrders, message);
+                    markCheckpointFailure(checkpoint, 3, total, 0, message);
+                    return new SceneSyncResult(total, newCount, updateCount, skipCount, 3, message);
+                }
+                pageNo = pageResult.getNextPageNo();
+                checkpoint.setNextPageNo(pageNo);
+                checkpoint.setNextCursor(null);
+            }
+            checkpoint.setLastSyncStatus("PROCESSING");
+            saveCheckpoint(checkpoint, "advance page");
         }
 
-        return allOrders;
+        String message = "达到最大分页数 20 仍有更多订单";
+        if (hasMore) {
+            recordSyncFailure(platform, vendorCode, orderScene, checkpointQueryType,
+                    checkpoint.getPaginationMode(), pageNo, positionIndex, "PAGE_LIMIT", null, List.of(), message);
+            markCheckpointFailure(checkpoint, 3, total, 0, message);
+            log.warn("[CpsOrderSyncJob] platform={}, vendor={}, scene={} {}",
+                    platform.getPlatformCode(), vendorCode, orderScene, message);
+            return new SceneSyncResult(total, newCount, updateCount, skipCount, 3, message);
+        }
+        return new SceneSyncResult(total, newCount, updateCount, skipCount, 1, null);
+    }
+
+    private void attachSyncBatchNo(List<CpsOrderDTO> pageOrders, CpsPlatformDO platform, String vendorCode,
+                                   int orderScene, String queryType, String fixedQueryEndTimeText,
+                                   int pageNo, String positionIndex) {
+        if (pageOrders == null || pageOrders.isEmpty()) {
+            return;
+        }
+        String pageMark = positionIndex == null ? "page-" + pageNo : "cursor-" + positionIndex;
+        String batchNo = String.join(":",
+                "order-sync",
+                platform.getPlatformCode(),
+                vendorCode,
+                String.valueOf(orderScene),
+                queryType,
+                fixedQueryEndTimeText,
+                pageMark);
+        for (CpsOrderDTO order : pageOrders) {
+            order.setSyncBatchNo(batchNo);
+        }
+    }
+
+    private void markCheckpointFailure(CpsOrderSyncCheckpointDO checkpoint, int syncStatus,
+                                       int successCount, int failureCount, String failureSummary) {
+        checkpoint.setLastSyncStatus(syncStatus == 2 ? "FAILED" : "PARTIAL");
+        checkpoint.setLastSuccessCount(successCount);
+        checkpoint.setLastFailureCount(failureCount);
+        checkpoint.setFailureSummary(StrUtil.subWithLength(failureSummary, 0, 1000));
+        saveCheckpoint(checkpoint, "record failure");
+    }
+
+    private void recordSyncFailure(CpsPlatformDO platform, String vendorCode, int orderScene, String queryType,
+                                   String paginationMode, int pageNo, String nextCursor, String failureStage,
+                                   CpsOrderQueryRequest request, List<CpsOrderDTO> pageOrders,
+                                   String failureReason) {
+        if (failureRecoveryService == null) {
+            return;
+        }
+        String syncBatchNo = pageOrders == null || pageOrders.isEmpty() ? null : pageOrders.get(0).getSyncBatchNo();
+        String rawSummary = summarizeRawPayload(pageOrders);
+        String requestSnapshot = request == null ? "pageNo=" + pageNo + ",cursor=" + nextCursor
+                : "queryType=" + request.getQueryType()
+                + ",orderScene=" + request.getOrderScene()
+                + ",startTime=" + request.getStartTime()
+                + ",endTime=" + request.getEndTime()
+                + ",pageNo=" + request.getPageNo()
+                + ",positionIndex=" + request.getPositionIndex()
+                + ",pageSize=" + request.getPageSize();
+        String identity = StrUtil.blankToDefault(syncBatchNo, requestSnapshot);
+        CpsOrderSyncFailureRecordCommand command = CpsOrderSyncFailureRecordCommand.builder()
+                .platformCode(platform.getPlatformCode())
+                .vendorCode(vendorCode)
+                .orderScene(orderScene)
+                .queryType(queryType)
+                .paginationMode(paginationMode)
+                .pageNo(pageNo)
+                .nextCursor(nextCursor)
+                .syncBatchNo(syncBatchNo)
+                .failureStage(failureStage)
+                .requestSnapshot(maskSensitive(requestSnapshot))
+                .rawSummary(maskSensitive(rawSummary))
+                .failureReason(failureReason)
+                .idempotencyKey(StrUtil.subWithLength("order-sync-failure:" + platform.getPlatformCode()
+                        + ":" + vendorCode + ":" + orderScene + ":" + queryType + ":" + failureStage
+                        + ":" + identity, 0, 128))
+                .build();
+        failureRecoveryService.recordFailure(command);
+    }
+
+    private String summarizeRawPayload(List<CpsOrderDTO> pageOrders) {
+        if (pageOrders == null || pageOrders.isEmpty()) {
+            return null;
+        }
+        List<String> summaries = new ArrayList<>();
+        for (int i = 0; i < Math.min(3, pageOrders.size()); i++) {
+            CpsOrderDTO order = pageOrders.get(i);
+            summaries.add("{platformOrderId=" + order.getPlatformOrderId()
+                    + ",platformStatus=" + order.getPlatformStatus()
+                    + ",refundTag=" + order.getRefundTag()
+                    + ",rawPayload=" + order.getRawPayload() + "}");
+        }
+        return StrUtil.subWithLength(String.join(";", summaries), 0, 2000);
+    }
+
+    private String maskSensitive(String text) {
+        if (text == null) {
+            return null;
+        }
+        String masked = text.replaceAll("(?<!\\d)1[3-9]\\d{9}(?!\\d)", "***");
+        return masked.replaceAll("(?i)(accessToken|token|secret|appSecret)(\\\"?\\s*[:=]\\s*\\\"?)[^,\\\"\\s}]+",
+                "$1$2***");
+    }
+
+    private void saveCheckpoint(CpsOrderSyncCheckpointDO checkpoint, String action) {
+        if (checkpoint.getId() == null || checkpointMapper.updateById(checkpoint) != 1) {
+            throw new IllegalStateException("checkpoint update failed while attempting to " + action
+                    + " [platform=" + checkpoint.getPlatformCode()
+                    + ", vendor=" + checkpoint.getVendorCode()
+                    + ", scene=" + checkpoint.getOrderScene()
+                    + ", queryType=" + checkpoint.getQueryType() + "]");
+        }
+    }
+
+    private String statusText(int status) {
+        if (status == 1) {
+            return "同步成功";
+        }
+        if (status == 3) {
+            return "部分成功";
+        }
+        return "同步失败";
     }
 
     private List<Integer> resolveOrderScenes(String platformCode) {
@@ -232,6 +501,14 @@ public class CpsOrderSyncJob implements JobHandler {
             return List.of(1, 2, 3);
         }
         return java.util.Collections.singletonList(null);
+    }
+
+    private record SceneSyncResult(int totalCount, int newCount, int updateCount, int skipCount,
+                                   int status, String failureSummary) {
+    }
+
+    private record PlatformSyncResult(int totalCount, int newCount, int updateCount, int skipCount,
+                                      int status, String failureSummary) {
     }
 
 }

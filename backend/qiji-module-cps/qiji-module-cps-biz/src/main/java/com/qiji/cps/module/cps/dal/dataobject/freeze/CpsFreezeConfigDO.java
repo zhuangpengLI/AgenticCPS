@@ -31,6 +31,10 @@ public class CpsFreezeConfigDO extends TenantBaseDO {
      * 平台编码（NULL表示全平台）
      */
     private String platformCode;
+    /** 返利金额下限（分，包含） */
+    private Long minAmountCent;
+    /** 返利金额上限（分，不包含；NULL 表示无上限） */
+    private Long maxAmountCent;
     /**
      * 解冻天数（确认收货后天数）
      */

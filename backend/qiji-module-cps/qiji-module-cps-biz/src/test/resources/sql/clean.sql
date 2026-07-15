@@ -1,1 +1,16 @@
+DELETE FROM "cps_withdraw";
+DELETE FROM "cps_rebate_asset_policy";
+DELETE FROM "cps_rebate_asset_migration_check";
+DELETE FROM "cps_freeze_record";
+DELETE FROM "cps_rebate_record";
+DELETE FROM "cps_rebate_account";
+DELETE FROM "cps_platform_bill_diff";
+DELETE FROM "cps_platform_bill_row";
+DELETE FROM "cps_order_sync_failure";
+DELETE FROM "cps_order_attribution_log";
+DELETE FROM "cps_order_status_event";
+DELETE FROM "cps_order";
+DELETE FROM "cps_rebate_asset_ledger";
+DELETE FROM "cps_rebate_token_exchange_order";
+DELETE FROM "cps_openapi_access_log";
 DELETE FROM "cps_mcp_access_log";

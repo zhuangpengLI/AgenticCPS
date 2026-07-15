@@ -5,6 +5,8 @@ import cn.didi.union.enums.OrderType;
 import cn.didi.union.models.*;
 import com.google.gson.Gson;
 import com.qiji.cps.module.cps.client.CpsApiVendorClient;
+import com.qiji.cps.module.cps.client.CpsVendorCapability;
+import com.qiji.cps.module.cps.client.CpsVendorException;
 import com.qiji.cps.module.cps.client.dto.*;
 import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import lombok.RequiredArgsConstructor;
@@ -31,8 +33,17 @@ public class DidiOfficialVendorClient implements CpsApiVendorClient {
     @Override public String getVendorType() { return "official"; }
 
     @Override
+    public Set<CpsVendorCapability> getCapabilities() {
+        return EnumSet.of(
+                CpsVendorCapability.PROMOTION_LINK,
+                CpsVendorCapability.ORDER_QUERY,
+                CpsVendorCapability.CONNECTION_TEST);
+    }
+
+    @Override
     public CpsGoodsSearchResult searchGoods(CpsGoodsSearchRequest request, CpsVendorConfig config) {
-        throw new UnsupportedOperationException("PLATFORM_CAPABILITY_UNSUPPORTED");
+        throw CpsVendorException.capabilityUnsupported(getVendorCode(), getPlatformCode(),
+                CpsVendorCapability.GOODS_SEARCH);
     }
 
     @Override
@@ -59,6 +70,11 @@ public class DidiOfficialVendorClient implements CpsApiVendorClient {
 
     @Override
     public List<CpsOrderDTO> queryOrders(CpsOrderQueryRequest request, CpsVendorConfig config) {
+        return queryOrderPage(request, config).getItems();
+    }
+
+    @Override
+    public CpsOrderPageResult queryOrderPage(CpsOrderQueryRequest request, CpsVendorConfig config) {
         long start = toEpochSecond(request.getStartTime(), Instant.now().minus(Duration.ofDays(1)));
         long end = toEpochSecond(request.getEndTime(), Instant.now());
         int page = parsePage(request);
@@ -66,9 +82,13 @@ public class DidiOfficialVendorClient implements CpsApiVendorClient {
         Result<OrderResponse> result = clientFactory.create(config).queryOrderList(start, end, OrderType.All,
                 page, size, clientFactory.resolveTimeout(config));
         OrderResponse response = requireSuccess(result, "queryOrderList");
-        if (response.getData() == null || response.getData().getOrderList() == null) return List.of();
-        String nextPage = response.getData().getOrderList().size() >= size && page < 100 ? String.valueOf(page + 1) : null;
-        return response.getData().getOrderList().stream().map(order -> mapOrder(order, nextPage)).toList();
+        List<OrderDetail> sourceOrders = response.getData() == null || response.getData().getOrderList() == null
+                ? List.of() : response.getData().getOrderList();
+        long total = response.getData() == null ? 0L : response.getData().getTotal();
+        boolean hasMore = (long) page * size < total;
+        String nextPage = hasMore ? String.valueOf(page + 1) : null;
+        List<CpsOrderDTO> orders = sourceOrders.stream().map(order -> mapOrder(order, nextPage)).toList();
+        return CpsOrderPageResult.page(orders, hasMore ? page + 1 : null, hasMore);
     }
 
     @Override

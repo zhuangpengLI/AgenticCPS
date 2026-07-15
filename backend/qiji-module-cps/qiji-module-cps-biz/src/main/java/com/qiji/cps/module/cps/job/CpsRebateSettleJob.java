@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.job;
 
 import com.qiji.cps.framework.quartz.core.handler.JobHandler;
+import com.qiji.cps.framework.tenant.core.job.TenantJob;
 import com.qiji.cps.module.cps.service.rebate.CpsRebateSettleService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ public class CpsRebateSettleJob implements JobHandler {
     private CpsRebateSettleService rebateSettleService;
 
     @Override
+    @TenantJob
     public String execute(String param) throws Exception {
         int batchSize = DEFAULT_BATCH_SIZE;
 

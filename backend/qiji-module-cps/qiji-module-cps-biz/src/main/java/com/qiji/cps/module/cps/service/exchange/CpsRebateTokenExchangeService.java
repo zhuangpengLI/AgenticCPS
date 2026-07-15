@@ -23,4 +23,6 @@ public interface CpsRebateTokenExchangeService {
     CpsRebateTokenExchangeOrderDO submit(Long memberId, BigDecimal amount, String idempotencyKey);
 
     CpsRebateTokenExchangeOrderDO getExchangeOrder(String exchangeOrderNo);
+
+    CpsRebateTokenExchangeOrderDO getExchangeOrder(Long memberId, String exchangeOrderNo);
 }

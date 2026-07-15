@@ -28,4 +28,9 @@ public interface PayTransferApi {
      */
     PayTransferRespDTO getTransfer(Long id);
 
+    /**
+     * 按支付应用和商户转账单号查询既有转账单，用于业务系统在本地绑定失败后的幂等恢复。
+     */
+    PayTransferRespDTO getTransfer(String appKey, String merchantTransferId);
+
 }

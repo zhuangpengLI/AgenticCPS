@@ -30,6 +30,11 @@ public interface PayTransferService {
     PayTransferDO getTransfer(Long id);
 
     /**
+     * 按支付应用标识和商户转账单号获取转账单。
+     */
+    PayTransferDO getTransfer(String appKey, String merchantTransferId);
+
+    /**
      * 根据转账单号获取转账单
      *
      * @param no 转账单号

@@ -17,6 +17,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import static com.qiji.cps.framework.common.pojo.CommonResult.success;
+import static com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 
 /**
  * 管理后台 - CPS冻结解冻 Controller
@@ -80,12 +81,11 @@ public class CpsFreezeController {
         return success(BeanUtils.toBean(page, CpsFreezeRecordRespVO.class));
     }
 
-    @PutMapping("/record/manual-unfreeze")
+    @PostMapping("/record/manual-unfreeze")
     @Operation(summary = "手动解冻指定记录")
-    @Parameter(name = "id", description = "冻结记录ID", required = true)
     @PreAuthorize("@ss.hasPermission('cps:freeze-record:unfreeze')")
-    public CommonResult<Boolean> manualUnfreeze(@RequestParam Long id) {
-        freezeService.manualUnfreeze(id);
+    public CommonResult<Boolean> manualUnfreeze(@Valid @RequestBody CpsManualUnfreezeReqVO reqVO) {
+        freezeService.manualUnfreeze(reqVO, getLoginUserId());
         return success(true);
     }
 

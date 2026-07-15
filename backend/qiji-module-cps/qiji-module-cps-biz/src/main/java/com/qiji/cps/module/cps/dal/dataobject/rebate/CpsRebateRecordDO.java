@@ -76,6 +76,14 @@ public class CpsRebateRecordDO extends TenantBaseDO {
      * 返利金额
      */
     private BigDecimal rebateAmount;
+    /** 结算时命中的返利配置ID快照 */
+    private Long rebateConfigId;
+    /** 结算时会员等级快照 */
+    private Long memberLevelIdSnapshot;
+    /** 结算结果整数分快照 */
+    private Long rebateAmountCent;
+    /** 业务幂等键 */
+    private String idempotencyKey;
     /**
      * 返利类型
      *

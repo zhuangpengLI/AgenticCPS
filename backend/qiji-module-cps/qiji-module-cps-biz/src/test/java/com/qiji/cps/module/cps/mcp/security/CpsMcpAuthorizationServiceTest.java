@@ -87,6 +87,7 @@ class CpsMcpAuthorizationServiceTest {
         Set<String> registeredTools = Set.of(
                 "cps_search_goods", "cps_compare_prices", "cps_generate_link", "cps_query_orders",
                 "cps_get_rebate_summary", "cps_recommend_by_scene", "cps_purchase_decision",
+                "cps_promotion_strategy_advice", "cps_explain_rebate",
                 "cps_list_selection_themes", "cps_recommend_from_selection_theme", "cps_get_rebate_balance",
                 "cps_create_token_exchange", "cps_query_exchange_status", "cpx_list_tasks",
                 "cpx_get_task_detail", "cpx_generate_tracking_link", "cpx_query_conversions",
