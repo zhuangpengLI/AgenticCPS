@@ -7,7 +7,6 @@ import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
 import com.qiji.cps.module.cps.service.platform.CpsPlatformService;
-import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -16,6 +15,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.PLATFORM_IS_DISABLE;
@@ -31,14 +31,23 @@ import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.PLATFORM_NOT_E
 @Service
 public class CpsGoodsServiceImpl implements CpsGoodsService {
 
-    @Resource
-    private CpsPlatformClientFactory platformClientFactory;
+    private final CpsPlatformClientFactory platformClientFactory;
 
-    @Resource
-    private CpsPlatformService platformService;
+    private final CpsPlatformService platformService;
 
-    @Resource
-    private CpsAdzoneService adzoneService;
+    private final CpsAdzoneService adzoneService;
+
+    private final CpsGoodsAggregationExecutor goodsAggregationExecutor;
+
+    public CpsGoodsServiceImpl(CpsPlatformClientFactory platformClientFactory,
+                               CpsPlatformService platformService,
+                               CpsAdzoneService adzoneService,
+                               CpsGoodsAggregationExecutor goodsAggregationExecutor) {
+        this.platformClientFactory = platformClientFactory;
+        this.platformService = platformService;
+        this.adzoneService = adzoneService;
+        this.goodsAggregationExecutor = goodsAggregationExecutor;
+    }
 
     @Override
     public CpsGoodsSearchResult searchGoods(String platformCode, CpsGoodsSearchRequest request) {
@@ -60,21 +69,39 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
     @Override
     public List<CpsGoodsItem> searchGoodsAllPlatforms(CpsGoodsSearchRequest request) {
         List<CpsPlatformClient> enabledClients = platformClientFactory.getEnabledClients();
+        List<CpsPlatformClient> searchableClients = enabledClients.stream()
+                .filter(CpsPlatformClient::supportsGoodsSearch)
+                .sorted(Comparator.comparing(CpsPlatformClient::getPlatformCode))
+                .toList();
+        if (searchableClients.isEmpty()) {
+            return List.of();
+        }
+
+        List<Callable<CpsGoodsSearchResult>> searchTasks = searchableClients.stream()
+                .<Callable<CpsGoodsSearchResult>>map(client -> {
+                    CpsGoodsSearchRequest platformRequest = request.copyForPage(1, 10);
+                    return () -> client.searchGoods(platformRequest);
+                })
+                .toList();
+        List<CpsGoodsAggregationExecutor.TaskResult<CpsGoodsSearchResult>> taskResults =
+                goodsAggregationExecutor.invokeAll(searchTasks);
         List<CpsGoodsItem> allItems = new ArrayList<>();
 
-        for (CpsPlatformClient client : enabledClients) {
-            if (!client.supportsGoodsSearch()) {
+        for (int index = 0; index < searchableClients.size(); index++) {
+            CpsPlatformClient client = searchableClients.get(index);
+            CpsGoodsAggregationExecutor.TaskResult<CpsGoodsSearchResult> taskResult = taskResults.get(index);
+            if (taskResult.timedOut()) {
+                log.warn("[CpsGoodsService] 商品聚合批次预算耗尽，跳过平台 {} 的结果", client.getPlatformCode());
                 continue;
             }
-            try {
-                // 每个平台最多取前10条用于比价
-                CpsGoodsSearchRequest platformReq = cloneRequestWithPageSize(request, 10);
-                CpsGoodsSearchResult result = client.searchGoods(platformReq);
-                if (result != null && result.getList() != null) {
-                    allItems.addAll(result.getList());
-                }
-            } catch (Exception e) {
-                log.warn("[CpsGoodsService] 平台 {} 搜索失败，跳过: {}", client.getPlatformCode(), e.getMessage());
+            if (taskResult.error() != null) {
+                log.warn("[CpsGoodsService] 平台 {} 搜索失败，跳过: {}",
+                        client.getPlatformCode(), taskResult.error().getMessage());
+                continue;
+            }
+            CpsGoodsSearchResult result = taskResult.value();
+            if (result != null && result.getList() != null) {
+                allItems.addAll(result.getList());
             }
         }
 
@@ -179,18 +206,6 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
             throw exception(PLATFORM_IS_DISABLE, platformCode);
         }
         return platform;
-    }
-
-    private CpsGoodsSearchRequest cloneRequestWithPageSize(CpsGoodsSearchRequest original, int pageSize) {
-        CpsGoodsSearchRequest copy = new CpsGoodsSearchRequest();
-        copy.setKeyword(original.getKeyword());
-        copy.setPageNo(1);
-        copy.setPageSize(pageSize);
-        copy.setSortType(original.getSortType());
-        copy.setPriceLowerLimit(original.getPriceLowerLimit());
-        copy.setPriceUpperLimit(original.getPriceUpperLimit());
-        copy.setHasCoupon(original.getHasCoupon());
-        return copy;
     }
 
 }

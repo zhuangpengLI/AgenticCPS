@@ -69,6 +69,7 @@ public interface CpsErrorCodeConstants {
     ErrorCode VENDOR_PLATFORM_DUPLICATE = new ErrorCode(1_100_013_001, "供应商[{}]+平台[{}]的配置已存在");
     ErrorCode DIDI_UNION_REQUEST_FAILED = new ErrorCode(1_100_013_002, "滴滴联盟请求失败：{}");
     ErrorCode DIDI_UNION_CONFIG_INVALID = new ErrorCode(1_100_013_003, "滴滴联盟配置不合法：{}");
+    ErrorCode VENDOR_CAPABILITY_NOT_READY = new ErrorCode(1_100_013_004, "供应商[{}]+平台[{}]未完成能力验收，禁止启用：{}");
 
     // ========== 返利兑换 Token 1-100-014-000 ==========
     ErrorCode REBATE_EXCHANGE_NOT_EXISTS = new ErrorCode(1_100_014_000, "返利兑换订单不存在");

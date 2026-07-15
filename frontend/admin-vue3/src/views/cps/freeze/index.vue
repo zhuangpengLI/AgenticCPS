@@ -46,6 +46,12 @@
           <el-table-column label="解冻天数" align="center" prop="unfreezeDays" width="100">
             <template #default="scope">{{ scope.row.unfreezeDays }} 天</template>
           </el-table-column>
+          <el-table-column label="金额区间（元）" align="center" min-width="180">
+            <template #default="scope">
+              {{ (scope.row.minAmountCent / 100).toFixed(2) }} ～
+              {{ scope.row.maxAmountCent == null ? '无上限' : (scope.row.maxAmountCent / 100).toFixed(2) }}
+            </template>
+          </el-table-column>
           <el-table-column label="状态" align="center" prop="status" width="80">
             <template #default="scope">
               <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
@@ -150,7 +156,7 @@
                 link
                 type="primary"
                 @click="handleManualUnfreeze(scope.row.id)"
-                v-hasPermi="['cps:freeze:query']"
+                v-hasPermi="['cps:freeze-record:unfreeze']"
               >
                 手动解冻
               </el-button>
@@ -180,7 +186,14 @@
       </el-form-item>
       <el-form-item label="解冻天数" prop="unfreezeDays">
         <el-input-number v-model="configFormData.unfreezeDays" :min="1" :max="365" />
-        <span class="ml-10px text-gray-500">天（确认收货后自动解冻）</span>
+        <span class="ml-10px text-gray-500">天（收货与平台结算时间取晚后计算）</span>
+      </el-form-item>
+      <el-form-item label="金额下限（分）" prop="minAmountCent">
+        <el-input-number v-model="configFormData.minAmountCent" :min="0" :step="100" />
+      </el-form-item>
+      <el-form-item label="金额上限（分）" prop="maxAmountCent">
+        <el-input-number v-model="configFormData.maxAmountCent" :min="configFormData.minAmountCent + 1" :step="100" />
+        <span class="ml-10px text-gray-500">留空表示无上限，区间左闭右开</span>
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-radio-group v-model="configFormData.status">
@@ -237,13 +250,16 @@ const configQuery = reactive<CpsFreezeConfigPageReqVO>({
 const configFormData = reactive<CpsFreezeConfigSaveVO>({
   id: undefined,
   platformCode: undefined,
-  unfreezeDays: 7,
+  minAmountCent: 0,
+  maxAmountCent: undefined,
+  unfreezeDays: 15,
   status: 1,
   remark: undefined
 })
 
 const configFormRules = {
   unfreezeDays: [{ required: true, message: '解冻天数不能为空', trigger: 'blur' }],
+  minAmountCent: [{ required: true, message: '金额下限不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
 }
 
@@ -272,7 +288,7 @@ const openConfigForm = (row: any) => {
   if (row) {
     Object.assign(configFormData, row)
   } else {
-    Object.assign(configFormData, { id: undefined, platformCode: undefined, unfreezeDays: 7, status: 1, remark: undefined })
+    Object.assign(configFormData, { id: undefined, platformCode: undefined, minAmountCent: 0, maxAmountCent: undefined, unfreezeDays: 15, status: 1, remark: undefined })
   }
   configDialogVisible.value = true
 }
@@ -348,11 +364,13 @@ const resetRecordQuery = () => {
 }
 
 const handleManualUnfreeze = async (id: number) => {
-  await ElMessageBox.confirm('确定手动解冻该记录吗？解冻后将释放对应的返利余额。', '手动解冻', {
+  const { value: reason } = await ElMessageBox.prompt('手动解冻只能跳过剩余冻结时间，请填写审计原因。', '手动解冻', {
     type: 'warning',
-    confirmButtonText: '确定解冻'
+    confirmButtonText: '确定解冻',
+    inputPattern: /\S+/,
+    inputErrorMessage: '解冻原因不能为空'
   })
-  await manualUnfreeze(id)
+  await manualUnfreeze({ recordId: id, reason, idempotencyKey: crypto.randomUUID() })
   ElMessage.success('解冻成功')
   getRecordList()
 }

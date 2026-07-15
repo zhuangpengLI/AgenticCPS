@@ -20,7 +20,8 @@ public class CpsMcpToolRiskRegistry {
         registerReadOnly(risks,
                 "cps_search_goods", "cps_compare_prices", "cps_query_orders", "cps_get_rebate_summary",
                 "cps_recommend_by_scene", "cps_purchase_decision", "cps_list_selection_themes",
-                "cps_get_rebate_balance", "cps_query_exchange_status", "cpx_list_tasks", "cpx_get_task_detail",
+                "cps_promotion_strategy_advice", "cps_explain_rebate", "cps_get_rebate_balance",
+                "cps_query_exchange_status", "cpx_list_tasks", "cpx_get_task_detail",
                 "cpx_query_conversions", "cpx_recommend_tasks_by_scene", "cpx_search_articles");
         register(risks, CpsMcpToolRisk.ATTRIBUTION_WRITE,
                 "cps_generate_link", "cps_recommend_from_selection_theme", "cpx_generate_tracking_link");

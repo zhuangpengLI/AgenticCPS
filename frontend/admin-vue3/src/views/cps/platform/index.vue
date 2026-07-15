@@ -24,12 +24,8 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
         <el-button type="primary" @click="openForm()" v-hasPermi="['cps:platform:create']">
           <Icon icon="ep:plus" class="mr-5px" /> 新增平台
         </el-button>
@@ -55,7 +51,13 @@
         </template>
       </el-table-column>
       <el-table-column label="平台编码" align="center" prop="platformCode" width="120" />
-      <el-table-column label="默认推广位" align="center" prop="defaultAdzoneId" min-width="160" show-overflow-tooltip />
+      <el-table-column
+        label="默认推广位"
+        align="center"
+        prop="defaultAdzoneId"
+        min-width="160"
+        show-overflow-tooltip
+      />
       <el-table-column label="服务费率" align="center" width="90">
         <template #default="scope">
           {{ scope.row.platformServiceRate != null ? scope.row.platformServiceRate + '%' : '-' }}
@@ -84,8 +86,17 @@
       <el-table-column label="创建时间" align="center" prop="createTime" width="160">
         <template #default="scope">{{ formatDate(scope.row.createTime) }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" fixed="right" width="150">
+      <el-table-column label="操作" align="center" fixed="right" width="220">
         <template #default="scope">
+          <el-button
+            link
+            type="success"
+            :loading="connectionTestingCode === scope.row.platformCode"
+            @click="handleConnectionTest(scope.row)"
+            v-hasPermi="['cps:platform:query']"
+          >
+            连接测试
+          </el-button>
           <el-button
             link
             type="primary"
@@ -256,11 +267,15 @@
       <el-button type="primary" :loading="formLoading" @click="handleSubmit">确 定</el-button>
     </template>
   </el-dialog>
-
 </template>
 
 <script setup lang="ts">
-import { CpsPlatformApi, type CpsPlatformVO, type CpsPlatformSaveVO, type CpsPlatformPageReqVO } from '@/api/cps/platform'
+import {
+  CpsPlatformApi,
+  type CpsPlatformVO,
+  type CpsPlatformSaveVO,
+  type CpsPlatformPageReqVO
+} from '@/api/cps/platform'
 import {
   CpsApiVendorApi,
   PLATFORM_CODE_OPTIONS,
@@ -279,6 +294,7 @@ const total = ref(0)
 const dialogVisible = ref(false)
 const formLoading = ref(false)
 const optionLoading = ref(false)
+const connectionTestingCode = ref<string>()
 const vendorOptions = ref<CpsApiVendorVO[]>([])
 const adzoneOptions = ref<CpsAdzoneVO[]>([])
 
@@ -383,6 +399,22 @@ const handleQuery = () => {
 const resetQuery = () => {
   queryFormRef.value?.resetFields()
   handleQuery()
+}
+
+const handleConnectionTest = async (row: CpsPlatformVO) => {
+  connectionTestingCode.value = row.platformCode
+  try {
+    const result = await CpsPlatformApi.testConnection(row.platformCode)
+    if (result.success) {
+      ElMessage.success(`${row.platformName} 连接测试通过`)
+      return
+    }
+    const failureReason =
+      result.failureReason || (result.supported ? '平台返回连接失败' : '未找到平台适配器')
+    ElMessage.warning(`${row.platformName} 连接测试失败：${failureReason}`)
+  } finally {
+    connectionTestingCode.value = undefined
+  }
 }
 
 /** 打开新增/编辑弹窗 */

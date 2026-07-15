@@ -246,6 +246,12 @@ public class PayTransferServiceImpl implements PayTransferService {
     }
 
     @Override
+    public PayTransferDO getTransfer(String appKey, String merchantTransferId) {
+        PayAppDO payApp = appService.validPayApp(appKey);
+        return transferMapper.selectByAppIdAndMerchantOrderId(payApp.getId(), merchantTransferId);
+    }
+
+    @Override
     public PayTransferDO getTransferByNo(String no) {
         return transferMapper.selectByNo(no);
     }

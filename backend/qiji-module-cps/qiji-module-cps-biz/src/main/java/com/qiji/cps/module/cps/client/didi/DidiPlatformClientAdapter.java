@@ -3,6 +3,8 @@ package com.qiji.cps.module.cps.client.didi;
 import com.qiji.cps.module.cps.client.CpsApiVendorClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.CpsVendorCapability;
+import com.qiji.cps.module.cps.client.CpsVendorException;
 import com.qiji.cps.module.cps.client.dto.*;
 import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +19,13 @@ public class DidiPlatformClientAdapter implements CpsPlatformClient {
     @Override public String getPlatformCode() { return CpsPlatformCodeEnum.DIDI.getCode(); }
     @Override public boolean supportsGoodsSearch() { return false; }
     @Override public CpsGoodsSearchResult searchGoods(CpsGoodsSearchRequest request) {
-        throw new UnsupportedOperationException("PLATFORM_CAPABILITY_UNSUPPORTED");
+        throw CpsVendorException.capabilityUnsupported(null, getPlatformCode(), CpsVendorCapability.GOODS_SEARCH);
     }
     @Override public CpsPromotionLinkResult generatePromotionLink(CpsPromotionLinkRequest request) {
         return vendor().generatePromotionLink(request, config());
+    }
+    @Override public CpsOrderPageResult queryOrderPage(CpsOrderQueryRequest request) {
+        return vendor().queryOrderPage(request, config());
     }
     @Override public List<CpsOrderDTO> queryOrders(CpsOrderQueryRequest request) { return vendor().queryOrders(request, config()); }
     @Override public boolean testConnection() {

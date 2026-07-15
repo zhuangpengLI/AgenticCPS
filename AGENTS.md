@@ -1,4 +1,4 @@
-﻿# AGENTS.md
+# AGENTS.md
 
 This file provides guidance to AI Agents (Qoder, Claude Code, etc.) when working with code in this repository.
 

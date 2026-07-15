@@ -2,6 +2,9 @@ package com.qiji.cps.module.cps.service.goods;
 
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.dto.CpsGoodsItem;
+import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
+import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchResult;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
@@ -17,8 +20,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -39,6 +50,9 @@ class CpsGoodsServiceImplTest {
 
     @Mock
     private CpsPlatformClient platformClient;
+
+    @Mock
+    private CpsGoodsAggregationExecutor goodsAggregationExecutor;
 
     @BeforeEach
     void setUp() {
@@ -196,6 +210,92 @@ class CpsGoodsServiceImplTest {
         assertEquals(java.util.List.of(), service.searchGoodsAllPlatforms(
                 new com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest()));
         verify(platformClient, never()).searchGoods(any());
+    }
+
+    @Test
+    @DisplayName("searchGoodsAllPlatforms - 支持平台并发搜索且同价商品按平台编码稳定排序")
+    void searchGoodsAllPlatforms_runsConcurrentlyAndKeepsPlatformCodeOrderForEqualPrices() throws Exception {
+        CpsPlatformClient taobao = mock(CpsPlatformClient.class);
+        CpsPlatformClient jd = mock(CpsPlatformClient.class);
+        when(taobao.getPlatformCode()).thenReturn("taobao");
+        when(jd.getPlatformCode()).thenReturn("jd");
+        when(taobao.supportsGoodsSearch()).thenReturn(true);
+        when(jd.supportsGoodsSearch()).thenReturn(true);
+        when(platformClientFactory.getEnabledClients()).thenReturn(List.of(taobao, jd));
+
+        CountDownLatch bothStarted = new CountDownLatch(2);
+        AtomicInteger active = new AtomicInteger();
+        AtomicInteger maxActive = new AtomicInteger();
+        when(taobao.searchGoods(any())).thenAnswer(invocation -> concurrentResult(
+                bothStarted, active, maxActive, "taobao-goods", "taobao"));
+        when(jd.searchGoods(any())).thenAnswer(invocation -> concurrentResult(
+                bothStarted, active, maxActive, "jd-goods", "jd"));
+
+        try (CpsGoodsAggregationExecutor executor = new CpsGoodsAggregationExecutor(2, 4, Duration.ofSeconds(1))) {
+            CpsGoodsServiceImpl concurrentService = new CpsGoodsServiceImpl(
+                    platformClientFactory, platformService, adzoneService, executor);
+
+            List<CpsGoodsItem> result = concurrentService.searchGoodsAllPlatforms(new CpsGoodsSearchRequest());
+
+            assertTrue(maxActive.get() >= 2, "平台查询应发生重叠，而不是串行执行");
+            assertEquals(List.of("jd-goods", "taobao-goods"),
+                    result.stream().map(CpsGoodsItem::getGoodsId).toList());
+        }
+    }
+
+    @Test
+    @DisplayName("searchGoodsAllPlatforms - 慢平台超时和异常平台不会阻断健康平台")
+    void searchGoodsAllPlatforms_timesOutAndIsolatesPlatformFailures() {
+        CpsPlatformClient slow = searchableClient("slow");
+        CpsPlatformClient failed = searchableClient("failed");
+        CpsPlatformClient healthy = searchableClient("healthy");
+        when(platformClientFactory.getEnabledClients()).thenReturn(List.of(slow, failed, healthy));
+        when(slow.searchGoods(any())).thenAnswer(invocation -> {
+            Thread.sleep(1_000);
+            return goodsResult("slow-goods", "slow");
+        });
+        when(failed.searchGoods(any())).thenThrow(new IllegalStateException("upstream unavailable"));
+        when(healthy.searchGoods(any())).thenReturn(goodsResult("healthy-goods", "healthy"));
+
+        try (CpsGoodsAggregationExecutor executor = new CpsGoodsAggregationExecutor(3, 4, Duration.ofMillis(100))) {
+            CpsGoodsServiceImpl concurrentService = new CpsGoodsServiceImpl(
+                    platformClientFactory, platformService, adzoneService, executor);
+            long startedAt = System.nanoTime();
+
+            List<CpsGoodsItem> result = concurrentService.searchGoodsAllPlatforms(new CpsGoodsSearchRequest());
+
+            long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
+            assertTrue(elapsedMillis < 500, "聚合不应等待慢平台完整返回，耗时=" + elapsedMillis + "ms");
+            assertEquals(List.of("healthy-goods"), result.stream().map(CpsGoodsItem::getGoodsId).toList());
+        }
+    }
+
+    private CpsGoodsSearchResult concurrentResult(CountDownLatch bothStarted, AtomicInteger active,
+                                                   AtomicInteger maxActive, String goodsId,
+                                                   String platformCode) throws InterruptedException {
+        int current = active.incrementAndGet();
+        maxActive.accumulateAndGet(current, Math::max);
+        bothStarted.countDown();
+        bothStarted.await(300, TimeUnit.MILLISECONDS);
+        active.decrementAndGet();
+        return goodsResult(goodsId, platformCode);
+    }
+
+    private CpsPlatformClient searchableClient(String platformCode) {
+        CpsPlatformClient client = mock(CpsPlatformClient.class);
+        lenient().when(client.getPlatformCode()).thenReturn(platformCode);
+        when(client.supportsGoodsSearch()).thenReturn(true);
+        return client;
+    }
+
+    private CpsGoodsSearchResult goodsResult(String goodsId, String platformCode) {
+        return CpsGoodsSearchResult.builder()
+                .list(List.of(CpsGoodsItem.builder()
+                        .goodsId(goodsId)
+                        .platformCode(platformCode)
+                        .actualPrice(new BigDecimal("10.00"))
+                        .build()))
+                .build();
     }
 
     private void mockEnabledPlatform(String platformCode, String defaultAdzoneId) {

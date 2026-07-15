@@ -2,6 +2,7 @@ package com.qiji.cps.module.cps.service.rebate;
 
 import com.qiji.cps.framework.common.enums.CommonStatusEnum;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
+import com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeRecordDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateAccountDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateConfigDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateRecordDO;
@@ -9,8 +10,13 @@ import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderMapper;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateAccountMapper;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateRecordMapper;
 import com.qiji.cps.module.cps.enums.CpsOrderStatusEnum;
+import com.qiji.cps.module.cps.enums.CpsFreezeStatusEnum;
 import com.qiji.cps.module.cps.enums.CpsRebateStatusEnum;
 import com.qiji.cps.module.cps.enums.CpsRebateTypeEnum;
+import com.qiji.cps.module.cps.service.rebate.asset.CpsMoneyConverter;
+import com.qiji.cps.module.cps.service.rebate.asset.CpsRebateAssetService;
+import com.qiji.cps.module.member.api.user.MemberUserApi;
+import com.qiji.cps.module.member.api.user.dto.MemberUserRespDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,7 +26,6 @@ import org.springframework.validation.annotation.Validated;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -43,13 +48,13 @@ import java.util.List;
 @Validated
 public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
 
+    private static final int SETTLE_RETRY_DELAY_MINUTES = 15;
+    private static final int SETTLE_ERROR_MAX_LENGTH = 500;
+
     /**
      * 待结算订单状态：已收货 或 已结算（平台已结算给联盟）
      */
-    private static final List<String> PENDING_SETTLE_STATUSES = Arrays.asList(
-            CpsOrderStatusEnum.RECEIVED.getStatus(),
-            CpsOrderStatusEnum.SETTLED.getStatus()
-    );
+    private static final List<String> PENDING_SETTLE_STATUSES = List.of(CpsOrderStatusEnum.SETTLED.getStatus());
 
     @Resource
     private CpsOrderMapper orderMapper;
@@ -63,13 +68,38 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
     @Resource
     private CpsRebateConfigService rebateConfigService;
 
+    @Resource
+    private CpsRebateAssetService rebateAssetService;
+
+    @Resource
+    private CpsMoneyConverter moneyConverter;
+
+    @Resource
+    private MemberUserApi memberUserApi;
+
+    @Resource
+    private CpsRebateSettleExecutor settleExecutor;
+
     // ==================== 核心结算逻辑 ====================
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean settleOrder(CpsOrderDO order) {
+    public boolean settleOrder(CpsOrderDO candidateOrder) {
+        if (candidateOrder == null || candidateOrder.getId() == null) {
+            return false;
+        }
+        CpsOrderDO order = orderMapper.selectForUpdateById(candidateOrder.getId());
+        if (order == null) {
+            log.warn("[settleOrder] 订单不存在，跳过: orderId={}", candidateOrder.getId());
+            return false;
+        }
         if (order.getMemberId() == null) {
             log.debug("[settleOrder] 订单无会员归因，跳过: orderId={}", order.getId());
+            return false;
+        }
+        if (!CpsOrderStatusEnum.SETTLED.getStatus().equals(order.getOrderStatus())
+                || order.getConfirmReceiptTime() == null || order.getSettleTime() == null) {
+            log.warn("[settleOrder] 订单未同时满足确认收货和平台结算条件: orderId={}", order.getId());
             return false;
         }
 
@@ -81,16 +111,25 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
             return false;
         }
 
-        // 1. 计算返利金额
-        BigDecimal rebateAmount = calculateRebateAmount(order);
+        MemberUserRespDTO member = memberUserApi.getUser(order.getMemberId());
+        if (member == null) {
+            throw new IllegalStateException("结算会员不存在: " + order.getMemberId());
+        }
+        CpsRebateConfigDO config = rebateConfigService.matchRebateConfig(
+                order.getMemberId(), member.getLevelId(), order.getPlatformCode());
+        if (config == null) {
+            log.warn("[settleOrder] 无匹配返利配置，保持待处理: orderId={}", order.getId());
+            return false;
+        }
+
+        BigDecimal rebateAmount = calculateRebateAmount(order, config);
         if (rebateAmount == null || rebateAmount.compareTo(BigDecimal.ZERO) <= 0) {
             log.warn("[settleOrder] 返利金额计算为0，跳过结算: orderId={}", order.getId());
             return false;
         }
 
-        // 2. 获取匹配的返利配置（用于记录比例）
-        CpsRebateConfigDO config = rebateConfigService.matchRebateConfig(null, order.getPlatformCode());
-        BigDecimal rebateRate = (config != null) ? config.getRebateRate() : BigDecimal.ZERO;
+        BigDecimal rebateRate = config.getRebateRate();
+        String idempotencyKey = "order-rebate:" + order.getId();
 
         // 3. 写入返利记录
         CpsRebateRecordDO record = CpsRebateRecordDO.builder()
@@ -105,24 +144,29 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
                 .rebateRate(rebateRate)
                 .rebateAmount(rebateAmount)
                 .rebateType(CpsRebateTypeEnum.REBATE.getType())
-                .rebateStatus(CpsRebateStatusEnum.RECEIVED.getStatus())
-                .remark("订单确认收货自动结算")
+                .rebateStatus(CpsRebateStatusEnum.PENDING.getStatus())
+                .rebateConfigId(config.getId())
+                .memberLevelIdSnapshot(member.getLevelId())
+                .rebateAmountCent(moneyConverter.yuanToCent(rebateAmount))
+                .idempotencyKey(idempotencyKey)
+                .remark("平台结算后创建冻结返利")
                 .build();
         rebateRecordMapper.insert(record);
 
-        // 4. 更新订单状态 → 已到账 + 记录 rebateTime
+        CpsFreezeRecordDO freeze = rebateAssetService.createOrderRebateFreeze(order.getId(), idempotencyKey);
+
         CpsOrderDO updateOrder = CpsOrderDO.builder()
                 .id(order.getId())
-                .orderStatus(CpsOrderStatusEnum.REBATE_RECEIVED.getStatus())
+                .orderStatus(CpsOrderStatusEnum.SETTLED.getStatus())
                 .realRebate(rebateAmount)
-                .rebateTime(LocalDateTime.now())
+                .rebateFreezeStatus(CpsFreezeStatusEnum.FROZEN.getStatus())
+                .planUnfreezeTime(freeze.getUnfreezeTime())
                 .build();
-        orderMapper.updateById(updateOrder);
+        if (orderMapper.updateRebateFreezeByStatusVersion(updateOrder, order.getStatusVersion()) != 1) {
+            throw new IllegalStateException("订单状态已并发变更，回滚本次返利结算: orderId=" + order.getId());
+        }
 
-        // 5. 乐观锁更新返利账户余额
-        updateRebateAccount(order.getMemberId(), rebateAmount);
-
-        log.info("[settleOrder] 返利入账成功: orderId={}, memberId={}, rebateAmount={}",
+        log.info("[settleOrder] 返利冻结创建成功: orderId={}, memberId={}, rebateAmount={}",
                 order.getId(), order.getMemberId(), rebateAmount);
         return true;
     }
@@ -134,11 +178,15 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
 
         for (CpsOrderDO order : orders) {
             try {
-                boolean settled = settleOrder(order);
+                boolean settled = settleExecutor.settleOne(order);
                 if (settled) successCount++;
-                else skipCount++;
+                else {
+                    skipCount++;
+                    markSettleRetry(order.getId(), "结算条件或配置暂不满足，保持待处理");
+                }
             } catch (Exception e) {
                 log.error("[batchSettle] 订单结算失败: orderId={}", order.getId(), e);
+                markSettleRetry(order.getId(), e.getMessage());
                 failCount++;
             }
         }
@@ -147,44 +195,27 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
         return new int[]{successCount, skipCount, failCount};
     }
 
+    private void markSettleRetry(Long orderId, String reason) {
+        String normalized = reason == null || reason.isBlank() ? "未知结算异常" : reason;
+        if (normalized.length() > SETTLE_ERROR_MAX_LENGTH) {
+            normalized = normalized.substring(0, SETTLE_ERROR_MAX_LENGTH);
+        }
+        orderMapper.markSettleRetry(orderId, normalized,
+                LocalDateTime.now().plusMinutes(SETTLE_RETRY_DELAY_MINUTES));
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean reverseRebate(Long orderId) {
         // 查找原始返利记录
         CpsRebateRecordDO origRecord = rebateRecordMapper.selectByOrderIdAndType(
                 orderId, CpsRebateTypeEnum.REBATE.getType());
-        if (origRecord == null || !CpsRebateStatusEnum.RECEIVED.getStatus().equals(origRecord.getRebateStatus())) {
+        if (origRecord == null || CpsRebateStatusEnum.REFUNDED.getStatus().equals(origRecord.getRebateStatus())) {
             log.info("[reverseRebate] 无需扣回，订单未入账返利: orderId={}", orderId);
             return false;
         }
 
-        // 写入扣回记录
-        CpsRebateRecordDO reverseRecord = CpsRebateRecordDO.builder()
-                .memberId(origRecord.getMemberId())
-                .orderId(orderId)
-                .platformCode(origRecord.getPlatformCode())
-                .platformOrderId(origRecord.getPlatformOrderId())
-                .itemId(origRecord.getItemId())
-                .itemTitle(origRecord.getItemTitle())
-                .orderAmount(origRecord.getOrderAmount())
-                .commissionAmount(origRecord.getCommissionAmount())
-                .rebateRate(origRecord.getRebateRate())
-                .rebateAmount(origRecord.getRebateAmount().negate()) // 负值表示扣回
-                .rebateType(CpsRebateTypeEnum.REFUND.getType())
-                .rebateStatus(CpsRebateStatusEnum.REFUNDED.getStatus())
-                .precedingRebateId(origRecord.getId())
-                .remark("订单退款自动扣回返利")
-                .build();
-        rebateRecordMapper.insert(reverseRecord);
-
-        // 原记录标记为已扣回
-        CpsRebateRecordDO updateOrig = new CpsRebateRecordDO();
-        updateOrig.setId(origRecord.getId());
-        updateOrig.setRebateStatus(CpsRebateStatusEnum.REFUNDED.getStatus());
-        rebateRecordMapper.updateById(updateOrig);
-
-        // 扣减账户余额（available_balance - rebateAmount）
-        deductRebateAccount(origRecord.getMemberId(), origRecord.getRebateAmount());
+        rebateAssetService.reverseOrderRebate(orderId, "order-refund:" + orderId);
 
         log.info("[reverseRebate] 返利扣回成功: orderId={}, memberId={}, amount={}",
                 orderId, origRecord.getMemberId(), origRecord.getRebateAmount());
@@ -200,6 +231,7 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
                     .totalRebate(BigDecimal.ZERO)
                     .availableBalance(BigDecimal.ZERO)
                     .frozenBalance(BigDecimal.ZERO)
+                    .debtBalance(BigDecimal.ZERO)
                     .withdrawnAmount(BigDecimal.ZERO)
                     .status(1)
                     .version(0)
@@ -219,89 +251,29 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
      *
      * <p>注：若 commissionAmount 为空，则使用 finalPrice × 默认比例作为兜底计算。</p>
      */
-    private BigDecimal calculateRebateAmount(CpsOrderDO order) {
-        CpsRebateConfigDO config = rebateConfigService.matchRebateConfig(null, order.getPlatformCode());
-
+    private BigDecimal calculateRebateAmount(CpsOrderDO order, CpsRebateConfigDO config) {
         BigDecimal commission = order.getCommissionAmount();
         if (commission == null || commission.compareTo(BigDecimal.ZERO) <= 0) {
             // 佣金为0，无法结算
             return BigDecimal.ZERO;
         }
 
-        BigDecimal rebateRate;
-        if (config != null && config.getRebateRate() != null) {
-            // 使用配置的返利比例（百分比，如 80.00 表示80%）
-            rebateRate = config.getRebateRate().divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
-        } else {
-            // 兜底：默认80%返利给用户
-            rebateRate = new BigDecimal("0.80");
+        if (config.getRebateRate() == null) {
+            return BigDecimal.ZERO;
         }
+        BigDecimal rebateRate = config.getRebateRate().divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
 
         BigDecimal rebateAmount = commission.multiply(rebateRate).setScale(2, RoundingMode.HALF_UP);
 
         // 应用上下限
-        if (config != null) {
-            if (config.getMaxRebateAmount() != null && config.getMaxRebateAmount().compareTo(BigDecimal.ZERO) > 0) {
-                rebateAmount = rebateAmount.min(config.getMaxRebateAmount());
-            }
-            if (config.getMinRebateAmount() != null && config.getMinRebateAmount().compareTo(BigDecimal.ZERO) > 0) {
-                rebateAmount = rebateAmount.max(config.getMinRebateAmount());
-            }
+        if (config.getMaxRebateAmount() != null && config.getMaxRebateAmount().compareTo(BigDecimal.ZERO) > 0) {
+            rebateAmount = rebateAmount.min(config.getMaxRebateAmount());
+        }
+        if (config.getMinRebateAmount() != null && config.getMinRebateAmount().compareTo(BigDecimal.ZERO) > 0) {
+            rebateAmount = rebateAmount.max(config.getMinRebateAmount());
         }
 
         return rebateAmount;
-    }
-
-    /**
-     * 乐观锁更新返利账户（入账）
-     *
-     * <p>失败时最多重试 3 次，防止并发冲突导致丢失。</p>
-     */
-    private void updateRebateAccount(Long memberId, BigDecimal rebateAmount) {
-        for (int retry = 0; retry < 3; retry++) {
-            CpsRebateAccountDO account = getOrInitAccount(memberId);
-            CpsRebateAccountDO update = CpsRebateAccountDO.builder()
-                    .id(account.getId())
-                    .totalRebate(account.getTotalRebate().add(rebateAmount))
-                    .availableBalance(account.getAvailableBalance().add(rebateAmount))
-                    .version(account.getVersion())
-                    .build();
-            int rows = rebateAccountMapper.updateById(update);
-            if (rows > 0) {
-                return;
-            }
-            log.warn("[updateRebateAccount] 乐观锁冲突，重试: memberId={}, retry={}", memberId, retry + 1);
-        }
-        throw new RuntimeException("更新返利账户失败（乐观锁冲突），memberId=" + memberId);
-    }
-
-    /**
-     * 乐观锁更新返利账户（扣回）
-     */
-    private void deductRebateAccount(Long memberId, BigDecimal rebateAmount) {
-        for (int retry = 0; retry < 3; retry++) {
-            CpsRebateAccountDO account = rebateAccountMapper.selectByMemberId(memberId);
-            if (account == null) {
-                log.warn("[deductRebateAccount] 账户不存在，跳过扣减: memberId={}", memberId);
-                return;
-            }
-            BigDecimal newBalance = account.getAvailableBalance().subtract(rebateAmount);
-            if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
-                newBalance = BigDecimal.ZERO; // 余额不足时归零
-            }
-            CpsRebateAccountDO update = CpsRebateAccountDO.builder()
-                    .id(account.getId())
-                    .availableBalance(newBalance)
-                    .totalRebate(account.getTotalRebate().subtract(rebateAmount).max(BigDecimal.ZERO))
-                    .version(account.getVersion())
-                    .build();
-            int rows = rebateAccountMapper.updateById(update);
-            if (rows > 0) {
-                return;
-            }
-            log.warn("[deductRebateAccount] 乐观锁冲突，重试: memberId={}, retry={}", memberId, retry + 1);
-        }
-        throw new RuntimeException("扣减返利账户失败（乐观锁冲突），memberId=" + memberId);
     }
 
 }

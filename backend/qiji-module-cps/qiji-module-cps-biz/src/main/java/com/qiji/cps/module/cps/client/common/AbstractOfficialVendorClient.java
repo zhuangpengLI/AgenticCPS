@@ -1,7 +1,10 @@
 package com.qiji.cps.module.cps.client.common;
 
+import com.qiji.cps.module.cps.client.CpsVendorCapability;
 import com.qiji.cps.module.cps.enums.CpsVendorCodeEnum;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Set;
 
 /**
  * 官方 API 供应商客户端抽象基类
@@ -38,6 +41,11 @@ public abstract class AbstractOfficialVendorClient extends AbstractApiVendorClie
     @Override
     public String getVendorType() {
         return "official";
+    }
+
+    @Override
+    public Set<CpsVendorCapability> getCapabilities() {
+        return Set.of(CpsVendorCapability.CONNECTION_TEST);
     }
 
 }

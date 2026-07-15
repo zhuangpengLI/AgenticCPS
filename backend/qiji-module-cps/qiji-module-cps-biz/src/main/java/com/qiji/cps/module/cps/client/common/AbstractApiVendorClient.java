@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.client.common;
 
 import com.qiji.cps.module.cps.client.CpsApiVendorClient;
+import com.qiji.cps.module.cps.client.CpsVendorException;
 import com.qiji.cps.module.cps.client.dto.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -140,18 +141,103 @@ public abstract class AbstractApiVendorClient implements CpsApiVendorClient {
     @Override
     public List<CpsOrderDTO> queryOrders(CpsOrderQueryRequest request, CpsVendorConfig config) {
         try {
-            String path = getOrderQueryApiPath();
-            Map<String, Object> params = buildOrderQueryParams(request, config);
-            JsonNode response = executeRequest(path, params, config);
-            if (response == null || !isSuccessResponse(response)) {
-                log.warn("[{}:{}] 查询订单失败: {}", getVendorCode(), getPlatformCode(), response);
-                return Collections.emptyList();
-            }
-            return parseOrderQueryResponse(response);
+            return parseOrderQueryResponse(requireSuccessfulOrderResponse(request, config));
+        } catch (CpsVendorException e) {
+            throw e;
         } catch (Exception e) {
             log.error("[{}:{}] 查询订单异常", getVendorCode(), getPlatformCode(), e);
-            return Collections.emptyList();
+            throw new CpsVendorException(orderFailureMessage("query failed"), e);
         }
+    }
+
+    @Override
+    public CpsOrderPageResult queryOrderPage(CpsOrderQueryRequest request, CpsVendorConfig config) {
+        try {
+            JsonNode response = requireSuccessfulOrderResponse(request, config);
+            List<CpsOrderDTO> orders = parseOrderQueryResponse(response);
+            return resolveOrderPageResult(response, request, orders);
+        } catch (CpsVendorException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[{}:{}] 查询订单分页异常", getVendorCode(), getPlatformCode(), e);
+            throw new CpsVendorException(orderFailureMessage("page query failed"), e);
+        }
+    }
+
+    protected CpsOrderPageResult resolveOrderPageResult(JsonNode response, CpsOrderQueryRequest request,
+                                                        List<CpsOrderDTO> orders) {
+        String nextCursor = firstText(response,
+                "/data/positionIndex", "/data/position_index", "/data/nextCursor", "/data/next_cursor",
+                "/positionIndex", "/position_index", "/nextCursor", "/next_cursor", "/data/min_id");
+        if (nextCursor != null && !nextCursor.isBlank()) {
+            return CpsOrderPageResult.cursor(orders, nextCursor, true);
+        }
+
+        Boolean hasMore = firstBoolean(response,
+                "/data/hasMore", "/data/has_more", "/hasMore", "/has_more");
+        int pageNo = request.getPageNo() == null ? 1 : request.getPageNo();
+        if (hasMore != null) {
+            return CpsOrderPageResult.page(orders, hasMore ? pageNo + 1 : null, hasMore);
+        }
+
+        Long total = firstLong(response, "/data/total", "/total", "/data/totalCount", "/data/total_count");
+        if (total != null) {
+            int pageSize = request.getPageSize() == null ? 50 : request.getPageSize();
+            boolean more = (long) pageNo * pageSize < total;
+            return CpsOrderPageResult.page(orders, more ? pageNo + 1 : null, more);
+        }
+        if (orders.isEmpty()) {
+            return CpsOrderPageResult.page(orders, null, false);
+        }
+        throw new CpsVendorException(orderFailureMessage("response lacks pagination metadata"));
+    }
+
+    private JsonNode requireSuccessfulOrderResponse(CpsOrderQueryRequest request, CpsVendorConfig config) {
+        String path = getOrderQueryApiPath();
+        Map<String, Object> params = buildOrderQueryParams(request, config);
+        JsonNode response = executeRequest(path, params, config);
+        if (response == null || !isSuccessResponse(response)) {
+            log.warn("[{}:{}] 查询订单失败: {}", getVendorCode(), getPlatformCode(), response);
+            throw new CpsVendorException(orderFailureMessage("upstream rejected request"));
+        }
+        return response;
+    }
+
+    private String orderFailureMessage(String reason) {
+        return "CPS vendor order query failed [" + getVendorCode() + ":" + getPlatformCode() + "]: " + reason;
+    }
+
+    private String firstText(JsonNode root, String... pointers) {
+        for (String pointer : pointers) {
+            JsonNode node = root.at(pointer);
+            if (!node.isMissingNode() && !node.isNull() && !node.asText().isBlank()) {
+                return node.asText();
+            }
+        }
+        return null;
+    }
+
+    private Boolean firstBoolean(JsonNode root, String... pointers) {
+        for (String pointer : pointers) {
+            JsonNode node = root.at(pointer);
+            if (node.isBoolean()) {
+                return node.asBoolean();
+            }
+            if (node.isTextual() && ("true".equalsIgnoreCase(node.asText()) || "false".equalsIgnoreCase(node.asText()))) {
+                return Boolean.valueOf(node.asText());
+            }
+        }
+        return null;
+    }
+
+    private Long firstLong(JsonNode root, String... pointers) {
+        for (String pointer : pointers) {
+            JsonNode node = root.at(pointer);
+            if (node.canConvertToLong()) {
+                return node.asLong();
+            }
+        }
+        return null;
     }
 
     @Override

@@ -10,8 +10,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -29,6 +31,24 @@ class CpsRebateRecordServiceImplTest {
     private CpsRebateSettleService rebateSettleService;
     @Mock
     private MemberUserApi memberUserApi;
+
+    @Test
+    @DisplayName("getMemberPendingRebate - 汇总会员待结算返利")
+    void getMemberPendingRebate_sumsMemberPendingRebate() {
+        when(rebateRecordMapper.sumMemberPendingRebate(1001L)).thenReturn(new BigDecimal("12.34"));
+
+        assertEquals(new BigDecimal("12.34"), rebateRecordService.getMemberPendingRebate(1001L));
+
+        verify(rebateRecordMapper).sumMemberPendingRebate(1001L);
+    }
+
+    @Test
+    @DisplayName("getMemberPendingRebate - 无待结算记录时返回零")
+    void getMemberPendingRebate_returnsZeroWhenNoPendingRecord() {
+        when(rebateRecordMapper.sumMemberPendingRebate(1001L)).thenReturn(null);
+
+        assertEquals(BigDecimal.ZERO, rebateRecordService.getMemberPendingRebate(1001L));
+    }
 
     @Test
     @DisplayName("deleteRebateRecord - 删除返利记录前校验记录存在")

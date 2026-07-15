@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.client.haodanku;
 
 import com.qiji.cps.module.cps.client.dto.*;
+import com.qiji.cps.module.cps.client.CpsVendorException;
 import com.qiji.cps.module.cps.client.selection.CpsTaobaoSelectionVendorClient;
 import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -167,17 +168,27 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient implements Cp
 
     @Override
     public List<CpsOrderDTO> queryOrders(CpsOrderQueryRequest request, CpsVendorConfig config) {
+        return queryOrderPage(request, config).getItems();
+    }
+
+    @Override
+    public CpsOrderPageResult queryOrderPage(CpsOrderQueryRequest request, CpsVendorConfig config) {
         try {
             String fullUrl = getPromotionLinkBaseUrl(config) + getOrderQueryApiPath();
             JsonNode response = executePostRequest(fullUrl, buildOrderQueryParams(request, config), config);
             if (response == null || !isSuccessResponse(response)) {
                 log.warn("[{}:{}] 查询订单失败: {}", getVendorCode(), getPlatformCode(), response);
-                return Collections.emptyList();
+                throw new CpsVendorException("CPS vendor order query failed [" + getVendorCode() + ":"
+                        + getPlatformCode() + "]: upstream rejected request");
             }
-            return parseOrderQueryResponse(response);
+            List<CpsOrderDTO> orders = parseOrderQueryResponse(response);
+            return resolveOrderPageResult(response, request, orders);
+        } catch (CpsVendorException e) {
+            throw e;
         } catch (Exception e) {
             log.error("[{}:{}] 查询订单异常", getVendorCode(), getPlatformCode(), e);
-            return Collections.emptyList();
+            throw new CpsVendorException("CPS vendor order query failed [" + getVendorCode() + ":"
+                    + getPlatformCode() + "]", e);
         }
     }
 

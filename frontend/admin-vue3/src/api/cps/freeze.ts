@@ -4,6 +4,8 @@ import request from '@/config/axios'
 export interface CpsFreezeConfigVO {
   id: number
   platformCode?: string
+  minAmountCent: number
+  maxAmountCent?: number
   unfreezeDays: number
   status: number
   remark?: string
@@ -14,6 +16,8 @@ export interface CpsFreezeConfigVO {
 export interface CpsFreezeConfigSaveVO {
   id?: number
   platformCode?: string
+  minAmountCent: number
+  maxAmountCent?: number
   unfreezeDays: number
   status: number
   remark?: string
@@ -73,6 +77,6 @@ export const getCpsFreezeRecordPage = async (params: CpsFreezeRecordPageReqVO) =
   return await request.get({ url: '/cps/freeze/record/page', params })
 }
 
-export const manualUnfreeze = async (id: number) => {
-  return await request.put({ url: '/cps/freeze/record/manual-unfreeze', params: { id } })
+export const manualUnfreeze = async (data: { recordId: number; reason: string; idempotencyKey: string }) => {
+  return await request.post({ url: '/cps/freeze/record/manual-unfreeze', data })
 }

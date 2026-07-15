@@ -21,6 +21,9 @@ public class CpsRebateConfigSaveReqVO {
     @Schema(description = "主键ID（修改时必填）")
     private Long id;
 
+    @Schema(description = "会员ID（NULL表示非个人规则）")
+    private Long memberId;
+
     @Schema(description = "会员等级ID（NULL表示无等级限制）")
     private Long memberLevelId;
 

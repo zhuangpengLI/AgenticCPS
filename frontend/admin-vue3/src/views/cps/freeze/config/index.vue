@@ -45,6 +45,12 @@
       <el-table-column label="解冻天数" align="center" prop="unfreezeDays" width="100">
         <template #default="scope">{{ scope.row.unfreezeDays }} 天</template>
       </el-table-column>
+      <el-table-column label="金额区间（元）" align="center" min-width="180">
+        <template #default="scope">
+          {{ (scope.row.minAmountCent / 100).toFixed(2) }} ～
+          {{ scope.row.maxAmountCent == null ? '无上限' : (scope.row.maxAmountCent / 100).toFixed(2) }}
+        </template>
+      </el-table-column>
       <el-table-column label="状态" align="center" prop="status" width="80">
         <template #default="scope">
           <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
@@ -85,6 +91,13 @@
       <el-form-item label="解冻天数" prop="unfreezeDays">
         <el-input-number v-model="formData.unfreezeDays" :min="1" :max="365" />
         <span class="ml-10px text-gray-500">天（确认收货后自动解冻）</span>
+      </el-form-item>
+      <el-form-item label="金额下限（分）" prop="minAmountCent">
+        <el-input-number v-model="formData.minAmountCent" :min="0" :step="100" />
+      </el-form-item>
+      <el-form-item label="金额上限（分）" prop="maxAmountCent">
+        <el-input-number v-model="formData.maxAmountCent" :min="formData.minAmountCent + 1" :step="100" />
+        <span class="ml-10px text-gray-500">留空表示无上限，区间左闭右开</span>
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-radio-group v-model="formData.status">
@@ -133,13 +146,16 @@ const queryParams = reactive<CpsFreezeConfigPageReqVO>({
 const formData = reactive<CpsFreezeConfigSaveVO>({
   id: undefined,
   platformCode: undefined,
-  unfreezeDays: 7,
+  minAmountCent: 0,
+  maxAmountCent: undefined,
+  unfreezeDays: 15,
   status: 1,
   remark: undefined
 })
 
 const formRules = {
   unfreezeDays: [{ required: true, message: '解冻天数不能为空', trigger: 'blur' }],
+  minAmountCent: [{ required: true, message: '金额下限不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
 }
 
@@ -171,7 +187,7 @@ const openForm = (row: any) => {
   if (row) {
     Object.assign(formData, row)
   } else {
-    Object.assign(formData, { id: undefined, platformCode: undefined, unfreezeDays: 7, status: 1, remark: undefined })
+    Object.assign(formData, { id: undefined, platformCode: undefined, minAmountCent: 0, maxAmountCent: undefined, unfreezeDays: 15, status: 1, remark: undefined })
   }
   dialogVisible.value = true
 }

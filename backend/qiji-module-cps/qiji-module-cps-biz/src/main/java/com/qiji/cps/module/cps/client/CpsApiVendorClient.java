@@ -2,7 +2,9 @@ package com.qiji.cps.module.cps.client;
 
 import com.qiji.cps.module.cps.client.dto.*;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * CPS API 供应商客户端接口
@@ -46,6 +48,47 @@ public interface CpsApiVendorClient {
     String getVendorType();
 
     /**
+     * Declares the runtime capabilities implemented by this vendor client.
+     */
+    default Set<CpsVendorCapability> getCapabilities() {
+        return EnumSet.of(
+                CpsVendorCapability.GOODS_SEARCH,
+                CpsVendorCapability.PROMOTION_LINK,
+                CpsVendorCapability.ORDER_QUERY,
+                CpsVendorCapability.CONNECTION_TEST);
+    }
+
+    /**
+     * Declares the minimal configuration contract needed before a vendor can be enabled.
+     */
+    default CpsVendorConfigSchema getConfigSchema() {
+        return CpsVendorConfigSchema.standard();
+    }
+
+    /**
+     * Declares timeout, retry, rate-limit, circuit-breaker and diagnostic defaults.
+     */
+    default CpsVendorGovernancePolicy getGovernancePolicy() {
+        return CpsVendorGovernancePolicy.standard();
+    }
+
+    /**
+     * Returns a stable descriptor used by admin diagnostics and contract tests.
+     */
+    default CpsVendorDescriptor describe() {
+        return CpsVendorDescriptor.builder()
+                .vendorCode(getVendorCode())
+                .platformCode(getPlatformCode())
+                .vendorType(getVendorType())
+                .capabilities(Set.copyOf(getCapabilities()))
+                .configSchema(getConfigSchema())
+                .governancePolicy(getGovernancePolicy())
+                .sdkModule(getClass().getName())
+                .version("local")
+                .build();
+    }
+
+    /**
      * 搜索商品
      *
      * @param request 搜索请求
@@ -71,7 +114,8 @@ public interface CpsApiVendorClient {
      * @return 解析结果
      */
     default CpsContentParseResult parseContent(CpsContentParseRequest request, CpsVendorConfig config) {
-        return CpsContentParseResult.unsupported("COMMAND_UNSUPPORTED", "暂不支持该渠道口令自动解析，请粘贴商品链接或商品ID");
+        return CpsContentParseResult.unsupported("CAPABILITY_UNSUPPORTED",
+                "暂不支持该渠道口令自动解析，请粘贴商品链接或商品ID");
     }
 
     /**
@@ -82,6 +126,16 @@ public interface CpsApiVendorClient {
      * @return 订单列表
      */
     List<CpsOrderDTO> queryOrders(CpsOrderQueryRequest request, CpsVendorConfig config);
+
+    /**
+     * 查询订单并返回供应商明确的分页契约。
+     *
+     * <p>未实现该契约的供应商必须失败，不允许回退为“空订单=同步成功”。</p>
+     */
+    default CpsOrderPageResult queryOrderPage(CpsOrderQueryRequest request, CpsVendorConfig config) {
+        throw new CpsVendorException("Explicit order pagination is not implemented for vendor "
+                + getVendorCode() + ":" + getPlatformCode());
+    }
 
     /**
      * 测试供应商连接是否正常

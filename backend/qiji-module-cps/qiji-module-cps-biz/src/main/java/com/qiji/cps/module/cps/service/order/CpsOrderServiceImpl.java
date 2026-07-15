@@ -3,21 +3,33 @@ package com.qiji.cps.module.cps.service.order;
 import com.qiji.cps.framework.common.exception.ServiceException;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
+import com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils;
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.dto.CpsOrderDTO;
+import com.qiji.cps.module.cps.client.dto.CpsOrderPageResult;
+import com.qiji.cps.module.cps.client.dto.CpsOrderPaginationMode;
 import com.qiji.cps.module.cps.client.dto.CpsOrderQueryRequest;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderPageReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
+import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderAttributionLogDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
+import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderStatusEventDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderSyncLogDO;
+import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateConfigDO;
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.adzone.CpsAdzoneMapper;
+import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderAttributionLogMapper;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderMapper;
+import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderStatusEventMapper;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderSyncLogMapper;
+import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateRecordMapper;
 import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
 import com.qiji.cps.module.cps.enums.CpsOrderStatusEnum;
+import com.qiji.cps.module.cps.enums.CpsRebateTypeEnum;
+import com.qiji.cps.module.cps.service.order.status.CpsPlatformOrderStatusMapper;
 import com.qiji.cps.module.cps.service.rebate.CpsRebateSettleService;
+import com.qiji.cps.module.cps.service.rebate.CpsRebateConfigService;
 import com.qiji.cps.module.member.api.user.MemberUserApi;
 import com.qiji.cps.module.member.api.user.dto.MemberUserRespDTO;
 import jakarta.annotation.Resource;
@@ -61,6 +73,15 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     private CpsOrderMapper orderMapper;
 
     @Resource
+    private CpsOrderAttributionLogMapper attributionLogMapper;
+
+    @Resource
+    private CpsOrderStatusEventMapper statusEventMapper;
+
+    @Resource
+    private CpsRebateRecordMapper rebateRecordMapper;
+
+    @Resource
     private CpsOrderSyncLogMapper syncLogMapper;
 
     @Resource
@@ -68,6 +89,9 @@ public class CpsOrderServiceImpl implements CpsOrderService {
 
     @Resource
     private CpsRebateSettleService rebateSettleService;
+
+    @Resource
+    private CpsRebateConfigService rebateConfigService;
 
     @Resource
     private CpsTransferRecordMapper transferRecordMapper;
@@ -113,14 +137,46 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     }
 
     @Override
-    public CpsOrderDO getOrderByPlatformOrderId(String platformOrderId) {
-        return orderMapper.selectByPlatformOrderId(platformOrderId);
+    public PageResult<CpsOrderDO> getMemberOrderPage(CpsOrderPageReqVO pageReqVO, Long memberId) {
+        pageReqVO.setMemberId(null);
+        pageReqVO.setMemberName(null);
+        pageReqVO.setMemberIds(null);
+        return orderMapper.selectPageByMemberId(pageReqVO, memberId);
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    public CpsOrderDO getMemberOrder(Long memberId, Long id) {
+        CpsOrderDO order = orderMapper.selectById(id);
+        if (order == null || !Objects.equals(order.getMemberId(), memberId)) {
+            throw exception(ORDER_NOT_EXISTS);
+        }
+        return order;
+    }
+
+    @Override
+    public CpsOrderDO getOrderByPlatformOrderId(String platformCode, String platformOrderId) {
+        return orderMapper.selectByPlatformOrderId(platformCode, platformOrderId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = ServiceException.class)
     public void bindSpecialIdToMember(Long orderId, Long memberId) {
-        CpsOrderDO order = getOrder(orderId);
+        bindSpecialIdToMember(new CpsOrderManualBindCommand(
+                orderId, memberId, SecurityFrameworkUtils.getLoginUserId(), null, null));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = ServiceException.class)
+    public void bindSpecialIdToMember(CpsOrderManualBindCommand command) {
+        if (command == null) {
+            throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "绑定请求不能为空");
+        }
+        String idempotencyKey = command.idempotencyKey();
+        if (!isBlank(idempotencyKey) && attributionLogMapper.selectByIdempotencyKey(idempotencyKey) != null) {
+            return;
+        }
+        Long memberId = command.memberId();
+        CpsOrderDO order = getOrder(command.orderId());
         if (memberId == null) {
             throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "会员ID不能为空");
         }
@@ -133,9 +189,22 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         if (isBlank(order.getAdzoneId())) {
             throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "订单缺少推广位ID，不能建立 special_id 绑定关系");
         }
+        if (!Objects.equals(order.getMemberId(), memberId) && hasRebateAssetActivity(order)) {
+            appendManualAttributionLog(order, memberId, "REBIND", "REJECTED",
+                    "订单已产生返利资产活动，必须通过冲正和重新结算流程改绑",
+                    idempotencyKey, "PENDING_COMPENSATION", command.auditNote(), command.operatorId());
+            throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "订单已产生返利资产活动，不能直接改绑会员");
+        }
 
         MemberUserRespDTO member = requireMemberForBind(memberId);
         CpsAdzoneDO existing = adzoneMapper.selectBySpecialId(order.getPlatformCode(), order.getSpecialId());
+        if (isConflictingManualBind(existing, memberId)) {
+            appendManualAttributionLog(order, memberId, existing.getRelationId(),
+                    order.getMemberId() == null || Objects.equals(order.getMemberId(), memberId) ? "MANUAL" : "REBIND",
+                    "CONFLICT", "special_id 已绑定到其他会员，需人工复核后走冲正/重算或保留原归因",
+                    idempotencyKey, "PENDING_REVIEW", command.auditNote(), command.operatorId());
+            throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "special_id 已绑定到其他会员，需人工复核");
+        }
         if (existing == null) {
             adzoneMapper.insert(CpsAdzoneDO.builder()
                     .platformCode(order.getPlatformCode())
@@ -165,6 +234,9 @@ public class CpsOrderServiceImpl implements CpsOrderService {
                 .memberNickname(member.getNickname())
                 .attributionSource("specialId")
                 .build());
+        appendManualAttributionLog(order, memberId,
+                order.getMemberId() == null || Objects.equals(order.getMemberId(), memberId) ? "MANUAL" : "REBIND",
+                "BOUND", null, idempotencyKey, "APPROVED", command.auditNote(), command.operatorId());
     }
 
     // ==================== 订单保存/更新 ====================
@@ -172,16 +244,17 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int saveOrUpdateOrder(CpsOrderDTO orderDTO) {
-        if (orderDTO == null || orderDTO.getPlatformOrderId() == null) {
+        if (orderDTO == null || orderDTO.getPlatformCode() == null || orderDTO.getPlatformOrderId() == null) {
             return 0;
         }
         normalizeOrderAmountSnapshot(orderDTO);
 
-        CpsOrderDO existing = orderMapper.selectByPlatformOrderId(orderDTO.getPlatformOrderId());
+        CpsOrderDO existing = orderMapper.selectByPlatformOrderId(
+                orderDTO.getPlatformCode(), orderDTO.getPlatformOrderId());
         if (existing == null) {
             // 新订单：插入
-            CpsOrderDO newOrder = convertToOrderDO(orderDTO);
             AttributionResult attribution = resolveAttribution(orderDTO);
+            CpsOrderDO newOrder = convertToOrderDO(orderDTO, attribution.memberId());
             if (newOrder.getMemberId() == null && attribution.memberId() != null) {
                 newOrder.setMemberId(attribution.memberId());
                 newOrder.setAttributionSource(attribution.source());
@@ -189,21 +262,32 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             fillMemberNickname(newOrder);
             newOrder.setSyncTime(LocalDateTime.now());
             newOrder.setRetryCount(0);
+            newOrder.setRawPlatformStatusSummary(buildRawStatusSummary(orderDTO));
             orderMapper.insert(newOrder);
+            appendStatusEvent(newOrder.getId(), orderDTO, null, newOrder.getOrderStatus(),
+                    newOrder.getOrderStatus(), 0, false, null);
+            appendAutomaticAttributionLog(newOrder.getId(), orderDTO, attribution);
             closeTransferRecordLoop(attribution, orderDTO.getPlatformOrderId());
             log.debug("[saveOrUpdateOrder] 新增订单: platform={}, orderId={}",
                     orderDTO.getPlatformCode(), orderDTO.getPlatformOrderId());
             return 1;
         } else {
             // 已有订单：判断是否需要更新
+            String incomingStatus = mapPlatformStatus(orderDTO);
             String newStatus = resolveNextOrderStatus(existing, orderDTO);
+            String downgradeRejectReason = resolveDowngradeRejectReason(existing, incomingStatus, newStatus);
             AttributionResult attribution = existing.getMemberId() == null
                     ? resolveAttribution(orderDTO) : AttributionResult.empty();
+            Long estimateMemberId = existing.getMemberId() != null ? existing.getMemberId() : attribution.memberId();
             boolean shouldFillMemberNickname = existing.getMemberId() != null && isBlank(existing.getMemberNickname());
             if (Objects.equals(existing.getOrderStatus(), newStatus)
                     && !hasOrderSnapshotChanged(existing, orderDTO)
                     && attribution.memberId() == null
                     && !shouldFillMemberNickname) {
+                if (downgradeRejectReason != null) {
+                    appendStatusEvent(existing.getId(), orderDTO, existing.getOrderStatus(), incomingStatus,
+                            existing.getOrderStatus(), existing.getStatusVersion(), true, downgradeRejectReason);
+                }
                 // 状态和订单快照均无变化，跳过
                 return 0;
             }
@@ -226,9 +310,10 @@ public class CpsOrderServiceImpl implements CpsOrderService {
                     .relationId(orderDTO.getRelationId())
                     .orderScene(orderDTO.getOrderScene())
                     .syncTime(LocalDateTime.now())
+                    .rawPlatformStatusSummary(buildRawStatusSummary(orderDTO))
                     .build();
             if (orderDTO.getCommissionAmount() != null) {
-                updateDO.setEstimateRebate(calculateEstimateRebate(orderDTO));
+                updateDO.setEstimateRebate(calculateEstimateRebate(orderDTO, estimateMemberId));
             }
             Long attributedMemberId = attribution.memberId();
             if (existing.getMemberId() == null && attributedMemberId != null) {
@@ -258,7 +343,19 @@ public class CpsOrderServiceImpl implements CpsOrderService {
                             existing.getId(), existing.getOrderStatus(), updateDO.getOrderStatus());
                 }
             }
-            orderMapper.updateById(updateDO);
+            int expectedStatusVersion = existing.getStatusVersion() == null ? 0 : existing.getStatusVersion();
+            int updated = orderMapper.updateByIdAndStatusVersion(updateDO, expectedStatusVersion);
+            if (updated == 0) {
+                throw new IllegalStateException("订单状态并发更新失败: " + existing.getId());
+            }
+            if (!Objects.equals(existing.getOrderStatus(), updateDO.getOrderStatus()) || downgradeRejectReason != null) {
+                appendStatusEvent(existing.getId(), orderDTO, existing.getOrderStatus(), incomingStatus,
+                        updateDO.getOrderStatus(), expectedStatusVersion + 1, downgradeRejectReason != null,
+                        downgradeRejectReason);
+            }
+            if (existing.getMemberId() == null) {
+                appendAutomaticAttributionLog(existing.getId(), orderDTO, attribution);
+            }
             if (existing.getMemberId() == null && attributedMemberId != null) {
                 closeTransferRecordLoop(attribution, orderDTO.getPlatformOrderId());
             }
@@ -358,32 +455,40 @@ public class CpsOrderServiceImpl implements CpsOrderService {
                                                 LocalDateTime startTime, LocalDateTime endTime) {
         List<CpsOrderDTO> allOrders = new ArrayList<>();
         String positionIndex = null;
-        for (int page = 1; page <= ORDER_QUERY_MAX_PAGES; page++) {
+        int pageNo = 1;
+        for (int pageCount = 1; pageCount <= ORDER_QUERY_MAX_PAGES; pageCount++) {
             CpsOrderQueryRequest req = new CpsOrderQueryRequest();
             req.setQueryType(queryType);
             req.setOrderScene(orderScene);
             req.setStartTime(startTime.format(DTF));
             req.setEndTime(endTime.format(DTF));
             req.setPageSize(ORDER_QUERY_PAGE_SIZE);
-            req.setPageNo(page);
+            req.setPageNo(pageNo);
             if (positionIndex != null) {
                 req.setPositionIndex(positionIndex);
             }
 
-            List<CpsOrderDTO> pageOrders = client.queryOrders(req);
-            if (pageOrders == null || pageOrders.isEmpty()) {
+            CpsOrderPageResult pageResult = client.queryOrderPage(req);
+            List<CpsOrderDTO> pageOrders = pageResult.getItems();
+            if (pageOrders.isEmpty()) {
                 break;
             }
             allOrders.addAll(pageOrders);
 
-            String nextPositionIndex = pageOrders.get(pageOrders.size() - 1).getNextPositionIndex();
-            if (nextPositionIndex == null || nextPositionIndex.equals(positionIndex)) {
+            if (!pageResult.isHasMore()) {
                 break;
             }
-            positionIndex = nextPositionIndex;
-
-            if (pageOrders.size() < ORDER_QUERY_PAGE_SIZE) {
-                break;
+            if (pageResult.getPaginationMode() == CpsOrderPaginationMode.CURSOR) {
+                String nextPositionIndex = pageResult.getNextCursor();
+                if (nextPositionIndex == null || nextPositionIndex.equals(positionIndex)) {
+                    throw new IllegalStateException("订单游标分页返回 hasMore=true 但未提供有效 nextCursor");
+                }
+                positionIndex = nextPositionIndex;
+            } else {
+                if (pageResult.getNextPageNo() == null || pageResult.getNextPageNo() <= pageNo) {
+                    throw new IllegalStateException("订单页码分页返回 hasMore=true 但未提供有效 nextPageNo");
+                }
+                pageNo = pageResult.getNextPageNo();
             }
         }
         return allOrders;
@@ -412,7 +517,7 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     /**
      * 将平台 DTO 转换为 CpsOrderDO
      */
-    private CpsOrderDO convertToOrderDO(CpsOrderDTO dto) {
+    private CpsOrderDO convertToOrderDO(CpsOrderDTO dto, Long memberId) {
         CpsOrderDO order = CpsOrderDO.builder()
                 .platformCode(dto.getPlatformCode())
                 .platformOrderId(dto.getPlatformOrderId())
@@ -425,7 +530,7 @@ public class CpsOrderServiceImpl implements CpsOrderService {
                 .couponAmount(dto.getCouponAmount())
                 .commissionRate(dto.getCommissionRate())
                 .commissionAmount(dto.getCommissionAmount())
-                .estimateRebate(calculateEstimateRebate(dto))
+                .estimateRebate(calculateEstimateRebate(dto, memberId))
                 .adzoneId(dto.getAdzoneId())
                 .externalInfo(dto.getExternalId())
                 .specialId(dto.getSpecialId())
@@ -459,13 +564,21 @@ public class CpsOrderServiceImpl implements CpsOrderService {
                 || amountChangedIfPresent(existing.getCommissionRate(), dto.getCommissionRate())
                 || amountChangedIfPresent(existing.getCommissionAmount(), dto.getCommissionAmount())
                 || (dto.getCommissionAmount() != null
-                        && amountChangedIfPresent(existing.getEstimateRebate(), calculateEstimateRebate(dto)))
+                        && amountChangedIfPresent(existing.getEstimateRebate(),
+                        calculateEstimateRebate(dto, existing.getMemberId())))
                 || changedIfPresent(existing.getAdzoneId(), dto.getAdzoneId())
                 || changedIfPresent(existing.getExternalInfo(), dto.getExternalId())
                 || changedIfPresent(existing.getSpecialId(), dto.getSpecialId())
                 || changedIfPresent(existing.getRelationId(), dto.getRelationId())
                 || integerChangedIfPresent(existing.getOrderScene(), dto.getOrderScene())
-                || (existing.getMemberId() == null && parseMemberId(dto.getExternalId()) != null);
+                || (existing.getMemberId() == null && hasTrustedAttributionCandidate(dto));
+    }
+
+    private boolean hasTrustedAttributionCandidate(CpsOrderDTO dto) {
+        return !isBlank(dto.getSpecialId())
+                || !isBlank(dto.getRelationId())
+                || !isBlank(dto.getAdzoneId())
+                || (!isBlank(dto.getPlatformCode()) && !isBlank(dto.getItemId()) && !isBlank(dto.getOrderTime()));
     }
 
     private boolean changedIfPresent(String existingValue, String incomingValue) {
@@ -486,40 +599,25 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         return incomingValue != null && !Objects.equals(existingValue, incomingValue);
     }
 
-    private Long parseMemberId(String externalId) {
-        if (externalId == null || externalId.isBlank()) {
-            return null;
-        }
-        try {
-            return Long.parseLong(externalId);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
     private AttributionResult resolveAttribution(CpsOrderDTO dto) {
         Long specialIdMemberId = resolveMemberIdBySpecialId(dto);
         if (specialIdMemberId != null) {
-            return new AttributionResult(specialIdMemberId, null, "specialId");
+            return AttributionResult.bound(specialIdMemberId, null, "specialId", dto.getSpecialId());
         }
         Long relationIdMemberId = resolveMemberIdByExternalRelationId(dto);
         if (relationIdMemberId != null) {
-            return new AttributionResult(relationIdMemberId, null, "relationId");
-        }
-        Long externalMemberId = parseMemberId(dto.getExternalId());
-        if (externalMemberId != null) {
-            return new AttributionResult(externalMemberId, null, "externalId");
+            return AttributionResult.bound(relationIdMemberId, null, "relationId", dto.getRelationId());
         }
         Long adzoneMemberId = resolveMemberIdByAdzone(dto);
         if (adzoneMemberId != null) {
-            return new AttributionResult(adzoneMemberId, null, "adzone");
+            return AttributionResult.bound(adzoneMemberId, null, "adzone", dto.getAdzoneId());
         }
         if (dto.getPlatformCode() == null || dto.getItemId() == null) {
-            return AttributionResult.empty();
+            return AttributionResult.unattributed("平台或商品标识不完整，无法匹配可信绑定");
         }
         LocalDateTime orderTime = parseDateTime(dto.getOrderTime());
         if (orderTime == null) {
-            return AttributionResult.empty();
+            return AttributionResult.unattributed("订单时间缺失，无法唯一匹配转链记录");
         }
         LocalDateTime startTime = orderTime.minusHours(24);
         LocalDateTime endTime = orderTime.plusMinutes(30);
@@ -534,11 +632,22 @@ public class CpsOrderServiceImpl implements CpsOrderService {
                 log.warn("[resolveAttribution] 订单存在多条转链候选，跳过兜底归因: platform={}, orderId={}, itemId={}, adzoneId={}, count={}",
                         dto.getPlatformCode(), dto.getPlatformOrderId(), dto.getItemId(), dto.getAdzoneId(), candidates.size());
             }
-            return AttributionResult.empty();
+            return candidates != null && candidates.size() > 1
+                    ? AttributionResult.conflict("存在多条有效转链候选，拒绝猜测归因")
+                    : rawExternalIdRejection(dto);
         }
         CpsTransferRecordDO record = candidates.get(0);
-        return record.getMemberId() == null ? AttributionResult.empty()
-                : new AttributionResult(record.getMemberId(), record.getId(), "transferRecord");
+        return record.getMemberId() == null
+                ? AttributionResult.rejected("唯一转链记录未绑定会员")
+                : AttributionResult.bound(record.getMemberId(), record.getId(), "transferRecord",
+                        String.valueOf(record.getId()));
+    }
+
+    private AttributionResult rawExternalIdRejection(CpsOrderDTO dto) {
+        if (!isBlank(dto.getExternalId()) && dto.getExternalId().matches("\\d+")) {
+            return AttributionResult.rejected("数字 externalId 未经可信绑定，不得作为会员ID");
+        }
+        return AttributionResult.unattributed("未找到唯一且有效的可信归因绑定");
     }
 
     private Long resolveMemberIdBySpecialId(CpsOrderDTO dto) {
@@ -591,9 +700,156 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         transferRecordMapper.updatePlatformOrderId(attribution.transferRecordId(), platformOrderId);
     }
 
-    private record AttributionResult(Long memberId, Long transferRecordId, String source) {
+    private boolean hasRebateAssetActivity(CpsOrderDO order) {
+        return order.getRebateTime() != null
+                || rebateRecordMapper.selectByOrderIdAndType(order.getId(), CpsRebateTypeEnum.REBATE.getType()) != null;
+    }
+
+    private boolean isConflictingManualBind(CpsAdzoneDO existing, Long targetMemberId) {
+        return existing != null
+                && existing.getRelationId() != null
+                && !Objects.equals(existing.getRelationId(), targetMemberId);
+    }
+
+    private void appendAutomaticAttributionLog(Long orderId, CpsOrderDTO dto, AttributionResult attribution) {
+        attributionLogMapper.insert(CpsOrderAttributionLogDO.builder()
+                .orderId(orderId)
+                .platformCode(dto.getPlatformCode())
+                .platformOrderId(dto.getPlatformOrderId())
+                .candidateMemberId(attribution.memberId())
+                .attributedMemberId(attribution.memberId())
+                .attributionSource(attribution.source())
+                .bindingType(attribution.source())
+                .bindingId(attribution.bindingId())
+                .action("AUTO")
+                .result(attribution.auditResult())
+                .rejectReason(attribution.reason())
+                .operatorType("SYSTEM")
+                .operatorId("order-sync")
+                .build());
+    }
+
+    private void appendManualAttributionLog(CpsOrderDO order, Long candidateMemberId, String action,
+                                            String result, String rejectReason) {
+        appendManualAttributionLog(order, candidateMemberId,
+                "BOUND".equals(result) ? candidateMemberId : order.getMemberId(),
+                action, result, rejectReason, null, null, null, SecurityFrameworkUtils.getLoginUserId());
+    }
+
+    private void appendManualAttributionLog(CpsOrderDO order, Long candidateMemberId, String action,
+                                            String result, String rejectReason, String idempotencyKey,
+                                            String reviewStatus, String reviewAuditNote, Long reviewOperatorId) {
+        appendManualAttributionLog(order, candidateMemberId,
+                "BOUND".equals(result) ? candidateMemberId : order.getMemberId(),
+                action, result, rejectReason, idempotencyKey, reviewStatus, reviewAuditNote, reviewOperatorId);
+    }
+
+    private void appendManualAttributionLog(CpsOrderDO order, Long candidateMemberId, Long attributedMemberId,
+                                            String action, String result, String rejectReason, String idempotencyKey,
+                                            String reviewStatus, String reviewAuditNote, Long reviewOperatorId) {
+        attributionLogMapper.insert(CpsOrderAttributionLogDO.builder()
+                .orderId(order.getId())
+                .platformCode(order.getPlatformCode())
+                .platformOrderId(order.getPlatformOrderId())
+                .candidateMemberId(candidateMemberId)
+                .attributedMemberId(attributedMemberId)
+                .attributionSource("specialId")
+                .bindingType("specialId")
+                .bindingId(order.getSpecialId())
+                .action(action)
+                .result(result)
+                .rejectReason(rejectReason)
+                .operatorType("ADMIN")
+                .operatorId(Objects.toString(reviewOperatorId, null))
+                .idempotencyKey(idempotencyKey)
+                .reviewStatus(reviewStatus)
+                .reviewAuditNote(reviewAuditNote)
+                .reviewOperatorId(reviewOperatorId)
+                .reviewTime(reviewStatus == null ? null : LocalDateTime.now())
+                .build());
+    }
+
+    private void appendStatusEvent(Long orderId, CpsOrderDTO dto, String previousStatus, String mappedStatus,
+                                   String currentStatus, Integer statusVersion, boolean downgradeRejected,
+                                   String rejectReason) {
+        statusEventMapper.insert(CpsOrderStatusEventDO.builder()
+                .orderId(orderId)
+                .platformCode(dto.getPlatformCode())
+                .platformOrderId(dto.getPlatformOrderId())
+                .sourceType(resolveStatusEventSourceType(dto))
+                .sourceBatchNo(resolveStatusEventBatchNo(dto))
+                .rawStatus(Objects.toString(dto.getPlatformStatus(), null))
+                .rawStatusSummary(buildRawStatusSummary(dto))
+                .previousStatus(previousStatus)
+                .mappedStatus(mappedStatus)
+                .currentStatus(currentStatus)
+                .eventTime(LocalDateTime.now())
+                .statusVersion(statusVersion == null ? 0 : statusVersion)
+                .downgradeRejected(downgradeRejected)
+                .rejectReason(truncate(rejectReason, 512))
+                .build());
+    }
+
+    private String resolveStatusEventSourceType(CpsOrderDTO dto) {
+        return isBlank(dto.getSyncBatchNo()) ? "MANUAL_SYNC" : "ORDER_SYNC";
+    }
+
+    private String resolveStatusEventBatchNo(CpsOrderDTO dto) {
+        return isBlank(dto.getSyncBatchNo()) ? "manual-sync" : truncate(dto.getSyncBatchNo(), 128);
+    }
+
+    private String buildRawStatusSummary(CpsOrderDTO dto) {
+        StringBuilder summary = new StringBuilder();
+        summary.append("platformStatus=").append(dto.getPlatformStatus());
+        summary.append(",refundTag=").append(dto.getRefundTag());
+        if (dto.getOrderScene() != null) {
+            summary.append(",orderScene=").append(dto.getOrderScene());
+        }
+        if (dto.getRawPayload() != null) {
+            summary.append(",rawPayload=").append(dto.getRawPayload());
+        }
+        return truncate(summary.toString(), 512);
+    }
+
+    private String resolveDowngradeRejectReason(CpsOrderDO existing, String incomingStatus, String resolvedStatus) {
+        if (existing == null || incomingStatus == null || Objects.equals(incomingStatus, resolvedStatus)) {
+            return null;
+        }
+        if (Objects.equals(existing.getOrderStatus(), resolvedStatus)
+                && !isReversalStatus(incomingStatus)
+                && statusRank(incomingStatus) < statusRank(existing.getOrderStatus())) {
+            return "拒绝降级: " + existing.getOrderStatus() + " -> " + incomingStatus;
+        }
+        return null;
+    }
+
+    private String truncate(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength);
+    }
+
+    private record AttributionResult(Long memberId, Long transferRecordId, String source, String bindingId,
+                                     String auditResult, String reason) {
         private static AttributionResult empty() {
-            return new AttributionResult(null, null, null);
+            return unattributed("无需重新归因");
+        }
+
+        private static AttributionResult bound(Long memberId, Long transferRecordId, String source, String bindingId) {
+            return new AttributionResult(memberId, transferRecordId, source, bindingId, "BOUND", null);
+        }
+
+        private static AttributionResult rejected(String reason) {
+            return new AttributionResult(null, null, null, null, "REJECTED", reason);
+        }
+
+        private static AttributionResult conflict(String reason) {
+            return new AttributionResult(null, null, null, null, "CONFLICT", reason);
+        }
+
+        private static AttributionResult unattributed(String reason) {
+            return new AttributionResult(null, null, null, null, "UNATTRIBUTED", reason);
         }
     }
 
@@ -688,29 +944,8 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         return value == null || value.isBlank();
     }
 
-    /**
-     * 根据平台原始状态映射为系统订单状态
-     *
-     * <p>各平台状态码不同，适配器的 CpsOrderDTO.platformStatus 已做初步转换，
-     * 此处基于 refundTag 和 platformStatus 做最终映射。</p>
-     */
     private String mapPlatformStatus(CpsOrderDTO dto) {
-        if (Integer.valueOf(1).equals(dto.getRefundTag())) {
-            return CpsOrderStatusEnum.REFUNDED.getStatus();
-        }
-        if (dto.getPlatformStatus() == null) {
-            return CpsOrderStatusEnum.CREATED.getStatus();
-        }
-        // 通用规则：0=已下单，1=已付款，2=已收货/确认，3=已结算，4=已到账，-1=失效
-        return switch (dto.getPlatformStatus()) {
-            case 0 -> CpsOrderStatusEnum.CREATED.getStatus();
-            case 1 -> CpsOrderStatusEnum.PAID.getStatus();
-            case 2 -> CpsOrderStatusEnum.RECEIVED.getStatus();
-            case 3 -> CpsOrderStatusEnum.SETTLED.getStatus();
-            case 4 -> CpsOrderStatusEnum.REBATE_RECEIVED.getStatus();
-            case -1 -> CpsOrderStatusEnum.INVALID.getStatus();
-            default -> CpsOrderStatusEnum.CREATED.getStatus();
-        };
+        return CpsPlatformOrderStatusMapper.mapStatus(dto);
     }
 
     private String resolveNextOrderStatus(CpsOrderDO existing, CpsOrderDTO dto) {
@@ -735,8 +970,14 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         if (isReversalStatus(existing.getOrderStatus())) {
             return false;
         }
-        return existing.getRebateTime() != null
-                || CpsOrderStatusEnum.REBATE_RECEIVED.getStatus().equals(existing.getOrderStatus());
+        if (existing.getRebateTime() != null
+                || CpsOrderStatusEnum.REBATE_RECEIVED.getStatus().equals(existing.getOrderStatus())) {
+            return true;
+        }
+        // V2 在平台结算后先创建冻结返利，此时订单仍是 SETTLED 且 rebateTime 为空。
+        // 只要返利主记录已经创建，退款/失效就必须进入统一资产冲正，避免冻结到期后继续解冻。
+        return rebateRecordMapper.selectByOrderIdAndType(
+                existing.getId(), CpsRebateTypeEnum.REBATE.getType()) != null;
     }
 
     private boolean isRollbackProtectedTerminalStatus(String status) {
@@ -775,16 +1016,31 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     }
 
     /**
-     * 估算返利金额（佣金 × 返利比例，此处简单取佣金的 80% 作为预估）
-     *
-     * <p>实际返利比例由 CpsRebateConfigService 解析，此处仅做预估存储。</p>
+     * 使用与实际结算相同的六级规则引擎估算返利；没有可信会员或规则时不做猜测。
      */
-    private BigDecimal calculateEstimateRebate(CpsOrderDTO dto) {
-        if (dto.getCommissionAmount() == null) {
+    private BigDecimal calculateEstimateRebate(CpsOrderDTO dto, Long memberId) {
+        if (dto.getCommissionAmount() == null || memberId == null) {
             return BigDecimal.ZERO;
         }
-        // 默认 80% 佣金作为返利预估（实际由返利配置决定）
-        return dto.getCommissionAmount().multiply(new BigDecimal("0.8")).setScale(2, java.math.RoundingMode.HALF_UP);
+        MemberUserRespDTO member = memberUserApi.getUser(memberId);
+        if (member == null) {
+            return BigDecimal.ZERO;
+        }
+        CpsRebateConfigDO config = rebateConfigService.matchRebateConfig(memberId, member.getLevelId(), dto.getPlatformCode());
+        if (config == null || config.getRebateRate() == null) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal estimate = dto.getCommissionAmount().multiply(config.getRebateRate())
+                .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+        if (config.getMinRebateAmount() != null && config.getMinRebateAmount().signum() > 0
+                && estimate.compareTo(config.getMinRebateAmount()) < 0) {
+            estimate = config.getMinRebateAmount();
+        }
+        if (config.getMaxRebateAmount() != null && config.getMaxRebateAmount().signum() > 0
+                && estimate.compareTo(config.getMaxRebateAmount()) > 0) {
+            estimate = config.getMaxRebateAmount();
+        }
+        return estimate.setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
     private void normalizeOrderAmountSnapshot(CpsOrderDTO dto) {

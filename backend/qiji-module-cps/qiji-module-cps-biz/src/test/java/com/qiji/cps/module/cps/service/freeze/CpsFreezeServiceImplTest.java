@@ -7,6 +7,7 @@ import com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeConfigDO;
 import com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.freeze.CpsFreezeConfigMapper;
 import com.qiji.cps.module.cps.dal.mysql.freeze.CpsFreezeRecordMapper;
+import com.qiji.cps.module.cps.service.rebate.asset.CpsRebateAssetService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +40,9 @@ class CpsFreezeServiceImplTest {
     @Mock
     private CpsFreezeConfigMapper freezeConfigMapper;
 
+    @Mock
+    private CpsRebateAssetService rebateAssetService;
+
     // ==================== batchUnfreeze 测试 ====================
 
     @Test
@@ -59,8 +63,7 @@ class CpsFreezeServiceImplTest {
 
         // Assert
         assertEquals(1, count);
-        verify(freezeRecordMapper).updateById(org.mockito.ArgumentMatchers.<CpsFreezeRecordDO>argThat(r ->
-                "unfreezed".equals(r.getStatus()) && r.getActualUnfreezeTime() != null));
+        verify(rebateAssetService).releaseOrderRebate(eq(1L), any());
     }
 
     @Test
@@ -71,7 +74,7 @@ class CpsFreezeServiceImplTest {
         int count = freezeService.batchUnfreeze(10);
 
         assertEquals(0, count);
-        verify(freezeRecordMapper, never()).updateById(any(CpsFreezeRecordDO.class));
+        verifyNoInteractions(rebateAssetService);
     }
 
     // ==================== manualUnfreeze 测试 ====================
@@ -79,36 +82,28 @@ class CpsFreezeServiceImplTest {
     @Test
     @DisplayName("manualUnfreeze - 记录不存在，抛出 ServiceException")
     void manualUnfreeze_notFound() {
-        when(freezeRecordMapper.selectById(999L)).thenReturn(null);
-
-        assertThrows(ServiceException.class, () -> freezeService.manualUnfreeze(999L));
+        assertThrows(IllegalArgumentException.class, () -> freezeService.manualUnfreeze(999L));
     }
 
     @Test
     @DisplayName("manualUnfreeze - 记录已解冻，抛出 ServiceException（状态不合法）")
     void manualUnfreeze_alreadyUnfreezed() {
-        CpsFreezeRecordDO record = CpsFreezeRecordDO.builder()
-                .id(1L)
-                .status("unfreezed")
-                .build();
-        when(freezeRecordMapper.selectById(1L)).thenReturn(record);
-
-        assertThrows(ServiceException.class, () -> freezeService.manualUnfreeze(1L));
+        assertThrows(IllegalArgumentException.class, () -> freezeService.manualUnfreeze(1L));
     }
 
     @Test
     @DisplayName("manualUnfreeze - 正常解冻，更新状态为 unfreezed")
     void manualUnfreeze_success() {
-        CpsFreezeRecordDO record = CpsFreezeRecordDO.builder()
-                .id(1L)
-                .status("frozen")
-                .build();
-        when(freezeRecordMapper.selectById(1L)).thenReturn(record);
+        com.qiji.cps.module.cps.controller.admin.freeze.vo.CpsManualUnfreezeReqVO req =
+                new com.qiji.cps.module.cps.controller.admin.freeze.vo.CpsManualUnfreezeReqVO();
+        req.setRecordId(1L);
+        req.setReason("风险复核通过");
+        req.setIdempotencyKey("manual-1");
 
-        freezeService.manualUnfreeze(1L);
+        freezeService.manualUnfreeze(req, 99L);
 
-        verify(freezeRecordMapper).updateById(org.mockito.ArgumentMatchers.<CpsFreezeRecordDO>argThat(r ->
-                "unfreezed".equals(r.getStatus()) && r.getActualUnfreezeTime() != null));
+        verify(rebateAssetService).manualReleaseOrderRebate(eq(1L), argThat(context ->
+                "99".equals(context.operatorId()) && "manual-1".equals(context.idempotencyKey())));
     }
 
     // ==================== getActiveConfig 测试 ====================
@@ -121,7 +116,8 @@ class CpsFreezeServiceImplTest {
                 .platformCode("taobao")
                 .unfreezeDays(7)
                 .build();
-        when(freezeConfigMapper.selectActiveByPlatform("taobao")).thenReturn(platformConfig);
+        platformConfig.setMinAmountCent(0L);
+        when(freezeConfigMapper.selectEnabledRules()).thenReturn(List.of(platformConfig));
 
         CpsFreezeConfigDO result = freezeService.getActiveConfig("taobao");
 
@@ -133,7 +129,7 @@ class CpsFreezeServiceImplTest {
     @Test
     @DisplayName("getActiveConfig - 无平台专属配置时返回全平台默认（null表示未找到）")
     void getActiveConfig_noConfig() {
-        when(freezeConfigMapper.selectActiveByPlatform("pdd")).thenReturn(null);
+        when(freezeConfigMapper.selectEnabledRules()).thenReturn(List.of());
 
         CpsFreezeConfigDO result = freezeService.getActiveConfig("pdd");
 
@@ -147,6 +143,7 @@ class CpsFreezeServiceImplTest {
     void createFreezeConfig_success() {
         CpsFreezeConfigSaveReqVO reqVO = new CpsFreezeConfigSaveReqVO();
         reqVO.setPlatformCode("taobao");
+        reqVO.setMinAmountCent(0L);
         reqVO.setUnfreezeDays(7);
         reqVO.setStatus(1);
 
@@ -161,6 +158,61 @@ class CpsFreezeServiceImplTest {
 
         assertEquals(100L, id);
         verify(freezeConfigMapper).insert(any(CpsFreezeConfigDO.class));
+    }
+
+    @Test
+    void amountRangeUsesLeftClosedRightOpenAndPlatformFallback() {
+        CpsFreezeConfigDO exact = CpsFreezeConfigDO.builder().id(2L).platformCode("taobao")
+                .minAmountCent(1000L).maxAmountCent(5000L).unfreezeDays(7).status(1).build();
+        CpsFreezeConfigDO global = CpsFreezeConfigDO.builder().id(1L).platformCode(null)
+                .minAmountCent(0L).maxAmountCent(null).unfreezeDays(15).status(1).build();
+        when(freezeConfigMapper.selectEnabledRules()).thenReturn(List.of(exact, global));
+
+        assertEquals(7, freezeService.getActiveConfig("taobao", 1000L).getUnfreezeDays());
+        assertEquals(15, freezeService.getActiveConfig("taobao", 5000L).getUnfreezeDays());
+    }
+
+    @Test
+    void overlappingEnabledRangeIsRejected() {
+        when(freezeConfigMapper.selectEnabledRules()).thenReturn(List.of(
+                CpsFreezeConfigDO.builder().id(1L).platformCode("taobao")
+                        .minAmountCent(0L).maxAmountCent(2000L).status(1).build()));
+        CpsFreezeConfigSaveReqVO req = new CpsFreezeConfigSaveReqVO();
+        req.setPlatformCode("taobao");
+        req.setMinAmountCent(1000L);
+        req.setMaxAmountCent(3000L);
+        req.setUnfreezeDays(15);
+        req.setStatus(1);
+
+        assertThrows(IllegalArgumentException.class, () -> freezeService.createFreezeConfig(req));
+        verify(freezeConfigMapper, never()).insert(any(CpsFreezeConfigDO.class));
+    }
+
+    @Test
+    void deleteFreezeConfigRejectsRemovingLastGlobalFallback() {
+        CpsFreezeConfigDO fallback = CpsFreezeConfigDO.builder().id(9L).platformCode(null)
+                .minAmountCent(0L).maxAmountCent(null).status(1).build();
+        when(freezeConfigMapper.selectById(9L)).thenReturn(fallback);
+        when(freezeConfigMapper.selectEnabledRules()).thenReturn(List.of(fallback));
+
+        assertThrows(IllegalStateException.class, () -> freezeService.deleteFreezeConfig(9L));
+
+        verify(freezeConfigMapper, never()).deleteById(9L);
+    }
+
+    @Test
+    void updateFreezeConfigRejectsDisablingLastGlobalFallback() {
+        CpsFreezeConfigDO fallback = CpsFreezeConfigDO.builder().id(9L).platformCode(null)
+                .minAmountCent(0L).maxAmountCent(null).status(1).build();
+        when(freezeConfigMapper.selectById(9L)).thenReturn(fallback);
+        when(freezeConfigMapper.selectEnabledRules()).thenReturn(List.of(fallback));
+        CpsFreezeConfigSaveReqVO req = new CpsFreezeConfigSaveReqVO();
+        req.setId(9L); req.setPlatformCode(null); req.setMinAmountCent(0L);
+        req.setMaxAmountCent(null); req.setUnfreezeDays(15); req.setStatus(0);
+
+        assertThrows(IllegalStateException.class, () -> freezeService.updateFreezeConfig(req));
+
+        verify(freezeConfigMapper, never()).updateById(any(CpsFreezeConfigDO.class));
     }
 
     // ==================== getFreezeConfigPage 测试 ====================

@@ -53,14 +53,29 @@ public interface CpsOrderService {
     PageResult<CpsOrderDO> getOrderPage(CpsOrderPageReqVO pageReqVO);
 
     /**
+     * 分页查询指定会员的订单（App端）
+     */
+    PageResult<CpsOrderDO> getMemberOrderPage(CpsOrderPageReqVO pageReqVO, Long memberId);
+
+    /**
+     * 查询指定会员的订单详情（App端）
+     */
+    CpsOrderDO getMemberOrder(Long memberId, Long id);
+
+    /**
      * 根据平台订单号获取订单
      */
-    CpsOrderDO getOrderByPlatformOrderId(String platformOrderId);
+    CpsOrderDO getOrderByPlatformOrderId(String platformCode, String platformOrderId);
 
     /**
      * 将订单中的淘宝 special_id 手动绑定到本地会员，并回写当前订单归因。
      */
     void bindSpecialIdToMember(Long orderId, Long memberId);
+
+    /**
+     * 将订单中的淘宝 special_id 手动绑定到本地会员，并记录幂等与人工复核审计信息。
+     */
+    void bindSpecialIdToMember(CpsOrderManualBindCommand command);
 
     /**
      * 手动触发单个平台订单同步（管理端操作）

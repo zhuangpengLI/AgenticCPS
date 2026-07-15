@@ -3,6 +3,7 @@ package com.qiji.cps.module.cps.client.pdd;
 import com.qiji.cps.module.cps.client.CpsApiVendorClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.CpsVendorException;
 import com.qiji.cps.module.cps.client.dto.*;
 import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +55,16 @@ public class PddPlatformClientAdapter implements CpsPlatformClient {
             return null;
         }
         return vendor.generatePromotionLink(request, config);
+    }
+
+    @Override
+    public CpsOrderPageResult queryOrderPage(CpsOrderQueryRequest request) {
+        CpsApiVendorClient vendor = factory.getActiveVendorClient(getPlatformCode());
+        CpsVendorConfig config = factory.getActiveVendorConfig(getPlatformCode());
+        if (vendor == null || config == null) {
+            throw CpsVendorException.unavailable(getPlatformCode());
+        }
+        return vendor.queryOrderPage(request, config);
     }
 
     @Override

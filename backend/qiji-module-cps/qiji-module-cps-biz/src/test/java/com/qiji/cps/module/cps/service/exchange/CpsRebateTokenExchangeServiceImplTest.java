@@ -14,6 +14,8 @@ import com.qiji.cps.module.cps.enums.CpsRebateExchangeStatusEnum;
 import com.qiji.cps.module.cps.service.exchange.dto.CpsAitokenExchangeOrderRespDTO;
 import com.qiji.cps.module.cps.service.exchange.dto.CpsAitokenExchangePreviewRespDTO;
 import com.qiji.cps.module.cps.service.rebate.CpsRebateSettleService;
+import com.qiji.cps.module.cps.service.rebate.asset.CpsMoneyConverter;
+import com.qiji.cps.module.cps.service.rebate.asset.CpsRebateAssetService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,10 +23,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.math.BigDecimal;
+import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -47,6 +54,38 @@ class CpsRebateTokenExchangeServiceImplTest {
     private CpsAitokenExchangeClient aitokenExchangeClient;
     @Mock
     private CpsAitokenExchangeProperties properties;
+    @Mock
+    private CpsRebateAssetService rebateAssetService;
+    @Mock
+    private CpsMoneyConverter moneyConverter;
+    @Mock
+    private CpsRebateTokenExchangeStepExecutor stepExecutor;
+
+    @Test
+    void submitDoesNotHoldDatabaseTransactionAcrossRemoteCalls() throws Exception {
+        Method submit = CpsRebateTokenExchangeServiceImpl.class.getMethod(
+                "submit", Long.class, BigDecimal.class, String.class);
+
+        assertNull(submit.getAnnotation(Transactional.class));
+    }
+
+    @Test
+    void localPersistenceStepsAlwaysUseIndependentTransactions() throws Exception {
+        assertRequiresNew("createOrder", CpsRebateTokenExchangeOrderDO.class);
+        assertRequiresNew("freezeOrder", Long.class);
+        assertRequiresNew("markCredited", Long.class, String.class);
+        assertRequiresNew("confirmLocalDeduct", Long.class);
+        assertRequiresNew("unfreezeAndFail", Long.class, String.class);
+        assertRequiresNew("scheduleRetry", Long.class, String.class);
+        assertRequiresNew("claimCompensation", CpsRebateTokenExchangeOrderDO.class);
+    }
+
+    private void assertRequiresNew(String methodName, Class<?>... parameterTypes) throws Exception {
+        Transactional transactional = CpsRebateTokenExchangeStepExecutor.class
+                .getMethod(methodName, parameterTypes).getAnnotation(Transactional.class);
+        org.junit.jupiter.api.Assertions.assertNotNull(transactional, methodName);
+        assertEquals(Propagation.REQUIRES_NEW, transactional.propagation(), methodName);
+    }
 
     @AfterEach
     void tearDown() {
@@ -56,14 +95,12 @@ class CpsRebateTokenExchangeServiceImplTest {
     @Test
     @DisplayName("freeze - 可用余额充足时冻结到账户 frozen_balance")
     void freeze_success() {
-        when(freezeRecordMapper.selectByBusinessAndIdempotencyKey("TOKEN_EXCHANGE", "idem-1")).thenReturn(null);
         when(rebateSettleService.getOrInitAccount(100L)).thenReturn(account(new BigDecimal("20.00")));
-        when(rebateAccountMapper.freezeBalance(100L, new BigDecimal("10.00"))).thenReturn(1);
-        doAnswer(invocation -> {
-            CpsFreezeRecordDO record = invocation.getArgument(0);
-            record.setId(10L);
-            return 1;
-        }).when(freezeRecordMapper).insert(any(CpsFreezeRecordDO.class));
+        when(moneyConverter.yuanToCent(new BigDecimal("10.00"))).thenReturn(1000L);
+        when(rebateAssetService.freezeAvailableForExchange(eq(100L), eq(1000L), eq("CPSX001"),
+                eq("idem-1"), any())).thenReturn(CpsFreezeRecordDO.builder().id(10L).memberId(100L)
+                .businessType("TOKEN_EXCHANGE").businessId("CPSX001").idempotencyKey("idem-1")
+                .freezeAmount(new BigDecimal("10.00")).status(CpsFreezeStatusEnum.FROZEN.getStatus()).build());
 
         OpenApiCpsRebateFreezeReqVO request = new OpenApiCpsRebateFreezeReqVO();
         request.setUserId(100L);
@@ -76,7 +113,8 @@ class CpsRebateTokenExchangeServiceImplTest {
 
         assertEquals("10", response.getFreezeId());
         assertEquals(CpsFreezeStatusEnum.FROZEN.getStatus(), response.getStatus());
-        verify(rebateAccountMapper).freezeBalance(100L, new BigDecimal("10.00"));
+        verify(rebateAssetService).freezeAvailableForExchange(eq(100L), eq(1000L), eq("CPSX001"),
+                eq("idem-1"), any());
     }
 
     @Test
@@ -89,26 +127,18 @@ class CpsRebateTokenExchangeServiceImplTest {
         when(exchangeOrderMapper.selectByIdempotencyKey("idem-1")).thenReturn(null);
         when(rebateSettleService.getOrInitAccount(100L)).thenReturn(account(new BigDecimal("20.00")));
         when(aitokenExchangeClient.preview(any(), eq(1L))).thenReturn(preview());
-        doAnswer(invocation -> {
+        when(stepExecutor.createOrder(any())).thenAnswer(invocation -> {
             CpsRebateTokenExchangeOrderDO order = invocation.getArgument(0);
             order.setId(11L);
-            return 1;
-        }).when(exchangeOrderMapper).insert(any(CpsRebateTokenExchangeOrderDO.class));
-        when(freezeRecordMapper.selectByBusinessAndIdempotencyKey(eq("TOKEN_EXCHANGE"), eq("idem-1"))).thenReturn(null);
-        when(rebateAccountMapper.freezeBalance(100L, new BigDecimal("10.00"))).thenReturn(1);
-        doAnswer(invocation -> {
-            CpsFreezeRecordDO record = invocation.getArgument(0);
-            record.setId(12L);
-            return 1;
-        }).when(freezeRecordMapper).insert(any(CpsFreezeRecordDO.class));
+            return order;
+        });
+        when(stepExecutor.freezeOrder(11L)).thenAnswer(invocation -> CpsRebateTokenExchangeOrderDO.builder()
+                .id(11L).memberId(100L).sourceAmount(new BigDecimal("10.00")).targetTokens(1_000_000L)
+                .freezeRecordId(12L).exchangeOrderNo("CPSX1").idempotencyKey("idem-1").build());
         CpsAitokenExchangeOrderRespDTO aitokenOrder = new CpsAitokenExchangeOrderRespDTO();
         aitokenOrder.setStatus("credited");
         aitokenOrder.setExchangeOrderId("EX001");
         when(aitokenExchangeClient.submit(any(), eq(1L))).thenReturn(aitokenOrder);
-        when(freezeRecordMapper.selectById(12L)).thenReturn(CpsFreezeRecordDO.builder()
-                .id(12L).memberId(100L).freezeAmount(new BigDecimal("10.00"))
-                .status(CpsFreezeStatusEnum.FROZEN.getStatus()).build());
-        when(rebateAccountMapper.deductFrozenBalance(100L, new BigDecimal("10.00"))).thenReturn(1);
         when(aitokenExchangeClient.confirmSourceDeduct(eq("EX001"), any(), eq(1L))).thenReturn(aitokenOrder);
         when(exchangeOrderMapper.selectById(11L)).thenReturn(CpsRebateTokenExchangeOrderDO.builder()
                 .id(11L).status(CpsRebateExchangeStatusEnum.SUCCESS.getStatus()).build());
@@ -116,8 +146,7 @@ class CpsRebateTokenExchangeServiceImplTest {
         CpsRebateTokenExchangeOrderDO result = service.submit(100L, new BigDecimal("10.00"), "idem-1");
 
         assertEquals(CpsRebateExchangeStatusEnum.SUCCESS.getStatus(), result.getStatus());
-        verify(rebateAccountMapper).freezeBalance(100L, new BigDecimal("10.00"));
-        verify(rebateAccountMapper).deductFrozenBalance(100L, new BigDecimal("10.00"));
+        verify(stepExecutor).confirmLocalDeduct(11L);
         verify(aitokenExchangeClient).confirmSourceDeduct(eq("EX001"), any(), eq(1L));
         verify(aitokenExchangeClient, never()).rollback(any(), any(), any());
     }
@@ -132,27 +161,22 @@ class CpsRebateTokenExchangeServiceImplTest {
         when(exchangeOrderMapper.selectByIdempotencyKey("idem-rollback")).thenReturn(null);
         when(rebateSettleService.getOrInitAccount(100L)).thenReturn(account(new BigDecimal("20.00")));
         when(aitokenExchangeClient.preview(any(), eq(1L))).thenReturn(preview());
-        doAnswer(invocation -> {
+        when(stepExecutor.createOrder(any())).thenAnswer(invocation -> {
             CpsRebateTokenExchangeOrderDO order = invocation.getArgument(0);
             order.setId(21L);
-            return 1;
-        }).when(exchangeOrderMapper).insert(any(CpsRebateTokenExchangeOrderDO.class));
-        when(freezeRecordMapper.selectByBusinessAndIdempotencyKey(eq("TOKEN_EXCHANGE"), eq("idem-rollback"))).thenReturn(null);
-        when(rebateAccountMapper.freezeBalance(100L, new BigDecimal("10.00"))).thenReturn(1);
-        doAnswer(invocation -> {
-            CpsFreezeRecordDO record = invocation.getArgument(0);
-            record.setId(22L);
-            return 1;
-        }).when(freezeRecordMapper).insert(any(CpsFreezeRecordDO.class));
+            return order;
+        });
+        when(stepExecutor.freezeOrder(21L)).thenAnswer(invocation -> CpsRebateTokenExchangeOrderDO.builder()
+                .id(21L).memberId(100L).sourceAmount(new BigDecimal("10.00")).targetTokens(1_000_000L)
+                .freezeRecordId(22L).exchangeOrderNo("CPSX2").idempotencyKey("idem-rollback").build());
         CpsAitokenExchangeOrderRespDTO aitokenOrder = new CpsAitokenExchangeOrderRespDTO();
         aitokenOrder.setStatus("credited");
         aitokenOrder.setExchangeOrderId("EX002");
         when(aitokenExchangeClient.submit(any(), eq(1L))).thenReturn(aitokenOrder);
-        when(freezeRecordMapper.selectById(22L)).thenReturn(CpsFreezeRecordDO.builder()
-                .id(22L).memberId(100L).freezeAmount(new BigDecimal("10.00"))
-                .status(CpsFreezeStatusEnum.FROZEN.getStatus()).build());
-        when(rebateAccountMapper.deductFrozenBalance(100L, new BigDecimal("10.00"))).thenReturn(0);
-        when(aitokenExchangeClient.rollback(eq("EX002"), any(), eq(1L))).thenReturn(aitokenOrder);
+        doThrow(new IllegalStateException("deduct failed")).when(stepExecutor).confirmLocalDeduct(21L);
+        CpsAitokenExchangeOrderRespDTO rollback = new CpsAitokenExchangeOrderRespDTO();
+        rollback.setStatus("processing");
+        when(aitokenExchangeClient.rollback(eq("EX002"), any(), eq(1L))).thenReturn(rollback);
         when(exchangeOrderMapper.selectById(21L)).thenReturn(CpsRebateTokenExchangeOrderDO.builder()
                 .id(21L).status(CpsRebateExchangeStatusEnum.ROLLBACK_REQUIRED.getStatus()).build());
 
@@ -161,6 +185,124 @@ class CpsRebateTokenExchangeServiceImplTest {
         assertEquals(CpsRebateExchangeStatusEnum.ROLLBACK_REQUIRED.getStatus(), result.getStatus());
         verify(aitokenExchangeClient).rollback(eq("EX002"), any(), eq(1L));
         verify(aitokenExchangeClient, never()).confirmSourceDeduct(any(), any(), any());
+    }
+
+    @Test
+    void submitKeepsCreditedWhenRemoteConfirmTimesOutAfterLocalDeduct() {
+        TenantContextHolder.setTenantId(1L);
+        when(properties.getSourceSystem()).thenReturn("AgenticCPS");
+        when(properties.getSourceAsset()).thenReturn("REBATE");
+        when(properties.getTargetAsset()).thenReturn("TOKEN");
+        when(exchangeOrderMapper.selectByIdempotencyKey("idem-confirm-timeout")).thenReturn(null);
+        when(rebateSettleService.getOrInitAccount(100L)).thenReturn(account(new BigDecimal("20.00")));
+        when(aitokenExchangeClient.preview(any(), eq(1L))).thenReturn(preview());
+        when(stepExecutor.createOrder(any())).thenAnswer(invocation -> {
+            CpsRebateTokenExchangeOrderDO order = invocation.getArgument(0);
+            order.setId(41L);
+            return order;
+        });
+        when(stepExecutor.freezeOrder(41L)).thenReturn(CpsRebateTokenExchangeOrderDO.builder()
+                .id(41L).memberId(100L).sourceAmount(new BigDecimal("10.00")).targetTokens(1_000_000L)
+                .freezeRecordId(42L).exchangeOrderNo("CPSX4").idempotencyKey("idem-confirm-timeout").build());
+        CpsAitokenExchangeOrderRespDTO credited = new CpsAitokenExchangeOrderRespDTO();
+        credited.setStatus("credited");
+        credited.setExchangeOrderId("EX004");
+        when(aitokenExchangeClient.submit(any(), eq(1L))).thenReturn(credited);
+        when(aitokenExchangeClient.confirmSourceDeduct(eq("EX004"), any(), eq(1L)))
+                .thenThrow(new IllegalStateException("confirm timeout"));
+        when(exchangeOrderMapper.selectById(41L)).thenReturn(CpsRebateTokenExchangeOrderDO.builder()
+                .id(41L).status(CpsRebateExchangeStatusEnum.CREDITED.getStatus()).build());
+
+        CpsRebateTokenExchangeOrderDO result = service.submit(
+                100L, new BigDecimal("10.00"), "idem-confirm-timeout");
+
+        assertEquals(CpsRebateExchangeStatusEnum.CREDITED.getStatus(), result.getStatus());
+        verify(stepExecutor).confirmLocalDeduct(41L);
+        verify(stepExecutor).scheduleRetry(41L, "confirm timeout");
+        verify(aitokenExchangeClient, never()).rollback(any(), any(), any());
+        verify(stepExecutor, never()).unfreezeAndFail(any(), any());
+    }
+
+    @Test
+    void submit_replayRejectsDifferentMember() {
+        when(exchangeOrderMapper.selectByIdempotencyKey("same-key")).thenReturn(
+                CpsRebateTokenExchangeOrderDO.builder().id(31L).memberId(200L)
+                        .sourceAmount(new BigDecimal("10.00")).idempotencyKey("same-key").build());
+
+        assertThrows(IllegalStateException.class,
+                () -> service.submit(100L, new BigDecimal("10.00"), "same-key"));
+
+        verifyNoInteractions(aitokenExchangeClient, rebateAssetService);
+    }
+
+    @Test
+    void submit_replayRejectsDifferentAmount() {
+        when(exchangeOrderMapper.selectByIdempotencyKey("same-key")).thenReturn(
+                CpsRebateTokenExchangeOrderDO.builder().id(32L).memberId(100L)
+                        .sourceAmount(new BigDecimal("20.00")).idempotencyKey("same-key").build());
+
+        assertThrows(IllegalStateException.class,
+                () -> service.submit(100L, new BigDecimal("10.00"), "same-key"));
+
+        verifyNoInteractions(aitokenExchangeClient, rebateAssetService);
+    }
+
+    @Test
+    void submit_concurrentDuplicateRejectsExistingOrderOwnedByDifferentMember() {
+        TenantContextHolder.setTenantId(1L);
+        when(exchangeOrderMapper.selectByIdempotencyKey("race-key")).thenReturn(null);
+        when(rebateSettleService.getOrInitAccount(100L)).thenReturn(account(new BigDecimal("20.00")));
+        when(aitokenExchangeClient.preview(any(), eq(1L))).thenReturn(preview());
+        CpsRebateTokenExchangeOrderDO winner = CpsRebateTokenExchangeOrderDO.builder()
+                .id(51L).memberId(200L).sourceAmount(new BigDecimal("10.00"))
+                .exchangeOrderNo("CPSX-WINNER").idempotencyKey("race-key")
+                .status(CpsRebateExchangeStatusEnum.INIT.getStatus()).build();
+        when(stepExecutor.createOrder(any())).thenReturn(winner);
+
+        assertThrows(IllegalStateException.class,
+                () -> service.submit(100L, new BigDecimal("10.00"), "race-key"));
+
+        verify(stepExecutor, never()).freezeOrder(anyLong());
+        verify(aitokenExchangeClient, never()).submit(any(), any());
+    }
+
+    @Test
+    void submit_concurrentDuplicateRejectsExistingOrderWithDifferentAmount() {
+        TenantContextHolder.setTenantId(1L);
+        when(exchangeOrderMapper.selectByIdempotencyKey("race-key")).thenReturn(null);
+        when(rebateSettleService.getOrInitAccount(100L)).thenReturn(account(new BigDecimal("20.00")));
+        when(aitokenExchangeClient.preview(any(), eq(1L))).thenReturn(preview());
+        CpsRebateTokenExchangeOrderDO winner = CpsRebateTokenExchangeOrderDO.builder()
+                .id(52L).memberId(100L).sourceAmount(new BigDecimal("20.00"))
+                .exchangeOrderNo("CPSX-WINNER").idempotencyKey("race-key")
+                .status(CpsRebateExchangeStatusEnum.INIT.getStatus()).build();
+        when(stepExecutor.createOrder(any())).thenReturn(winner);
+
+        assertThrows(IllegalStateException.class,
+                () -> service.submit(100L, new BigDecimal("10.00"), "race-key"));
+
+        verify(stepExecutor, never()).freezeOrder(anyLong());
+        verify(aitokenExchangeClient, never()).submit(any(), any());
+    }
+
+    @Test
+    void submit_concurrentDuplicateWithSameParametersReturnsWinningOrder() {
+        TenantContextHolder.setTenantId(1L);
+        when(exchangeOrderMapper.selectByIdempotencyKey("race-key")).thenReturn(null);
+        when(rebateSettleService.getOrInitAccount(100L)).thenReturn(account(new BigDecimal("20.00")));
+        when(aitokenExchangeClient.preview(any(), eq(1L))).thenReturn(preview());
+        CpsRebateTokenExchangeOrderDO winner = CpsRebateTokenExchangeOrderDO.builder()
+                .id(53L).memberId(100L).sourceAmount(new BigDecimal("10.00"))
+                .exchangeOrderNo("CPSX-WINNER").idempotencyKey("race-key")
+                .status(CpsRebateExchangeStatusEnum.FROZEN.getStatus()).freezeRecordId(54L).build();
+        when(stepExecutor.createOrder(any())).thenReturn(winner);
+
+        CpsRebateTokenExchangeOrderDO result = service.submit(
+                100L, new BigDecimal("10.00"), "race-key");
+
+        assertEquals(winner, result);
+        verify(stepExecutor, never()).freezeOrder(anyLong());
+        verify(aitokenExchangeClient, never()).submit(any(), any());
     }
 
     private CpsRebateAccountDO account(BigDecimal available) {

@@ -2,6 +2,7 @@ package com.qiji.cps.module.cps.service.withdraw;
 
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.module.cps.controller.admin.withdraw.vo.CpsWithdrawPageReqVO;
+import com.qiji.cps.module.cps.controller.app.withdraw.vo.AppCpsWithdrawCreateReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.withdraw.CpsWithdrawDO;
 
 /**
@@ -10,6 +11,12 @@ import com.qiji.cps.module.cps.dal.dataobject.withdraw.CpsWithdrawDO;
  * @author CPS System
  */
 public interface CpsWithdrawService {
+
+    Long createWithdraw(Long memberId, AppCpsWithdrawCreateReqVO request);
+
+    PageResult<CpsWithdrawDO> getMemberWithdrawPage(Long memberId, int pageNo, int pageSize);
+
+    CpsWithdrawDO getMemberWithdraw(Long memberId, Long id);
 
     /**
      * 管理端分页查询提现申请

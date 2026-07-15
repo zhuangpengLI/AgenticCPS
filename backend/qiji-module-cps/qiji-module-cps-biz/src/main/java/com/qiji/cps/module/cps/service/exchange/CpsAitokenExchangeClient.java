@@ -73,19 +73,23 @@ public class CpsAitokenExchangeClient {
     }
 
     private HttpHeaders buildHeaders(String method, String path, String idempotencyKey, Object body, Long tenantId) {
+        if (tenantId == null) {
+            throw new IllegalStateException("tenant context is required for aitoken exchange");
+        }
         String timestamp = String.valueOf(Instant.now().getEpochSecond());
         String nonce = UUID.randomUUID().toString().replace("-", "");
+        String tenantIdText = String.valueOf(tenantId);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.add("X-App-Id", properties.getAppId());
-        headers.add("X-Tenant-Id", tenantId == null ? "0" : String.valueOf(tenantId));
+        headers.add("X-Tenant-Id", tenantIdText);
         headers.add("X-Timestamp", timestamp);
         headers.add("X-Nonce", nonce);
         if (idempotencyKey != null) {
             headers.add("X-Idempotency-Key", idempotencyKey);
         }
         headers.add("X-Signature", signatureService.sign(properties.getAppSecret(), method, path,
-                timestamp, nonce, idempotencyKey, body));
+                timestamp, nonce, tenantIdText, idempotencyKey, body));
         return headers;
     }
 }

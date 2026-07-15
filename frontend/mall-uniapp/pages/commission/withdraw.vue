@@ -1,486 +1,499 @@
-<!-- 分佣提现 -->
 <template>
   <s-layout title="申请提现" class="withdraw-wrap" navbar="inner">
-    <view class="page-bg"></view>
-    <view
-      class="wallet-num-box ss-flex ss-col-center ss-row-between"
-      :style="[
-        {
-          marginTop: '-' + Number(statusBarHeight + 88) + 'rpx',
-          paddingTop: Number(statusBarHeight + 108) + 'rpx',
-        },
-      ]"
-    >
-      <view class="">
-        <view class="num-title">可提现金额（元）</view>
-        <view class="wallet-num">{{ fen2yuan(state.brokerageInfo.brokeragePrice) }}</view>
+    <view class="balance-panel">
+      <view class="balance-label">可提现返利</view>
+      <view class="balance-value">¥{{ formatMoney(state.account.withdrawableBalance) }}</view>
+      <view class="balance-sub">
+        冻结 ¥{{ formatMoney(state.account.frozenBalance) }} · 欠款 ¥{{
+          formatMoney(state.account.debtBalance)
+        }}
       </view>
-      <button
-        class="ss-reset-button log-btn"
-        @tap="sheep.$router.go('/pages/commission/wallet', { type: 2 })"
-      >
-        提现记录
-      </button>
     </view>
-    <!-- 提现输入卡片-->
+
     <view class="draw-card">
-      <view class="bank-box ss-flex ss-col-center ss-row-between ss-m-b-30">
-        <view class="name">提现至</view>
-        <view class="bank-list ss-flex ss-col-center" @tap="onAccountSelect(true)">
-          <view v-if="!state.accountInfo.type" class="empty-text">请选择提现方式</view>
-          <view v-if="state.accountInfo.type === '1'" class="empty-text">钱包余额</view>
-          <view v-if="state.accountInfo.type === '2'" class="empty-text">银行卡转账</view>
-          <view v-if="state.accountInfo.type === '3'" class="empty-text">微信账户</view>
-          <view v-if="state.accountInfo.type === '4'" class="empty-text">支付宝账户</view>
-          <view v-if="state.accountInfo.type === '5'" class="empty-text">微信零钱</view>
-          <text class="cicon-forward" />
-        </view>
+      <view class="section-title">提现方式</view>
+      <view class="method-row">
+        <button
+          class="ss-reset-button method-btn"
+          :class="{ active: state.form.withdrawType === 'alipay' }"
+          @tap="state.form.withdrawType = 'alipay'"
+        >
+          支付宝
+        </button>
+        <button
+          class="ss-reset-button method-btn"
+          :class="{ active: state.form.withdrawType === 'wechat' }"
+          @tap="state.form.withdrawType = 'wechat'"
+        >
+          微信
+        </button>
       </view>
-      <!-- 提现金额 -->
-      <view class="card-title">提现金额</view>
+
+      <view class="section-title">提现金额</view>
       <view class="input-box ss-flex ss-col-center border-bottom">
-        <view class="unit">￥</view>
+        <view class="unit">¥</view>
         <uni-easyinput
           :inputBorder="false"
           class="ss-flex-1 ss-p-l-10"
-          v-model="state.accountInfo.price"
-          type="number"
+          v-model="state.form.amountYuan"
+          type="digit"
           placeholder="请输入提现金额"
         />
       </view>
-      <!-- 提现账号 -->
-      <view class="card-title" v-show="['2', '6'].includes(state.accountInfo.type)">
-        提现账号
-      </view>
-      <view
-        class="input-box ss-flex ss-col-center border-bottom"
-        v-show="['2', '6'].includes(state.accountInfo.type)"
-      >
-        <view class="unit" />
+
+      <view class="section-title">收款账号</view>
+      <view class="input-box ss-flex ss-col-center border-bottom">
         <uni-easyinput
           :inputBorder="false"
-          class="ss-flex-1 ss-p-l-10"
-          v-model="state.accountInfo.userAccount"
-          placeholder="请输入提现账号"
+          class="ss-flex-1"
+          v-model="state.form.withdrawAccount"
+          placeholder="请输入支付宝账号或微信 OpenID"
         />
       </view>
-      <!-- 收款码 -->
-      <view class="card-title" v-show="['3', '4'].includes(state.accountInfo.type)">收款码</view>
-      <view
-        class="input-box ss-flex ss-col-center"
-        v-show="['3', '4'].includes(state.accountInfo.type)"
-      >
-        <view class="unit" />
-        <view class="upload-img">
-          <s-uploader
-            v-model:url="state.accountInfo.qrCodeUrl"
-            fileMediatype="image"
-            limit="1"
-            mode="grid"
-            :imageStyles="{ width: '168rpx', height: '168rpx' }"
-            @success="(payload) => (state.accountInfo.qrCodeUrl = payload.tempFilePaths[0])"
-          />
-        </view>
-      </view>
-      <!-- 持卡人姓名 -->
-      <view class="card-title" v-show="['2', '5', '6'].includes(state.accountInfo.type)">
-        收款真名
-      </view>
-      <view
-        class="input-box ss-flex ss-col-center border-bottom"
-        v-show="['2', '5', '6'].includes(state.accountInfo.type)"
-      >
-        <view class="unit" />
+
+      <view class="section-title">收款姓名</view>
+      <view class="input-box ss-flex ss-col-center border-bottom">
         <uni-easyinput
           :inputBorder="false"
-          class="ss-flex-1 ss-p-l-10"
-          v-model="state.accountInfo.userName"
-          placeholder="请输入收款真名"
+          class="ss-flex-1"
+          v-model="state.form.withdrawAccountName"
+          placeholder="请输入收款姓名"
         />
       </view>
-      <!-- 提现银行 -->
-      <view class="card-title" v-show="state.accountInfo.type === '2'">提现银行</view>
-      <view
-        class="input-box ss-flex ss-col-center border-bottom"
-        v-show="state.accountInfo.type === '2'"
-      >
-        <view class="unit" />
-        <!--银行改为下拉选择-->
-        <picker
-          @change="bankChange"
-          :value="state.bankListSelectedIndex"
-          :range="state.bankList"
-          range-key="label"
-          style="width: 100%"
-        >
-          <uni-easyinput
-            :inputBorder="false"
-            :value="state.accountInfo.bankName"
-            placeholder="请选择银行"
-            suffixIcon="right"
-            disabled
-            :styles="{ disableColor: '#fff', borderColor: '#fff', color: '#333!important' }"
-          />
-        </picker>
-      </view>
-      <!-- 开户地址 -->
-      <view class="card-title" v-show="state.accountInfo.type === '2'">开户地址</view>
-      <view
-        class="input-box ss-flex ss-col-center border-bottom"
-        v-show="state.accountInfo.type === '2'"
-      >
-        <view class="unit" />
-        <uni-easyinput
-          :inputBorder="false"
-          class="ss-flex-1 ss-p-l-10"
-          v-model="state.accountInfo.bankAddress"
-          placeholder="请输入开户地址"
-        />
-      </view>
+
       <button class="ss-reset-button save-btn ui-BG-Main-Gradient ui-Shadow-Main" @tap="onConfirm">
         确认提现
       </button>
     </view>
 
-    <!-- 提现说明 -->
-    <view class="draw-notice">
-      <view class="title ss-m-b-30">提现说明</view>
-      <view class="draw-list"> 最低提现金额 {{ fen2yuan(state.minPrice) }} 元 </view>
-      <view class="draw-list">
-        冻结佣金：<text>￥{{ fen2yuan(state.brokerageInfo.frozenPrice) }}</text>
-        （每笔佣金的冻结期为 {{ state.frozenDays }} 天，到期后可提现）
+    <view class="record-section">
+      <view class="section-head ss-flex ss-row-between ss-col-center">
+        <view class="section-title">提现记录</view>
+        <view class="record-count">共 {{ state.pagination.total }} 笔</view>
       </view>
+
+      <view
+        class="withdraw-card"
+        v-for="item in state.pagination.list"
+        :key="item.id"
+        @tap="getWithdraw(item.id)"
+      >
+        <view class="withdraw-head ss-flex ss-row-between ss-col-center">
+          <view class="withdraw-no ss-line-1">{{ item.withdrawNo || '提现申请' }}</view>
+          <view class="withdraw-amount">¥{{ formatCentMoney(item.amountCent) }}</view>
+        </view>
+        <view class="withdraw-meta">
+          {{ withdrawTypeText(item.withdrawType) }} · {{ withdrawStatusText(item.status) }}
+        </view>
+        <view class="withdraw-foot ss-flex ss-row-between ss-col-center">
+          <text>{{ formatTime(item.createTime) }}</text>
+          <text>{{ transferStatusText(item.transferStatus) }}</text>
+        </view>
+      </view>
+
+      <s-empty
+        v-if="state.pagination.total === 0 && state.loadStatus !== 'loading'"
+        icon="/static/data-empty.png"
+        text="暂无提现记录"
+      />
+
+      <uni-load-more
+        v-if="state.pagination.total > 0"
+        :status="state.loadStatus"
+        :content-text="{ contentdown: '上拉加载更多' }"
+        @tap="loadMore"
+      />
     </view>
 
-    <!-- 选择提现账户 -->
-    <account-type-select
-      :show="state.accountSelect"
-      @close="onAccountSelect(false)"
-      round="10"
-      v-model="state.accountInfo"
-      :methods="state.withdrawTypes"
-    />
+    <su-popup
+      :show="state.showDetailPopup"
+      type="bottom"
+      round="20"
+      showClose
+      @close="state.showDetailPopup = false"
+    >
+      <view class="detail-panel" v-if="state.currentWithdraw">
+        <view class="detail-title">提现详情</view>
+        <view class="detail-list">
+          <view class="detail-item">
+            <text>提现单号</text>
+            <text class="value">{{ state.currentWithdraw.withdrawNo || '-' }}</text>
+          </view>
+          <view class="detail-item">
+            <text>提现金额</text>
+            <text class="value">¥{{ formatCentMoney(state.currentWithdraw.amountCent) }}</text>
+          </view>
+          <view class="detail-item">
+            <text>提现方式</text>
+            <text class="value">{{ withdrawTypeText(state.currentWithdraw.withdrawType) }}</text>
+          </view>
+          <view class="detail-item">
+            <text>申请状态</text>
+            <text class="value">{{ withdrawStatusText(state.currentWithdraw.status) }}</text>
+          </view>
+          <view class="detail-item">
+            <text>打款状态</text>
+            <text class="value">{{
+              transferStatusText(state.currentWithdraw.transferStatus)
+            }}</text>
+          </view>
+          <view class="detail-item">
+            <text>审核备注</text>
+            <text class="value">{{ state.currentWithdraw.reviewNote || '-' }}</text>
+          </view>
+          <view class="detail-item">
+            <text>打款时间</text>
+            <text class="value">{{ formatTime(state.currentWithdraw.transferTime) }}</text>
+          </view>
+          <view class="detail-item">
+            <text>申请时间</text>
+            <text class="value">{{ formatTime(state.currentWithdraw.createTime) }}</text>
+          </view>
+        </view>
+      </view>
+    </su-popup>
   </s-layout>
 </template>
 
 <script setup>
-  import { onBeforeMount, reactive } from 'vue';
+  import { reactive } from 'vue';
+  import { onLoad, onReachBottom } from '@dcloudio/uni-app';
+  import { concat } from 'lodash-es';
   import sheep from '@/sheep';
-  import accountTypeSelect from './components/account-type-select.vue';
-  import { fen2yuan } from '@/sheep/hooks/useGoods';
-  import TradeConfigApi from '@/sheep/api/trade/config';
-  import BrokerageApi from '@/sheep/api/trade/brokerage';
-  import DictApi from '@/sheep/api/system/dict';
-  import SLayout from '@/sheep/components/s-layout/s-layout.vue';
-  import { getWeixinPayChannelCode, goBindWeixin } from '@/sheep/platform/pay';
-
-  const headerBg = sheep.$url.css('/static/img/shop/user/withdraw_bg.png');
-  const statusBarHeight = sheep.$platform.device.statusBarHeight * 2;
+  import { resetPagination } from '@/sheep/helper/utils';
+  import CpsRebateApi from '@/sheep/api/cps/rebate';
+  import CpsWithdrawApi from '@/sheep/api/cps/withdraw';
 
   const state = reactive({
-    accountInfo: {
-      // 提现表单
-      type: undefined,
-      userAccount: undefined,
-      userName: undefined,
-      qrCodeUrl: undefined,
-      bankName: undefined,
-      bankAddress: undefined,
+    account: {
+      withdrawableBalance: 0,
+      frozenBalance: 0,
+      debtBalance: 0,
     },
-
-    accountSelect: false,
-
-    brokerageInfo: {}, // 分销信息
-
-    frozenDays: 0, // 冻结天数
-    minPrice: 0, // 最低提现金额
-    withdrawTypes: [], // 提现方式
-    bankList: [], // 银行字典数据
-    bankListSelectedIndex: '', // 选中银行 bankList 的 index
+    form: {
+      amountYuan: undefined,
+      withdrawType: 'alipay',
+      withdrawAccount: '',
+      withdrawAccountName: '',
+    },
+    loadStatus: '',
+    showDetailPopup: false,
+    currentWithdraw: null,
+    pagination: {
+      list: [],
+      total: 0,
+      pageNo: 1,
+      pageSize: 8,
+    },
   });
 
-  // 打开提现方式的弹窗
-  const onAccountSelect = (e) => {
-    state.accountSelect = e;
-  };
+  async function getAccount() {
+    const { code, data } = await CpsRebateApi.getAccount();
+    if (code !== 0) {
+      return;
+    }
+    state.account = data || {};
+  }
 
-  // 提交提现
-  const onConfirm = async () => {
-    // 参数校验
+  async function getWithdrawPage() {
+    if (state.loadStatus === 'loading') {
+      return;
+    }
+    state.loadStatus = 'loading';
+    const { code, data } = await CpsWithdrawApi.getWithdrawPage({
+      pageNo: state.pagination.pageNo,
+      pageSize: state.pagination.pageSize,
+    });
+    if (code !== 0) {
+      state.loadStatus = 'more';
+      return;
+    }
+    const list = data?.list || [];
+    state.pagination.list = concat(state.pagination.list, list);
+    state.pagination.total = data?.total || 0;
+    state.loadStatus = state.pagination.list.length < state.pagination.total ? 'more' : 'noMore';
+  }
+
+  async function getWithdraw(id) {
+    const { code, data } = await CpsWithdrawApi.getWithdraw(id);
+    if (code !== 0) {
+      return;
+    }
+    state.currentWithdraw = data;
+    state.showDetailPopup = true;
+  }
+
+  async function onConfirm() {
+    const amountCent = Math.round(toNumber(state.form.amountYuan) * 100);
     if (
-      !state.accountInfo.price ||
-      state.accountInfo.price > state.brokerageInfo.price ||
-      state.accountInfo.price <= 0
+      amountCent <= 0 ||
+      amountCent > Math.round(toNumber(state.account.withdrawableBalance) * 100)
     ) {
       sheep.$helper.toast('请输入正确的提现金额');
       return;
     }
-    if (!state.accountInfo.type) {
+    if (!state.form.withdrawType) {
       sheep.$helper.toast('请选择提现方式');
       return;
     }
-    let openid;
-    if (state.accountInfo.type === '5') {
-      openid = await sheep.$platform.useProvider('wechat').getOpenid();
-      // 如果获取不到 openid，微信无法发起支付，此时需要引导
-      if (!openid) {
-        goBindWeixin();
-        return;
-      }
-    }
-
-    // 提交请求
-    const data = {
-      ...state.accountInfo,
-      price: state.accountInfo.price * 100,
-    };
-    if (state.accountInfo.type === '5') {
-      data.userAccount = openid;
-      data.transferChannelCode = getWeixinPayChannelCode();
-    } else if (state.accountInfo.type === '6' || state.accountInfo.type === '2') {
-      delete data.transferChannelCode;
-    } else {
-      delete data.userAccount;
-      delete data.transferChannelCode;
-    }
-    let { code } = await BrokerageApi.createBrokerageWithdraw(data);
-    if (code !== 0) {
+    if (!state.form.withdrawAccount) {
+      sheep.$helper.toast('请输入收款账号');
       return;
     }
-    // 提示
-    uni.showModal({
-      title: '操作成功',
-      content: '您的提现申请已成功提交',
-      cancelText: '继续提现',
-      confirmText: '查看记录',
-      success: (res) => {
-        if (res.confirm) {
-          sheep.$router.go('/pages/commission/wallet', { type: 2 });
-          return;
-        }
-        getBrokerageUser();
-        state.accountInfo = {};
-      },
+    const idempotencyKey = createIdempotencyKey();
+    const { code } = await CpsWithdrawApi.createWithdraw({
+      amountCent,
+      withdrawType: state.form.withdrawType,
+      withdrawAccount: state.form.withdrawAccount,
+      withdrawAccountName: state.form.withdrawAccountName,
+      idempotencyKey,
     });
-  };
-
-  // 获得分销配置
-  async function getWithdrawRules() {
-    let { code, data } = await TradeConfigApi.getTradeConfig();
     if (code !== 0) {
       return;
     }
-    if (data) {
-      state.minPrice = data.brokerageWithdrawMinPrice || 0;
-      state.frozenDays = data.brokerageFrozenDays || 0;
-      state.withdrawTypes = data.brokerageWithdrawTypes;
-    }
+    sheep.$helper.toast('提现申请已提交');
+    state.form.amountYuan = undefined;
+    state.form.withdrawAccount = '';
+    state.form.withdrawAccountName = '';
+    resetPagination(state.pagination);
+    await Promise.all([getAccount(), getWithdrawPage()]);
   }
 
-  // 获得分销信息
-  async function getBrokerageUser() {
-    const { data, code } = await BrokerageApi.getBrokerageUser();
-    if (code === 0) {
-      state.brokerageInfo = data;
-    }
-  }
-
-  // 获取提现银行配置字典
-  async function getDictDataListByType() {
-    let { code, data } = await DictApi.getDictDataListByType('brokerage_bank_name');
-    if (code !== 0) {
+  function loadMore() {
+    if (state.loadStatus === 'loading' || state.loadStatus === 'noMore') {
       return;
     }
-    if (data && data.length > 0) {
-      state.bankList = data;
+    state.pagination.pageNo++;
+    getWithdrawPage();
+  }
+
+  function createIdempotencyKey() {
+    return `cps-withdraw:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  function formatMoney(value) {
+    return toNumber(value).toFixed(2);
+  }
+
+  function formatCentMoney(value) {
+    return (toNumber(value) / 100).toFixed(2);
+  }
+
+  function toNumber(value) {
+    const num = Number(value || 0);
+    return Number.isFinite(num) ? num : 0;
+  }
+
+  function formatTime(value) {
+    if (!value) {
+      return '-';
     }
+    return sheep.$helper.timeFormat(value, 'yyyy-mm-dd hh:MM:ss');
   }
 
-  // 银行选择
-  function bankChange(e) {
-    const value = e.detail.value;
-    state.bankListSelectedIndex = value;
-    state.accountInfo.bankName = state.bankList[value].label;
+  function withdrawTypeText(withdrawType) {
+    const map = {
+      alipay: '支付宝',
+      wechat: '微信',
+    };
+    return map[withdrawType] || withdrawType || '未知方式';
   }
 
-  onBeforeMount(() => {
-    getWithdrawRules();
-    getBrokerageUser();
-    getDictDataListByType(); //获取银行字典数据
+  function withdrawStatusText(status) {
+    const map = {
+      created: '待审核',
+      reviewing: '打款中',
+      success: '提现成功',
+      failed: '提现失败',
+      rejected: '已驳回',
+      closed: '已关闭',
+    };
+    return map[status] || status || '处理中';
+  }
+
+  function transferStatusText(transferStatus) {
+    const map = {
+      none: '未打款',
+      pending: '打款中',
+      success: '打款成功',
+      failed: '打款失败',
+      closed: '已关闭',
+    };
+    return map[transferStatus] || transferStatus || '未打款';
+  }
+
+  onLoad(() => {
+    getAccount();
+    getWithdrawPage();
+  });
+
+  onReachBottom(() => {
+    loadMore();
   });
 </script>
 
 <style lang="scss" scoped>
-  :deep() {
-    .uni-input-input {
-      font-family: OPPOSANS !important;
-    }
+  .balance-panel {
+    padding: 34rpx 30rpx 76rpx;
+    background: var(--ui-BG-Main);
+    color: #ffffff;
   }
 
-  .wallet-num-box {
-    padding: 0 40rpx 80rpx;
-    background: var(--ui-BG-Main) v-bind(headerBg) center/750rpx 100% no-repeat;
-    border-radius: 0 0 5% 5%;
-
-    .num-title {
-      font-size: 26rpx;
-      font-weight: 500;
-      color: $white;
-      margin-bottom: 20rpx;
-    }
-
-    .wallet-num {
-      font-size: 60rpx;
-      font-weight: 500;
-      color: $white;
-      font-family: OPPOSANS;
-    }
-
-    .log-btn {
-      width: 170rpx;
-      height: 60rpx;
-      line-height: 60rpx;
-      border: 1rpx solid $white;
-      border-radius: 30rpx;
-      padding: 0;
-      font-size: 26rpx;
-      font-weight: 500;
-      color: $white;
-    }
+  .balance-label {
+    font-size: 26rpx;
+    line-height: 1.4;
   }
 
-  // 提现输入卡片
-  .draw-card {
-    background-color: $white;
-    border-radius: 20rpx;
-    width: 690rpx;
-    min-height: 560rpx;
-    margin: -60rpx 30rpx 30rpx 30rpx;
-    padding: 30rpx;
-    position: relative;
-    z-index: 3;
-    box-sizing: border-box;
-
-    .card-title {
-      font-size: 30rpx;
-      font-weight: 500;
-      margin-bottom: 30rpx;
-    }
-
-    .bank-box {
-      .name {
-        font-size: 28rpx;
-        font-weight: 500;
-      }
-
-      .bank-list {
-        .empty-text {
-          font-size: 28rpx;
-          font-weight: 400;
-          color: $dark-9;
-        }
-
-        .cicon-forward {
-          color: $dark-9;
-        }
-      }
-
-      .input-box {
-        width: 624rpx;
-        height: 100rpx;
-        margin-bottom: 40rpx;
-
-        .unit {
-          font-size: 48rpx;
-          color: #333;
-          font-weight: 500;
-        }
-
-        .uni-easyinput__placeholder-class {
-          font-size: 30rpx;
-          height: 36rpx;
-        }
-
-        :deep(.uni-easyinput__content-input) {
-          font-size: 48rpx;
-        }
-      }
-
-      .save-btn {
-        width: 616rpx;
-        height: 86rpx;
-        line-height: 86rpx;
-        border-radius: 40rpx;
-        margin-top: 80rpx;
-      }
-    }
-
-    .bind-box {
-      .placeholder-text {
-        font-size: 26rpx;
-        color: $dark-9;
-      }
-
-      .add-btn {
-        width: 100rpx;
-        height: 50rpx;
-        border-radius: 25rpx;
-        line-height: 50rpx;
-        font-size: 22rpx;
-        color: var(--ui-BG-Main);
-        background-color: var(--ui-BG-Main-light);
-      }
-    }
-
-    .input-box {
-      width: 624rpx;
-      height: 100rpx;
-      margin-bottom: 40rpx;
-
-      .unit {
-        font-size: 48rpx;
-        color: #333;
-        font-weight: 500;
-      }
-
-      .uni-easyinput__placeholder-class {
-        font-size: 30rpx;
-      }
-
-      :deep(.uni-easyinput__content-input) {
-        font-size: 48rpx;
-      }
-    }
-
-    .save-btn {
-      width: 616rpx;
-      height: 86rpx;
-      line-height: 86rpx;
-      border-radius: 40rpx;
-      margin-top: 80rpx;
-    }
+  .balance-value {
+    margin-top: 18rpx;
+    font-size: 58rpx;
+    font-weight: 600;
+    line-height: 1.15;
+    word-break: break-all;
   }
 
-  // 提现说明
-  .draw-notice {
-    width: 684rpx;
+  .balance-sub {
+    margin-top: 18rpx;
+    font-size: 24rpx;
+    opacity: 0.85;
+  }
+
+  .draw-card,
+  .record-section {
+    margin: -44rpx 24rpx 24rpx;
+    padding: 28rpx;
     background: #ffffff;
-    border: 2rpx solid #fffaee;
-    border-radius: 20rpx;
-    margin: 20rpx 32rpx 0 32rpx;
-    padding: 30rpx;
-    box-sizing: border-box;
+    border-radius: 10rpx;
+  }
 
-    .title {
-      font-weight: 500;
-      color: #333333;
-      font-size: 30rpx;
-    }
+  .record-section {
+    margin-top: 24rpx;
+  }
 
-    .draw-list {
-      font-size: 24rpx;
-      color: #999999;
-      line-height: 46rpx;
-    }
+  .section-title {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #222222;
+  }
+
+  .method-row {
+    display: flex;
+    gap: 18rpx;
+    margin: 22rpx 0 32rpx;
+  }
+
+  .method-btn {
+    flex: 1;
+    height: 72rpx;
+    line-height: 72rpx;
+    border: 1rpx solid #dddddd;
+    border-radius: 8rpx;
+    font-size: 26rpx;
+    color: #333333;
+    background: #ffffff;
+  }
+
+  .method-btn.active {
+    color: var(--ui-BG-Main);
+    border-color: var(--ui-BG-Main);
+    background: rgba(var(--ui-BG-Main-rgb), 0.08);
+  }
+
+  .input-box {
+    height: 92rpx;
+    margin-bottom: 30rpx;
+  }
+
+  .unit {
+    font-size: 42rpx;
+    color: #333333;
+    font-weight: 500;
+  }
+
+  .save-btn {
+    width: 100%;
+    height: 82rpx;
+    line-height: 82rpx;
+    border-radius: 41rpx;
+    margin-top: 42rpx;
+    font-size: 28rpx;
+    color: #ffffff;
+  }
+
+  .section-head {
+    margin-bottom: 20rpx;
+  }
+
+  .record-count {
+    font-size: 24rpx;
+    color: #999999;
+  }
+
+  .withdraw-card {
+    padding: 22rpx 0;
+    border-bottom: 1rpx solid #eeeeee;
+  }
+
+  .withdraw-head {
+    gap: 20rpx;
+  }
+
+  .withdraw-no {
+    flex: 1;
+    min-width: 0;
+    font-size: 27rpx;
+    font-weight: 600;
+    color: #222222;
+  }
+
+  .withdraw-amount {
+    flex-shrink: 0;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #fa3534;
+  }
+
+  .withdraw-meta {
+    margin-top: 14rpx;
+    font-size: 24rpx;
+    color: #666666;
+  }
+
+  .withdraw-foot {
+    margin-top: 16rpx;
+    font-size: 22rpx;
+    color: #999999;
+    gap: 20rpx;
+  }
+
+  .detail-panel {
+    max-height: 78vh;
+    padding: 32rpx 28rpx 48rpx;
+    overflow-y: auto;
+    background: #ffffff;
+  }
+
+  .detail-title {
+    margin-bottom: 24rpx;
+    font-size: 34rpx;
+    font-weight: 600;
+    color: #222222;
+  }
+
+  .detail-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 24rpx;
+    padding: 22rpx 0;
+    border-bottom: 1rpx solid #eeeeee;
+    font-size: 26rpx;
+    color: #777777;
+  }
+
+  .detail-item .value {
+    max-width: 430rpx;
+    color: #222222;
+    text-align: right;
+    word-break: break-all;
   }
 </style>

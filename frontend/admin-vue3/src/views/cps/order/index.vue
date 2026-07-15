@@ -76,12 +76,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
         <el-button
           type="danger"
           plain
@@ -110,7 +106,13 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" stripe row-key="id" @selection-change="handleSelectionChange">
+    <el-table
+      v-loading="loading"
+      :data="list"
+      stripe
+      row-key="id"
+      @selection-change="handleSelectionChange"
+    >
       <el-table-column type="selection" width="45" />
       <el-table-column label="ID" align="center" prop="id" width="70" />
       <el-table-column label="平台" align="center" prop="platformCode" width="80">
@@ -120,7 +122,13 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="平台单号" align="left" prop="platformOrderId" min-width="180" show-overflow-tooltip />
+      <el-table-column
+        label="平台单号"
+        align="left"
+        prop="platformOrderId"
+        min-width="180"
+        show-overflow-tooltip
+      />
       <el-table-column label="商品" align="left" min-width="200">
         <template #default="scope">
           <div class="flex items-center gap-2">
@@ -134,7 +142,13 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="会员名" align="center" prop="memberNickname" width="120" show-overflow-tooltip>
+      <el-table-column
+        label="会员名"
+        align="center"
+        prop="memberNickname"
+        width="120"
+        show-overflow-tooltip
+      >
         <template #default="scope">
           <span>{{ scope.row.memberNickname || scope.row.memberId || '-' }}</span>
         </template>
@@ -147,9 +161,7 @@
         </template>
       </el-table-column>
       <el-table-column label="券后价" align="center" width="90">
-        <template #default="scope">
-          ¥{{ formatAmount(scope.row.finalPrice) }}
-        </template>
+        <template #default="scope"> ¥{{ formatAmount(scope.row.finalPrice) }} </template>
       </el-table-column>
       <el-table-column label="预估返利" align="center" width="90">
         <template #default="scope">
@@ -185,13 +197,7 @@
           >
             详情
           </el-button>
-          <el-button
-            type="danger"
-            link
-            @click="handleDelete(scope.row.id)"
-          >
-            删除
-          </el-button>
+          <el-button type="danger" link @click="handleDelete(scope.row.id)"> 删除 </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -219,14 +225,30 @@
       v-if="detailData"
     >
       <el-descriptions-item label="订单ID">{{ detailData.id }}</el-descriptions-item>
-      <el-descriptions-item label="平台">{{ platformLabel(detailData.platformCode) }}</el-descriptions-item>
-      <el-descriptions-item label="平台单号" :span="2">{{ detailData.platformOrderId }}</el-descriptions-item>
-      <el-descriptions-item label="父订单号" :span="2">{{ detailData.parentOrderId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="会员名">{{ detailData.memberNickname || detailData.memberId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="归因来源">{{ attributionSourceLabel(detailData.attributionSource) }}</el-descriptions-item>
-      <el-descriptions-item label="推广位ID" :span="2">{{ detailData.adzoneId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="外部追踪">{{ detailData.externalInfo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="淘宝订单场景">{{ orderSceneLabel(detailData.orderScene) }}</el-descriptions-item>
+      <el-descriptions-item label="平台">{{
+        platformLabel(detailData.platformCode)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="平台单号" :span="2">{{
+        detailData.platformOrderId
+      }}</el-descriptions-item>
+      <el-descriptions-item label="父订单号" :span="2">{{
+        detailData.parentOrderId || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="会员名">{{
+        detailData.memberNickname || detailData.memberId || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="归因来源">{{
+        attributionSourceLabel(detailData.attributionSource)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="推广位ID" :span="2">{{
+        detailData.adzoneId || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="外部追踪">{{
+        detailData.externalInfo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="淘宝订单场景">{{
+        orderSceneLabel(detailData.orderScene)
+      }}</el-descriptions-item>
       <el-descriptions-item label="special_id">
         <div class="attribution-field">
           <span>{{ detailData.specialId || '-' }}</span>
@@ -236,14 +258,18 @@
             link
             :disabled="!detailData.adzoneId || bindSpecialIdLoading"
             @click="handleBindSpecialId"
-            v-hasPermi="['cps:order:sync']"
+            v-hasPermi="['cps:order:attribution-bind']"
           >
             手动绑定会员
           </el-button>
         </div>
       </el-descriptions-item>
-      <el-descriptions-item label="relation_id">{{ detailData.relationId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="商品标题" :span="2">{{ detailData.itemTitle || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="relation_id">{{
+        detailData.relationId || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="商品标题" :span="2">{{
+        detailData.itemTitle || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item>
         <template #label>
           <span class="detail-label-with-tip">
@@ -290,7 +316,10 @@
         <template #label>
           <span class="detail-label-with-tip">
             佣金比例
-            <el-tooltip content="平台返回或商品快照中的佣金比例，用于估算佣金展示。" placement="top">
+            <el-tooltip
+              content="平台返回或商品快照中的佣金比例，用于估算佣金展示。"
+              placement="top"
+            >
               <Icon icon="ep:question-filled" class="detail-tip-icon" />
             </el-tooltip>
           </span>
@@ -315,7 +344,10 @@
         <template #label>
           <span class="detail-label-with-tip">
             预估返利
-            <el-tooltip content="预估返利 = 预估佣金 x 80%，用于订单未正式结算前展示。" placement="top">
+            <el-tooltip
+              content="预估返利使用与正式结算一致的会员、等级与平台返利规则；未可信归因时不做比例猜测。"
+              placement="top"
+            >
               <Icon icon="ep:question-filled" class="detail-tip-icon" />
             </el-tooltip>
           </span>
@@ -341,12 +373,24 @@
           {{ orderStatusLabel(detailData.orderStatus) }}
         </el-tag>
       </el-descriptions-item>
-      <el-descriptions-item label="同步时间">{{ formatDate(detailData.syncTime) }}</el-descriptions-item>
-      <el-descriptions-item label="确认收货时间">{{ formatDate(detailData.confirmReceiptTime) }}</el-descriptions-item>
-      <el-descriptions-item label="结算时间">{{ formatDate(detailData.settleTime) }}</el-descriptions-item>
-      <el-descriptions-item label="返利入账时间">{{ formatDate(detailData.rebateTime) }}</el-descriptions-item>
-      <el-descriptions-item label="退款时间">{{ formatDate(detailData.refundTime) }}</el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData.createTime) }}</el-descriptions-item>
+      <el-descriptions-item label="同步时间">{{
+        formatDate(detailData.syncTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="确认收货时间">{{
+        formatDate(detailData.confirmReceiptTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="结算时间">{{
+        formatDate(detailData.settleTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="返利入账时间">{{
+        formatDate(detailData.rebateTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="退款时间">{{
+        formatDate(detailData.refundTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData.createTime)
+      }}</el-descriptions-item>
     </el-descriptions>
     <template #footer>
       <el-button @click="detailVisible = false">关 闭</el-button>
@@ -383,6 +427,16 @@
             :value="item.id"
           />
         </el-select>
+      </el-form-item>
+      <el-form-item label="复核说明">
+        <el-input
+          v-model="bindSpecialIdForm.auditNote"
+          type="textarea"
+          :rows="3"
+          maxlength="500"
+          show-word-limit
+          placeholder="请输入平台截图、申诉单或复核依据"
+        />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -425,7 +479,12 @@ const queryParams = reactive<CpsOrderPageReqVO>({
 
 /** 平台标签类型 */
 const platformTagType = (code: string): ElTagType => {
-  const map: Record<string, ElTagType> = { taobao: 'danger', jd: 'primary', pdd: 'warning', douyin: 'info' }
+  const map: Record<string, ElTagType> = {
+    taobao: 'danger',
+    jd: 'primary',
+    pdd: 'warning',
+    douyin: 'info'
+  }
   return map[code] || 'info'
 }
 const platformLabel = (code: string) => {
@@ -574,6 +633,7 @@ const bindSpecialIdForm = reactive<{
   orderId?: number
   specialId?: string
   memberId?: number
+  auditNote?: string
 }>({})
 const MEMBER_OPTION_PAGE_SIZE = 100
 const detailData = ref<CpsOrderVO | null>(null)
@@ -597,6 +657,7 @@ const handleBindSpecialId = async () => {
   bindSpecialIdForm.orderId = detailData.value.id
   bindSpecialIdForm.specialId = detailData.value.specialId
   bindSpecialIdForm.memberId = undefined
+  bindSpecialIdForm.auditNote = undefined
   bindSpecialIdDialogVisible.value = true
   await searchBindMemberOptions('')
 }
@@ -646,7 +707,9 @@ const handleConfirmBindSpecialId = async () => {
     bindSpecialIdLoading.value = true
     await OrderApi.bindSpecialIdToMember({
       orderId: bindSpecialIdForm.orderId,
-      memberId: bindSpecialIdForm.memberId
+      memberId: bindSpecialIdForm.memberId,
+      idempotencyKey: createManualBindIdempotencyKey(bindSpecialIdForm.orderId),
+      auditNote: bindSpecialIdForm.auditNote?.trim() || undefined
     })
     message.success('绑定成功')
     bindSpecialIdDialogVisible.value = false
@@ -664,6 +727,14 @@ const formatMemberLabel = (item: UserVO) => {
   if (item.name && item.name !== item.nickname) parts.push(item.name)
   if (item.mobile) parts.push(item.mobile)
   return parts.join(' / ')
+}
+
+const createManualBindIdempotencyKey = (orderId: number) => {
+  const randomId =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  return `manual-bind:${orderId}:${randomId}`
 }
 
 onMounted(getList)

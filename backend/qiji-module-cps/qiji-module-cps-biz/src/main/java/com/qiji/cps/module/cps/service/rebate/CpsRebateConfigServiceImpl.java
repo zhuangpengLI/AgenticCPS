@@ -1,6 +1,5 @@
 package com.qiji.cps.module.cps.service.rebate;
 
-import com.qiji.cps.framework.common.enums.CommonStatusEnum;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.framework.mybatis.core.query.LambdaQueryWrapperX;
@@ -62,6 +61,7 @@ public class CpsRebateConfigServiceImpl implements CpsRebateConfigService {
         return rebateConfigMapper.selectPage(pageReqVO,
                 new LambdaQueryWrapperX<CpsRebateConfigDO>()
                         .eqIfPresent(CpsRebateConfigDO::getMemberLevelId, pageReqVO.getMemberLevelId())
+                        .eqIfPresent(CpsRebateConfigDO::getMemberId, pageReqVO.getMemberId())
                         .eqIfPresent(CpsRebateConfigDO::getPlatformCode, pageReqVO.getPlatformCode())
                         .eqIfPresent(CpsRebateConfigDO::getStatus, pageReqVO.getStatus())
                         .orderByDesc(CpsRebateConfigDO::getPriority)
@@ -70,30 +70,33 @@ public class CpsRebateConfigServiceImpl implements CpsRebateConfigService {
 
     @Override
     public List<CpsRebateConfigDO> getEnabledRebateConfigList() {
-        return rebateConfigMapper.selectListByStatus(CommonStatusEnum.ENABLE.getStatus());
+        // CPS 配置表历史契约为 1=启用、0=禁用，不使用框架通用状态枚举。
+        return rebateConfigMapper.selectListByStatus(1);
     }
 
     @Override
     public CpsRebateConfigDO matchRebateConfig(Long memberLevelId, String platformCode) {
+        return matchRebateConfig(null, memberLevelId, platformCode);
+    }
+
+    @Override
+    public CpsRebateConfigDO matchRebateConfig(Long memberId, Long memberLevelId, String platformCode) {
         List<CpsRebateConfigDO> allConfigs = getEnabledRebateConfigList();
         if (allConfigs.isEmpty()) {
             return null;
         }
 
-        // 优先级1: 会员等级 + 平台（精确匹配）
-        CpsRebateConfigDO match = findMatch(allConfigs, memberLevelId, platformCode);
+        CpsRebateConfigDO match = findMatch(allConfigs, memberId, null, platformCode);
         if (match != null) return match;
-
-        // 优先级2: 会员等级 + 全平台
-        match = findMatch(allConfigs, memberLevelId, null);
+        match = findMatch(allConfigs, memberId, null, null);
         if (match != null) return match;
-
-        // 优先级3: 全等级 + 平台
-        match = findMatch(allConfigs, null, platformCode);
+        match = findMatch(allConfigs, null, memberLevelId, platformCode);
         if (match != null) return match;
-
-        // 优先级4: 全等级 + 全平台（兜底）
-        return findMatch(allConfigs, null, null);
+        match = findMatch(allConfigs, null, memberLevelId, null);
+        if (match != null) return match;
+        match = findMatch(allConfigs, null, null, platformCode);
+        if (match != null) return match;
+        return findMatch(allConfigs, null, null, null);
     }
 
     // ==================== 私有方法 ====================
@@ -104,11 +107,17 @@ public class CpsRebateConfigServiceImpl implements CpsRebateConfigService {
         }
     }
 
-    private CpsRebateConfigDO findMatch(List<CpsRebateConfigDO> configs, Long memberLevelId, String platformCode) {
+    private CpsRebateConfigDO findMatch(List<CpsRebateConfigDO> configs, Long memberId,
+                                        Long memberLevelId, String platformCode) {
         return configs.stream()
-                .filter(c -> Objects.equals(c.getMemberLevelId(), memberLevelId)
+                .filter(c -> Objects.equals(c.getMemberId(), memberId)
+                        && Objects.equals(c.getMemberLevelId(), memberLevelId)
                         && Objects.equals(c.getPlatformCode(), platformCode))
-                .findFirst()
+                .max(java.util.Comparator
+                        .comparing(CpsRebateConfigDO::getPriority,
+                                java.util.Comparator.nullsFirst(Integer::compareTo))
+                        .thenComparing(CpsRebateConfigDO::getId,
+                                java.util.Comparator.nullsFirst(Long::compareTo)))
                 .orElse(null);
     }
 

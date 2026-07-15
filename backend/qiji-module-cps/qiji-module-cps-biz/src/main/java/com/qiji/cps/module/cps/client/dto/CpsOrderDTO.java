@@ -136,6 +136,11 @@ public class CpsOrderDTO {
     private String nextPositionIndex;
 
     /**
+     * 同步批次号，用于状态事件追溯。
+     */
+    private String syncBatchNo;
+
+    /**
      * 供应商特有扩展字段，保留标准对象未覆盖的信息。
      */
     private Map<String, Object> extraFields;

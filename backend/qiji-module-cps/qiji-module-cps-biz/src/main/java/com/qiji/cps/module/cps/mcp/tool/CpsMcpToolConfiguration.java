@@ -27,6 +27,8 @@ public class CpsMcpToolConfiguration {
             CpsGetRebateSummaryToolFunction getRebateSummaryToolFunction,
             CpsRecommendBySceneToolFunction recommendBySceneToolFunction,
             CpsPurchaseDecisionToolFunction purchaseDecisionToolFunction,
+            CpsPromotionStrategyAdviceToolFunction promotionStrategyAdviceToolFunction,
+            CpsExplainRebateToolFunction explainRebateToolFunction,
             CpsListSelectionThemesToolFunction listSelectionThemesToolFunction,
             CpsRecommendFromSelectionThemeToolFunction recommendFromSelectionThemeToolFunction,
             CpsGetRebateBalanceToolFunction getRebateBalanceToolFunction,
@@ -67,6 +69,14 @@ public class CpsMcpToolConfiguration {
                 FunctionToolCallback.builder("cps_purchase_decision", purchaseDecisionToolFunction)
                         .description("基于 CPS 候选商品和外部证据生成购买决策建议，可返回价格、优惠券、返利和推荐理由")
                         .inputType(CpsPurchaseDecisionToolFunction.Request.class)
+                        .build(),
+                FunctionToolCallback.builder("cps_promotion_strategy_advice", promotionStrategyAdviceToolFunction)
+                        .description("根据商品需求、人群、渠道、价格、优惠券、返利和归因约束生成 CPS 推广策略建议")
+                        .inputType(CpsPromotionStrategyAdviceToolFunction.Request.class)
+                        .build(),
+                FunctionToolCallback.builder("cps_explain_rebate", explainRebateToolFunction)
+                        .description("解释 CPS 返利规则、计算优先级、冻结结算流程，并返回当前可信账户汇总")
+                        .inputType(CpsExplainRebateToolFunction.Request.class)
                         .build(),
                 FunctionToolCallback.builder("cps_list_selection_themes", listSelectionThemesToolFunction)
                         .description("查询已发布选品主题")

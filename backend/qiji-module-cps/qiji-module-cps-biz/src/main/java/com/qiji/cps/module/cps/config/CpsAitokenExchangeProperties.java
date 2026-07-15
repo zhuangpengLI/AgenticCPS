@@ -20,4 +20,10 @@ public class CpsAitokenExchangeProperties {
     private String sourceAsset = "REBATE";
 
     private String targetAsset = "TOKEN";
+
+    /** OpenAPI signature validity window, in seconds. */
+    private long signatureValiditySeconds = 300;
+
+    /** Maximum accepted clock skew into the future, in seconds. */
+    private long signatureMaxFutureSkewSeconds = 30;
 }

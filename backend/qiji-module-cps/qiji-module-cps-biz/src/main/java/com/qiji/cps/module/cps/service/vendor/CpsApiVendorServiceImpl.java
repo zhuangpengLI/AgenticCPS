@@ -3,12 +3,16 @@ package com.qiji.cps.module.cps.service.vendor;
 import com.qiji.cps.framework.common.enums.CommonStatusEnum;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
+import com.qiji.cps.module.cps.client.CpsApiVendorClient;
+import com.qiji.cps.module.cps.client.CpsVendorCapability;
+import com.qiji.cps.module.cps.client.CpsVendorDescriptor;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.config.CpsCacheConfig;
 import com.qiji.cps.module.cps.controller.admin.vendor.vo.CpsApiVendorPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.vendor.vo.CpsApiVendorSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.vendor.CpsApiVendorDO;
 import com.qiji.cps.module.cps.dal.mysql.vendor.CpsApiVendorMapper;
+import com.qiji.cps.module.cps.enums.CpsVendorCodeEnum;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
@@ -21,6 +25,7 @@ import org.springframework.validation.annotation.Validated;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.*;
@@ -41,10 +46,14 @@ public class CpsApiVendorServiceImpl implements CpsApiVendorService {
     @Resource
     private ObjectMapper objectMapper;
 
+    @Resource
+    private List<CpsApiVendorClient> vendorClients;
+
     @Override
     public Long createVendor(CpsApiVendorSaveReqVO createReqVO) {
         // 校验供应商+平台组合唯一
         validateVendorPlatformUnique(null, createReqVO.getVendorCode(), createReqVO.getPlatformCode());
+        validateVendorEnableReady(createReqVO);
         // 插入
         CpsApiVendorDO vendor = BeanUtils.toBean(createReqVO, CpsApiVendorDO.class);
         vendorMapper.insert(vendor);
@@ -60,6 +69,7 @@ public class CpsApiVendorServiceImpl implements CpsApiVendorService {
         validateVendorExists(updateReqVO.getId());
         // 校验供应商+平台组合唯一
         validateVendorPlatformUnique(updateReqVO.getId(), updateReqVO.getVendorCode(), updateReqVO.getPlatformCode());
+        validateVendorEnableReady(updateReqVO);
         // 更新（appSecret 为空时保留原字段不覆盖）
         CpsApiVendorDO updateObj = BeanUtils.toBean(updateReqVO, CpsApiVendorDO.class);
         if (updateReqVO.getAppSecret() == null || updateReqVO.getAppSecret().isBlank()) {
@@ -143,6 +153,39 @@ public class CpsApiVendorServiceImpl implements CpsApiVendorService {
         if (id == null || !id.equals(vendor.getId())) {
             throw exception(VENDOR_PLATFORM_DUPLICATE, vendorCode, platformCode);
         }
+    }
+
+    private void validateVendorEnableReady(CpsApiVendorSaveReqVO reqVO) {
+        if (!CommonStatusEnum.ENABLE.getStatus().equals(reqVO.getStatus())) {
+            return;
+        }
+        if (!CpsVendorCodeEnum.OFFICIAL.getCode().equals(reqVO.getVendorCode())) {
+            return;
+        }
+        CpsApiVendorClient client = findVendorClient(reqVO.getVendorCode(), reqVO.getPlatformCode());
+        if (client == null) {
+            throw exception(VENDOR_CAPABILITY_NOT_READY, reqVO.getVendorCode(), reqVO.getPlatformCode(),
+                    "未注册 official client");
+        }
+        CpsVendorDescriptor descriptor = client.describe();
+        Set<CpsVendorCapability> capabilities = descriptor == null ? Set.of() : descriptor.getCapabilities();
+        boolean hasBusinessCapability = capabilities != null && capabilities.stream()
+                .anyMatch(capability -> capability != CpsVendorCapability.CONNECTION_TEST);
+        if (!hasBusinessCapability) {
+            throw exception(VENDOR_CAPABILITY_NOT_READY, reqVO.getVendorCode(), reqVO.getPlatformCode(),
+                    "仅声明 CONNECTION_TEST，缺少真实业务能力验收");
+        }
+    }
+
+    private CpsApiVendorClient findVendorClient(String vendorCode, String platformCode) {
+        if (vendorClients == null) {
+            return null;
+        }
+        return vendorClients.stream()
+                .filter(client -> vendorCode.equals(client.getVendorCode())
+                        && platformCode.equals(client.getPlatformCode()))
+                .findFirst()
+                .orElse(null);
     }
 
     private Map<String, String> parseExtraConfig(String extraConfigJson) {
