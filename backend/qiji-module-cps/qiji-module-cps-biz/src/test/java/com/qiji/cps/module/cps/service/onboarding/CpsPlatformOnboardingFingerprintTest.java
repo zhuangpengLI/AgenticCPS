@@ -1,5 +1,6 @@
 package com.qiji.cps.module.cps.service.onboarding;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingAdzone;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingRebateRule;
@@ -22,8 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CpsPlatformOnboardingFingerprintTest {
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final CpsPlatformOnboardingFingerprint fingerprint =
-            new CpsPlatformOnboardingFingerprint(new ObjectMapper());
+            new CpsPlatformOnboardingFingerprint(objectMapper);
 
     @Test
     void calculate_shouldIgnoreVendorAdzoneAndRuleInputOrder() {
@@ -48,15 +50,14 @@ class CpsPlatformOnboardingFingerprintTest {
     @Test
     void calculate_shouldNotMutateInputCollections() {
         CpsPlatformOnboardingPayload payload = validPayload();
-        List<CpsOnboardingVendor> vendorsBefore = List.copyOf(payload.getVendors());
-        List<CpsOnboardingAdzone> adzonesBefore = List.copyOf(payload.getAdzones());
-        List<CpsOnboardingRebateRule> rulesBefore = List.copyOf(payload.getRebateRules());
+        payload.getPlatform().setId(99L);
+        payload.getVendors().get(0).setPriority(null);
+        payload.getRebateRules().get(0).setPriority(null);
+        JsonNode payloadBefore = objectMapper.valueToTree(payload);
 
         fingerprint.calculate(payload);
 
-        assertEquals(vendorsBefore, payload.getVendors());
-        assertEquals(adzonesBefore, payload.getAdzones());
-        assertEquals(rulesBefore, payload.getRebateRules());
+        assertEquals(payloadBefore, objectMapper.valueToTree(payload));
     }
 
     @Test
