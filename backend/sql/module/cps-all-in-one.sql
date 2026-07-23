@@ -1,7 +1,7 @@
 -- ============================================================
 -- CPS联盟返利系统 - 完整数据库建表脚本（All-in-One）
 -- Version: 2.0
--- Date: 2026-07-09
+-- Date: 2026-07-23
 -- Description: 新库全量初始化脚本，整合 CPS 核心表、P0 返利兑换、活动中心、选品库、CPX 扩展表、菜单与权限。
 -- Maintenance:
 --   1. 本文件只保存新库全量脚本。
@@ -38,6 +38,7 @@
 --   28. cpx_conversion                   CPX转化表
 --   29. cpx_settlement_record            CPX结算记录表
 --   30. cpx_lead_detail                  CPX线索详情表
+--   31. cps_platform_onboarding_draft    CPS平台接入草稿表
 -- ============================================================
 
 SET NAMES utf8mb4;
@@ -70,8 +71,9 @@ CREATE TABLE `cps_platform` (
   `tenant_id`            bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
   `active_vendor_code`   varchar(32)           DEFAULT 'dataoke' COMMENT '当前激活的供应商编码（用于路由选择）',
   `supported_vendors`    varchar(256)          DEFAULT 'dataoke' COMMENT '支持的供应商列表（逗号分隔）',
+  `active_unique_key`    varchar(128) GENERATED ALWAYS AS (IF(`deleted` = b'0', CONCAT(`tenant_id`, ':', `platform_code`), NULL)) STORED COMMENT '未删除平台租户唯一键',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_platform_code` (`platform_code`) USING BTREE
+  UNIQUE KEY `uk_cps_platform_active` (`active_unique_key`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS平台配置表';
 
 -- ----------------------------
@@ -96,7 +98,9 @@ CREATE TABLE `cps_adzone` (
   `update_time`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted`       bit(1)                DEFAULT b'0' COMMENT '是否删除',
   `tenant_id`     bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  `active_unique_key` varchar(256) GENERATED ALWAYS AS (IF(`deleted` = b'0', CONCAT(`tenant_id`, ':', `platform_code`, ':', `adzone_id`), NULL)) STORED COMMENT '未删除推广位租户唯一键',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cps_adzone_active` (`active_unique_key`) USING BTREE,
   KEY `idx_platform_code` (`platform_code`) USING BTREE,
   KEY `idx_adzone_id` (`adzone_id`) USING BTREE,
   KEY `idx_external_relation_id` (`platform_code`,`external_relation_id`) USING BTREE,
@@ -584,6 +588,34 @@ CREATE TABLE `cps_api_vendor` (
   INDEX `idx_platform_code` (`platform_code`) USING BTREE,
   INDEX `idx_vendor_code` (`vendor_code`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS API供应商配置表';
+
+-- ----------------------------
+-- 31. CPS平台接入草稿表
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_platform_onboarding_draft`;
+CREATE TABLE `cps_platform_onboarding_draft` (
+  `id`                    bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `platform_code`         varchar(32)  NOT NULL COMMENT '平台编码',
+  `mode`                  varchar(16)  NOT NULL COMMENT '接入模式（CREATE/RECONFIGURE）',
+  `payload_ciphertext`    longtext     NOT NULL COMMENT '加密后的配置草稿JSON',
+  `draft_version`         int          NOT NULL DEFAULT '1' COMMENT '草稿乐观锁版本',
+  `config_fingerprint`    varchar(64)           DEFAULT NULL COMMENT '当前配置指纹',
+  `validated_fingerprint` varchar(64)           DEFAULT NULL COMMENT '最近校验通过的配置指纹',
+  `status`                varchar(16)  NOT NULL DEFAULT 'DRAFT' COMMENT '状态（DRAFT/VALIDATING/READY/FAILED/PUBLISHED）',
+  `check_summary`         text                  COMMENT '最近校验摘要',
+  `validated_at`          datetime              DEFAULT NULL COMMENT '最近校验时间',
+  `published_at`          datetime              DEFAULT NULL COMMENT '发布时间',
+  `creator`               varchar(64)           DEFAULT NULL COMMENT '创建人',
+  `create_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`               varchar(64)           DEFAULT NULL COMMENT '更新人',
+  `update_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`               bit(1)       NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`             bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  `active_unique_key`     varchar(128) GENERATED ALWAYS AS (IF(`deleted` = b'0', CONCAT(`tenant_id`, ':', `platform_code`), NULL)) STORED COMMENT '未删除草稿租户平台唯一键',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cps_platform_onboarding_draft_active` (`active_unique_key`) USING BTREE,
+  KEY `idx_cps_platform_onboarding_draft_status` (`tenant_id`, `status`, `update_time`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS平台接入草稿表';
 
 
 

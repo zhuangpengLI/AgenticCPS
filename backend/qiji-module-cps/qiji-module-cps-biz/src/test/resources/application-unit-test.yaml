@@ -18,6 +18,10 @@ spring:
 mybatis:
   lazy-initialization: true
 
+mybatis-plus:
+  encryptor:
+    password: 0123456789abcdef0123456789abcdef
+
 qiji:
   info:
     base-package: com.qiji.cps.module

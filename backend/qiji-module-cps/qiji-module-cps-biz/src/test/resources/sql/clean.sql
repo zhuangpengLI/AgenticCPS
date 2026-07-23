@@ -1,3 +1,8 @@
+DELETE FROM "cps_platform_onboarding_draft";
+DELETE FROM "cps_adzone";
+DELETE FROM "cps_api_vendor";
+DELETE FROM "cps_rebate_config";
+DELETE FROM "cps_platform";
 DELETE FROM "cps_withdraw";
 DELETE FROM "cps_rebate_asset_policy";
 DELETE FROM "cps_rebate_asset_migration_check";

@@ -193,4 +193,108 @@ ALTER TABLE `cps_mcp_access_log`
   ADD COLUMN `invocation_source` varchar(32) NULL DEFAULT NULL COMMENT '调用来源' AFTER `mcp_client_name`,
   ADD COLUMN `trace_id` varchar(64) NULL DEFAULT NULL COMMENT '链路追踪编号' AFTER `invocation_source`;
 
+-- ============================================================
+-- 修改时间：2026-07-23 00:00:00
+-- 目的：新增租户隔离、密文存储的平台接入草稿，并修正平台与推广位的未删除记录唯一约束。
+-- 说明：生成列允许历史软删记录保留；索引与列变更通过 information_schema 判定，可重复执行。
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `cps_platform_onboarding_draft` (
+  `id`                    bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `platform_code`         varchar(32)  NOT NULL COMMENT '平台编码',
+  `mode`                  varchar(16)  NOT NULL COMMENT '接入模式（CREATE/RECONFIGURE）',
+  `payload_ciphertext`    longtext     NOT NULL COMMENT '加密后的配置草稿JSON',
+  `draft_version`         int          NOT NULL DEFAULT '1' COMMENT '草稿乐观锁版本',
+  `config_fingerprint`    varchar(64)           DEFAULT NULL COMMENT '当前配置指纹',
+  `validated_fingerprint` varchar(64)           DEFAULT NULL COMMENT '最近校验通过的配置指纹',
+  `status`                varchar(16)  NOT NULL DEFAULT 'DRAFT' COMMENT '状态（DRAFT/VALIDATING/READY/FAILED/PUBLISHED）',
+  `check_summary`         text                  COMMENT '最近校验摘要',
+  `validated_at`          datetime              DEFAULT NULL COMMENT '最近校验时间',
+  `published_at`          datetime              DEFAULT NULL COMMENT '发布时间',
+  `creator`               varchar(64)           DEFAULT NULL COMMENT '创建人',
+  `create_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`               varchar(64)           DEFAULT NULL COMMENT '更新人',
+  `update_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`               bit(1)       NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`             bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  `active_unique_key`     varchar(128) GENERATED ALWAYS AS (IF(`deleted` = b'0', CONCAT(`tenant_id`, ':', `platform_code`), NULL)) STORED COMMENT '未删除草稿租户平台唯一键',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cps_platform_onboarding_draft_active` (`active_unique_key`) USING BTREE,
+  KEY `idx_cps_platform_onboarding_draft_status` (`tenant_id`, `status`, `update_time`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS平台接入草稿表';
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`columns`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_platform'
+      AND `column_name` = 'active_unique_key'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_platform` ADD COLUMN `active_unique_key` varchar(128) GENERATED ALWAYS AS (IF(`deleted` = b''0'', CONCAT(`tenant_id`, '':'', `platform_code`), NULL)) STORED COMMENT ''未删除平台租户唯一键'''
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`statistics`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_platform'
+      AND `index_name` = 'uk_cps_platform_active'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_platform` ADD UNIQUE INDEX `uk_cps_platform_active` (`active_unique_key`) USING BTREE'
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`statistics`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_platform'
+      AND `index_name` = 'uk_platform_code'
+  ),
+  'ALTER TABLE `cps_platform` DROP INDEX `uk_platform_code`',
+  'SELECT 1'
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`columns`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_adzone'
+      AND `column_name` = 'active_unique_key'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_adzone` ADD COLUMN `active_unique_key` varchar(256) GENERATED ALWAYS AS (IF(`deleted` = b''0'', CONCAT(`tenant_id`, '':'', `platform_code`, '':'', `adzone_id`), NULL)) STORED COMMENT ''未删除推广位租户唯一键'''
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`statistics`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_adzone'
+      AND `index_name` = 'uk_cps_adzone_active'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_adzone` ADD UNIQUE INDEX `uk_cps_adzone_active` (`active_unique_key`) USING BTREE'
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
 SET FOREIGN_KEY_CHECKS = 1;
