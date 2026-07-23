@@ -237,6 +237,20 @@ PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
 EXECUTE cps_onboarding_stmt;
 DEALLOCATE PREPARE cps_onboarding_stmt;
 
+-- 历史库可能存在同租户、同平台、同推广位的多条未删除记录。
+-- 唯一索引创建前保留最大 ID 的最新记录，并软删除其余记录；重复执行不会再次修改数据。
+UPDATE `cps_adzone` AS `older`
+INNER JOIN `cps_adzone` AS `newer`
+        ON `older`.`tenant_id` = `newer`.`tenant_id`
+       AND `older`.`platform_code` = `newer`.`platform_code`
+       AND `older`.`adzone_id` = `newer`.`adzone_id`
+       AND `older`.`id` < `newer`.`id`
+SET `older`.`deleted` = b'1',
+    `older`.`updater` = 'platform-onboarding-migration',
+    `older`.`update_time` = CURRENT_TIMESTAMP
+WHERE `older`.`deleted` = b'0'
+  AND `newer`.`deleted` = b'0';
+
 SET @cps_onboarding_sql = IF(
   EXISTS (
     SELECT 1
