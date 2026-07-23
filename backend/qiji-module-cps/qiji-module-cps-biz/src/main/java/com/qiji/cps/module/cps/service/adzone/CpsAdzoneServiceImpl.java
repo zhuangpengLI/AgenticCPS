@@ -123,11 +123,17 @@ public class CpsAdzoneServiceImpl implements CpsAdzoneService {
     }
 
     private void validateAdzoneConfig(CpsAdzoneSaveReqVO reqVO) {
+        if (isTaobaoChannelAdzone(reqVO)) {
+            if (reqVO.getRelationId() == null || !StringUtils.hasText(reqVO.getExternalRelationId())) {
+                throw exception(ADZONE_RELATION_REQUIRED, CpsAdzoneTypeEnum.CHANNEL.getType());
+            }
+            return;
+        }
         if (!isMemberAdzone(reqVO)) {
             return;
         }
         if (reqVO.getRelationId() == null) {
-            throw exception(ADZONE_CONFIG_INVALID, "会员专属推广位必须选择关联会员");
+            throw exception(ADZONE_RELATION_REQUIRED, CpsAdzoneTypeEnum.MEMBER.getType());
         }
         if (!PLATFORM_TAOBAO.equalsIgnoreCase(reqVO.getPlatformCode())) {
             return;
@@ -136,8 +142,10 @@ public class CpsAdzoneServiceImpl implements CpsAdzoneService {
                 || !TAOBAO_PID_PATTERN.matcher(reqVO.getAdzoneId().trim()).matches()) {
             throw exception(ADZONE_CONFIG_INVALID, "淘宝会员 PID 必须使用 mm_数字_数字_数字 格式");
         }
-        if (!StringUtils.hasText(reqVO.getExternalSpecialId())
-                || !TAOBAO_SPECIAL_ID_PATTERN.matcher(reqVO.getExternalSpecialId().trim()).matches()) {
+        if (!StringUtils.hasText(reqVO.getExternalSpecialId())) {
+            throw exception(ADZONE_RELATION_REQUIRED, CpsAdzoneTypeEnum.MEMBER.getType());
+        }
+        if (!TAOBAO_SPECIAL_ID_PATTERN.matcher(reqVO.getExternalSpecialId().trim()).matches()) {
             throw exception(ADZONE_CONFIG_INVALID, "淘宝会员专属推广位必须填写数字会员运营ID specialId");
         }
     }
@@ -145,6 +153,12 @@ public class CpsAdzoneServiceImpl implements CpsAdzoneService {
     private boolean isMemberAdzone(CpsAdzoneSaveReqVO reqVO) {
         return CpsAdzoneTypeEnum.MEMBER.getType().equalsIgnoreCase(reqVO.getAdzoneType())
                 || CpsAdzoneTypeEnum.MEMBER.getType().equalsIgnoreCase(reqVO.getRelationType());
+    }
+
+    private boolean isTaobaoChannelAdzone(CpsAdzoneSaveReqVO reqVO) {
+        return PLATFORM_TAOBAO.equalsIgnoreCase(reqVO.getPlatformCode())
+                && (CpsAdzoneTypeEnum.CHANNEL.getType().equalsIgnoreCase(reqVO.getAdzoneType())
+                || CpsAdzoneTypeEnum.CHANNEL.getType().equalsIgnoreCase(reqVO.getRelationType()));
     }
 
 }

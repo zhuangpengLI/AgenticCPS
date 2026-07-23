@@ -1,0 +1,249 @@
+package com.qiji.cps.module.cps.service.onboarding;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qiji.cps.module.cps.client.CpsApiVendorClient;
+import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.CpsVendorCapability;
+import com.qiji.cps.module.cps.client.CpsVendorConfigField;
+import com.qiji.cps.module.cps.client.CpsVendorConfigSchema;
+import com.qiji.cps.module.cps.client.CpsVendorDescriptor;
+import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingCheckRespVO;
+import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingAdzone;
+import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingRebateRule;
+import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingVendor;
+import com.qiji.cps.module.cps.service.onboarding.model.CpsPlatformOnboardingPayload;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class CpsPlatformOnboardingValidatorTest {
+
+    @Mock
+    private CpsPlatformClientFactory clientFactory;
+    @Mock
+    private CpsApiVendorClient dataokeClient;
+    @Mock
+    private CpsApiVendorClient officialClient;
+
+    private CpsPlatformOnboardingValidator validator;
+
+    @BeforeEach
+    void setUp() {
+        validator = new CpsPlatformOnboardingValidator(clientFactory, new ObjectMapper());
+        when(clientFactory.getRegisteredPlatformCodes()).thenReturn(Set.of("taobao"));
+        when(clientFactory.getRegisteredVendorDescriptors()).thenReturn(List.of(
+                descriptor("dataoke", Set.of(CpsVendorCapability.GOODS_SEARCH,
+                        CpsVendorCapability.CONNECTION_TEST)),
+                descriptor("official", Set.of(CpsVendorCapability.PROMOTION_LINK,
+                        CpsVendorCapability.CONNECTION_TEST))));
+        when(clientFactory.getVendorDescriptor("dataoke", "taobao"))
+                .thenReturn(descriptor("dataoke", Set.of(CpsVendorCapability.GOODS_SEARCH,
+                        CpsVendorCapability.CONNECTION_TEST)));
+        when(clientFactory.getVendorDescriptor("official", "taobao"))
+                .thenReturn(descriptor("official", Set.of(CpsVendorCapability.PROMOTION_LINK,
+                        CpsVendorCapability.CONNECTION_TEST)));
+        when(clientFactory.getVendorClient("dataoke", "taobao")).thenReturn(dataokeClient);
+        when(clientFactory.getVendorClient("official", "taobao")).thenReturn(officialClient);
+    }
+
+    @Test
+    void validate_validBundle_shouldNormalizeWithoutMutatingCaller() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getVendors().get(0).setDefaultAdzoneId("old-default");
+
+        CpsPlatformOnboardingValidator.ValidationResult result =
+                validator.validateNormalized(payload);
+
+        assertTrue(result.response().isSuccess());
+        assertNotSame(payload, result.normalizedPayload());
+        assertEquals("old-default", payload.getVendors().get(0).getDefaultAdzoneId());
+        assertEquals("adzone-primary",
+                result.normalizedPayload().getVendors().get(0).getDefaultAdzoneId());
+    }
+
+    @Test
+    void validate_shouldReturnAllErrorsInStableOrder() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getPlatform().setPlatformCode("unknown");
+        payload.setPrimaryVendorCode(" ");
+        payload.getVendors().add(CpsPlatformOnboardingTestFixtures.vendor(" DATAOKE "));
+        payload.setRuntimeDefaultAdzoneId("foreign");
+        payload.getRebateRules().forEach(rule -> rule.setPlatformCode("unknown"));
+        payload.getRebateRules().get(0).setMinRebateAmount(new BigDecimal("5"));
+        payload.getRebateRules().get(0).setMaxRebateAmount(new BigDecimal("1"));
+        payload.getRebateRules().add(CpsOnboardingRebateRule.builder()
+                .platformCode("unknown").rebateRate(new BigDecimal("70"))
+                .status(1).priority(0).build());
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertFalse(result.isSuccess());
+        assertContains(result, "PLATFORM_NOT_REGISTERED", "platform.platformCode");
+        assertContains(result, "PRIMARY_VENDOR_REQUIRED", "primaryVendorCode");
+        assertContains(result, "VENDOR_DUPLICATE", "vendors");
+        assertContains(result, "DEFAULT_ADZONE_INVALID", "runtimeDefaultAdzoneId");
+        assertContains(result, "REBATE_AMOUNT_INVALID", "rebateRules[0]");
+        assertContains(result, "REBATE_SCOPE_DUPLICATE", "rebateRules");
+        assertEquals(result.getItems().stream().map(CpsPlatformOnboardingCheckRespVO.Item::getCode).toList(),
+                validator.validate(payload).getItems().stream()
+                        .map(CpsPlatformOnboardingCheckRespVO.Item::getCode).toList());
+    }
+
+    @Test
+    void validate_platformRegisteredOnlyByVendorDescriptor_shouldAccept() {
+        when(clientFactory.getRegisteredPlatformCodes()).thenReturn(Set.of());
+
+        assertTrue(validator.validate(validPayload()).isSuccess());
+    }
+
+    @Test
+    void validate_primaryMustExistOnceAndBeEnabled() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getVendors().get(0).setStatus(0);
+
+        assertContains(validator.validate(payload), "PRIMARY_VENDOR_REQUIRED", "primaryVendorCode");
+    }
+
+    @Test
+    void validate_enabledVendorMustHaveDescriptorClientSchemaAndBusinessCapability() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getVendors().get(0).setAppSecret(null);
+        when(clientFactory.getVendorDescriptor("official", "taobao")).thenReturn(null);
+        when(clientFactory.getVendorClient("official", "taobao")).thenReturn(null);
+        when(clientFactory.getVendorDescriptor("dataoke", "taobao")).thenReturn(
+                descriptor("dataoke", Set.of(CpsVendorCapability.CONNECTION_TEST)));
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertContains(result, "VENDOR_CONFIG_INVALID", "vendors[0].appSecret");
+        assertContains(result, "VENDOR_NOT_REGISTERED", "vendors[0].capabilities");
+        assertContains(result, "VENDOR_NOT_REGISTERED", "vendors[1].vendorCode");
+    }
+
+    @Test
+    void validate_shouldApplyDescriptorSchemaToParsedExtraConfig() {
+        CpsVendorDescriptor descriptor = descriptor("dataoke",
+                Set.of(CpsVendorCapability.GOODS_SEARCH));
+        descriptor = CpsVendorDescriptor.builder()
+                .vendorCode(descriptor.getVendorCode())
+                .platformCode(descriptor.getPlatformCode())
+                .vendorType(descriptor.getVendorType())
+                .capabilities(descriptor.getCapabilities())
+                .configSchema(new CpsVendorConfigSchema(List.of(
+                        CpsVendorConfigField.required("vendor", false))))
+                .build();
+        when(clientFactory.getVendorDescriptor("dataoke", "taobao")).thenReturn(descriptor);
+
+        CpsPlatformOnboardingPayload payload = validPayload();
+        assertTrue(validator.validate(payload).isSuccess());
+
+        payload.getVendors().get(0).setExtraConfig("{}");
+        assertContains(validator.validate(payload),
+                "VENDOR_CONFIG_INVALID", "vendors[0].vendor");
+
+        payload.getVendors().get(0).setExtraConfig("{invalid");
+        assertContains(validator.validate(payload),
+                "VENDOR_CONFIG_INVALID", "vendors[0].extraConfig");
+    }
+
+    @Test
+    void validate_adzoneRules_shouldRequireEnabledGeneralDefaultAndUniqueIds() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getAdzones().get(0).setStatus(0);
+        payload.getAdzones().get(1).setAdzoneType("channel");
+        payload.getAdzones().add(CpsOnboardingAdzone.builder()
+                .platformCode("taobao").adzoneId(" ADZONE-PRIMARY ")
+                .adzoneType("general").status(0).build());
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertContains(result, "GENERAL_ADZONE_REQUIRED", "adzones");
+        assertContains(result, "DEFAULT_ADZONE_INVALID", "runtimeDefaultAdzoneId");
+        assertContains(result, "ADZONE_DUPLICATE", "adzones");
+    }
+
+    @Test
+    void validate_rebateRules_shouldValidateEveryFieldAndRequireDefault() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        CpsOnboardingRebateRule rule = payload.getRebateRules().get(0);
+        rule.setPlatformCode(null);
+        rule.setMemberId(9L);
+        rule.setRebateRate(new BigDecimal("101"));
+        rule.setMinRebateAmount(new BigDecimal("-0.01"));
+        rule.setStatus(2);
+        rule.setPriority(-1);
+        payload.getRebateRules().removeIf(item -> item.getMemberLevelId() == null);
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertContains(result, "REBATE_PLATFORM_INVALID", "rebateRules[0].platformCode");
+        assertContains(result, "REBATE_MEMBER_RULE_FORBIDDEN", "rebateRules[0].memberId");
+        assertContains(result, "REBATE_RATE_INVALID", "rebateRules[0].rebateRate");
+        assertContains(result, "REBATE_AMOUNT_INVALID", "rebateRules[0]");
+        assertContains(result, "REBATE_STATUS_INVALID", "rebateRules[0].status");
+        assertContains(result, "REBATE_PRIORITY_INVALID", "rebateRules[0].priority");
+        assertContains(result, "DEFAULT_REBATE_REQUIRED", "rebateRules");
+    }
+
+    @Test
+    void validate_rebatePlatformMustMatchRootAndNormalizedScopesMustBeUnique() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getRebateRules().get(0).setPlatformCode("jd");
+        payload.getRebateRules().add(CpsOnboardingRebateRule.builder()
+                .platformCode(" TAOBAO ").memberLevelId(20L)
+                .rebateRate(new BigDecimal("50")).status(1).priority(1).build());
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertContains(result, "REBATE_PLATFORM_INVALID", "rebateRules[0].platformCode");
+        assertContains(result, "REBATE_SCOPE_DUPLICATE", "rebateRules");
+    }
+
+    private CpsPlatformOnboardingPayload validPayload() {
+        CpsPlatformOnboardingPayload payload = CpsPlatformOnboardingTestFixtures.validPayload();
+        payload.getRebateRules().add(CpsOnboardingRebateRule.builder()
+                .platformCode("taobao")
+                .rebateRate(new BigDecimal("60.00"))
+                .minRebateAmount(BigDecimal.ZERO)
+                .maxRebateAmount(new BigDecimal("100"))
+                .status(1)
+                .priority(0)
+                .build());
+        return payload;
+    }
+
+    private static CpsVendorDescriptor descriptor(String vendorCode,
+                                                  Set<CpsVendorCapability> capabilities) {
+        return CpsVendorDescriptor.builder()
+                .vendorCode(vendorCode)
+                .platformCode("taobao")
+                .vendorType("aggregator")
+                .capabilities(capabilities)
+                .configSchema(CpsVendorConfigSchema.standard())
+                .build();
+    }
+
+    private static void assertContains(CpsPlatformOnboardingCheckRespVO result,
+                                       String code, String fieldPath) {
+        assertTrue(result.getItems().stream().anyMatch(item ->
+                        code.equals(item.getCode()) && fieldPath.equals(item.getFieldPath())),
+                () -> "missing " + code + " at " + fieldPath + ": " + result);
+    }
+
+}

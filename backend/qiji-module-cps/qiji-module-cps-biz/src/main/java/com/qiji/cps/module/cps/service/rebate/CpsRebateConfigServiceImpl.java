@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.REBATE_CONFIG_AMOUNT_RANGE_INVALID;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.REBATE_CONFIG_NOT_EXISTS;
 
 /**
@@ -33,6 +34,7 @@ public class CpsRebateConfigServiceImpl implements CpsRebateConfigService {
 
     @Override
     public Long createRebateConfig(CpsRebateConfigSaveReqVO createReqVO) {
+        validateAmountRange(createReqVO);
         CpsRebateConfigDO config = BeanUtils.toBean(createReqVO, CpsRebateConfigDO.class);
         rebateConfigMapper.insert(config);
         return config.getId();
@@ -40,6 +42,7 @@ public class CpsRebateConfigServiceImpl implements CpsRebateConfigService {
 
     @Override
     public void updateRebateConfig(CpsRebateConfigSaveReqVO updateReqVO) {
+        validateAmountRange(updateReqVO);
         validateRebateConfigExists(updateReqVO.getId());
         CpsRebateConfigDO updateObj = BeanUtils.toBean(updateReqVO, CpsRebateConfigDO.class);
         rebateConfigMapper.updateById(updateObj);
@@ -104,6 +107,13 @@ public class CpsRebateConfigServiceImpl implements CpsRebateConfigService {
     private void validateRebateConfigExists(Long id) {
         if (rebateConfigMapper.selectById(id) == null) {
             throw exception(REBATE_CONFIG_NOT_EXISTS);
+        }
+    }
+
+    private void validateAmountRange(CpsRebateConfigSaveReqVO request) {
+        if (request.getMinRebateAmount() != null && request.getMaxRebateAmount() != null
+                && request.getMinRebateAmount().compareTo(request.getMaxRebateAmount()) > 0) {
+            throw exception(REBATE_CONFIG_AMOUNT_RANGE_INVALID);
         }
     }
 

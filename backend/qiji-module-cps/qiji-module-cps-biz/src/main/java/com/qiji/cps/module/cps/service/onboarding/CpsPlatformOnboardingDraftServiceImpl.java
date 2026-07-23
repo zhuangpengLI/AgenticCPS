@@ -153,6 +153,21 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
     }
 
     @Override
+    public DraftSnapshot getRequiredSnapshot(String platformCode, Long expectedVersion) {
+        String normalizedCode = normalizePlatformCode(platformCode);
+        CpsPlatformOnboardingDraftDO draft = draftMapper.selectByPlatformCode(normalizedCode);
+        if (draft == null) {
+            throw exception(ONBOARDING_DRAFT_NOT_EXISTS);
+        }
+        Integer requiredVersion = toVersion(expectedVersion);
+        if (!requiredVersion.equals(draft.getDraftVersion())) {
+            throw exception(ONBOARDING_DRAFT_VERSION_CONFLICT);
+        }
+        return new DraftSnapshot(draft.getId(), requiredVersion.longValue(),
+                draft.getConfigFingerprint(), readPayload(draft.getPayloadCiphertext()));
+    }
+
+    @Override
     public void markValidating(Long draftId, Long expectedVersion) {
         int updated = draftMapper.markValidating(
                 draftId, toVersion(expectedVersion), CpsPlatformOnboardingStatusEnum.VALIDATING.getCode());

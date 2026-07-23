@@ -51,6 +51,39 @@ class CpsPlatformOnboardingDraftServiceImplTest {
     private CpsRebateConfigMapper rebateMapper;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    void getRequiredSnapshot_shouldRequireExactVersionAndKeepToStringSecretSafe() throws Exception {
+        CpsPlatformOnboardingPayload payload = CpsPlatformOnboardingTestFixtures.validPayload();
+        payload.getVendors().get(0).setAppSecret("raw-snapshot-secret");
+        CpsPlatformOnboardingDraftDO draft = CpsPlatformOnboardingDraftDO.builder()
+                .id(7L).platformCode("taobao").draftVersion(5)
+                .configFingerprint("exact-fingerprint")
+                .payloadCiphertext(objectMapper.writeValueAsString(payload))
+                .build();
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(draft);
+
+        CpsPlatformOnboardingDraftService.DraftSnapshot snapshot =
+                service.getRequiredSnapshot("taobao", 5L);
+
+        assertEquals(7L, snapshot.id());
+        assertEquals(5L, snapshot.version());
+        assertEquals("exact-fingerprint", snapshot.configFingerprint());
+        assertEquals("raw-snapshot-secret",
+                snapshot.payload().getVendors().get(0).getAppSecret());
+        assertFalse(snapshot.toString().contains("raw-snapshot-secret"));
+    }
+
+    @Test
+    void getRequiredSnapshot_whenVersionDiffers_shouldReject() {
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(
+                CpsPlatformOnboardingDraftDO.builder()
+                        .id(7L).platformCode("taobao").draftVersion(6)
+                        .payloadCiphertext("{}").build());
+
+        assertServiceCode(ONBOARDING_DRAFT_VERSION_CONFLICT.getCode(),
+                () -> service.getRequiredSnapshot("taobao", 5L));
+    }
     private CpsPlatformOnboardingDraftServiceImpl service;
 
     @BeforeEach
