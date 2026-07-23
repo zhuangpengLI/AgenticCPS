@@ -14,7 +14,7 @@ public interface CpsPlatformOnboardingDraftService {
     CpsPlatformOnboardingDetailRespVO saveDraft(
             @Valid CpsPlatformOnboardingDraftSaveReqVO request);
 
-    void deleteDraft(String platformCode);
+    void deleteDraft(String platformCode, Long expectedVersion);
 
     CpsPlatformOnboardingPayload getRequiredPayload(String platformCode);
 

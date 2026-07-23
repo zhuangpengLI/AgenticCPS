@@ -1,6 +1,5 @@
 package com.qiji.cps.module.cps.controller.admin.onboarding.vo;
 
-import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformSaveReqVO;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingAdzone;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingRebateRule;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -21,7 +20,7 @@ import java.util.List;
 @ToString(onlyExplicitlyIncluded = true)
 public class CpsPlatformOnboardingPayloadRespVO {
 
-    private CpsPlatformSaveReqVO platform;
+    private CpsOnboardingPlatformRespVO platform;
 
     @ToString.Include
     private String primaryVendorCode;

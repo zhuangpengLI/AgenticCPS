@@ -8,6 +8,8 @@ import com.qiji.cps.framework.tenant.core.context.TenantContextHolder;
 import com.qiji.cps.framework.tenant.core.db.TenantDatabaseInterceptor;
 import com.qiji.cps.framework.test.core.ut.BaseDbUnitTest;
 import com.qiji.cps.module.cps.dal.dataobject.onboarding.CpsPlatformOnboardingDraftDO;
+import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateConfigDO;
+import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateConfigMapper;
 import com.qiji.cps.module.cps.enums.onboarding.CpsPlatformOnboardingModeEnum;
 import com.qiji.cps.module.cps.enums.onboarding.CpsPlatformOnboardingStatusEnum;
 import jakarta.annotation.Resource;
@@ -19,11 +21,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 import javax.sql.DataSource;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -49,6 +53,8 @@ class CpsPlatformOnboardingDraftMapperTest extends BaseDbUnitTest {
 
     @Resource
     private CpsPlatformOnboardingDraftMapper draftMapper;
+    @Resource
+    private CpsRebateConfigMapper rebateMapper;
     @Resource
     private DataSource dataSource;
     @Resource
@@ -200,6 +206,81 @@ class CpsPlatformOnboardingDraftMapperTest extends BaseDbUnitTest {
     }
 
     @Test
+    void markMethods_shouldRejectCrossTenantStateChanges() {
+        CpsPlatformOnboardingDraftDO tenantOneDraft =
+                newDraft("taobao", "{\"tenant\":1}");
+        draftMapper.insert(tenantOneDraft);
+
+        TenantContextHolder.setTenantId(2L);
+        assertEquals(0, draftMapper.markValidating(
+                tenantOneDraft.getId(), 1,
+                CpsPlatformOnboardingStatusEnum.VALIDATING.getCode()));
+        assertEquals(0, draftMapper.markChecked(
+                tenantOneDraft.getId(), 1,
+                CpsPlatformOnboardingStatusEnum.READY.getCode(),
+                "foreign-fingerprint", "foreign result", LocalDateTime.now()));
+
+        TenantContextHolder.setTenantId(1L);
+        CpsPlatformOnboardingDraftDO unchanged =
+                draftMapper.selectById(tenantOneDraft.getId());
+        assertEquals(CpsPlatformOnboardingStatusEnum.DRAFT.getCode(), unchanged.getStatus());
+        assertNull(unchanged.getValidatedFingerprint());
+        assertNull(unchanged.getCheckSummary());
+    }
+
+    @Test
+    void deleteByIdAndVersion_shouldSoftDeleteMatchingVersion() {
+        CpsPlatformOnboardingDraftDO draft = newDraft("taobao", "{\"attempt\":1}");
+        draftMapper.insert(draft);
+
+        assertEquals(1, draftMapper.deleteByIdAndVersion(draft.getId(), 1));
+        assertNull(draftMapper.selectById(draft.getId()));
+        assertEquals(1, queryInt(
+                "SELECT deleted FROM cps_platform_onboarding_draft WHERE id = ?", draft.getId()));
+    }
+
+    @Test
+    void deleteByIdAndVersion_shouldRejectStaleVersion() {
+        CpsPlatformOnboardingDraftDO draft = newDraft("taobao", "{\"attempt\":1}");
+        draftMapper.insert(draft);
+
+        assertEquals(0, draftMapper.deleteByIdAndVersion(draft.getId(), 2));
+        assertNotNull(draftMapper.selectById(draft.getId()));
+    }
+
+    @Test
+    void deleteByIdAndVersion_shouldRejectCrossTenantDelete() {
+        CpsPlatformOnboardingDraftDO tenantOneDraft = newDraft("taobao", "{\"tenant\":1}");
+        draftMapper.insert(tenantOneDraft);
+
+        TenantContextHolder.setTenantId(2L);
+        assertEquals(0, draftMapper.deleteByIdAndVersion(tenantOneDraft.getId(), 1));
+
+        TenantContextHolder.setTenantId(1L);
+        assertNotNull(draftMapper.selectById(tenantOneDraft.getId()));
+    }
+
+    @Test
+    void selectManagedRulesByPlatformCode_shouldKeepDefaultLevelAndDisabledButExcludePersonal() {
+        rebateMapper.insert(rebateRule("taobao", null, null, 1, 10));
+        rebateMapper.insert(rebateRule("taobao", null, 10L, 1, 20));
+        rebateMapper.insert(rebateRule("taobao", null, 20L, 0, 30));
+        rebateMapper.insert(rebateRule("taobao", 99L, null, 1, 40));
+        rebateMapper.insert(rebateRule("jd", null, null, 1, 50));
+
+        List<CpsRebateConfigDO> managed =
+                rebateMapper.selectManagedRulesByPlatformCode("taobao");
+
+        assertEquals(3, managed.size());
+        assertEquals(List.of(30, 20, 10),
+                managed.stream().map(CpsRebateConfigDO::getPriority).toList());
+        assertEquals(0, managed.get(0).getStatus());
+        assertEquals(20L, managed.get(0).getMemberLevelId());
+        assertNull(managed.get(1).getMemberId());
+        assertNull(managed.get(2).getMemberLevelId());
+    }
+
+    @Test
     void payloadCiphertext_shouldEncryptAtRestAndRoundTrip() {
         String plaintext = "{\"appSecret\":\"secret-value\"}";
         CpsPlatformOnboardingDraftDO draft = newDraft("taobao", plaintext);
@@ -251,6 +332,20 @@ class CpsPlatformOnboardingDraftMapperTest extends BaseDbUnitTest {
                 .build();
         draft.setTenantId(TenantContextHolder.getRequiredTenantId());
         return draft;
+    }
+
+    private CpsRebateConfigDO rebateRule(
+            String platformCode, Long memberId, Long levelId, Integer status, Integer priority) {
+        CpsRebateConfigDO rule = CpsRebateConfigDO.builder()
+                .platformCode(platformCode)
+                .memberId(memberId)
+                .memberLevelId(levelId)
+                .rebateRate(new BigDecimal("60.00"))
+                .status(status)
+                .priority(priority)
+                .build();
+        rule.setTenantId(TenantContextHolder.getRequiredTenantId());
+        return rule;
     }
 
     private String queryString(String sql, Object... parameters) {

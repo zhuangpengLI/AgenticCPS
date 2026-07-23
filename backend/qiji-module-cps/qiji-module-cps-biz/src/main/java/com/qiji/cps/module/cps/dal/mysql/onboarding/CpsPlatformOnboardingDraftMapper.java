@@ -72,4 +72,15 @@ public interface CpsPlatformOnboardingDraftMapper extends BaseMapperX<CpsPlatfor
                     @Param("checkSummary") String checkSummary,
                     @Param("validatedAt") LocalDateTime validatedAt);
 
+    @Update("""
+            UPDATE cps_platform_onboarding_draft
+            SET deleted = TRUE,
+                update_time = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+              AND draft_version = #{expectedVersion}
+              AND deleted = FALSE
+            """)
+    int deleteByIdAndVersion(@Param("id") Long id,
+                             @Param("expectedVersion") Integer expectedVersion);
+
 }

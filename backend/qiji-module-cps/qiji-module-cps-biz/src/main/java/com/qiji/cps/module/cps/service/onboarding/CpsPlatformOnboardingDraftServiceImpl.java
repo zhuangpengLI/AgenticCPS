@@ -3,6 +3,7 @@ package com.qiji.cps.module.cps.service.onboarding;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
+import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsOnboardingPlatformRespVO;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsOnboardingVendorRespVO;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingDetailRespVO;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingDraftSaveReqVO;
@@ -104,7 +105,10 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
             try {
                 draftMapper.insert(created);
             } catch (DuplicateKeyException e) {
-                throw exception(ONBOARDING_DRAFT_VERSION_CONFLICT);
+                if (draftMapper.selectByPlatformCode(platformCode) != null) {
+                    throw exception(ONBOARDING_DRAFT_VERSION_CONFLICT);
+                }
+                throw e;
             }
             return toDetail(created, merged);
         }
@@ -128,12 +132,14 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
     }
 
     @Override
-    public void deleteDraft(String platformCode) {
+    public void deleteDraft(String platformCode, Long expectedVersion) {
         String normalizedCode = normalizePlatformCode(platformCode);
         CpsPlatformOnboardingDraftDO draft = draftMapper.selectByPlatformCode(normalizedCode);
-        if (draft == null || draftMapper.deleteById(draft.getId()) == 0) {
+        if (draft == null) {
             throw exception(ONBOARDING_DRAFT_NOT_EXISTS);
         }
+        int deleted = draftMapper.deleteByIdAndVersion(draft.getId(), toVersion(expectedVersion));
+        ensureVersionUpdated(deleted, draft.getId());
     }
 
     @Override
@@ -167,8 +173,9 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
                 .stream().map(this::toVendor).toList();
         List<CpsOnboardingAdzone> adzones = safeList(adzoneMapper.selectAllByPlatformCode(platformCode))
                 .stream().map(this::toAdzone).toList();
-        List<CpsOnboardingRebateRule> rules = safeList(rebateMapper.selectListByPlatformCode(platformCode))
-                .stream().map(this::toRebateRule).toList();
+        List<CpsOnboardingRebateRule> rules =
+                safeList(rebateMapper.selectManagedRulesByPlatformCode(platformCode))
+                        .stream().map(this::toRebateRule).toList();
         return CpsPlatformOnboardingPayload.builder()
                 .platform(BeanUtils.toBean(platform, CpsPlatformSaveReqVO.class))
                 .primaryVendorCode(platform.getActiveVendorCode())
@@ -192,6 +199,7 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
             CpsPlatformOnboardingPayload storedPayload) {
         Map<String, CpsOnboardingVendor> storedByCode =
                 vendorsByCode(storedPayload == null ? null : storedPayload.getVendors());
+        mergePlatformExtraConfig(platformCode, incoming, storedPayload);
         Map<String, CpsOnboardingVendor> runtimeByCode = needsSecretFallback(incoming.getVendors())
                 ? runtimeVendorsByCode(platformCode) : Map.of();
         List<CpsOnboardingVendor> mergedVendors = safeList(incoming.getVendors()).stream()
@@ -223,7 +231,29 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
 
     private boolean needsSecretFallback(List<CpsOnboardingVendor> vendors) {
         return safeList(vendors).stream().anyMatch(vendor -> vendor != null
-                && (!hasText(vendor.getAppSecret()) || !hasText(vendor.getAuthToken())));
+                && (!hasText(vendor.getAppKey())
+                || !hasText(vendor.getAppSecret())
+                || !hasText(vendor.getAuthToken())
+                || !hasText(vendor.getExtraConfig())));
+    }
+
+    private void mergePlatformExtraConfig(
+            String platformCode,
+            CpsPlatformOnboardingPayload incoming,
+            CpsPlatformOnboardingPayload storedPayload) {
+        if (hasText(incoming.getPlatform().getExtraConfig())) {
+            return;
+        }
+        String storedExtraConfig = storedPayload == null || storedPayload.getPlatform() == null
+                ? null : storedPayload.getPlatform().getExtraConfig();
+        if (hasText(storedExtraConfig)) {
+            incoming.getPlatform().setExtraConfig(storedExtraConfig);
+            return;
+        }
+        CpsPlatformDO runtime = platformMapper.selectByPlatformCode(platformCode);
+        if (runtime != null && hasText(runtime.getExtraConfig())) {
+            incoming.getPlatform().setExtraConfig(runtime.getExtraConfig());
+        }
     }
 
     private CpsPlatformOnboardingDetailRespVO newTransientDetail(
@@ -260,12 +290,28 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
                 .map(this::toVendorResponse)
                 .toList();
         return CpsPlatformOnboardingPayloadRespVO.builder()
-                .platform(copy.getPlatform())
+                .platform(toPlatformResponse(copy.getPlatform()))
                 .primaryVendorCode(copy.getPrimaryVendorCode())
                 .runtimeDefaultAdzoneId(copy.getRuntimeDefaultAdzoneId())
                 .vendors(new ArrayList<>(vendors))
                 .adzones(new ArrayList<>(safeList(copy.getAdzones())))
                 .rebateRules(new ArrayList<>(safeList(copy.getRebateRules())))
+                .build();
+    }
+
+    private CpsOnboardingPlatformRespVO toPlatformResponse(CpsPlatformSaveReqVO platform) {
+        return CpsOnboardingPlatformRespVO.builder()
+                .id(platform.getId())
+                .platformCode(platform.getPlatformCode())
+                .platformName(platform.getPlatformName())
+                .platformLogo(platform.getPlatformLogo())
+                .defaultAdzoneId(platform.getDefaultAdzoneId())
+                .platformServiceRate(platform.getPlatformServiceRate())
+                .sort(platform.getSort())
+                .status(platform.getStatus())
+                .extraConfigConfigured(hasText(platform.getExtraConfig()))
+                .remark(platform.getRemark())
+                .activeVendorCode(platform.getActiveVendorCode())
                 .build();
     }
 
@@ -275,12 +321,12 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
                 .vendorName(vendor.getVendorName())
                 .vendorType(vendor.getVendorType())
                 .platformCode(vendor.getPlatformCode())
-                .appKey(vendor.getAppKey())
                 .apiBaseUrl(vendor.getApiBaseUrl())
+                .appKeyConfigured(hasText(vendor.getAppKey()))
                 .appSecretConfigured(hasText(vendor.getAppSecret()))
                 .authTokenConfigured(hasText(vendor.getAuthToken()))
                 .defaultAdzoneId(vendor.getDefaultAdzoneId())
-                .extraConfig(vendor.getExtraConfig())
+                .extraConfigConfigured(hasText(vendor.getExtraConfig()))
                 .priority(vendor.getPriority())
                 .status(vendor.getStatus())
                 .remark(vendor.getRemark())

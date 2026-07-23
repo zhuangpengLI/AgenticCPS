@@ -7,43 +7,39 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-@Schema(description = "管理后台 - 平台接入供应商 Response VO")
+import java.math.BigDecimal;
+
+@Schema(description = "管理后台 - 平台接入平台配置 Response VO")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(onlyExplicitlyIncluded = true)
-public class CpsOnboardingVendorRespVO {
+public class CpsOnboardingPlatformRespVO {
 
-    @ToString.Include
-    private String vendorCode;
-
-    @ToString.Include
-    private String vendorName;
-
-    @ToString.Include
-    private String vendorType;
+    private Long id;
 
     @ToString.Include
     private String platformCode;
 
-    private String apiBaseUrl;
+    @ToString.Include
+    private String platformName;
 
-    private Boolean appKeyConfigured;
-
-    private Boolean appSecretConfigured;
-
-    private Boolean authTokenConfigured;
+    private String platformLogo;
 
     private String defaultAdzoneId;
 
-    private Boolean extraConfigConfigured;
+    private BigDecimal platformServiceRate;
 
-    private Integer priority;
+    private Integer sort;
 
     @ToString.Include
     private Integer status;
 
+    private Boolean extraConfigConfigured;
+
     private String remark;
+
+    private String activeVendorCode;
 
 }

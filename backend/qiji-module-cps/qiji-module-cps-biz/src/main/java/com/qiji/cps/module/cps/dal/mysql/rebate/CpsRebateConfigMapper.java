@@ -28,4 +28,12 @@ public interface CpsRebateConfigMapper extends BaseMapperX<CpsRebateConfigDO> {
                 .orderByAsc(CpsRebateConfigDO::getId));
     }
 
+    default List<CpsRebateConfigDO> selectManagedRulesByPlatformCode(String platformCode) {
+        return selectList(new LambdaQueryWrapperX<CpsRebateConfigDO>()
+                .eq(CpsRebateConfigDO::getPlatformCode, platformCode)
+                .isNull(CpsRebateConfigDO::getMemberId)
+                .orderByDesc(CpsRebateConfigDO::getPriority)
+                .orderByAsc(CpsRebateConfigDO::getId));
+    }
+
 }

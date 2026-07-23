@@ -110,6 +110,7 @@ class CpsPlatformOnboardingDraftServiceImplTest {
                 .id(7L)
                 .platformCode("jd")
                 .platformName("京东联盟")
+                .extraConfig("{\"platformSecret\":\"runtime-platform-extra\"}")
                 .activeVendorCode("official")
                 .defaultAdzoneId("jd-pid")
                 .status(0)
@@ -122,6 +123,7 @@ class CpsPlatformOnboardingDraftServiceImplTest {
                 .appKey("runtime-key")
                 .appSecret("runtime-secret")
                 .authToken("runtime-token")
+                .extraConfig("{\"vendorSecret\":\"runtime-vendor-extra\"}")
                 .status(0)
                 .build();
         when(draftMapper.selectByPlatformCode("jd")).thenReturn(null);
@@ -129,8 +131,13 @@ class CpsPlatformOnboardingDraftServiceImplTest {
         when(vendorMapper.selectAllByPlatformCode("jd")).thenReturn(List.of(vendor));
         when(adzoneMapper.selectAllByPlatformCode("jd")).thenReturn(List.of(
                 CpsAdzoneDO.builder().platformCode("jd").adzoneId("jd-pid").isDefault(1).status(0).build()));
-        when(rebateMapper.selectListByPlatformCode("jd")).thenReturn(List.of(
-                CpsRebateConfigDO.builder().platformCode("jd").rebateRate(new java.math.BigDecimal("60")).status(0).build()));
+        when(rebateMapper.selectManagedRulesByPlatformCode("jd")).thenReturn(List.of(
+                CpsRebateConfigDO.builder().platformCode("jd").memberId(null).memberLevelId(null)
+                        .rebateRate(new java.math.BigDecimal("60")).status(1).build(),
+                CpsRebateConfigDO.builder().platformCode("jd").memberId(null).memberLevelId(10L)
+                        .rebateRate(new java.math.BigDecimal("70")).status(1).build(),
+                CpsRebateConfigDO.builder().platformCode("jd").memberId(null).memberLevelId(20L)
+                        .rebateRate(new java.math.BigDecimal("80")).status(0).build()));
 
         CpsPlatformOnboardingDetailRespVO result = service.getDetail(" JD ");
 
@@ -140,7 +147,14 @@ class CpsPlatformOnboardingDraftServiceImplTest {
         assertTrue(result.getPayload().getVendors().get(0).getAppSecretConfigured());
         assertTrue(result.getPayload().getVendors().get(0).getAuthTokenConfigured());
         assertEquals(1, result.getPayload().getAdzones().size());
-        assertEquals(1, result.getPayload().getRebateRules().size());
+        assertEquals(3, result.getPayload().getRebateRules().size());
+        assertTrue(result.getPayload().getRebateRules().stream()
+                .allMatch(rule -> rule.getMemberId() == null));
+        assertTrue(result.getPayload().getRebateRules().stream()
+                .anyMatch(rule -> rule.getMemberLevelId() == null && rule.getStatus() == 1));
+        assertTrue(result.getPayload().getRebateRules().stream()
+                .anyMatch(rule -> Long.valueOf(20L).equals(rule.getMemberLevelId())
+                        && rule.getStatus() == 0));
         assertFalse(result.toString().contains("runtime-secret"));
         assertFalse(result.toString().contains("runtime-token"));
         verify(draftMapper, never()).insert(any(CpsPlatformOnboardingDraftDO.class));
@@ -176,12 +190,24 @@ class CpsPlatformOnboardingDraftServiceImplTest {
                 CpsPlatformOnboardingTestFixtures.validPayload()));
 
         String json = objectMapper.writeValueAsString(service.getDetail("taobao"));
+        JsonNode platform = objectMapper.readTree(json).path("payload").path("platform");
         JsonNode vendor = objectMapper.readTree(json).path("payload").path("vendors").get(0);
 
+        assertFalse(platform.has("extraConfig"));
+        assertTrue(platform.path("extraConfigConfigured").asBoolean());
+        assertFalse(vendor.has("appKey"));
         assertFalse(vendor.has("appSecret"));
         assertFalse(vendor.has("authToken"));
+        assertFalse(vendor.has("extraConfig"));
+        assertTrue(vendor.path("appKeyConfigured").asBoolean());
         assertTrue(vendor.path("appSecretConfigured").asBoolean());
         assertTrue(vendor.path("authTokenConfigured").asBoolean());
+        assertTrue(vendor.path("extraConfigConfigured").asBoolean());
+        assertFalse(json.contains("dataoke-key"));
+        assertFalse(json.contains("dataoke-secret"));
+        assertFalse(json.contains("dataoke-token"));
+        assertFalse(json.contains("\"source\":\"onboarding\""));
+        assertFalse(json.contains("\"vendor\":\"dataoke\""));
     }
 
     @Test
@@ -199,7 +225,10 @@ class CpsPlatformOnboardingDraftServiceImplTest {
 
     @Test
     void saveDraft_whenConcurrentFirstInsertWins_shouldTranslateDuplicateKeyToConflict() {
-        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(null);
+        when(draftMapper.selectByPlatformCode("taobao"))
+                .thenReturn(null)
+                .thenReturn(CpsPlatformOnboardingDraftDO.builder()
+                        .id(12L).platformCode("taobao").draftVersion(1).build());
         when(platformMapper.selectByPlatformCode("taobao")).thenReturn(null);
         when(draftMapper.insert(any(CpsPlatformOnboardingDraftDO.class)))
                 .thenThrow(new DuplicateKeyException("uq_tenant_platform"));
@@ -208,6 +237,21 @@ class CpsPlatformOnboardingDraftServiceImplTest {
                 () -> service.saveDraft(saveRequest(
                         "taobao", null, CpsPlatformOnboardingTestFixtures.validPayload())));
 
+        verifyNoRuntimeWrites();
+    }
+
+    @Test
+    void saveDraft_whenDuplicateKeyHasNoActiveTenantDraft_shouldRethrowOriginalException() {
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(null).thenReturn(null);
+        when(platformMapper.selectByPlatformCode("taobao")).thenReturn(null);
+        DuplicateKeyException duplicate = new DuplicateKeyException("unrelated duplicate");
+        when(draftMapper.insert(any(CpsPlatformOnboardingDraftDO.class))).thenThrow(duplicate);
+
+        DuplicateKeyException thrown = assertThrows(DuplicateKeyException.class,
+                () -> service.saveDraft(saveRequest(
+                        "taobao", null, CpsPlatformOnboardingTestFixtures.validPayload())));
+
+        assertSame(duplicate, thrown);
         verifyNoRuntimeWrites();
     }
 
@@ -235,8 +279,11 @@ class CpsPlatformOnboardingDraftServiceImplTest {
                 8L, 2, CpsPlatformOnboardingModeEnum.RECONFIGURE.getCode(),
                 CpsPlatformOnboardingStatusEnum.DRAFT.getCode(), storedPayload);
         CpsPlatformOnboardingPayload incoming = CpsPlatformOnboardingTestFixtures.validPayload();
+        incoming.getPlatform().setExtraConfig(" ");
+        incoming.getVendors().get(0).setAppKey("");
         incoming.getVendors().get(0).setAppSecret(" ");
         incoming.getVendors().get(0).setAuthToken(null);
+        incoming.getVendors().get(0).setExtraConfig("");
         when(draftMapper.selectByPlatformCode("taobao")).thenReturn(existing);
         when(draftMapper.updatePayload(eq(8L), eq(2), anyString(), anyString(), eq("DRAFT")))
                 .thenReturn(1);
@@ -247,8 +294,53 @@ class CpsPlatformOnboardingDraftServiceImplTest {
         verify(draftMapper).updatePayload(eq(8L), eq(2), payloadJson.capture(), anyString(), eq("DRAFT"));
         CpsPlatformOnboardingPayload persisted =
                 objectMapper.readValue(payloadJson.getValue(), CpsPlatformOnboardingPayload.class);
+        assertEquals("{\"source\":\"onboarding\"}", persisted.getPlatform().getExtraConfig());
+        assertEquals("dataoke-key", persisted.getVendors().get(0).getAppKey());
         assertEquals("dataoke-secret", persisted.getVendors().get(0).getAppSecret());
         assertEquals("dataoke-token", persisted.getVendors().get(0).getAuthToken());
+        assertEquals("{\"vendor\":\"dataoke\"}", persisted.getVendors().get(0).getExtraConfig());
+    }
+
+    @Test
+    void saveDraft_shouldMergeBlankCredentialsAndExtraConfigFromRuntime() throws Exception {
+        CpsPlatformOnboardingPayload incoming = CpsPlatformOnboardingTestFixtures.validPayload();
+        incoming.getPlatform().setExtraConfig(null);
+        incoming.getVendors().get(0).setAppKey(" ");
+        incoming.getVendors().get(0).setAppSecret(null);
+        incoming.getVendors().get(0).setAuthToken("");
+        incoming.getVendors().get(0).setExtraConfig(" ");
+        CpsPlatformDO runtimePlatform = CpsPlatformDO.builder()
+                .platformCode("taobao")
+                .extraConfig("{\"runtime\":\"platform\"}")
+                .status(1)
+                .build();
+        CpsApiVendorDO runtimeVendor = CpsApiVendorDO.builder()
+                .platformCode("taobao")
+                .vendorCode("dataoke")
+                .appKey("runtime-key")
+                .appSecret("runtime-secret")
+                .authToken("runtime-token")
+                .extraConfig("{\"runtime\":\"vendor\"}")
+                .status(1)
+                .build();
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(null);
+        when(platformMapper.selectByPlatformCode("taobao")).thenReturn(runtimePlatform);
+        when(vendorMapper.selectAllByPlatformCode("taobao")).thenReturn(List.of(runtimeVendor));
+        when(draftMapper.insert(any(CpsPlatformOnboardingDraftDO.class))).thenReturn(1);
+
+        service.saveDraft(saveRequest("taobao", null, incoming));
+
+        ArgumentCaptor<CpsPlatformOnboardingDraftDO> captor =
+                ArgumentCaptor.forClass(CpsPlatformOnboardingDraftDO.class);
+        verify(draftMapper).insert(captor.capture());
+        CpsPlatformOnboardingPayload persisted =
+                objectMapper.readValue(captor.getValue().getPayloadCiphertext(),
+                        CpsPlatformOnboardingPayload.class);
+        assertEquals("{\"runtime\":\"platform\"}", persisted.getPlatform().getExtraConfig());
+        assertEquals("runtime-key", persisted.getVendors().get(0).getAppKey());
+        assertEquals("runtime-secret", persisted.getVendors().get(0).getAppSecret());
+        assertEquals("runtime-token", persisted.getVendors().get(0).getAuthToken());
+        assertEquals("{\"runtime\":\"vendor\"}", persisted.getVendors().get(0).getExtraConfig());
     }
 
     @Test
@@ -267,18 +359,51 @@ class CpsPlatformOnboardingDraftServiceImplTest {
     }
 
     @Test
-    void deleteDraft_shouldDeleteOnlyDraftAndRejectMissingDraft() {
-        CpsPlatformOnboardingDraftDO draft = CpsPlatformOnboardingDraftDO.builder().id(8L).platformCode("taobao").build();
-        when(draftMapper.selectByPlatformCode("taobao"))
-                .thenReturn(draft)
-                .thenReturn(null);
-        when(draftMapper.deleteById(8L)).thenReturn(1);
+    void getDetail_whenStoredPayloadIsCorrupted_shouldReportInvalidConfig() {
+        CpsPlatformOnboardingDraftDO corrupted = CpsPlatformOnboardingDraftDO.builder()
+                .id(8L)
+                .platformCode("taobao")
+                .payloadCiphertext("{not-json")
+                .draftVersion(1)
+                .status(CpsPlatformOnboardingStatusEnum.DRAFT.getCode())
+                .build();
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(corrupted);
 
-        service.deleteDraft("taobao");
-        verify(draftMapper).deleteById(8L);
+        assertServiceCode(ONBOARDING_CONFIG_INVALID.getCode(),
+                () -> service.getDetail("taobao"));
+    }
+
+    @Test
+    void deleteDraft_shouldDeleteMatchingVersionOnly() {
+        CpsPlatformOnboardingDraftDO draft = CpsPlatformOnboardingDraftDO.builder()
+                .id(8L).platformCode("taobao").draftVersion(2).build();
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(draft);
+        when(draftMapper.deleteByIdAndVersion(8L, 2)).thenReturn(1);
+
+        service.deleteDraft("taobao", 2L);
+
+        verify(draftMapper).deleteByIdAndVersion(8L, 2);
         verifyNoRuntimeWrites();
+    }
 
-        assertServiceCode(ONBOARDING_DRAFT_NOT_EXISTS.getCode(), () -> service.deleteDraft("taobao"));
+    @Test
+    void deleteDraft_whenVersionIsStale_shouldReportConflict() {
+        CpsPlatformOnboardingDraftDO draft = CpsPlatformOnboardingDraftDO.builder()
+                .id(8L).platformCode("taobao").draftVersion(3).build();
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(draft);
+        when(draftMapper.deleteByIdAndVersion(8L, 2)).thenReturn(0);
+        when(draftMapper.selectById(8L)).thenReturn(draft);
+
+        assertServiceCode(ONBOARDING_DRAFT_VERSION_CONFLICT.getCode(),
+                () -> service.deleteDraft("taobao", 2L));
+    }
+
+    @Test
+    void deleteDraft_whenDraftDoesNotExist_shouldReportNotExists() {
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(null);
+
+        assertServiceCode(ONBOARDING_DRAFT_NOT_EXISTS.getCode(),
+                () -> service.deleteDraft("taobao", 1L));
     }
 
     @Test
