@@ -89,4 +89,14 @@ public interface CpsErrorCodeConstants {
     ErrorCode SELECTION_THEME_STATUS_INVALID = new ErrorCode(1_100_016_002, "选品主题状态不合法：{}");
     ErrorCode SELECTION_THEME_ITEM_NOT_EXISTS = new ErrorCode(1_100_016_003, "选品主题商品不存在");
 
+    // ========== 平台接入 1-100-017-000 ==========
+    ErrorCode ONBOARDING_DRAFT_NOT_EXISTS = new ErrorCode(1_100_017_000, "平台接入草稿不存在");
+    ErrorCode ONBOARDING_DRAFT_VERSION_CONFLICT = new ErrorCode(1_100_017_001, "平台接入草稿版本冲突，请刷新后重试");
+    ErrorCode ONBOARDING_CONFIG_INVALID = new ErrorCode(1_100_017_002, "平台接入配置不合法：{}");
+    ErrorCode ONBOARDING_TEST_REQUIRED = new ErrorCode(1_100_017_003, "平台接入配置尚未通过测试");
+    ErrorCode ONBOARDING_PLATFORM_ENABLED = new ErrorCode(1_100_017_004, "平台[{}]已启用，禁止覆盖发布");
+    ErrorCode ONBOARDING_PUBLISH_CONFLICT = new ErrorCode(1_100_017_005, "平台接入发布冲突，请刷新后重试");
+    ErrorCode ADZONE_RELATION_REQUIRED = new ErrorCode(1_100_017_006, "推广位类型[{}]必须配置关联信息");
+    ErrorCode REBATE_CONFIG_AMOUNT_RANGE_INVALID = new ErrorCode(1_100_017_007, "返利配置最小金额不能大于最大金额");
+
 }
