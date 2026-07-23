@@ -118,15 +118,20 @@ public class CpsPlatformOnboardingValidator {
                 continue;
             }
             CpsVendorConfig config = toVendorConfig(vendor, platformCode);
+            boolean configParsed = true;
             try {
                 config.setExtraConfig(parseExtraConfig(vendor.getExtraConfig()));
             } catch (Exception e) {
                 add(errors, "VENDOR_CONFIG_INVALID",
                         "vendors[" + index + "].extraConfig",
                         "供应商扩展配置格式无效", "vendor");
-                continue;
+                configParsed = false;
             }
-            if (descriptor.getConfigSchema() != null) {
+            if (descriptor.getConfigSchema() == null) {
+                add(errors, "VENDOR_CONFIG_SCHEMA_REQUIRED",
+                        "vendors[" + index + "].configSchema",
+                        "已启用供应商必须注册配置校验规则", "vendor");
+            } else if (configParsed) {
                 CpsVendorConfigValidationResult validation =
                         descriptor.getConfigSchema().validate(config);
                 if (!validation.isValid()) {
@@ -244,9 +249,10 @@ public class CpsPlatformOnboardingValidator {
                 add(errors, "REBATE_PRIORITY_INVALID", base + ".priority",
                         "返利规则优先级必须为非负整数", "rebate");
             }
-            String scope = rule.getMemberLevelId() == null
-                    ? "default:" + rulePlatform
-                    : "level:" + rule.getMemberLevelId() + ":" + rulePlatform;
+            String scope = rulePlatform + ":"
+                    + (rule.getMemberLevelId() == null
+                    ? "default" : "level:" + rule.getMemberLevelId())
+                    + ":priority:" + rule.getPriority();
             if (!scopes.add(scope)) {
                 duplicate = true;
             }

@@ -137,6 +137,21 @@ class CpsPlatformOnboardingValidatorTest {
     }
 
     @Test
+    void validate_enabledVendorMustDeclareConfigSchema() {
+        CpsVendorDescriptor descriptor = CpsVendorDescriptor.builder()
+                .vendorCode("dataoke")
+                .platformCode("taobao")
+                .vendorType("aggregator")
+                .capabilities(Set.of(CpsVendorCapability.GOODS_SEARCH))
+                .configSchema(null)
+                .build();
+        when(clientFactory.getVendorDescriptor("dataoke", "taobao")).thenReturn(descriptor);
+
+        assertContains(validator.validate(validPayload()),
+                "VENDOR_CONFIG_SCHEMA_REQUIRED", "vendors[0].configSchema");
+    }
+
+    @Test
     void validate_shouldApplyDescriptorSchemaToParsedExtraConfig() {
         CpsVendorDescriptor descriptor = descriptor("dataoke",
                 Set.of(CpsVendorCapability.GOODS_SEARCH));
@@ -160,6 +175,19 @@ class CpsPlatformOnboardingValidatorTest {
         payload.getVendors().get(0).setExtraConfig("{invalid");
         assertContains(validator.validate(payload),
                 "VENDOR_CONFIG_INVALID", "vendors[0].extraConfig");
+    }
+
+    @Test
+    void validate_malformedExtraConfig_shouldStillAggregateCapabilityFailure() {
+        when(clientFactory.getVendorDescriptor("dataoke", "taobao")).thenReturn(
+                descriptor("dataoke", Set.of(CpsVendorCapability.CONNECTION_TEST)));
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getVendors().get(0).setExtraConfig("{invalid");
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertContains(result, "VENDOR_CONFIG_INVALID", "vendors[0].extraConfig");
+        assertContains(result, "VENDOR_NOT_REGISTERED", "vendors[0].capabilities");
     }
 
     @Test
@@ -202,16 +230,36 @@ class CpsPlatformOnboardingValidatorTest {
     }
 
     @Test
-    void validate_rebatePlatformMustMatchRootAndNormalizedScopesMustBeUnique() {
+    void validate_rebatePlatformMustMatchRoot() {
         CpsPlatformOnboardingPayload payload = validPayload();
         payload.getRebateRules().get(0).setPlatformCode("jd");
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertContains(result, "REBATE_PLATFORM_INVALID", "rebateRules[0].platformCode");
+    }
+
+    @Test
+    void validate_sameNormalizedScopeWithDifferentPriority_shouldBeAllowed() {
+        CpsPlatformOnboardingPayload payload = validPayload();
         payload.getRebateRules().add(CpsOnboardingRebateRule.builder()
                 .platformCode(" TAOBAO ").memberLevelId(20L)
                 .rebateRate(new BigDecimal("50")).status(1).priority(1).build());
 
         CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
 
-        assertContains(result, "REBATE_PLATFORM_INVALID", "rebateRules[0].platformCode");
+        assertTrue(result.isSuccess(), () -> "different priorities must be independent scopes: " + result);
+    }
+
+    @Test
+    void validate_sameNormalizedScopeAndPriority_shouldBeDuplicate() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getRebateRules().add(CpsOnboardingRebateRule.builder()
+                .platformCode(" TAOBAO ").memberLevelId(20L)
+                .rebateRate(new BigDecimal("50")).status(1).priority(10).build());
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
         assertContains(result, "REBATE_SCOPE_DUPLICATE", "rebateRules");
     }
 

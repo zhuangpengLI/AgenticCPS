@@ -77,11 +77,20 @@ class CpsPlatformOnboardingConnectionTesterTest {
         verify(draftService).markChecked(eq(7L), eq(5L),
                 eq(CpsPlatformOnboardingStatusEnum.READY.getCode()),
                 eq("exact-fingerprint"), any(String.class), any(LocalDateTime.class));
-        ArgumentCaptor<CpsVendorConfig> configCaptor = ArgumentCaptor.forClass(CpsVendorConfig.class);
-        verify(primaryClient).testConnection(configCaptor.capture());
-        assertEquals("dataoke-key", configCaptor.getValue().getAppKey());
-        assertEquals("dataoke-secret", configCaptor.getValue().getAppSecret());
-        assertEquals("adzone-primary", configCaptor.getValue().getDefaultAdzoneId());
+        ArgumentCaptor<CpsVendorConfig> primaryConfig =
+                ArgumentCaptor.forClass(CpsVendorConfig.class);
+        ArgumentCaptor<CpsVendorConfig> backupConfig =
+                ArgumentCaptor.forClass(CpsVendorConfig.class);
+        verify(primaryClient).testConnection(primaryConfig.capture());
+        verify(backupClient).testConnection(backupConfig.capture());
+        assertEquals("dataoke-key", primaryConfig.getValue().getAppKey());
+        assertEquals("dataoke-secret", primaryConfig.getValue().getAppSecret());
+        assertEquals("adzone-primary", primaryConfig.getValue().getDefaultAdzoneId());
+        assertEquals("dataoke", primaryConfig.getValue().getExtraConfig().get("vendor"));
+        assertEquals("official-key", backupConfig.getValue().getAppKey());
+        assertEquals("official-secret", backupConfig.getValue().getAppSecret());
+        assertEquals("adzone-primary", backupConfig.getValue().getDefaultAdzoneId());
+        assertEquals("official", backupConfig.getValue().getExtraConfig().get("vendor"));
     }
 
     @Test
