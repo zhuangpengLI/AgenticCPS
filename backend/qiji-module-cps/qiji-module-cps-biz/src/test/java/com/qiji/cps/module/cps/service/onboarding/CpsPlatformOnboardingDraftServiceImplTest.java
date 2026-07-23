@@ -1,5 +1,6 @@
 package com.qiji.cps.module.cps.service.onboarding;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qiji.cps.framework.common.exception.ServiceException;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingDetailRespVO;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -80,8 +82,6 @@ class CpsPlatformOnboardingDraftServiceImplTest {
         assertNull(saved.getValidatedAt());
         assertNull(saved.getCheckSummary());
         assertTrue(saved.getPayload().getVendors().stream()
-                .allMatch(vendor -> vendor.getAppSecret() == null && vendor.getAuthToken() == null));
-        assertTrue(saved.getPayload().getVendors().stream()
                 .allMatch(vendor -> Boolean.TRUE.equals(vendor.getAppSecretConfigured())
                         && Boolean.TRUE.equals(vendor.getAuthTokenConfigured())));
     }
@@ -137,8 +137,6 @@ class CpsPlatformOnboardingDraftServiceImplTest {
         assertEquals(CpsPlatformOnboardingModeEnum.RECONFIGURE.getCode(), result.getMode());
         assertEquals("jd", result.getPayload().getPlatform().getPlatformCode());
         assertNull(result.getDraftVersion());
-        assertNull(result.getPayload().getVendors().get(0).getAppSecret());
-        assertNull(result.getPayload().getVendors().get(0).getAuthToken());
         assertTrue(result.getPayload().getVendors().get(0).getAppSecretConfigured());
         assertTrue(result.getPayload().getVendors().get(0).getAuthTokenConfigured());
         assertEquals(1, result.getPayload().getAdzones().size());
@@ -167,6 +165,49 @@ class CpsPlatformOnboardingDraftServiceImplTest {
         assertEquals(1, captor.getValue().getDraftVersion());
         assertEquals(CpsPlatformOnboardingStatusEnum.DRAFT.getCode(), captor.getValue().getStatus());
         assertEquals(1L, saved.getDraftVersion());
+        verifyNoRuntimeWrites();
+    }
+
+    @Test
+    void getDetail_jsonShouldOmitSecretKeysAndExposeConfiguredFlags() throws Exception {
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(persistedDraft(
+                8L, 3, CpsPlatformOnboardingModeEnum.RECONFIGURE.getCode(),
+                CpsPlatformOnboardingStatusEnum.DRAFT.getCode(),
+                CpsPlatformOnboardingTestFixtures.validPayload()));
+
+        String json = objectMapper.writeValueAsString(service.getDetail("taobao"));
+        JsonNode vendor = objectMapper.readTree(json).path("payload").path("vendors").get(0);
+
+        assertFalse(vendor.has("appSecret"));
+        assertFalse(vendor.has("authToken"));
+        assertTrue(vendor.path("appSecretConfigured").asBoolean());
+        assertTrue(vendor.path("authTokenConfigured").asBoolean());
+    }
+
+    @Test
+    void saveDraft_withoutStoredDraftButWithVersion_shouldRejectAsConflict() {
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(null);
+
+        assertServiceCode(ONBOARDING_DRAFT_VERSION_CONFLICT.getCode(),
+                () -> service.saveDraft(saveRequest(
+                        "taobao", 2L, CpsPlatformOnboardingTestFixtures.validPayload())));
+
+        verify(draftMapper, never()).insert(any(CpsPlatformOnboardingDraftDO.class));
+        verifyNoInteractions(platformMapper);
+        verifyNoRuntimeWrites();
+    }
+
+    @Test
+    void saveDraft_whenConcurrentFirstInsertWins_shouldTranslateDuplicateKeyToConflict() {
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(null);
+        when(platformMapper.selectByPlatformCode("taobao")).thenReturn(null);
+        when(draftMapper.insert(any(CpsPlatformOnboardingDraftDO.class)))
+                .thenThrow(new DuplicateKeyException("uq_tenant_platform"));
+
+        assertServiceCode(ONBOARDING_DRAFT_VERSION_CONFLICT.getCode(),
+                () -> service.saveDraft(saveRequest(
+                        "taobao", null, CpsPlatformOnboardingTestFixtures.validPayload())));
+
         verifyNoRuntimeWrites();
     }
 
@@ -267,8 +308,78 @@ class CpsPlatformOnboardingDraftServiceImplTest {
 
         when(draftMapper.markChecked(eq(8L), eq(3), anyString(), any(), any(), any()))
                 .thenReturn(0);
+        when(draftMapper.selectById(8L)).thenReturn(
+                CpsPlatformOnboardingDraftDO.builder().id(8L).draftVersion(4).build());
         assertServiceCode(ONBOARDING_DRAFT_VERSION_CONFLICT.getCode(),
                 () -> service.markChecked(8L, 3L, "FAILED", null, "stale", null));
+    }
+
+    @Test
+    void markValidating_whenDraftDoesNotExist_shouldReportNotExists() {
+        when(draftMapper.markValidating(8L, 4, "VALIDATING")).thenReturn(0);
+        when(draftMapper.selectById(8L)).thenReturn(null);
+
+        assertServiceCode(ONBOARDING_DRAFT_NOT_EXISTS.getCode(),
+                () -> service.markValidating(8L, 4L));
+    }
+
+    @Test
+    void markValidating_whenVersionIsStale_shouldReportConflict() {
+        when(draftMapper.markValidating(8L, 3, "VALIDATING")).thenReturn(0);
+        when(draftMapper.selectById(8L)).thenReturn(
+                CpsPlatformOnboardingDraftDO.builder().id(8L).draftVersion(4).build());
+
+        assertServiceCode(ONBOARDING_DRAFT_VERSION_CONFLICT.getCode(),
+                () -> service.markValidating(8L, 3L));
+    }
+
+    @Test
+    void markChecked_whenDraftDoesNotExist_shouldReportNotExists() {
+        when(draftMapper.markChecked(8L, 4, "READY", "fingerprint", "passed", null))
+                .thenReturn(0);
+        when(draftMapper.selectById(8L)).thenReturn(null);
+
+        assertServiceCode(ONBOARDING_DRAFT_NOT_EXISTS.getCode(),
+                () -> service.markChecked(8L, 4L, "READY", "fingerprint", "passed", null));
+    }
+
+    @Test
+    void markChecked_whenVersionIsStale_shouldReportConflict() {
+        when(draftMapper.markChecked(8L, 3, "READY", "fingerprint", "passed", null))
+                .thenReturn(0);
+        when(draftMapper.selectById(8L)).thenReturn(
+                CpsPlatformOnboardingDraftDO.builder().id(8L).draftVersion(4).build());
+
+        assertServiceCode(ONBOARDING_DRAFT_VERSION_CONFLICT.getCode(),
+                () -> service.markChecked(8L, 3L, "READY", "fingerprint", "passed", null));
+    }
+
+    @Test
+    void saveDraft_shouldNormalizeEveryNestedPlatformCode() throws Exception {
+        CpsPlatformOnboardingPayload payload = CpsPlatformOnboardingTestFixtures.validPayload();
+        payload.getPlatform().setPlatformCode(" TAOBAO ");
+        payload.getVendors().forEach(vendor -> vendor.setPlatformCode(" TAOBAO "));
+        payload.getAdzones().forEach(adzone -> adzone.setPlatformCode(" TAOBAO "));
+        payload.getRebateRules().forEach(rule -> rule.setPlatformCode(" TAOBAO "));
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(null);
+        when(platformMapper.selectByPlatformCode("taobao")).thenReturn(null);
+        when(draftMapper.insert(any(CpsPlatformOnboardingDraftDO.class))).thenReturn(1);
+
+        service.saveDraft(saveRequest(" TAOBAO ", null, payload));
+
+        ArgumentCaptor<CpsPlatformOnboardingDraftDO> captor =
+                ArgumentCaptor.forClass(CpsPlatformOnboardingDraftDO.class);
+        verify(draftMapper).insert(captor.capture());
+        CpsPlatformOnboardingPayload stored =
+                objectMapper.readValue(captor.getValue().getPayloadCiphertext(),
+                        CpsPlatformOnboardingPayload.class);
+        assertEquals("taobao", stored.getPlatform().getPlatformCode());
+        assertTrue(stored.getVendors().stream()
+                .allMatch(vendor -> "taobao".equals(vendor.getPlatformCode())));
+        assertTrue(stored.getAdzones().stream()
+                .allMatch(adzone -> "taobao".equals(adzone.getPlatformCode())));
+        assertTrue(stored.getRebateRules().stream()
+                .allMatch(rule -> "taobao".equals(rule.getPlatformCode())));
     }
 
     @Test
@@ -280,6 +391,109 @@ class CpsPlatformOnboardingDraftServiceImplTest {
                 () -> service.saveDraft(saveRequest("taobao", null, payload)));
 
         verifyNoInteractions(draftMapper, platformMapper, vendorMapper, adzoneMapper, rebateMapper);
+    }
+
+    @Test
+    void saveDraft_shouldRejectVendorPlatformCodeMismatchBeforeWriting() {
+        CpsPlatformOnboardingPayload payload = CpsPlatformOnboardingTestFixtures.validPayload();
+        payload.getVendors().get(0).setPlatformCode("jd");
+
+        assertServiceCode(ONBOARDING_CONFIG_INVALID.getCode(),
+                () -> service.saveDraft(saveRequest("taobao", null, payload)));
+
+        verifyNoInteractions(draftMapper, platformMapper, vendorMapper, adzoneMapper, rebateMapper);
+    }
+
+    @Test
+    void saveDraft_shouldRejectMissingVendorPlatformCodeBeforeWriting() {
+        CpsPlatformOnboardingPayload payload = CpsPlatformOnboardingTestFixtures.validPayload();
+        payload.getVendors().get(0).setPlatformCode(" ");
+
+        assertServiceCode(ONBOARDING_CONFIG_INVALID.getCode(),
+                () -> service.saveDraft(saveRequest("taobao", null, payload)));
+
+        verifyNoInteractions(draftMapper, platformMapper, vendorMapper, adzoneMapper, rebateMapper);
+    }
+
+    @Test
+    void saveDraft_shouldRejectAdzonePlatformCodeMismatchBeforeWriting() {
+        CpsPlatformOnboardingPayload payload = CpsPlatformOnboardingTestFixtures.validPayload();
+        payload.getAdzones().get(0).setPlatformCode("jd");
+
+        assertServiceCode(ONBOARDING_CONFIG_INVALID.getCode(),
+                () -> service.saveDraft(saveRequest("taobao", null, payload)));
+
+        verifyNoInteractions(draftMapper, platformMapper, vendorMapper, adzoneMapper, rebateMapper);
+    }
+
+    @Test
+    void saveDraft_shouldRejectMissingAdzonePlatformCodeBeforeWriting() {
+        CpsPlatformOnboardingPayload payload = CpsPlatformOnboardingTestFixtures.validPayload();
+        payload.getAdzones().get(0).setPlatformCode(null);
+
+        assertServiceCode(ONBOARDING_CONFIG_INVALID.getCode(),
+                () -> service.saveDraft(saveRequest("taobao", null, payload)));
+
+        verifyNoInteractions(draftMapper, platformMapper, vendorMapper, adzoneMapper, rebateMapper);
+    }
+
+    @Test
+    void saveDraft_shouldRejectRebatePlatformCodeMismatchBeforeWriting() {
+        CpsPlatformOnboardingPayload payload = CpsPlatformOnboardingTestFixtures.validPayload();
+        payload.getRebateRules().get(0).setPlatformCode("jd");
+
+        assertServiceCode(ONBOARDING_CONFIG_INVALID.getCode(),
+                () -> service.saveDraft(saveRequest("taobao", null, payload)));
+
+        verifyNoInteractions(draftMapper, platformMapper, vendorMapper, adzoneMapper, rebateMapper);
+    }
+
+    @Test
+    void saveDraft_shouldRejectMissingRebatePlatformCodeBeforeWriting() {
+        CpsPlatformOnboardingPayload payload = CpsPlatformOnboardingTestFixtures.validPayload();
+        payload.getRebateRules().get(0).setPlatformCode("");
+
+        assertServiceCode(ONBOARDING_CONFIG_INVALID.getCode(),
+                () -> service.saveDraft(saveRequest("taobao", null, payload)));
+
+        verifyNoInteractions(draftMapper, platformMapper, vendorMapper, adzoneMapper, rebateMapper);
+    }
+
+    @Test
+    void saveDraft_shouldRejectNullNestedElementAsInvalidConfig() {
+        CpsPlatformOnboardingPayload payload = CpsPlatformOnboardingTestFixtures.validPayload();
+        payload.getVendors().set(0, null);
+
+        assertServiceCode(ONBOARDING_CONFIG_INVALID.getCode(),
+                () -> service.saveDraft(saveRequest("taobao", null, payload)));
+
+        verifyNoInteractions(draftMapper, platformMapper, vendorMapper, adzoneMapper, rebateMapper);
+    }
+
+    @Test
+    void saveDraft_shouldNormalizeNullCollectionsToEmptyLists() throws Exception {
+        CpsPlatformOnboardingPayload payload = CpsPlatformOnboardingTestFixtures.validPayload();
+        payload.setVendors(null);
+        payload.setAdzones(null);
+        payload.setRebateRules(null);
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(null);
+        when(platformMapper.selectByPlatformCode("taobao")).thenReturn(null);
+        when(draftMapper.insert(any(CpsPlatformOnboardingDraftDO.class))).thenReturn(1);
+
+        service.saveDraft(saveRequest("taobao", null, payload));
+
+        ArgumentCaptor<CpsPlatformOnboardingDraftDO> captor =
+                ArgumentCaptor.forClass(CpsPlatformOnboardingDraftDO.class);
+        verify(draftMapper).insert(captor.capture());
+        CpsPlatformOnboardingPayload stored =
+                objectMapper.readValue(captor.getValue().getPayloadCiphertext(),
+                        CpsPlatformOnboardingPayload.class);
+        assertNotNull(stored.getVendors());
+        assertNotNull(stored.getAdzones());
+        assertNotNull(stored.getRebateRules());
+        assertTrue(stored.getVendors().isEmpty());
+        assertTrue(stored.getAdzones().isEmpty());
+        assertTrue(stored.getRebateRules().isEmpty());
     }
 
     private CpsPlatformOnboardingDraftSaveReqVO saveRequest(

@@ -1,6 +1,5 @@
 package com.qiji.cps.module.cps.controller.admin.onboarding.vo;
 
-import com.qiji.cps.module.cps.service.onboarding.model.CpsPlatformOnboardingPayload;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.ToString;
@@ -48,6 +47,6 @@ public class CpsPlatformOnboardingDetailRespVO {
     private LocalDateTime publishedAt;
 
     @Schema(description = "平台接入配置；敏感凭证只返回 configured 标记")
-    private CpsPlatformOnboardingPayload payload;
+    private CpsPlatformOnboardingPayloadRespVO payload;
 
 }

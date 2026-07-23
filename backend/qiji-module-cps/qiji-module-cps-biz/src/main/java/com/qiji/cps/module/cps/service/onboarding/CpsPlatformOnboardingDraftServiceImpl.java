@@ -3,8 +3,10 @@ package com.qiji.cps.module.cps.service.onboarding;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
+import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsOnboardingVendorRespVO;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingDetailRespVO;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingDraftSaveReqVO;
+import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingPayloadRespVO;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.onboarding.CpsPlatformOnboardingDraftDO;
@@ -23,6 +25,7 @@ import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingRebateRule;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingVendor;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsPlatformOnboardingPayload;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -77,6 +80,9 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
         validateAndNormalizePayloadPlatform(platformCode, incoming);
 
         CpsPlatformOnboardingDraftDO existing = draftMapper.selectByPlatformCode(platformCode);
+        if (existing == null && request.getDraftVersion() != null) {
+            throw exception(ONBOARDING_DRAFT_VERSION_CONFLICT);
+        }
         CpsPlatformOnboardingPayload storedPayload =
                 existing == null ? null : readPayload(existing.getPayloadCiphertext());
         CpsPlatformOnboardingPayload merged = mergeSecrets(platformCode, incoming, storedPayload);
@@ -95,7 +101,11 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
                     .configFingerprint(configFingerprint)
                     .status(CpsPlatformOnboardingStatusEnum.DRAFT.getCode())
                     .build();
-            draftMapper.insert(created);
+            try {
+                draftMapper.insert(created);
+            } catch (DuplicateKeyException e) {
+                throw exception(ONBOARDING_DRAFT_VERSION_CONFLICT);
+            }
             return toDetail(created, merged);
         }
 
@@ -140,7 +150,7 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
     public void markValidating(Long draftId, Long expectedVersion) {
         int updated = draftMapper.markValidating(
                 draftId, toVersion(expectedVersion), CpsPlatformOnboardingStatusEnum.VALIDATING.getCode());
-        ensureVersionUpdated(updated);
+        ensureVersionUpdated(updated, draftId);
     }
 
     @Override
@@ -148,7 +158,7 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
                             String validatedFingerprint, String checkSummary, LocalDateTime validatedAt) {
         int updated = draftMapper.markChecked(draftId, toVersion(expectedVersion), status,
                 validatedFingerprint, checkSummary, validatedAt);
-        ensureVersionUpdated(updated);
+        ensureVersionUpdated(updated, draftId);
     }
 
     private CpsPlatformOnboardingPayload buildRuntimePayload(CpsPlatformDO platform) {
@@ -244,18 +254,37 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
         return detail;
     }
 
-    private CpsPlatformOnboardingPayload toResponsePayload(CpsPlatformOnboardingPayload source) {
-        CpsPlatformOnboardingPayload response = copyPayload(source);
-        for (CpsOnboardingVendor vendor : safeList(response.getVendors())) {
-            if (vendor == null) {
-                continue;
-            }
-            vendor.setAppSecretConfigured(hasText(vendor.getAppSecret()));
-            vendor.setAuthTokenConfigured(hasText(vendor.getAuthToken()));
-            vendor.setAppSecret(null);
-            vendor.setAuthToken(null);
-        }
-        return response;
+    private CpsPlatformOnboardingPayloadRespVO toResponsePayload(CpsPlatformOnboardingPayload source) {
+        CpsPlatformOnboardingPayload copy = copyPayload(source);
+        List<CpsOnboardingVendorRespVO> vendors = safeList(copy.getVendors()).stream()
+                .map(this::toVendorResponse)
+                .toList();
+        return CpsPlatformOnboardingPayloadRespVO.builder()
+                .platform(copy.getPlatform())
+                .primaryVendorCode(copy.getPrimaryVendorCode())
+                .runtimeDefaultAdzoneId(copy.getRuntimeDefaultAdzoneId())
+                .vendors(new ArrayList<>(vendors))
+                .adzones(new ArrayList<>(safeList(copy.getAdzones())))
+                .rebateRules(new ArrayList<>(safeList(copy.getRebateRules())))
+                .build();
+    }
+
+    private CpsOnboardingVendorRespVO toVendorResponse(CpsOnboardingVendor vendor) {
+        return CpsOnboardingVendorRespVO.builder()
+                .vendorCode(vendor.getVendorCode())
+                .vendorName(vendor.getVendorName())
+                .vendorType(vendor.getVendorType())
+                .platformCode(vendor.getPlatformCode())
+                .appKey(vendor.getAppKey())
+                .apiBaseUrl(vendor.getApiBaseUrl())
+                .appSecretConfigured(hasText(vendor.getAppSecret()))
+                .authTokenConfigured(hasText(vendor.getAuthToken()))
+                .defaultAdzoneId(vendor.getDefaultAdzoneId())
+                .extraConfig(vendor.getExtraConfig())
+                .priority(vendor.getPriority())
+                .status(vendor.getStatus())
+                .remark(vendor.getRemark())
+                .build();
     }
 
     private CpsOnboardingVendor toVendor(CpsApiVendorDO source) {
@@ -314,6 +343,63 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
             throw exception(ONBOARDING_CONFIG_INVALID, "请求平台编码与配置平台编码不一致");
         }
         payload.getPlatform().setPlatformCode(platformCode);
+        payload.setVendors(normalizeVendors(platformCode, payload.getVendors()));
+        payload.setAdzones(normalizeAdzones(platformCode, payload.getAdzones()));
+        payload.setRebateRules(normalizeRebateRules(platformCode, payload.getRebateRules()));
+    }
+
+    private List<CpsOnboardingVendor> normalizeVendors(
+            String platformCode, List<CpsOnboardingVendor> vendors) {
+        List<CpsOnboardingVendor> normalized = new ArrayList<>();
+        for (CpsOnboardingVendor vendor : safeList(vendors)) {
+            if (vendor == null) {
+                throw exception(ONBOARDING_CONFIG_INVALID, "供应商配置不能为空");
+            }
+            vendor.setPlatformCode(normalizeNestedPlatformCode(
+                    platformCode, vendor.getPlatformCode(), "供应商"));
+            normalized.add(vendor);
+        }
+        return normalized;
+    }
+
+    private List<CpsOnboardingAdzone> normalizeAdzones(
+            String platformCode, List<CpsOnboardingAdzone> adzones) {
+        List<CpsOnboardingAdzone> normalized = new ArrayList<>();
+        for (CpsOnboardingAdzone adzone : safeList(adzones)) {
+            if (adzone == null) {
+                throw exception(ONBOARDING_CONFIG_INVALID, "推广位配置不能为空");
+            }
+            adzone.setPlatformCode(normalizeNestedPlatformCode(
+                    platformCode, adzone.getPlatformCode(), "推广位"));
+            normalized.add(adzone);
+        }
+        return normalized;
+    }
+
+    private List<CpsOnboardingRebateRule> normalizeRebateRules(
+            String platformCode, List<CpsOnboardingRebateRule> rules) {
+        List<CpsOnboardingRebateRule> normalized = new ArrayList<>();
+        for (CpsOnboardingRebateRule rule : safeList(rules)) {
+            if (rule == null) {
+                throw exception(ONBOARDING_CONFIG_INVALID, "返利配置不能为空");
+            }
+            rule.setPlatformCode(normalizeNestedPlatformCode(
+                    platformCode, rule.getPlatformCode(), "返利"));
+            normalized.add(rule);
+        }
+        return normalized;
+    }
+
+    private String normalizeNestedPlatformCode(
+            String platformCode, String nestedPlatformCode, String configName) {
+        String normalized = normalizeOptionalCode(nestedPlatformCode);
+        if (normalized == null) {
+            throw exception(ONBOARDING_CONFIG_INVALID, configName + "平台编码不能为空");
+        }
+        if (!platformCode.equals(normalized)) {
+            throw exception(ONBOARDING_CONFIG_INVALID, configName + "平台编码与请求平台编码不一致");
+        }
+        return normalized;
     }
 
     private String normalizePlatformCode(String platformCode) {
@@ -338,10 +424,14 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
         return version.intValue();
     }
 
-    private void ensureVersionUpdated(int updated) {
-        if (updated == 0) {
-            throw exception(ONBOARDING_DRAFT_VERSION_CONFLICT);
+    private void ensureVersionUpdated(int updated, Long draftId) {
+        if (updated != 0) {
+            return;
         }
+        if (draftMapper.selectById(draftId) == null) {
+            throw exception(ONBOARDING_DRAFT_NOT_EXISTS);
+        }
+        throw exception(ONBOARDING_DRAFT_VERSION_CONFLICT);
     }
 
     private CpsPlatformOnboardingPayload copyPayload(CpsPlatformOnboardingPayload payload) {
