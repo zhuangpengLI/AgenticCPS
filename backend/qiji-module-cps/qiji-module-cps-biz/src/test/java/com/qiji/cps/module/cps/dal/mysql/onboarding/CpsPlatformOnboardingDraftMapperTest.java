@@ -23,11 +23,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @Import(CpsPlatformOnboardingDraftMapperTest.TenantTestConfiguration.class)
 class CpsPlatformOnboardingDraftMapperTest extends BaseDbUnitTest {
@@ -94,6 +96,64 @@ class CpsPlatformOnboardingDraftMapperTest extends BaseDbUnitTest {
         CpsPlatformOnboardingDraftDO unchanged = draftMapper.selectById(draft.getId());
         assertEquals(1, unchanged.getDraftVersion());
         assertEquals("{\"appKey\":\"before\"}", unchanged.getPayloadCiphertext());
+        assertEquals("fingerprint", unchanged.getConfigFingerprint());
+    }
+
+    @Test
+    void updatePayload_shouldEncryptAndResetPriorValidationState() {
+        LocalDateTime previousValidationTime = LocalDateTime.of(2026, 7, 22, 10, 0);
+        CpsPlatformOnboardingDraftDO draft = newDraft("taobao", "{\"appSecret\":\"before\"}");
+        draft.setValidatedFingerprint("validated-fingerprint");
+        draft.setValidatedAt(previousValidationTime);
+        draft.setCheckSummary("validation passed");
+        draft.setPublishedAt(previousValidationTime.plusHours(1));
+        draft.setStatus(CpsPlatformOnboardingStatusEnum.FAILED.getCode());
+        draftMapper.insert(draft);
+
+        String updatedPayload = "{\"appSecret\":\"after-secret\"}";
+        int updated = draftMapper.updatePayload(
+                draft.getId(),
+                1,
+                updatedPayload,
+                "updated-fingerprint",
+                CpsPlatformOnboardingStatusEnum.DRAFT.getCode());
+
+        assertEquals(1, updated);
+        CpsPlatformOnboardingDraftDO reloaded = draftMapper.selectById(draft.getId());
+        assertEquals(2, reloaded.getDraftVersion());
+        assertEquals(updatedPayload, reloaded.getPayloadCiphertext());
+        assertEquals("updated-fingerprint", reloaded.getConfigFingerprint());
+        assertEquals(CpsPlatformOnboardingStatusEnum.DRAFT.getCode(), reloaded.getStatus());
+        assertNull(reloaded.getValidatedFingerprint());
+        assertNull(reloaded.getValidatedAt());
+        assertNull(reloaded.getCheckSummary());
+        assertNull(reloaded.getPublishedAt());
+
+        String storedValue = queryString(
+                "SELECT payload_ciphertext FROM cps_platform_onboarding_draft WHERE id = ?",
+                draft.getId());
+        assertNotEquals(updatedPayload, storedValue);
+        assertFalse(storedValue.contains("after-secret"));
+    }
+
+    @Test
+    void updatePayload_whenTenantDiffers_shouldRejectCrossTenantWriter() {
+        CpsPlatformOnboardingDraftDO tenantOneDraft = newDraft("taobao", "{\"appKey\":\"tenant-one\"}");
+        draftMapper.insert(tenantOneDraft);
+
+        TenantContextHolder.setTenantId(2L);
+        int updated = draftMapper.updatePayload(
+                tenantOneDraft.getId(),
+                1,
+                "{\"appKey\":\"tenant-two\"}",
+                "tenant-two-fingerprint",
+                CpsPlatformOnboardingStatusEnum.DRAFT.getCode());
+
+        assertEquals(0, updated);
+        TenantContextHolder.setTenantId(1L);
+        CpsPlatformOnboardingDraftDO unchanged = draftMapper.selectById(tenantOneDraft.getId());
+        assertEquals(1, unchanged.getDraftVersion());
+        assertEquals("{\"appKey\":\"tenant-one\"}", unchanged.getPayloadCiphertext());
         assertEquals("fingerprint", unchanged.getConfigFingerprint());
     }
 

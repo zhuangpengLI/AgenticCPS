@@ -98,7 +98,7 @@ CREATE TABLE `cps_adzone` (
   `update_time`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted`       bit(1)                DEFAULT b'0' COMMENT '是否删除',
   `tenant_id`     bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
-  `active_unique_key` varchar(256) GENERATED ALWAYS AS (IF(`deleted` = b'0', CONCAT(`tenant_id`, ':', `platform_code`, ':', `adzone_id`), NULL)) STORED COMMENT '未删除推广位租户唯一键',
+  `active_unique_key` varchar(191) GENERATED ALWAYS AS (IF(`deleted` = b'0', CONCAT(CHAR_LENGTH(CAST(`tenant_id` AS CHAR)), ':', CAST(`tenant_id` AS CHAR), CHAR_LENGTH(`platform_code`), ':', `platform_code`, CHAR_LENGTH(`adzone_id`), ':', `adzone_id`), NULL)) STORED COMMENT '未删除推广位租户唯一键（长度前缀编码）',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_cps_adzone_active` (`active_unique_key`) USING BTREE,
   KEY `idx_platform_code` (`platform_code`) USING BTREE,

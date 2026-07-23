@@ -290,7 +290,7 @@ SET @cps_onboarding_sql = IF(
       AND `column_name` = 'active_unique_key'
   ),
   'SELECT 1',
-  'ALTER TABLE `cps_adzone` ADD COLUMN `active_unique_key` varchar(256) GENERATED ALWAYS AS (IF(`deleted` = b''0'', CONCAT(`tenant_id`, '':'', `platform_code`, '':'', `adzone_id`), NULL)) STORED COMMENT ''未删除推广位租户唯一键'''
+  'ALTER TABLE `cps_adzone` ADD COLUMN `active_unique_key` varchar(191) GENERATED ALWAYS AS (IF(`deleted` = b''0'', CONCAT(CHAR_LENGTH(CAST(`tenant_id` AS CHAR)), '':'', CAST(`tenant_id` AS CHAR), CHAR_LENGTH(`platform_code`), '':'', `platform_code`, CHAR_LENGTH(`adzone_id`), '':'', `adzone_id`), NULL)) STORED COMMENT ''未删除推广位租户唯一键（长度前缀编码）'''
 );
 PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
 EXECUTE cps_onboarding_stmt;

@@ -490,9 +490,12 @@ CREATE TABLE IF NOT EXISTS "cps_adzone" (
     "update_time" datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "deleted" bit NOT NULL DEFAULT FALSE,
     "tenant_id" bigint NOT NULL DEFAULT 0,
-    "active_unique_key" varchar(256) GENERATED ALWAYS AS (
+    "active_unique_key" varchar(191) GENERATED ALWAYS AS (
         CASE WHEN "deleted" = FALSE
-             THEN CONCAT(CAST("tenant_id" AS varchar), ':', "platform_code", ':', "adzone_id")
+             THEN CONCAT(LENGTH(CAST("tenant_id" AS varchar)), ':',
+                         CAST("tenant_id" AS varchar),
+                         LENGTH("platform_code"), ':', "platform_code",
+                         LENGTH("adzone_id"), ':', "adzone_id")
              ELSE NULL END
     ),
     PRIMARY KEY ("id"),
