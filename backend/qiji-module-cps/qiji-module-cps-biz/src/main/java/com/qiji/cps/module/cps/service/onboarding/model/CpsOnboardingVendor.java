@@ -36,6 +36,12 @@ public class CpsOnboardingVendor {
 
     private String authToken;
 
+    @ToString.Include
+    private Boolean appSecretConfigured;
+
+    @ToString.Include
+    private Boolean authTokenConfigured;
+
     private String defaultAdzoneId;
 
     private String extraConfig;

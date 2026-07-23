@@ -6,6 +6,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Update;
 
+import java.time.LocalDateTime;
+
 /**
  * Platform onboarding draft Mapper.
  */
@@ -36,5 +38,38 @@ public interface CpsPlatformOnboardingDraftMapper extends BaseMapperX<CpsPlatfor
                       @Param("payload") String payload,
                       @Param("fingerprint") String fingerprint,
                       @Param("status") String status);
+
+    @Update("""
+            UPDATE cps_platform_onboarding_draft
+            SET status = #{status},
+                validated_fingerprint = NULL,
+                check_summary = NULL,
+                validated_at = NULL,
+                update_time = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+              AND draft_version = #{expectedVersion}
+              AND deleted = FALSE
+            """)
+    int markValidating(@Param("id") Long id,
+                       @Param("expectedVersion") Integer expectedVersion,
+                       @Param("status") String status);
+
+    @Update("""
+            UPDATE cps_platform_onboarding_draft
+            SET status = #{status},
+                validated_fingerprint = #{validatedFingerprint},
+                check_summary = #{checkSummary},
+                validated_at = #{validatedAt},
+                update_time = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+              AND draft_version = #{expectedVersion}
+              AND deleted = FALSE
+            """)
+    int markChecked(@Param("id") Long id,
+                    @Param("expectedVersion") Integer expectedVersion,
+                    @Param("status") String status,
+                    @Param("validatedFingerprint") String validatedFingerprint,
+                    @Param("checkSummary") String checkSummary,
+                    @Param("validatedAt") LocalDateTime validatedAt);
 
 }

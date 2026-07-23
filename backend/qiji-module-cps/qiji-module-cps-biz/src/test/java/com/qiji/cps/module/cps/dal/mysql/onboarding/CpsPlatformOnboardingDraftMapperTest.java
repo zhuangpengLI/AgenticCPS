@@ -158,6 +158,48 @@ class CpsPlatformOnboardingDraftMapperTest extends BaseDbUnitTest {
     }
 
     @Test
+    void markValidating_shouldResetPriorResultWithoutChangingPayloadVersion() {
+        CpsPlatformOnboardingDraftDO draft = newDraft("taobao", "{\"appKey\":\"before\"}");
+        draft.setStatus(CpsPlatformOnboardingStatusEnum.READY.getCode());
+        draft.setValidatedFingerprint("validated-fingerprint");
+        draft.setCheckSummary("passed");
+        draft.setValidatedAt(LocalDateTime.of(2026, 7, 23, 10, 0));
+        draftMapper.insert(draft);
+
+        int updated = draftMapper.markValidating(
+                draft.getId(), 1, CpsPlatformOnboardingStatusEnum.VALIDATING.getCode());
+
+        assertEquals(1, updated);
+        CpsPlatformOnboardingDraftDO reloaded = draftMapper.selectById(draft.getId());
+        assertEquals(1, reloaded.getDraftVersion());
+        assertEquals(CpsPlatformOnboardingStatusEnum.VALIDATING.getCode(), reloaded.getStatus());
+        assertNull(reloaded.getValidatedFingerprint());
+        assertNull(reloaded.getCheckSummary());
+        assertNull(reloaded.getValidatedAt());
+    }
+
+    @Test
+    void markChecked_afterPayloadVersionChanged_shouldRejectStaleTestResult() {
+        CpsPlatformOnboardingDraftDO draft = newDraft("taobao", "{\"appKey\":\"before\"}");
+        draftMapper.insert(draft);
+        assertEquals(1, draftMapper.updatePayload(
+                draft.getId(), 1, "{\"appKey\":\"after\"}", "new-fingerprint",
+                CpsPlatformOnboardingStatusEnum.DRAFT.getCode()));
+
+        int updated = draftMapper.markChecked(
+                draft.getId(), 1, CpsPlatformOnboardingStatusEnum.READY.getCode(),
+                "stale-fingerprint", "stale result", LocalDateTime.of(2026, 7, 23, 11, 0));
+
+        assertEquals(0, updated);
+        CpsPlatformOnboardingDraftDO reloaded = draftMapper.selectById(draft.getId());
+        assertEquals(2, reloaded.getDraftVersion());
+        assertEquals(CpsPlatformOnboardingStatusEnum.DRAFT.getCode(), reloaded.getStatus());
+        assertNull(reloaded.getValidatedFingerprint());
+        assertNull(reloaded.getCheckSummary());
+        assertNull(reloaded.getValidatedAt());
+    }
+
+    @Test
     void payloadCiphertext_shouldEncryptAtRestAndRoundTrip() {
         String plaintext = "{\"appSecret\":\"secret-value\"}";
         CpsPlatformOnboardingDraftDO draft = newDraft("taobao", plaintext);

@@ -1,5 +1,6 @@
 package com.qiji.cps.module.cps.service.onboarding;
 
+import com.qiji.cps.module.cps.dal.dataobject.onboarding.CpsPlatformOnboardingDraftDO;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingVendor;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsPlatformOnboardingPayload;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,24 @@ class CpsPlatformOnboardingModelTest {
         assertFalse(result.contains("payload-auth-token-sensitive"));
         assertFalse(result.contains("payload-vendor-extra-sensitive"));
         assertFalse(result.contains("platform-extra-sensitive"));
+    }
+
+    @Test
+    void draftToString_shouldNotExposeEncryptedPayloadPlaintext() {
+        CpsPlatformOnboardingDraftDO draft = CpsPlatformOnboardingDraftDO.builder()
+                .id(1L)
+                .platformCode("taobao")
+                .mode("RECONFIGURE")
+                .payloadCiphertext("{\"appSecret\":\"draft-secret-sensitive\"}")
+                .draftVersion(3)
+                .status("DRAFT")
+                .build();
+
+        String result = draft.toString();
+
+        assertTrue(result.contains("platformCode=taobao"));
+        assertTrue(result.contains("draftVersion=3"));
+        assertFalse(result.contains("draft-secret-sensitive"));
     }
 
 }

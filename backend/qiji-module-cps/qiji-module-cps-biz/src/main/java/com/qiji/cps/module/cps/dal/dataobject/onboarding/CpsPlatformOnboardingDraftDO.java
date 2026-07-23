@@ -22,28 +22,33 @@ import java.time.LocalDateTime;
 @KeySequence("cps_platform_onboarding_draft_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
-@ToString(callSuper = true)
+@ToString(callSuper = true, onlyExplicitlyIncluded = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CpsPlatformOnboardingDraftDO extends TenantBaseDO {
 
     @TableId
+    @ToString.Include
     private Long id;
 
+    @ToString.Include
     private String platformCode;
 
+    @ToString.Include
     private String mode;
 
     @TableField(typeHandler = EncryptTypeHandler.class)
     private String payloadCiphertext;
 
+    @ToString.Include
     private Integer draftVersion;
 
     private String configFingerprint;
 
     private String validatedFingerprint;
 
+    @ToString.Include
     private String status;
 
     private String checkSummary;
