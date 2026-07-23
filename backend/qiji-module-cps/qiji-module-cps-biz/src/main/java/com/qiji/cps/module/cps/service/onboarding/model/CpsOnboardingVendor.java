@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * Vendor business configuration carried by an onboarding draft.
@@ -12,14 +13,19 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(onlyExplicitlyIncluded = true)
 public class CpsOnboardingVendor {
 
+    @ToString.Include
     private String vendorCode;
 
+    @ToString.Include
     private String vendorName;
 
+    @ToString.Include
     private String vendorType;
 
+    @ToString.Include
     private String platformCode;
 
     private String appKey;
@@ -36,6 +42,7 @@ public class CpsOnboardingVendor {
 
     private Integer priority;
 
+    @ToString.Include
     private Integer status;
 
     private String remark;

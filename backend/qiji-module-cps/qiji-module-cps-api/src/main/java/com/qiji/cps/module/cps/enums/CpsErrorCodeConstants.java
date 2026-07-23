@@ -95,7 +95,7 @@ public interface CpsErrorCodeConstants {
     ErrorCode ONBOARDING_CONFIG_INVALID = new ErrorCode(1_100_017_002, "平台接入配置不合法：{}");
     ErrorCode ONBOARDING_TEST_REQUIRED = new ErrorCode(1_100_017_003, "平台接入配置尚未通过测试");
     ErrorCode ONBOARDING_PLATFORM_ENABLED = new ErrorCode(1_100_017_004, "平台已启用，请先停用后再删除");
-    ErrorCode ONBOARDING_PUBLISH_CONFLICT = new ErrorCode(1_100_017_005, "平台接入发布冲突，请刷新后重试");
+    ErrorCode ONBOARDING_PUBLISH_CONFLICT = new ErrorCode(1_100_017_005, "草稿配置与已检测配置不一致，请重新检测");
     ErrorCode ADZONE_RELATION_REQUIRED = new ErrorCode(1_100_017_006, "推广位类型[{}]必须配置关联信息");
     ErrorCode REBATE_CONFIG_AMOUNT_RANGE_INVALID = new ErrorCode(1_100_017_007, "返利配置最小金额不能大于最大金额");
 
