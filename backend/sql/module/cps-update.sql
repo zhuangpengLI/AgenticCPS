@@ -388,10 +388,15 @@ INSERT INTO `system_menu`
  `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`,
  `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 SELECT 6297, '平台配置中心', 'cps:platform-onboarding:query', 2, 10, 6287,
-       'platform-onboarding', 'ep:setting', 'cps-config/platform-onboarding',
+       'platform-onboarding', 'ep:setting', 'cps/platformOnboarding/index',
        'CpsPlatformOnboarding', 0, b'1', b'1', b'1', '1',
        '2026-07-24 00:00:00', 'platform-onboarding', '2026-07-24 18:00:00', b'0'
 WHERE NOT EXISTS (SELECT 1 FROM `system_menu` WHERE `id` = 6297);
+
+UPDATE `system_menu`
+SET `component` = 'cps/platformOnboarding/index',
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `id` = 6297 AND `deleted` = b'0';
 
 INSERT INTO `system_menu`
 (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`,
@@ -412,5 +417,109 @@ FROM (
 WHERE NOT EXISTS (
   SELECT 1 FROM `system_menu` existing WHERE existing.`id` = onboarding_menu.menu_id
 );
+
+-- Preserve the four original configuration permission boundaries when granting
+-- the unified page. Query/test require all four legacy pages; mutations require
+-- the corresponding action in all four domains; publish requires create+update.
+INSERT INTO `system_role_menu`
+(`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT eligible.`role_id`, eligible.`target_menu_id`, '1', NOW(), '1', NOW(), b'0', eligible.`tenant_id`
+FROM (
+  SELECT rm.`role_id`, rm.`tenant_id`, mapping.`target_menu_id`
+  FROM `system_role_menu` rm
+  JOIN (
+    SELECT 6297 AS `target_menu_id`, 6229 AS `source_menu_id`, 4 AS `required_count`
+    UNION ALL SELECT 6297, 6251, 4
+    UNION ALL SELECT 6297, 6256, 4
+    UNION ALL SELECT 6297, 6261, 4
+    UNION ALL SELECT 6298 AS `target_menu_id`, 6229 AS `source_menu_id`, 4 AS `required_count`
+    UNION ALL SELECT 6298, 6251, 4
+    UNION ALL SELECT 6298, 6256, 4
+    UNION ALL SELECT 6298, 6261, 4
+    UNION ALL SELECT 6299 AS `target_menu_id`, 6231 AS `source_menu_id`, 4 AS `required_count`
+    UNION ALL SELECT 6299, 6253, 4
+    UNION ALL SELECT 6299, 6258, 4
+    UNION ALL SELECT 6299, 6263, 4
+    UNION ALL SELECT 6300 AS `target_menu_id`, 6232 AS `source_menu_id`, 4 AS `required_count`
+    UNION ALL SELECT 6300, 6254, 4
+    UNION ALL SELECT 6300, 6259, 4
+    UNION ALL SELECT 6300, 6264, 4
+    UNION ALL SELECT 6301 AS `target_menu_id`, 6233 AS `source_menu_id`, 4 AS `required_count`
+    UNION ALL SELECT 6301, 6255, 4
+    UNION ALL SELECT 6301, 6260, 4
+    UNION ALL SELECT 6301, 6265, 4
+    UNION ALL SELECT 6302 AS `target_menu_id`, 6229 AS `source_menu_id`, 4 AS `required_count`
+    UNION ALL SELECT 6302, 6251, 4
+    UNION ALL SELECT 6302, 6256, 4
+    UNION ALL SELECT 6302, 6261, 4
+    UNION ALL SELECT 6303 AS `target_menu_id`, 6231 AS `source_menu_id`, 8 AS `required_count`
+    UNION ALL SELECT 6303, 6253, 8
+    UNION ALL SELECT 6303, 6258, 8
+    UNION ALL SELECT 6303, 6263, 8
+    UNION ALL SELECT 6303, 6232, 8
+    UNION ALL SELECT 6303, 6254, 8
+    UNION ALL SELECT 6303, 6259, 8
+    UNION ALL SELECT 6303, 6264, 8
+  ) mapping ON mapping.`source_menu_id` = rm.`menu_id`
+  WHERE rm.`deleted` = b'0'
+  GROUP BY rm.`role_id`, rm.`tenant_id`, mapping.`target_menu_id`, mapping.`required_count`
+  HAVING COUNT(DISTINCT rm.`menu_id`) = mapping.`required_count`
+) eligible
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_role_menu` existing_rm
+  WHERE existing_rm.`role_id` = eligible.`role_id`
+    AND existing_rm.`menu_id` = eligible.`target_menu_id`
+    AND existing_rm.`tenant_id` = eligible.`tenant_id`
+    AND existing_rm.`deleted` = b'0'
+);
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6297),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6229, 6251, 6256, 6261]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6297');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6298),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6229, 6251, 6256, 6261]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6298');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6299),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6231, 6253, 6258, 6263]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6299');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6300),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6232, 6254, 6259, 6264]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6300');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6301),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6233, 6255, 6260, 6265]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6301');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6302),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6229, 6251, 6256, 6261]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6302');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6303),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6231, 6253, 6258, 6263, 6232, 6254, 6259, 6264]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6303');
 
 SET FOREIGN_KEY_CHECKS = 1;

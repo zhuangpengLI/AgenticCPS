@@ -69,6 +69,30 @@ class CpsPlatformOnboardingLifecycleServiceTest {
     }
 
     @Test
+    void page_shouldKeepCapabilityOnlyRowsWhenOnePlatformRuntimeReadFails() {
+        when(clientFactory.getRegisteredPlatformCodes()).thenReturn(
+                new java.util.LinkedHashSet<>(List.of("broken", "healthy")));
+        when(clientFactory.getRegisteredVendorDescriptors()).thenReturn(List.of());
+        when(platformService.getPlatformPage(any())).thenReturn(PageResult.empty());
+        when(draftService.getRuntimeDetail("broken"))
+                .thenThrow(new IllegalStateException("runtime unavailable"));
+        when(draftService.getDetail("broken"))
+                .thenThrow(new IllegalStateException("draft unavailable"));
+        when(platformService.getPlatformByCode("broken"))
+                .thenThrow(new IllegalStateException("platform unavailable"));
+
+        PageResult<CpsPlatformOnboardingPageRespVO> result =
+                service.getPage(new CpsPlatformOnboardingPageReqVO());
+
+        assertEquals(2L, result.getTotal());
+        assertEquals(List.of("broken", "healthy"),
+                result.getList().stream()
+                        .map(CpsPlatformOnboardingPageRespVO::getPlatformCode)
+                        .toList());
+        assertEquals(0, result.getList().get(0).getCompletionPercent());
+    }
+
+    @Test
     void deletePlatform_whenEnabled_shouldReject() {
         when(platformService.getPlatformByCode("taobao"))
                 .thenReturn(CpsPlatformDO.builder().platformCode("taobao").status(1).build());
@@ -139,6 +163,32 @@ class CpsPlatformOnboardingLifecycleServiceTest {
         assertEquals(List.of(), item.getMissingItems());
         assertEquals("PASSED", item.getConnectionStatus());
         assertEquals("READY", item.getDraftStatus());
+    }
+
+    @Test
+    void page_shouldResolveDefaultRebateByExactScopeThenHighestPriority() {
+        when(clientFactory.getRegisteredPlatformCodes()).thenReturn(Set.of("taobao"));
+        when(clientFactory.getRegisteredVendorDescriptors()).thenReturn(List.of());
+        when(platformService.getPlatformPage(any())).thenReturn(PageResult.empty());
+        when(platformService.getPlatformByCode("taobao"))
+                .thenReturn(CpsPlatformDO.builder().platformCode("taobao").status(0).build());
+        when(clientFactory.getVendorDescriptor("dataoke", "taobao")).thenReturn(null);
+
+        CpsPlatformOnboardingPayloadRespVO payload = completePayload();
+        payload.setRebateRules(List.of(
+                rebateRule("taobao", "10.00", 1),
+                rebateRule(null, "99.00", 999),
+                rebateRule("taobao", "30.00", 10)));
+        CpsPlatformOnboardingDetailRespVO draft =
+                detail(8L, payload, "READY", "fingerprint", "fingerprint");
+        when(draftService.getRuntimeDetail("taobao")).thenReturn(null);
+        when(draftService.getDetail("taobao")).thenReturn(draft);
+
+        CpsPlatformOnboardingPageRespVO item =
+                service.getPage(new CpsPlatformOnboardingPageReqVO()).getList().get(0);
+
+        assertEquals(new BigDecimal("30.00"), item.getDefaultRebateRate());
+        assertEquals(100, item.getCompletionPercent());
     }
 
     @Test
@@ -327,5 +377,15 @@ class CpsPlatformOnboardingLifecycleServiceTest {
         detail.setValidatedFingerprint(validatedFingerprint);
         detail.setDraftVersion(1L);
         return detail;
+    }
+
+    private static CpsOnboardingRebateRule rebateRule(
+            String platformCode, String rate, int priority) {
+        return CpsOnboardingRebateRule.builder()
+                .platformCode(platformCode)
+                .rebateRate(new BigDecimal(rate))
+                .priority(priority)
+                .status(1)
+                .build();
     }
 }

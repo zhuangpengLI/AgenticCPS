@@ -108,6 +108,28 @@ class CpsPlatformOnboardingMigrationSqlTest {
                 "upgrade must add the generated key before enforcing uniqueness");
     }
 
+    @Test
+    void onboardingMenus_shouldUseRealFrontendRouteAndMigrateExistingOwnership() throws Exception {
+        String baselineSql = compact(readSql("cps-all-in-one.sql"));
+        String updateSql = compact(readSql("cps-update.sql"));
+
+        assertOnboardingMenuMigration(baselineSql, "baseline");
+        assertOnboardingMenuMigration(updateSql, "upgrade");
+    }
+
+    private void assertOnboardingMenuMigration(String sql, String label) {
+        assertTrue(sql.contains("'cps/platformOnboarding/index'"),
+                label + " must point at the actual onboarding page component");
+        assertTrue(!sql.contains("'cps-config/platform-onboarding'"),
+                label + " must not retain the stale onboarding component path");
+        for (int menuId = 6297; menuId <= 6303; menuId++) {
+            assertTrue(sql.contains(menuId + " AS `target_menu_id`"),
+                    label + " must migrate role ownership for onboarding menu " + menuId);
+            assertTrue(sql.contains("JSON_ARRAY_APPEND(`menu_ids`, '$', " + menuId + ")"),
+                    label + " must migrate tenant-package ownership for onboarding menu " + menuId);
+        }
+    }
+
     private String compact(String sql) {
         return sql.replaceAll("\\s+", " ").trim();
     }

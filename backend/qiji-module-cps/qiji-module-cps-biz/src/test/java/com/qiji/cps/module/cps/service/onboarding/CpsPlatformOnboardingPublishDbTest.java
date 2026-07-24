@@ -9,6 +9,7 @@ import com.qiji.cps.framework.tenant.config.TenantProperties;
 import com.qiji.cps.framework.tenant.core.context.TenantContextHolder;
 import com.qiji.cps.framework.tenant.core.db.TenantDatabaseInterceptor;
 import com.qiji.cps.framework.test.core.ut.BaseDbUnitTest;
+import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingCheckRespVO;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingDetailRespVO;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingPublishReqVO;
@@ -16,13 +17,17 @@ import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformSaveReqVO
 import com.qiji.cps.module.cps.controller.admin.vendor.vo.CpsApiVendorSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.onboarding.CpsPlatformOnboardingDraftDO;
+import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateConfigDO;
+import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateRecordDO;
 import com.qiji.cps.module.cps.dal.dataobject.vendor.CpsApiVendorDO;
 import com.qiji.cps.module.cps.dal.mysql.adzone.CpsAdzoneMapper;
 import com.qiji.cps.module.cps.dal.mysql.onboarding.CpsPlatformOnboardingDraftMapper;
+import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderMapper;
 import com.qiji.cps.module.cps.dal.mysql.platform.CpsPlatformMapper;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateConfigMapper;
+import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateRecordMapper;
 import com.qiji.cps.module.cps.dal.mysql.vendor.CpsApiVendorMapper;
 import com.qiji.cps.module.cps.enums.onboarding.CpsPlatformOnboardingModeEnum;
 import com.qiji.cps.module.cps.enums.onboarding.CpsPlatformOnboardingStatusEnum;
@@ -82,11 +87,14 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
     @Resource private CpsApiVendorMapper vendorMapper;
     @Resource private CpsAdzoneMapper adzoneMapper;
     @Resource private CpsRebateConfigMapper rebateMapper;
+    @Resource private CpsOrderMapper orderMapper;
+    @Resource private CpsRebateRecordMapper rebateRecordMapper;
     @Resource private PlatformTransactionManager transactionManager;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private CpsPlatformOnboardingFingerprint fingerprint;
     private CpsPlatformOnboardingService service;
+    private CpsPlatformOnboardingLifecycleService lifecycleService;
     private CpsApiVendorServiceImpl onboardingVendorService;
 
     @BeforeEach
@@ -124,9 +132,15 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         ReflectionTestUtils.setField(platformService, "platformMapper", platformMapper);
         ReflectionTestUtils.setField(platformService, "vendorService", onboardingVendorService);
         ReflectionTestUtils.setField(platformService, "adzoneService", adzoneService);
+        ReflectionTestUtils.setField(platformService, "cacheInvalidator",
+                mock(CpsPlatformOnboardingCacheInvalidator.class));
         CpsPlatformOnboardingService target = new CpsPlatformOnboardingServiceImpl(
                 draftService, validator, fingerprint, platformService, onboardingVendorService,
                 adzoneService, rebateService, mock(CpsPlatformOnboardingCacheInvalidator.class));
+        lifecycleService = new CpsPlatformOnboardingLifecycleService(
+                draftService, target, validator, mock(CpsPlatformOnboardingConnectionTester.class),
+                mock(CpsPlatformClientFactory.class),
+                platformService, onboardingVendorService, adzoneService, rebateService);
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         service = request -> transactionTemplate.execute(status -> target.publish(request));
     }
@@ -432,6 +446,44 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         CpsApiVendorDO vendor = vendorMapper.selectByVendorAndPlatform("dataoke", "taobao");
         assertEquals("runtime-secret", vendor.getAppSecret());
         assertEquals("runtime-token", vendor.getAuthToken());
+    }
+
+    @Test
+    void managedDelete_shouldPreserveGlobalPersonalAndFinancialRows() {
+        seedRuntimeBundle("taobao", "dataoke", "old-pid", "20");
+        CpsPlatformDO platform = platformMapper.selectByPlatformCode("taobao");
+        platform.setStatus(0);
+        platformMapper.updateById(platform);
+        CpsRebateConfigDO global = rebate(null, "5", 100);
+        rebateMapper.insert(global);
+        CpsRebateConfigDO personal = rebate("taobao", "90", 100);
+        personal.setMemberId(99L);
+        rebateMapper.insert(personal);
+        CpsOrderDO order = CpsOrderDO.builder()
+                .platformCode("taobao")
+                .platformOrderId("preserved-order")
+                .orderStatus("PAID")
+                .build();
+        order.setTenantId(TenantContextHolder.getRequiredTenantId());
+        orderMapper.insert(order);
+        CpsRebateRecordDO rebateRecord = CpsRebateRecordDO.builder()
+                .memberId(99L)
+                .orderId(order.getId())
+                .rebateType("REBATE")
+                .build();
+        rebateRecord.setTenantId(TenantContextHolder.getRequiredTenantId());
+        rebateRecordMapper.insert(rebateRecord);
+
+        lifecycleService.deletePlatformBundle("taobao");
+
+        assertNull(platformMapper.selectById(platform.getId()));
+        assertEquals(0, vendorMapper.selectAllByPlatformCode("taobao").size());
+        assertEquals(0, adzoneMapper.selectAllByPlatformCode("taobao").size());
+        assertEquals(0, rebateMapper.selectManagedRulesByPlatformCode("taobao").size());
+        assertNotNull(rebateMapper.selectById(global.getId()));
+        assertNotNull(rebateMapper.selectById(personal.getId()));
+        assertNotNull(orderMapper.selectById(order.getId()));
+        assertNotNull(rebateRecordMapper.selectById(rebateRecord.getId()));
     }
 
     private CpsPlatformOnboardingPublishReqVO saveReadyDraft(CpsPlatformOnboardingPayload payload) {

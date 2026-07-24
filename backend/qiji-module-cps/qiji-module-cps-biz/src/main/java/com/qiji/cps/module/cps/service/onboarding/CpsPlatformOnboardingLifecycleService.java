@@ -163,10 +163,6 @@ public class CpsPlatformOnboardingLifecycleService {
         platformService.updatePlatform(request);
     }
 
-    public void enable(String platformCode) {
-        enablePlatform(platformCode);
-    }
-
     @Transactional(rollbackFor = Exception.class)
     public void disablePlatform(String platformCode) {
         CpsPlatformDO platform = requirePlatform(normalize(platformCode));
@@ -174,10 +170,6 @@ public class CpsPlatformOnboardingLifecycleService {
             return;
         }
         platformService.updatePlatform(toSaveRequest(platform, 0));
-    }
-
-    public void disable(String platformCode) {
-        disablePlatform(platformCode);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -198,16 +190,14 @@ public class CpsPlatformOnboardingLifecycleService {
     }
 
     private CpsPlatformOnboardingPageRespVO toPageItem(String code) {
-        CpsPlatformOnboardingDetailRespVO runtime =
-                draftService == null ? null : draftService.getRuntimeDetail(code);
-        CpsPlatformOnboardingDetailRespVO draft =
-                draftService == null ? null : draftService.getDetail(code);
+        CpsPlatformOnboardingDetailRespVO runtime = safeRuntimeDetail(code);
+        CpsPlatformOnboardingDetailRespVO draft = safeDraftDetail(code);
         CpsPlatformOnboardingPayload runtimePayload = payload(runtime);
         CpsPlatformOnboardingPayload draftPayload = payload(draft);
         CpsPlatformOnboardingPayload effectivePayload =
                 draft != null && draft.getId() != null && draftPayload != null
                         ? draftPayload : runtimePayload;
-        CpsPlatformDO platform = platformService == null ? null : platformService.getPlatformByCode(code);
+        CpsPlatformDO platform = safePlatform(code);
         String name = effectivePayload == null || effectivePayload.getPlatform() == null
                 ? code : effectivePayload.getPlatform().getPlatformName();
         if (platform != null && StringUtils.hasText(platform.getPlatformName())) {
@@ -249,6 +239,39 @@ public class CpsPlatformOnboardingLifecycleService {
                 .draftStatus(draftStatus)
                 .updateTime(updateTime(platform, draft))
                 .build();
+    }
+
+    private CpsPlatformOnboardingDetailRespVO safeRuntimeDetail(String code) {
+        if (draftService == null) {
+            return null;
+        }
+        try {
+            return draftService.getRuntimeDetail(code);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private CpsPlatformOnboardingDetailRespVO safeDraftDetail(String code) {
+        if (draftService == null) {
+            return null;
+        }
+        try {
+            return draftService.getDetail(code);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private CpsPlatformDO safePlatform(String code) {
+        if (platformService == null) {
+            return null;
+        }
+        try {
+            return platformService.getPlatformByCode(code);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
     }
 
     private CpsPlatformCapabilityRespVO toCapability(String code) {
@@ -365,8 +388,14 @@ public class CpsPlatformOnboardingLifecycleService {
                         && Integer.valueOf(1).equals(r.getStatus()))
                 .filter(r -> !StringUtils.hasText(r.getPlatformCode())
                         || platformCode.equalsIgnoreCase(r.getPlatformCode()))
-                .map(CpsOnboardingRebateRule::getRebateRate).filter(Objects::nonNull)
-                .findFirst().orElse(null);
+                .filter(r -> r.getRebateRate() != null)
+                .max(Comparator
+                        .comparingInt((CpsOnboardingRebateRule r) ->
+                                platformCode.equalsIgnoreCase(r.getPlatformCode()) ? 1 : 0)
+                        .thenComparing(CpsOnboardingRebateRule::getPriority,
+                                Comparator.nullsFirst(Integer::compareTo)))
+                .map(CpsOnboardingRebateRule::getRebateRate)
+                .orElse(null);
     }
 
     private boolean credentialsConfigured(CpsOnboardingVendor vendor, String platformCode) {
