@@ -100,6 +100,28 @@ class CpsPlatformOnboardingValidatorTest {
     }
 
     @Test
+    void validate_nullVendor_shouldReturnDeterministicItemError() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getVendors().add(0, null);
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertFalse(result.isSuccess());
+        assertContains(result, "VENDOR_CONFIG_INVALID", "vendors[0]");
+    }
+
+    @Test
+    void validate_nullAdzone_shouldReturnDeterministicItemError() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getAdzones().add(0, null);
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertFalse(result.isSuccess());
+        assertContains(result, "ADZONE_CONFIG_INVALID", "adzones[0]");
+    }
+
+    @Test
     void validate_shouldPreserveOpaqueAdzoneIdCase() {
         CpsPlatformOnboardingPayload payload = validPayload();
         payload.getAdzones().get(0).setAdzoneId(" AdZone-AbC ");

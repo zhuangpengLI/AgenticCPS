@@ -11,6 +11,8 @@ public interface CpsPlatformOnboardingDraftService {
 
     CpsPlatformOnboardingDetailRespVO getDetail(String platformCode);
 
+    CpsPlatformOnboardingDetailRespVO getRuntimeDetail(String platformCode);
+
     CpsPlatformOnboardingDetailRespVO saveDraft(
             @Valid CpsPlatformOnboardingDraftSaveReqVO request);
 

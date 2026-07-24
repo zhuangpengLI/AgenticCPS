@@ -72,6 +72,24 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
     }
 
     @Override
+    public CpsPlatformOnboardingDetailRespVO getRuntimeDetail(String platformCode) {
+        String normalizedCode = normalizePlatformCode(platformCode);
+        CpsPlatformOnboardingDraftDO draft = draftMapper.selectByPlatformCode(normalizedCode);
+        CpsPlatformDO runtimePlatform = platformMapper.selectByPlatformCode(normalizedCode);
+        if (runtimePlatform == null) {
+            return draft == null
+                    ? newTransientDetail(normalizedCode, CpsPlatformOnboardingModeEnum.CREATE.getCode(),
+                    newEmptyPayload(normalizedCode))
+                    : toDetail(draft, newEmptyPayload(normalizedCode));
+        }
+        if (draft == null) {
+            return newTransientDetail(normalizedCode, CpsPlatformOnboardingModeEnum.RECONFIGURE.getCode(),
+                    buildRuntimePayload(runtimePlatform));
+        }
+        return toDetail(draft, buildRuntimePayload(runtimePlatform));
+    }
+
+    @Override
     public CpsPlatformOnboardingDetailRespVO saveDraft(CpsPlatformOnboardingDraftSaveReqVO request) {
         if (request == null || request.getPayload() == null) {
             throw exception(ONBOARDING_CONFIG_INVALID, "平台接入配置不能为空");

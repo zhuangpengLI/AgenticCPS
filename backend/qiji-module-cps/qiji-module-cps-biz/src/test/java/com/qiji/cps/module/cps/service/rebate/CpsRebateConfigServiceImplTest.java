@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ONBOARDING_CONFIG_INVALID;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.REBATE_CONFIG_AMOUNT_RANGE_INVALID;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,6 +76,38 @@ class CpsRebateConfigServiceImplTest {
 
         assertEquals(REBATE_CONFIG_AMOUNT_RANGE_INVALID.getCode(), exception.getCode());
         verify(mapper, never()).updateById(any(CpsRebateConfigDO.class));
+    }
+
+    @Test
+    void createRebateConfig_whenPriorityNegative_shouldReject() {
+        CpsRebateConfigSaveReqVO request = validRequest();
+        request.setPriority(-1);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.createRebateConfig(request));
+
+        assertEquals(ONBOARDING_CONFIG_INVALID.getCode(), exception.getCode());
+        verify(mapper, never()).insert(any(CpsRebateConfigDO.class));
+    }
+
+    @Test
+    void createRebateConfig_whenStatusOutsideSupportedValues_shouldReject() {
+        CpsRebateConfigSaveReqVO request = validRequest();
+        request.setStatus(2);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.createRebateConfig(request));
+
+        assertEquals(ONBOARDING_CONFIG_INVALID.getCode(), exception.getCode());
+        verify(mapper, never()).insert(any(CpsRebateConfigDO.class));
+    }
+
+    private static CpsRebateConfigSaveReqVO validRequest() {
+        CpsRebateConfigSaveReqVO request = new CpsRebateConfigSaveReqVO();
+        request.setPlatformCode("taobao");
+        request.setRebateRate(new BigDecimal("20"));
+        request.setStatus(1);
+        return request;
     }
 
     private static CpsRebateConfigSaveReqVO invalidRangeRequest() {

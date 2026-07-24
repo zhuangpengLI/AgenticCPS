@@ -176,6 +176,12 @@ public class CpsRebateConfigServiceImpl implements CpsRebateConfigService {
         }
         if (request.getPriority() == null) {
             request.setPriority(0);
+        } else if (request.getPriority() < 0) {
+            throw exception(ONBOARDING_CONFIG_INVALID, "返利规则优先级必须为非负整数");
+        }
+        if (request.getStatus() != null
+                && request.getStatus() != 0 && request.getStatus() != 1) {
+            throw exception(ONBOARDING_CONFIG_INVALID, "返利规则状态只能为 0 或 1");
         }
         if (request.getRebateRate() == null
                 || request.getRebateRate().compareTo(BigDecimal.ZERO) < 0

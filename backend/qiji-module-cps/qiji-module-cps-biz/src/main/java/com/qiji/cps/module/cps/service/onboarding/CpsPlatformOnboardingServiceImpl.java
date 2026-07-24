@@ -60,7 +60,7 @@ public class CpsPlatformOnboardingServiceImpl implements CpsPlatformOnboardingSe
         String recalculatedFingerprint = fingerprint.calculate(draft.payload());
         requireMatchingFingerprints(draft, request, recalculatedFingerprint);
         if (CpsPlatformOnboardingStatusEnum.PUBLISHED.getCode().equals(draft.status())) {
-            return draftService.getDetail(platformCode);
+            return draftService.getRuntimeDetail(platformCode);
         }
         if (!CpsPlatformOnboardingStatusEnum.READY.getCode().equals(draft.status())) {
             throw exception(ONBOARDING_PUBLISH_CONFLICT);

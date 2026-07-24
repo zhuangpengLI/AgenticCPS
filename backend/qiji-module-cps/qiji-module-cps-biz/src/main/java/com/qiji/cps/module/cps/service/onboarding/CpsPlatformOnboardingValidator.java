@@ -112,6 +112,8 @@ public class CpsPlatformOnboardingValidator {
         for (int index = 0; index < vendors.size(); index++) {
             CpsOnboardingVendor vendor = vendors.get(index);
             if (vendor == null) {
+                add(errors, "VENDOR_CONFIG_INVALID", "vendors[" + index + "]",
+                        "供应商不能为空", "vendor");
                 continue;
             }
             String vendorPlatform = normalize(vendor.getPlatformCode());
@@ -186,6 +188,8 @@ public class CpsPlatformOnboardingValidator {
                 duplicate = true;
             }
             if (adzone == null) {
+                add(errors, "ADZONE_CONFIG_INVALID", "adzones[" + index + "]",
+                        "推广位不能为空", "adzone");
                 continue;
             }
             String adzonePlatform = normalize(adzone.getPlatformCode());

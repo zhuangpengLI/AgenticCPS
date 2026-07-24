@@ -10,6 +10,7 @@ import com.qiji.cps.framework.tenant.core.context.TenantContextHolder;
 import com.qiji.cps.framework.tenant.core.db.TenantDatabaseInterceptor;
 import com.qiji.cps.framework.test.core.ut.BaseDbUnitTest;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingCheckRespVO;
+import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingDetailRespVO;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingPublishReqVO;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
@@ -48,11 +49,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ONBOARDING_DRAFT_NOT_EXISTS;
+import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ONBOARDING_CONFIG_INVALID;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ONBOARDING_PUBLISH_CONFLICT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -93,6 +96,11 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         CpsPlatformOnboardingValidator validator = mock(CpsPlatformOnboardingValidator.class);
         when(validator.validateNormalized(any())).thenAnswer(invocation -> {
             CpsPlatformOnboardingPayload payload = invocation.getArgument(0);
+            if (payload.getVendors().stream().anyMatch(java.util.Objects::isNull)
+                    || payload.getAdzones().stream().anyMatch(java.util.Objects::isNull)) {
+                return new CpsPlatformOnboardingValidator.ValidationResult(
+                        CpsPlatformOnboardingCheckRespVO.of(false, List.of()), null);
+            }
             return new CpsPlatformOnboardingValidator.ValidationResult(
                     CpsPlatformOnboardingCheckRespVO.of(true, List.of()),
                     CpsPlatformOnboardingPayloadNormalizer.normalizeCopy(payload, objectMapper));
@@ -170,17 +178,55 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
     }
 
     @Test
+    void publish_nullVendor_shouldRejectBeforeRuntimeWrites() {
+        CpsPlatformOnboardingPayload payload = bundle("jd", "jdunion", "jd-pid", "30", true);
+        payload.getVendors().set(0, null);
+        CpsPlatformOnboardingPublishReqVO request = saveReadyDraft(payload);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.publish(request));
+
+        assertEquals(ONBOARDING_CONFIG_INVALID.getCode(), exception.getCode());
+        assertNull(platformMapper.selectByPlatformCode("jd"));
+        assertEquals(0, vendorMapper.selectAllByPlatformCode("jd").size());
+        assertEquals(0, adzoneMapper.selectAllByPlatformCode("jd").size());
+        assertEquals(0, rebateMapper.selectManagedRulesByPlatformCode("jd").size());
+    }
+
+    @Test
+    void publish_nullAdzone_shouldRejectBeforeRuntimeWrites() {
+        CpsPlatformOnboardingPayload payload = bundle("jd", "jdunion", "jd-pid", "30", true);
+        payload.getAdzones().set(0, null);
+        CpsPlatformOnboardingPublishReqVO request = saveReadyDraft(payload);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.publish(request));
+
+        assertEquals(ONBOARDING_CONFIG_INVALID.getCode(), exception.getCode());
+        assertNull(platformMapper.selectByPlatformCode("jd"));
+        assertEquals(0, vendorMapper.selectAllByPlatformCode("jd").size());
+        assertEquals(0, adzoneMapper.selectAllByPlatformCode("jd").size());
+        assertEquals(0, rebateMapper.selectManagedRulesByPlatformCode("jd").size());
+    }
+
+    @Test
     void publishSameVersionTwice_shouldBeIdempotent() {
         CpsPlatformOnboardingPublishReqVO request =
                 saveReadyDraft(bundle("jd", "jdunion", "jd-pid", "30", true));
 
         service.publish(request);
-        service.publish(request);
+        CpsApiVendorDO runtimeVendor = vendorMapper.selectByVendorAndPlatform("jdunion", "jd");
+        runtimeVendor.setVendorName("runtime-edited");
+        vendorMapper.updateById(runtimeVendor);
+
+        CpsPlatformOnboardingDetailRespVO response = service.publish(request);
 
         assertNotNull(platformMapper.selectByPlatformCode("jd"));
         assertEquals(1, vendorMapper.selectAllByPlatformCode("jd").size());
         assertEquals(1, adzoneMapper.selectAllByPlatformCode("jd").size());
         assertEquals(1, rebateMapper.selectManagedRulesByPlatformCode("jd").size());
+        assertEquals("runtime-edited", response.getPayload().getVendors().getFirst().getVendorName());
+        assertTrue(response.getPayload().getVendors().getFirst().getAppSecretConfigured());
     }
 
     @Test
