@@ -378,6 +378,7 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
                 .authTokenConfigured(hasText(vendor.getAuthToken()))
                 .defaultAdzoneId(vendor.getDefaultAdzoneId())
                 .extraConfigConfigured(hasText(vendor.getExtraConfig()))
+                .extraConfigConfigured(hasText(vendor.getExtraConfig()))
                 .priority(vendor.getPriority())
                 .status(vendor.getStatus())
                 .remark(vendor.getRemark())

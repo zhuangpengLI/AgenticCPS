@@ -6,6 +6,7 @@ import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.CpsVendorCapability;
 import com.qiji.cps.module.cps.client.CpsVendorDescriptor;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.*;
+import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import com.qiji.cps.module.cps.enums.onboarding.CpsPlatformOnboardingStatusEnum;
@@ -59,7 +60,7 @@ public class CpsPlatformOnboardingLifecycleService {
                 .map(CpsVendorDescriptor::getPlatformCode)
                 .forEach(code -> addNormalized(codes, code));
         try {
-            CpsPlatformOnboardingPageReqVO allReq = new CpsPlatformOnboardingPageReqVO();
+            CpsPlatformPageReqVO allReq = new CpsPlatformPageReqVO();
             allReq.setPageNo(1);
             allReq.setPageSize(200);
             PageResult<CpsPlatformDO> configured = platformService.getPlatformPage(allReq);
@@ -196,29 +197,28 @@ public class CpsPlatformOnboardingLifecycleService {
                 draftService == null ? null : draftService.getRuntimeDetail(code);
         CpsPlatformOnboardingDetailRespVO draft =
                 draftService == null ? null : draftService.getDetail(code);
-        CpsPlatformOnboardingPayload payload = payload(runtime);
-        if (payload == null) {
-            payload = payload(draft);
-        }
-        CpsPlatformOnboardingPayload draftPayload = payload(draft);
         CpsPlatformOnboardingPayload runtimePayload = payload(runtime);
+        CpsPlatformOnboardingPayload draftPayload = payload(draft);
+        CpsPlatformOnboardingPayload effectivePayload =
+                draft != null && draft.getId() != null && draftPayload != null
+                        ? draftPayload : runtimePayload;
         CpsPlatformDO platform = platformService == null ? null : platformService.getPlatformByCode(code);
-        String name = payload == null || payload.getPlatform() == null
-                ? code : payload.getPlatform().getPlatformName();
+        String name = effectivePayload == null || effectivePayload.getPlatform() == null
+                ? code : effectivePayload.getPlatform().getPlatformName();
         if (platform != null && StringUtils.hasText(platform.getPlatformName())) {
             name = platform.getPlatformName();
         }
         List<String> missing = new ArrayList<>();
-        if (runtimePayload == null || runtimePayload.getPlatform() == null) {
+        if (effectivePayload == null || effectivePayload.getPlatform() == null) {
             missing.add("PLATFORM");
         }
-        if (runtimePayload == null || !hasPrimary(runtimePayload)) {
+        if (effectivePayload == null || !hasPrimary(effectivePayload, code)) {
             missing.add("PRIMARY_VENDOR");
         }
-        if (runtimePayload == null || !hasDefaultAdzone(runtimePayload)) {
+        if (effectivePayload == null || !hasDefaultAdzone(effectivePayload, code)) {
             missing.add("DEFAULT_ADZONE");
         }
-        BigDecimal defaultRate = defaultRate(runtimePayload);
+        BigDecimal defaultRate = defaultRate(effectivePayload, code);
         if (defaultRate == null) {
             missing.add("DEFAULT_REBATE");
         }
@@ -233,9 +233,9 @@ public class CpsPlatformOnboardingLifecycleService {
         return CpsPlatformOnboardingPageRespVO.builder()
                 .platformCode(code)
                 .platformName(name)
-                .primaryVendorCode(runtimePayload == null ? null : runtimePayload.getPrimaryVendorCode())
-                .backupVendorCount(runtimePayload == null ? 0 : backupCount(runtimePayload))
-                .runtimeDefaultAdzoneId(runtimePayload == null ? null : runtimePayload.getRuntimeDefaultAdzoneId())
+                .primaryVendorCode(effectivePayload == null ? null : effectivePayload.getPrimaryVendorCode())
+                .backupVendorCount(effectivePayload == null ? 0 : backupCount(effectivePayload))
+                .runtimeDefaultAdzoneId(effectivePayload == null ? null : effectivePayload.getRuntimeDefaultAdzoneId())
                 .defaultRebateRate(defaultRate)
                 .completionPercent((5 - missing.size()) * 20)
                 .missingItems(List.copyOf(missing))
@@ -322,33 +322,70 @@ public class CpsPlatformOnboardingLifecycleService {
                 .map(v -> CpsOnboardingVendor.builder().vendorCode(v.getVendorCode())
                         .vendorName(v.getVendorName()).vendorType(v.getVendorType())
                         .platformCode(v.getPlatformCode()).defaultAdzoneId(v.getDefaultAdzoneId())
+                        .appKeyConfigured(v.getAppKeyConfigured())
+                        .appSecretConfigured(v.getAppSecretConfigured())
+                        .authTokenConfigured(v.getAuthTokenConfigured())
+                        .extraConfigConfigured(v.getExtraConfigConfigured())
                         .status(v.getStatus()).priority(v.getPriority()).build()).toList());
         payload.setAdzones(p.getAdzones() == null ? new ArrayList<>() : p.getAdzones());
         payload.setRebateRules(p.getRebateRules() == null ? new ArrayList<>() : p.getRebateRules());
         return payload;
     }
 
-    private static boolean hasPrimary(CpsPlatformOnboardingPayload p) {
+    private boolean hasPrimary(CpsPlatformOnboardingPayload p, String platformCode) {
         if (!StringUtils.hasText(p.getPrimaryVendorCode())) return false;
         return safeList(p.getVendors()).stream().anyMatch(v -> v != null
                 && Integer.valueOf(1).equals(v.getStatus())
-                && p.getPrimaryVendorCode().equalsIgnoreCase(v.getVendorCode()));
+                && p.getPrimaryVendorCode().equalsIgnoreCase(v.getVendorCode())
+                && (!StringUtils.hasText(v.getPlatformCode())
+                || platformCode.equalsIgnoreCase(v.getPlatformCode()))
+                && credentialsConfigured(v, platformCode));
     }
 
-    private static boolean hasDefaultAdzone(CpsPlatformOnboardingPayload p) {
+    private static boolean hasDefaultAdzone(CpsPlatformOnboardingPayload p, String platformCode) {
         return StringUtils.hasText(p.getRuntimeDefaultAdzoneId())
                 && safeList(p.getAdzones()).stream().anyMatch(a -> a != null
                 && Integer.valueOf(1).equals(a.getStatus())
+                && (!StringUtils.hasText(a.getPlatformCode())
+                || platformCode.equalsIgnoreCase(a.getPlatformCode()))
                 && p.getRuntimeDefaultAdzoneId().equals(a.getAdzoneId()));
     }
 
-    private static BigDecimal defaultRate(CpsPlatformOnboardingPayload p) {
+    private static BigDecimal defaultRate(CpsPlatformOnboardingPayload p, String platformCode) {
         if (p == null) return null;
         return safeList(p.getRebateRules()).stream()
                 .filter(r -> r != null && r.getMemberId() == null && r.getMemberLevelId() == null
                         && Integer.valueOf(1).equals(r.getStatus()))
+                .filter(r -> !StringUtils.hasText(r.getPlatformCode())
+                        || platformCode.equalsIgnoreCase(r.getPlatformCode()))
                 .map(CpsOnboardingRebateRule::getRebateRate).filter(Objects::nonNull)
                 .findFirst().orElse(null);
+    }
+
+    private boolean credentialsConfigured(CpsOnboardingVendor vendor, String platformCode) {
+        CpsVendorDescriptor descriptor = clientFactory.getVendorDescriptor(
+                vendor.getVendorCode(), platformCode);
+        if (descriptor == null || descriptor.getConfigSchema() == null
+                || descriptor.getConfigSchema().getFields() == null) {
+            return Boolean.TRUE.equals(vendor.getAppKeyConfigured())
+                    && Boolean.TRUE.equals(vendor.getAppSecretConfigured());
+        }
+        return descriptor.getConfigSchema().getFields().stream()
+                .filter(field -> field.isRequired())
+                .allMatch(field -> configuredField(vendor, field.getName()));
+    }
+
+    private static boolean configuredField(CpsOnboardingVendor vendor, String fieldName) {
+        return switch (fieldName) {
+            case "appKey" -> Boolean.TRUE.equals(vendor.getAppKeyConfigured())
+                    || StringUtils.hasText(vendor.getAppKey());
+            case "appSecret" -> Boolean.TRUE.equals(vendor.getAppSecretConfigured())
+                    || StringUtils.hasText(vendor.getAppSecret());
+            case "authToken" -> Boolean.TRUE.equals(vendor.getAuthTokenConfigured())
+                    || StringUtils.hasText(vendor.getAuthToken());
+            case "defaultAdzoneId" -> StringUtils.hasText(vendor.getDefaultAdzoneId());
+            default -> StringUtils.hasText(vendor.getExtraConfig());
+        };
     }
 
     private static int backupCount(CpsPlatformOnboardingPayload p) {

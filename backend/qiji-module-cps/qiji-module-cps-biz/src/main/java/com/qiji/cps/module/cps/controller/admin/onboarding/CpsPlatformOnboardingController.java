@@ -54,7 +54,17 @@ public class CpsPlatformOnboardingController {
     @Operation(summary = "删除平台接入草稿")
     @PreAuthorize("@ss.hasPermission('cps:platform-onboarding:delete')")
     public CommonResult<Boolean> deleteDraft(
-            @Valid @RequestBody CpsPlatformOnboardingDraftDeleteReqVO request) {
+            @RequestParam(value = "platformCode", required = false) String platformCode,
+            @RequestParam(value = "draftVersion", required = false) Long draftVersion,
+            @Valid @RequestBody(required = false) CpsPlatformOnboardingDraftDeleteReqVO body) {
+        CpsPlatformOnboardingDraftDeleteReqVO request =
+                body == null ? new CpsPlatformOnboardingDraftDeleteReqVO() : body;
+        if (platformCode != null) {
+            request.setPlatformCode(platformCode);
+        }
+        if (draftVersion != null) {
+            request.setDraftVersion(draftVersion);
+        }
         lifecycleService.deleteDraft(request);
         return success(true);
     }
