@@ -66,6 +66,10 @@ class CpsPlatformOnboardingValidatorTest {
     void validate_validBundle_shouldNormalizeWithoutMutatingCaller() {
         CpsPlatformOnboardingPayload payload = validPayload();
         payload.getVendors().get(0).setDefaultAdzoneId("old-default");
+        payload.getVendors().get(0).setPlatformCode(" TAOBAO ");
+        payload.getAdzones().get(0).setPlatformCode(" TAOBAO ");
+        payload.getPlatform().setActiveVendorCode("stale-vendor");
+        payload.getPlatform().setDefaultAdzoneId("stale-adzone");
 
         CpsPlatformOnboardingValidator.ValidationResult result =
                 validator.validateNormalized(payload);
@@ -73,7 +77,41 @@ class CpsPlatformOnboardingValidatorTest {
         assertTrue(result.response().isSuccess());
         assertNotSame(payload, result.normalizedPayload());
         assertEquals("old-default", payload.getVendors().get(0).getDefaultAdzoneId());
+        assertEquals("stale-vendor", payload.getPlatform().getActiveVendorCode());
+        assertEquals("stale-adzone", payload.getPlatform().getDefaultAdzoneId());
+        assertEquals("dataoke", result.normalizedPayload().getPlatform().getActiveVendorCode());
+        assertEquals("adzone-primary", result.normalizedPayload().getPlatform().getDefaultAdzoneId());
         assertEquals("adzone-primary",
+                result.normalizedPayload().getVendors().get(0).getDefaultAdzoneId());
+        assertEquals("taobao", result.normalizedPayload().getVendors().get(0).getPlatformCode());
+        assertEquals("taobao", result.normalizedPayload().getAdzones().get(0).getPlatformCode());
+    }
+
+    @Test
+    void validate_shouldRejectForeignVendorAndAdzonePlatforms() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getVendors().get(1).setPlatformCode(" jd ");
+        payload.getAdzones().get(1).setPlatformCode("pdd");
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertContains(result, "VENDOR_PLATFORM_INVALID", "vendors[1].platformCode");
+        assertContains(result, "ADZONE_PLATFORM_INVALID", "adzones[1].platformCode");
+    }
+
+    @Test
+    void validate_shouldPreserveOpaqueAdzoneIdCase() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getAdzones().get(0).setAdzoneId(" AdZone-AbC ");
+        payload.setRuntimeDefaultAdzoneId(" AdZone-AbC ");
+
+        CpsPlatformOnboardingValidator.ValidationResult result =
+                validator.validateNormalized(payload);
+
+        assertTrue(result.response().isSuccess());
+        assertEquals("AdZone-AbC", result.normalizedPayload().getRuntimeDefaultAdzoneId());
+        assertEquals("AdZone-AbC", result.normalizedPayload().getAdzones().get(0).getAdzoneId());
+        assertEquals("AdZone-AbC",
                 result.normalizedPayload().getVendors().get(0).getDefaultAdzoneId());
     }
 
@@ -179,15 +217,48 @@ class CpsPlatformOnboardingValidatorTest {
 
     @Test
     void validate_malformedExtraConfig_shouldStillAggregateCapabilityFailure() {
-        when(clientFactory.getVendorDescriptor("dataoke", "taobao")).thenReturn(
-                descriptor("dataoke", Set.of(CpsVendorCapability.CONNECTION_TEST)));
+        CpsVendorDescriptor descriptor = CpsVendorDescriptor.builder()
+                .vendorCode("dataoke")
+                .platformCode("taobao")
+                .vendorType("aggregator")
+                .capabilities(Set.of(CpsVendorCapability.CONNECTION_TEST))
+                .configSchema(new CpsVendorConfigSchema(List.of(
+                        CpsVendorConfigField.required("vendor", false))))
+                .build();
+        when(clientFactory.getVendorDescriptor("dataoke", "taobao")).thenReturn(descriptor);
         CpsPlatformOnboardingPayload payload = validPayload();
         payload.getVendors().get(0).setExtraConfig("{invalid");
 
         CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
 
         assertContains(result, "VENDOR_CONFIG_INVALID", "vendors[0].extraConfig");
+        assertContains(result, "VENDOR_CONFIG_INVALID", "vendors[0].vendor");
         assertContains(result, "VENDOR_NOT_REGISTERED", "vendors[0].capabilities");
+    }
+
+    @Test
+    void validate_shouldApplyTaobaoChannelAndMemberAttributionRules() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        CpsOnboardingAdzone channel = payload.getAdzones().get(0);
+        channel.setAdzoneType("channel");
+        channel.setRelationType("channel");
+        channel.setRelationId(null);
+        channel.setExternalRelationId(null);
+
+        CpsOnboardingAdzone member = payload.getAdzones().get(1);
+        member.setAdzoneType("member");
+        member.setRelationType("member");
+        member.setRelationId(null);
+        member.setAdzoneId("invalid-member-pid");
+        member.setExternalSpecialId("not-numeric");
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertContains(result, "ADZONE_RELATION_REQUIRED", "adzones[0].relationId");
+        assertContains(result, "ADZONE_RELATION_REQUIRED", "adzones[0].externalRelationId");
+        assertContains(result, "ADZONE_RELATION_REQUIRED", "adzones[1].relationId");
+        assertContains(result, "ADZONE_CONFIG_INVALID", "adzones[1].adzoneId");
+        assertContains(result, "ADZONE_CONFIG_INVALID", "adzones[1].externalSpecialId");
     }
 
     @Test
@@ -196,7 +267,7 @@ class CpsPlatformOnboardingValidatorTest {
         payload.getAdzones().get(0).setStatus(0);
         payload.getAdzones().get(1).setAdzoneType("channel");
         payload.getAdzones().add(CpsOnboardingAdzone.builder()
-                .platformCode("taobao").adzoneId(" ADZONE-PRIMARY ")
+                .platformCode("taobao").adzoneId(" adzone-primary ")
                 .adzoneType("general").status(0).build());
 
         CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);

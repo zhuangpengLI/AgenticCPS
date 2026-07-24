@@ -61,6 +61,31 @@ class CpsPlatformOnboardingFingerprintTest {
     }
 
     @Test
+    void calculate_shouldMatchReadyNormalizationWithoutMutatingDraft() {
+        CpsPlatformOnboardingPayload draft = validPayload();
+        draft.getPlatform().setPlatformCode(" TAOBAO ");
+        draft.getPlatform().setActiveVendorCode("stale-vendor");
+        draft.getPlatform().setDefaultAdzoneId("stale-adzone");
+        draft.setPrimaryVendorCode(" DATAOKE ");
+        draft.setRuntimeDefaultAdzoneId(" AdZone-AbC ");
+        draft.getVendors().get(0).setVendorCode(" DATAOKE ");
+        draft.getVendors().get(0).setPlatformCode(" TAOBAO ");
+        draft.getVendors().get(0).setDefaultAdzoneId("stale-adzone");
+        draft.getAdzones().get(0).setPlatformCode(" TAOBAO ");
+        draft.getAdzones().get(0).setAdzoneId(" AdZone-AbC ");
+
+        CpsPlatformOnboardingPayload ready = validPayload();
+        ready.getPlatform().setDefaultAdzoneId("AdZone-AbC");
+        ready.setRuntimeDefaultAdzoneId("AdZone-AbC");
+        ready.getVendors().get(0).setDefaultAdzoneId("AdZone-AbC");
+        ready.getAdzones().get(0).setAdzoneId("AdZone-AbC");
+
+        JsonNode draftBefore = objectMapper.valueToTree(draft);
+        assertEquals(fingerprint.calculate(ready), fingerprint.calculate(draft));
+        assertEquals(draftBefore, objectMapper.valueToTree(draft));
+    }
+
+    @Test
     void calculate_whenCollectionsAreNull_shouldMatchEmptyCollections() {
         CpsPlatformOnboardingPayload nullCollections = validPayload();
         nullCollections.setVendors(null);

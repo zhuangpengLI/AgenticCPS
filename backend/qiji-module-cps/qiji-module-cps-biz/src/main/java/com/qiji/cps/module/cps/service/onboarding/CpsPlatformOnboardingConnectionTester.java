@@ -11,6 +11,8 @@ import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingVendor;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsPlatformOnboardingPayload;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -27,14 +29,20 @@ public class CpsPlatformOnboardingConnectionTester {
     private final CpsPlatformOnboardingValidator validator;
     private final CpsPlatformClientFactory clientFactory;
     private final ObjectMapper objectMapper;
+    private final CpsPlatformOnboardingFingerprint fingerprint;
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public CpsPlatformOnboardingCheckRespVO test(String platformCode, Long draftVersion) {
         CpsPlatformOnboardingDraftService.DraftSnapshot snapshot =
                 draftService.getRequiredSnapshot(platformCode, draftVersion);
         draftService.markValidating(snapshot.id(), draftVersion);
 
-        CpsPlatformOnboardingValidator.ValidationResult validation =
-                validator.validateNormalized(snapshot.payload());
+        CpsPlatformOnboardingValidator.ValidationResult validation;
+        try {
+            validation = validator.validateNormalized(snapshot.payload());
+        } catch (RuntimeException exception) {
+            return markUnexpectedFailure(snapshot.id(), draftVersion);
+        }
         if (!validation.response().isSuccess()) {
             draftService.markChecked(snapshot.id(), draftVersion,
                     CpsPlatformOnboardingStatusEnum.FAILED.getCode(),
@@ -43,6 +51,12 @@ public class CpsPlatformOnboardingConnectionTester {
         }
 
         CpsPlatformOnboardingPayload payload = validation.normalizedPayload();
+        String validatedFingerprint;
+        try {
+            validatedFingerprint = fingerprint.calculate(payload);
+        } catch (RuntimeException exception) {
+            return markUnexpectedFailure(snapshot.id(), draftVersion);
+        }
         String normalizedPlatform = normalize(payload.getPlatform().getPlatformCode());
         List<CpsPlatformOnboardingCheckRespVO.Item> items = new ArrayList<>();
         boolean allPassed = true;
@@ -68,12 +82,27 @@ public class CpsPlatformOnboardingConnectionTester {
         if (allPassed) {
             draftService.markChecked(snapshot.id(), draftVersion,
                     CpsPlatformOnboardingStatusEnum.READY.getCode(),
-                    snapshot.configFingerprint(), summarize(response), LocalDateTime.now());
+                    validatedFingerprint, summarize(response), LocalDateTime.now());
         } else {
             draftService.markChecked(snapshot.id(), draftVersion,
                     CpsPlatformOnboardingStatusEnum.FAILED.getCode(),
                     null, summarize(response), null);
         }
+        return response;
+    }
+
+    private CpsPlatformOnboardingCheckRespVO markUnexpectedFailure(Long draftId,
+                                                                    Long draftVersion) {
+        CpsPlatformOnboardingCheckRespVO response = CpsPlatformOnboardingCheckRespVO.failed(
+                CpsPlatformOnboardingCheckRespVO.Item.builder()
+                        .code("ONBOARDING_TEST_FAILED")
+                        .fieldPath("platform")
+                        .section("platform")
+                        .message("平台连接检测异常，请稍后重试")
+                        .build());
+        draftService.markChecked(draftId, draftVersion,
+                CpsPlatformOnboardingStatusEnum.FAILED.getCode(),
+                null, summarize(response), null);
         return response;
     }
 

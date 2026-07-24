@@ -12,6 +12,7 @@ import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingAdzone;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingRebateRule;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingVendor;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsPlatformOnboardingPayload;
+import com.qiji.cps.module.cps.service.adzone.CpsAdzoneAttributionValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -21,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,7 +40,8 @@ public class CpsPlatformOnboardingValidator {
 
     ValidationResult validateNormalized(CpsPlatformOnboardingPayload payload) {
         List<CpsPlatformOnboardingCheckRespVO.Item> errors = new ArrayList<>();
-        CpsPlatformOnboardingPayload normalized = copy(payload);
+        CpsPlatformOnboardingPayload normalized =
+                CpsPlatformOnboardingPayloadNormalizer.normalizeCopy(payload, objectMapper);
         String platformCode = normalized == null || normalized.getPlatform() == null
                 ? null : normalize(normalized.getPlatform().getPlatformCode());
 
@@ -48,6 +49,9 @@ public class CpsPlatformOnboardingValidator {
         validateVendors(normalized, platformCode, errors);
         validateAdzones(normalized, platformCode, errors);
         validateRebates(normalized, platformCode, errors);
+        if (errors.isEmpty()) {
+            synchronizeChildPlatforms(normalized, platformCode);
+        }
 
         return new ValidationResult(
                 CpsPlatformOnboardingCheckRespVO.of(errors.isEmpty(), errors),
@@ -107,7 +111,17 @@ public class CpsPlatformOnboardingValidator {
 
         for (int index = 0; index < vendors.size(); index++) {
             CpsOnboardingVendor vendor = vendors.get(index);
-            if (vendor == null || !enabled(vendor.getStatus())) {
+            if (vendor == null) {
+                continue;
+            }
+            String vendorPlatform = normalize(vendor.getPlatformCode());
+            if (StringUtils.hasText(vendorPlatform)
+                    && platformCode != null && !platformCode.equals(vendorPlatform)) {
+                add(errors, "VENDOR_PLATFORM_INVALID",
+                        "vendors[" + index + "].platformCode",
+                        "供应商平台必须与根平台一致", "vendor");
+            }
+            if (!enabled(vendor.getStatus())) {
                 continue;
             }
             String vendorCode = normalize(vendor.getVendorCode());
@@ -118,20 +132,20 @@ public class CpsPlatformOnboardingValidator {
                 continue;
             }
             CpsVendorConfig config = toVendorConfig(vendor, platformCode);
-            boolean configParsed = true;
+            Map<String, String> extraConfig = Map.of();
             try {
-                config.setExtraConfig(parseExtraConfig(vendor.getExtraConfig()));
+                extraConfig = parseExtraConfig(vendor.getExtraConfig());
             } catch (Exception e) {
                 add(errors, "VENDOR_CONFIG_INVALID",
                         "vendors[" + index + "].extraConfig",
                         "供应商扩展配置格式无效", "vendor");
-                configParsed = false;
             }
+            config.setExtraConfig(extraConfig);
             if (descriptor.getConfigSchema() == null) {
                 add(errors, "VENDOR_CONFIG_SCHEMA_REQUIRED",
                         "vendors[" + index + "].configSchema",
                         "已启用供应商必须注册配置校验规则", "vendor");
-            } else if (configParsed) {
+            } else {
                 CpsVendorConfigValidationResult validation =
                         descriptor.getConfigSchema().validate(config);
                 if (!validation.isValid()) {
@@ -165,10 +179,32 @@ public class CpsPlatformOnboardingValidator {
         List<CpsOnboardingAdzone> adzones = safeList(payload.getAdzones());
         Set<String> seen = new HashSet<>();
         boolean duplicate = false;
-        for (CpsOnboardingAdzone adzone : adzones) {
-            String key = adzone == null ? null : normalize(adzone.getAdzoneId());
+        for (int index = 0; index < adzones.size(); index++) {
+            CpsOnboardingAdzone adzone = adzones.get(index);
+            String key = adzone == null ? null : opaque(adzone.getAdzoneId());
             if (StringUtils.hasText(key) && !seen.add(key)) {
                 duplicate = true;
+            }
+            if (adzone == null) {
+                continue;
+            }
+            String adzonePlatform = normalize(adzone.getPlatformCode());
+            if (StringUtils.hasText(adzonePlatform)
+                    && platformCode != null && !platformCode.equals(adzonePlatform)) {
+                add(errors, "ADZONE_PLATFORM_INVALID",
+                        "adzones[" + index + "].platformCode",
+                        "推广位平台必须与根平台一致", "adzone");
+            }
+            for (CpsAdzoneAttributionValidator.Violation violation
+                    : CpsAdzoneAttributionValidator.validate(
+                    platformCode, adzone.getAdzoneType(), adzone.getRelationType(),
+                    adzone.getRelationId(), adzone.getAdzoneId(),
+                    adzone.getExternalRelationId(), adzone.getExternalSpecialId())) {
+                String code = violation.type()
+                        == CpsAdzoneAttributionValidator.ViolationType.RELATION_REQUIRED
+                        ? "ADZONE_RELATION_REQUIRED" : "ADZONE_CONFIG_INVALID";
+                add(errors, code, "adzones[" + index + "]." + violation.field(),
+                        violation.message(), "adzone");
             }
         }
         if (duplicate) {
@@ -186,21 +222,13 @@ public class CpsPlatformOnboardingValidator {
             add(errors, "GENERAL_ADZONE_REQUIRED", "adzones",
                     "至少配置一个本平台已启用的通用推广位", "adzone");
         }
-        String defaultAdzoneId = normalize(payload.getRuntimeDefaultAdzoneId());
+        String defaultAdzoneId = opaque(payload.getRuntimeDefaultAdzoneId());
         boolean defaultValid = StringUtils.hasText(defaultAdzoneId)
                 && enabledGeneral.stream().anyMatch(adzone ->
-                defaultAdzoneId.equals(normalize(adzone.getAdzoneId())));
+                defaultAdzoneId.equals(opaque(adzone.getAdzoneId())));
         if (!defaultValid) {
             add(errors, "DEFAULT_ADZONE_INVALID", "runtimeDefaultAdzoneId",
                     "运行时默认推广位必须指向本平台已启用的通用推广位", "adzone");
-        } else {
-            String primary = normalize(payload.getPrimaryVendorCode());
-            safeList(payload.getVendors()).stream()
-                    .filter(vendor -> vendor != null
-                            && primary != null
-                            && primary.equals(normalize(vendor.getVendorCode())))
-                    .findFirst()
-                    .ifPresent(vendor -> vendor.setDefaultAdzoneId(defaultAdzoneId));
         }
     }
 
@@ -271,18 +299,6 @@ public class CpsPlatformOnboardingValidator {
         }
     }
 
-    private CpsPlatformOnboardingPayload copy(CpsPlatformOnboardingPayload payload) {
-        if (payload == null) {
-            return null;
-        }
-        try {
-            return objectMapper.readValue(objectMapper.writeValueAsBytes(payload),
-                    CpsPlatformOnboardingPayload.class);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("平台接入配置无法规范化", e);
-        }
-    }
-
     static CpsVendorConfig toVendorConfig(CpsOnboardingVendor vendor, String platformCode) {
         return CpsVendorConfig.builder()
                 .vendorCode(normalize(vendor.getVendorCode()))
@@ -301,6 +317,19 @@ public class CpsPlatformOnboardingValidator {
             return Map.of();
         }
         return objectMapper.readValue(extraConfig, new TypeReference<Map<String, String>>() { });
+    }
+
+    private static void synchronizeChildPlatforms(CpsPlatformOnboardingPayload payload,
+                                                   String platformCode) {
+        safeList(payload.getVendors()).stream()
+                .filter(vendor -> vendor != null)
+                .forEach(vendor -> vendor.setPlatformCode(platformCode));
+        safeList(payload.getAdzones()).stream()
+                .filter(adzone -> adzone != null)
+                .forEach(adzone -> adzone.setPlatformCode(platformCode));
+        safeList(payload.getRebateRules()).stream()
+                .filter(rule -> rule != null)
+                .forEach(rule -> rule.setPlatformCode(platformCode));
     }
 
     private static String schemaField(String error) {
@@ -324,7 +353,11 @@ public class CpsPlatformOnboardingValidator {
     }
 
     private static String normalize(String value) {
-        return StringUtils.hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : null;
+        return CpsPlatformOnboardingPayloadNormalizer.code(value);
+    }
+
+    private static String opaque(String value) {
+        return CpsPlatformOnboardingPayloadNormalizer.opaque(value);
     }
 
     private static <T> List<T> safeList(List<T> values) {

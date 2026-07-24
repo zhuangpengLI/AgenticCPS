@@ -103,47 +103,55 @@ public class CpsPlatformOnboardingFingerprint {
     }
 
     private CanonicalPayload canonicalize(CpsPlatformOnboardingPayload payload) {
-        if (payload == null) {
+        CpsPlatformOnboardingPayload normalized =
+                CpsPlatformOnboardingPayloadNormalizer.normalizeCopy(payload, objectMapper);
+        if (normalized == null) {
             return new CanonicalPayload(null, null, null, List.of(), List.of(), List.of());
         }
-        List<CanonicalVendor> vendors = canonicalVendors(payload.getVendors());
-        List<CanonicalAdzone> adzones = canonicalAdzones(payload.getAdzones());
-        List<CanonicalRebateRule> rebateRules = canonicalRebateRules(payload.getRebateRules());
+        String platformCode = normalized.getPlatform() == null
+                ? null : normalized.getPlatform().getPlatformCode();
+        List<CanonicalVendor> vendors = canonicalVendors(normalized.getVendors(), platformCode);
+        List<CanonicalAdzone> adzones = canonicalAdzones(normalized.getAdzones(), platformCode);
+        List<CanonicalRebateRule> rebateRules =
+                canonicalRebateRules(normalized.getRebateRules(), platformCode);
         return new CanonicalPayload(
-                canonicalPlatform(payload.getPlatform()),
-                payload.getPrimaryVendorCode(),
-                payload.getRuntimeDefaultAdzoneId(),
+                canonicalPlatform(normalized.getPlatform()),
+                normalized.getPrimaryVendorCode(),
+                normalized.getRuntimeDefaultAdzoneId(),
                 vendors,
                 adzones,
                 rebateRules);
     }
 
-    private List<CanonicalVendor> canonicalVendors(List<CpsOnboardingVendor> vendors) {
+    private List<CanonicalVendor> canonicalVendors(List<CpsOnboardingVendor> vendors,
+                                                   String platformCode) {
         if (vendors == null) {
             return List.of();
         }
         return vendors.stream()
-                .map(this::canonicalVendor)
+                .map(vendor -> canonicalVendor(vendor, platformCode))
                 .sorted(VENDOR_COMPARATOR)
                 .toList();
     }
 
-    private List<CanonicalAdzone> canonicalAdzones(List<CpsOnboardingAdzone> adzones) {
+    private List<CanonicalAdzone> canonicalAdzones(List<CpsOnboardingAdzone> adzones,
+                                                   String platformCode) {
         if (adzones == null) {
             return List.of();
         }
         return adzones.stream()
-                .map(this::canonicalAdzone)
+                .map(adzone -> canonicalAdzone(adzone, platformCode))
                 .sorted(ADZONE_COMPARATOR)
                 .toList();
     }
 
-    private List<CanonicalRebateRule> canonicalRebateRules(List<CpsOnboardingRebateRule> rebateRules) {
+    private List<CanonicalRebateRule> canonicalRebateRules(
+            List<CpsOnboardingRebateRule> rebateRules, String platformCode) {
         if (rebateRules == null) {
             return List.of();
         }
         return rebateRules.stream()
-                .map(this::canonicalRebateRule)
+                .map(rule -> canonicalRebateRule(rule, platformCode))
                 .sorted(REBATE_RULE_COMPARATOR)
                 .toList();
     }
@@ -165,7 +173,7 @@ public class CpsPlatformOnboardingFingerprint {
                 platform.getActiveVendorCode());
     }
 
-    private CanonicalVendor canonicalVendor(CpsOnboardingVendor vendor) {
+    private CanonicalVendor canonicalVendor(CpsOnboardingVendor vendor, String platformCode) {
         if (vendor == null) {
             return new CanonicalVendor(null, null, null, null, null, null, null,
                     null, null, null, null, null, null);
@@ -174,7 +182,7 @@ public class CpsPlatformOnboardingFingerprint {
                 vendor.getVendorCode(),
                 vendor.getVendorName(),
                 vendor.getVendorType(),
-                vendor.getPlatformCode(),
+                platformCode,
                 vendor.getAppKey(),
                 vendor.getAppSecret(),
                 vendor.getApiBaseUrl(),
@@ -186,12 +194,12 @@ public class CpsPlatformOnboardingFingerprint {
                 vendor.getRemark());
     }
 
-    private CanonicalAdzone canonicalAdzone(CpsOnboardingAdzone adzone) {
+    private CanonicalAdzone canonicalAdzone(CpsOnboardingAdzone adzone, String platformCode) {
         if (adzone == null) {
             return new CanonicalAdzone(null, null, null, null, null, null, null, null, null, null);
         }
         return new CanonicalAdzone(
-                adzone.getPlatformCode(),
+                platformCode,
                 adzone.getAdzoneId(),
                 adzone.getAdzoneName(),
                 adzone.getAdzoneType(),
@@ -203,14 +211,15 @@ public class CpsPlatformOnboardingFingerprint {
                 adzone.getStatus());
     }
 
-    private CanonicalRebateRule canonicalRebateRule(CpsOnboardingRebateRule rebateRule) {
+    private CanonicalRebateRule canonicalRebateRule(CpsOnboardingRebateRule rebateRule,
+                                                    String platformCode) {
         if (rebateRule == null) {
             return new CanonicalRebateRule(null, null, null, null, null, null, null, null);
         }
         return new CanonicalRebateRule(
                 rebateRule.getMemberId(),
                 rebateRule.getMemberLevelId(),
-                rebateRule.getPlatformCode(),
+                platformCode,
                 normalize(rebateRule.getRebateRate()),
                 normalize(rebateRule.getMinRebateAmount()),
                 normalize(rebateRule.getMaxRebateAmount()),

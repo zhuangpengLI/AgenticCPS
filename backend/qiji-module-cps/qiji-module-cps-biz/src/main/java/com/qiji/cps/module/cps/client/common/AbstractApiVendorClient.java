@@ -108,13 +108,14 @@ public abstract class AbstractApiVendorClient implements CpsApiVendorClient {
             Map<String, Object> params = buildSearchParams(request, config);
             JsonNode response = executeRequest(path, params, config);
             if (response == null || !isSuccessResponse(response)) {
-                log.warn("[{}:{}] 搜索商品失败: {}", getVendorCode(), getPlatformCode(), response);
+                log.warn("[{}:{}] 搜索商品失败，上游返回非成功状态",
+                        getVendorCode(), getPlatformCode());
                 return buildEmptyResult(request);
             }
             return parseSearchResponse(response, request);
         } catch (Exception e) {
-            log.error("[{}:{}] 搜索商品异常: keyword={}", getVendorCode(), getPlatformCode(),
-                    request.getKeyword(), e);
+            log.error("[{}:{}] 搜索商品异常: type={}", getVendorCode(), getPlatformCode(),
+                    e.getClass().getSimpleName());
             return buildEmptyResult(request);
         }
     }
@@ -126,14 +127,15 @@ public abstract class AbstractApiVendorClient implements CpsApiVendorClient {
             Map<String, Object> params = buildPromotionLinkParams(request, config);
             JsonNode response = executeRequest(path, params, config);
             if (response == null || !isSuccessResponse(response)) {
-                log.warn("[{}:{}] 转链失败: goodsId={}, response={}", getVendorCode(), getPlatformCode(),
-                        request.getGoodsId(), response);
+                log.warn("[{}:{}] 转链失败: goodsId={}, upstreamStatus=REJECTED",
+                        getVendorCode(), getPlatformCode(), request.getGoodsId());
                 return null;
             }
             return parsePromotionLinkResponse(response);
         } catch (Exception e) {
-            log.error("[{}:{}] 转链异常: goodsId={}", getVendorCode(), getPlatformCode(),
-                    request.getGoodsId(), e);
+            log.error("[{}:{}] 转链异常: goodsId={}, type={}",
+                    getVendorCode(), getPlatformCode(), request.getGoodsId(),
+                    e.getClass().getSimpleName());
             return null;
         }
     }
@@ -145,7 +147,8 @@ public abstract class AbstractApiVendorClient implements CpsApiVendorClient {
         } catch (CpsVendorException e) {
             throw e;
         } catch (Exception e) {
-            log.error("[{}:{}] 查询订单异常", getVendorCode(), getPlatformCode(), e);
+            log.error("[{}:{}] 查询订单异常: type={}", getVendorCode(), getPlatformCode(),
+                    e.getClass().getSimpleName());
             throw new CpsVendorException(orderFailureMessage("query failed"), e);
         }
     }
@@ -159,7 +162,8 @@ public abstract class AbstractApiVendorClient implements CpsApiVendorClient {
         } catch (CpsVendorException e) {
             throw e;
         } catch (Exception e) {
-            log.error("[{}:{}] 查询订单分页异常", getVendorCode(), getPlatformCode(), e);
+            log.error("[{}:{}] 查询订单分页异常: type={}", getVendorCode(), getPlatformCode(),
+                    e.getClass().getSimpleName());
             throw new CpsVendorException(orderFailureMessage("page query failed"), e);
         }
     }
@@ -197,7 +201,8 @@ public abstract class AbstractApiVendorClient implements CpsApiVendorClient {
         Map<String, Object> params = buildOrderQueryParams(request, config);
         JsonNode response = executeRequest(path, params, config);
         if (response == null || !isSuccessResponse(response)) {
-            log.warn("[{}:{}] 查询订单失败: {}", getVendorCode(), getPlatformCode(), response);
+            log.warn("[{}:{}] 查询订单失败，上游返回非成功状态",
+                    getVendorCode(), getPlatformCode());
             throw new CpsVendorException(orderFailureMessage("upstream rejected request"));
         }
         return response;
@@ -248,7 +253,8 @@ public abstract class AbstractApiVendorClient implements CpsApiVendorClient {
             JsonNode response = executeRequest(path, params, config);
             return response != null && isSuccessResponse(response);
         } catch (Exception e) {
-            log.warn("[{}:{}] 连接测试失败: {}", getVendorCode(), getPlatformCode(), e.getMessage());
+            log.warn("[{}:{}] 连接测试失败: type={}", getVendorCode(), getPlatformCode(),
+                    e.getClass().getSimpleName());
             return false;
         }
     }

@@ -17,13 +17,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.time.LocalDateTime;
 
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ONBOARDING_DRAFT_VERSION_CONFLICT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,15 +51,20 @@ class CpsPlatformOnboardingConnectionTesterTest {
 
     private CpsPlatformOnboardingConnectionTester tester;
     private CpsPlatformOnboardingPayload payload;
+    private CpsPlatformOnboardingFingerprint fingerprint;
+    private String snapshotFingerprint;
 
     @BeforeEach
     void setUp() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        fingerprint = new CpsPlatformOnboardingFingerprint(objectMapper);
         tester = new CpsPlatformOnboardingConnectionTester(
-                draftService, validator, clientFactory, new ObjectMapper());
+                draftService, validator, clientFactory, objectMapper, fingerprint);
         payload = CpsPlatformOnboardingTestFixtures.validPayload();
+        snapshotFingerprint = fingerprint.calculate(payload);
         when(draftService.getRequiredSnapshot("taobao", 5L))
                 .thenReturn(new CpsPlatformOnboardingDraftService.DraftSnapshot(
-                        7L, 5L, "exact-fingerprint", payload));
+                        7L, 5L, snapshotFingerprint, payload));
     }
 
     @Test
@@ -76,7 +81,7 @@ class CpsPlatformOnboardingConnectionTesterTest {
         verify(draftService).markValidating(7L, 5L);
         verify(draftService).markChecked(eq(7L), eq(5L),
                 eq(CpsPlatformOnboardingStatusEnum.READY.getCode()),
-                eq("exact-fingerprint"), any(String.class), any(LocalDateTime.class));
+                eq(snapshotFingerprint), any(String.class), any(LocalDateTime.class));
         ArgumentCaptor<CpsVendorConfig> primaryConfig =
                 ArgumentCaptor.forClass(CpsVendorConfig.class);
         ArgumentCaptor<CpsVendorConfig> backupConfig =
@@ -151,6 +156,39 @@ class CpsPlatformOnboardingConnectionTesterTest {
     }
 
     @Test
+    void test_shouldPersistFingerprintOfExactNormalizedPayload() {
+        CpsPlatformOnboardingPayload normalized = CpsPlatformOnboardingTestFixtures.validPayload();
+        normalized.getPlatform().setDefaultAdzoneId("adzone-primary");
+        normalized.getPlatform().setActiveVendorCode("dataoke");
+        String normalizedFingerprint = fingerprint.calculate(normalized);
+        when(validator.validateNormalized(payload)).thenReturn(validated(normalized));
+        when(clientFactory.getVendorClient("dataoke", "taobao")).thenReturn(primaryClient);
+        when(clientFactory.getVendorClient("official", "taobao")).thenReturn(backupClient);
+        when(primaryClient.testConnection(any())).thenReturn(true);
+        when(backupClient.testConnection(any())).thenReturn(true);
+
+        assertTrue(tester.test("taobao", 5L).isSuccess());
+
+        verify(draftService).markChecked(eq(7L), eq(5L),
+                eq(CpsPlatformOnboardingStatusEnum.READY.getCode()),
+                eq(normalizedFingerprint), any(String.class), any(LocalDateTime.class));
+    }
+
+    @Test
+    void test_unexpectedValidatorFailure_shouldMarkSanitizedFailedState() {
+        when(validator.validateNormalized(payload)).thenThrow(
+                new IllegalStateException("token raw-validator-secret rejected"));
+
+        CpsPlatformOnboardingCheckRespVO result = tester.test("taobao", 5L);
+
+        assertFalse(result.isSuccess());
+        assertFalse(result.toString().contains("raw-validator-secret"));
+        verify(draftService).markChecked(eq(7L), eq(5L),
+                eq(CpsPlatformOnboardingStatusEnum.FAILED.getCode()),
+                isNull(), eq("ONBOARDING_TEST_FAILED:平台连接检测异常，请稍后重试"), isNull());
+    }
+
+    @Test
     void test_markCheckedCasConflict_shouldPropagateAndNeverReportReady() {
         when(validator.validateNormalized(payload)).thenReturn(validated(payload));
         when(clientFactory.getVendorClient("dataoke", "taobao")).thenReturn(primaryClient);
@@ -167,8 +205,12 @@ class CpsPlatformOnboardingConnectionTesterTest {
     }
 
     @Test
-    void connectionTester_shouldNotBeTransactional() {
-        assertNull(CpsPlatformOnboardingConnectionTester.class.getAnnotation(Transactional.class));
+    void connectionTester_shouldSuspendAmbientTransactions() throws Exception {
+        Transactional transactional = CpsPlatformOnboardingConnectionTester.class
+                .getMethod("test", String.class, Long.class)
+                .getAnnotation(Transactional.class);
+
+        assertEquals(Propagation.NOT_SUPPORTED, transactional.propagation());
     }
 
     private static CpsPlatformOnboardingValidator.ValidationResult validated(
