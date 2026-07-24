@@ -136,7 +136,12 @@ public class CpsPlatformOnboardingLifecycleService {
     }
 
     public void deleteDraft(CpsPlatformOnboardingDraftDeleteReqVO request) {
-        draftService.deleteDraft(request.getPlatformCode(), request.getDraftVersion());
+        String platformCode = normalize(request.getPlatformCode());
+        Long expectedVersion = request.getDraftVersion();
+        if (expectedVersion == null) {
+            expectedVersion = draftService.getRequiredSnapshot(platformCode).version();
+        }
+        draftService.deleteDraft(platformCode, expectedVersion);
     }
 
     public CpsPlatformOnboardingDetailRespVO publish(CpsPlatformOnboardingPublishReqVO request) {
@@ -321,11 +326,13 @@ public class CpsPlatformOnboardingLifecycleService {
         payload.setVendors(p.getVendors() == null ? new ArrayList<>() : p.getVendors().stream()
                 .map(v -> CpsOnboardingVendor.builder().vendorCode(v.getVendorCode())
                         .vendorName(v.getVendorName()).vendorType(v.getVendorType())
-                        .platformCode(v.getPlatformCode()).defaultAdzoneId(v.getDefaultAdzoneId())
+                        .platformCode(v.getPlatformCode()).apiBaseUrl(v.getApiBaseUrl())
+                        .defaultAdzoneId(v.getDefaultAdzoneId())
                         .appKeyConfigured(v.getAppKeyConfigured())
                         .appSecretConfigured(v.getAppSecretConfigured())
                         .authTokenConfigured(v.getAuthTokenConfigured())
                         .extraConfigConfigured(v.getExtraConfigConfigured())
+                        .configuredFields(v.getConfiguredFields())
                         .status(v.getStatus()).priority(v.getPriority()).build()).toList());
         payload.setAdzones(p.getAdzones() == null ? new ArrayList<>() : p.getAdzones());
         payload.setRebateRules(p.getRebateRules() == null ? new ArrayList<>() : p.getRebateRules());
@@ -383,8 +390,9 @@ public class CpsPlatformOnboardingLifecycleService {
                     || StringUtils.hasText(vendor.getAppSecret());
             case "authToken" -> Boolean.TRUE.equals(vendor.getAuthTokenConfigured())
                     || StringUtils.hasText(vendor.getAuthToken());
+            case "apiBaseUrl" -> StringUtils.hasText(vendor.getApiBaseUrl());
             case "defaultAdzoneId" -> StringUtils.hasText(vendor.getDefaultAdzoneId());
-            default -> StringUtils.hasText(vendor.getExtraConfig());
+            default -> safeList(vendor.getConfiguredFields()).contains(fieldName);
         };
     }
 

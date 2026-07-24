@@ -392,6 +392,24 @@ class CpsPlatformOnboardingDraftServiceImplTest {
     }
 
     @Test
+    void getDetail_shouldExposeOnlyIndividuallyConfiguredExtraFieldNames() throws Exception {
+        CpsPlatformOnboardingPayload payload = CpsPlatformOnboardingTestFixtures.validPayload();
+        payload.getVendors().get(0).setExtraConfig(
+                "{\"customToken\":\"configured-value\",\"blank\":\" \",\"missing\":null}");
+        when(draftMapper.selectByPlatformCode("taobao")).thenReturn(persistedDraft(
+                8L, 3, CpsPlatformOnboardingModeEnum.RECONFIGURE.getCode(),
+                CpsPlatformOnboardingStatusEnum.DRAFT.getCode(), payload));
+
+        CpsPlatformOnboardingDetailRespVO result = service.getDetail("taobao");
+
+        assertEquals(List.of("customToken"),
+                result.getPayload().getVendors().get(0).getConfiguredFields());
+        assertTrue(result.getPayload().getVendors().get(0).getExtraConfigConfigured());
+        String responseJson = objectMapper.writeValueAsString(result);
+        assertFalse(responseJson.contains("configured-value"));
+    }
+
+    @Test
     void getDetail_whenStoredPayloadIsCorrupted_shouldReportInvalidConfig() {
         CpsPlatformOnboardingDraftDO corrupted = CpsPlatformOnboardingDraftDO.builder()
                 .id(8L)

@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.util.List;
+
 @Schema(description = "管理后台 - 平台接入供应商 Response VO")
 @Data
 @Builder
@@ -38,6 +40,9 @@ public class CpsOnboardingVendorRespVO {
     private String defaultAdzoneId;
 
     private Boolean extraConfigConfigured;
+
+    @Builder.Default
+    private List<String> configuredFields = List.of();
 
     private Integer priority;
 

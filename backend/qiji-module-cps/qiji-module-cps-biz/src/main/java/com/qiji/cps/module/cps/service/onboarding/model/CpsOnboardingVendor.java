@@ -1,10 +1,13 @@
 package com.qiji.cps.module.cps.service.onboarding.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+
+import java.util.List;
 
 /**
  * Vendor business configuration carried by an onboarding draft.
@@ -47,6 +50,10 @@ public class CpsOnboardingVendor {
 
     @ToString.Include
     private Boolean extraConfigConfigured;
+
+    @JsonIgnore
+    @Builder.Default
+    private List<String> configuredFields = List.of();
 
     private String defaultAdzoneId;
 

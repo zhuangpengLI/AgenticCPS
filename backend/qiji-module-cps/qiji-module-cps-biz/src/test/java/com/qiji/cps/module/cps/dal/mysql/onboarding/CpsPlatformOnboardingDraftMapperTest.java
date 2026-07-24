@@ -261,7 +261,8 @@ class CpsPlatformOnboardingDraftMapperTest extends BaseDbUnitTest {
     }
 
     @Test
-    void selectManagedRulesByPlatformCode_shouldKeepDefaultLevelAndDisabledButExcludePersonal() {
+    void selectManagedRulesByPlatformCode_shouldKeepManagedRowsButExcludeGlobalAndPersonal() {
+        rebateMapper.insert(rebateRule(null, null, null, 1, 60));
         rebateMapper.insert(rebateRule("taobao", null, null, 1, 10));
         rebateMapper.insert(rebateRule("taobao", null, 10L, 1, 20));
         rebateMapper.insert(rebateRule("taobao", null, 20L, 0, 30));

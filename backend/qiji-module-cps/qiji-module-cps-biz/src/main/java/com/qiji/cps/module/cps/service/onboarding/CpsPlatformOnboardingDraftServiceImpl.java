@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.service.onboarding;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsOnboardingPlatformRespVO;
@@ -378,11 +379,34 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
                 .authTokenConfigured(hasText(vendor.getAuthToken()))
                 .defaultAdzoneId(vendor.getDefaultAdzoneId())
                 .extraConfigConfigured(hasText(vendor.getExtraConfig()))
-                .extraConfigConfigured(hasText(vendor.getExtraConfig()))
+                .configuredFields(configuredExtraFields(vendor.getExtraConfig()))
                 .priority(vendor.getPriority())
                 .status(vendor.getStatus())
                 .remark(vendor.getRemark())
                 .build();
+    }
+
+    private List<String> configuredExtraFields(String extraConfig) {
+        if (!hasText(extraConfig)) {
+            return List.of();
+        }
+        try {
+            JsonNode root = objectMapper.readTree(extraConfig);
+            if (root == null || !root.isObject()) {
+                return List.of();
+            }
+            List<String> configured = new ArrayList<>();
+            root.fields().forEachRemaining(entry -> {
+                JsonNode value = entry.getValue();
+                if (value != null && !value.isNull()
+                        && (!value.isTextual() || hasText(value.textValue()))) {
+                    configured.add(entry.getKey());
+                }
+            });
+            return List.copyOf(configured);
+        } catch (JsonProcessingException ignored) {
+            return List.of();
+        }
     }
 
     private CpsOnboardingVendor toVendor(CpsApiVendorDO source) {
