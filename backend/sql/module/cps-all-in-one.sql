@@ -583,8 +583,9 @@ CREATE TABLE `cps_api_vendor` (
   `update_time`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted`           bit(1)                DEFAULT b'0' COMMENT '是否删除',
   `tenant_id`         bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  `active_unique_key` varchar(191) GENERATED ALWAYS AS (IF(`deleted` = b'0', CONCAT(CHAR_LENGTH(CAST(`tenant_id` AS CHAR)), ':', CAST(`tenant_id` AS CHAR), CHAR_LENGTH(`vendor_code`), ':', `vendor_code`, CHAR_LENGTH(`platform_code`), ':', `platform_code`), NULL)) STORED COMMENT '未删除供应商租户唯一键（长度前缀编码）',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_vendor_platform` (`vendor_code`, `platform_code`, `tenant_id`, `deleted`) USING BTREE,
+  UNIQUE KEY `uk_cps_api_vendor_active` (`active_unique_key`) USING BTREE,
   INDEX `idx_platform_code` (`platform_code`) USING BTREE,
   INDEX `idx_vendor_code` (`vendor_code`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS API供应商配置表';

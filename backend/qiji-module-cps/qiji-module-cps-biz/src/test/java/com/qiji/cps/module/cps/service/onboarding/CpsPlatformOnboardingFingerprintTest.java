@@ -86,6 +86,30 @@ class CpsPlatformOnboardingFingerprintTest {
     }
 
     @Test
+    void calculate_missingAdzoneType_shouldMatchRelationTypeCanonicalForm() {
+        CpsPlatformOnboardingPayload inferred = validPayload();
+        inferred.getAdzones().get(1).setAdzoneType(null);
+        inferred.getAdzones().get(1).setRelationType("channel");
+        CpsPlatformOnboardingPayload explicit = validPayload();
+        explicit.getAdzones().get(1).setAdzoneType("channel");
+        explicit.getAdzones().get(1).setRelationType("channel");
+
+        assertEquals(fingerprint.calculate(explicit), fingerprint.calculate(inferred));
+    }
+
+    @Test
+    void calculate_missingAdzoneTypeAndRelation_shouldMatchGeneralCanonicalForm() {
+        CpsPlatformOnboardingPayload inferred = validPayload();
+        inferred.getAdzones().get(1).setAdzoneType(null);
+        inferred.getAdzones().get(1).setRelationType(null);
+        CpsPlatformOnboardingPayload explicit = validPayload();
+        explicit.getAdzones().get(1).setAdzoneType("general");
+        explicit.getAdzones().get(1).setRelationType(null);
+
+        assertEquals(fingerprint.calculate(explicit), fingerprint.calculate(inferred));
+    }
+
+    @Test
     void calculate_whenCollectionsAreNull_shouldMatchEmptyCollections() {
         CpsPlatformOnboardingPayload nullCollections = validPayload();
         nullCollections.setVendors(null);

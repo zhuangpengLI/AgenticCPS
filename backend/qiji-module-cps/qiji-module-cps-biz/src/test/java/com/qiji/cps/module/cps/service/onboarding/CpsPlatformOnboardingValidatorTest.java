@@ -284,6 +284,17 @@ class CpsPlatformOnboardingValidatorTest {
     }
 
     @Test
+    void validate_conflictingAdzoneAndRelationTypes_shouldReject() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getAdzones().get(1).setAdzoneType("channel");
+        payload.getAdzones().get(1).setRelationType("member");
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertContains(result, "ADZONE_CONFIG_INVALID", "adzones[1].relationType");
+    }
+
+    @Test
     void validate_adzoneRules_shouldRequireEnabledGeneralDefaultAndUniqueIds() {
         CpsPlatformOnboardingPayload payload = validPayload();
         payload.getAdzones().get(0).setStatus(0);

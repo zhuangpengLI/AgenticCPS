@@ -30,6 +30,7 @@ import java.util.Set;
 public class CpsPlatformOnboardingValidator {
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
+    private static final Set<String> ADZONE_TYPES = Set.of("general", "channel", "member");
 
     private final CpsPlatformClientFactory clientFactory;
     private final ObjectMapper objectMapper;
@@ -199,9 +200,21 @@ public class CpsPlatformOnboardingValidator {
                         "adzones[" + index + "].platformCode",
                         "推广位平台必须与根平台一致", "adzone");
             }
+            String adzoneType = normalize(adzone.getAdzoneType());
+            String relationType = normalize(adzone.getRelationType());
+            if (!ADZONE_TYPES.contains(adzoneType)) {
+                add(errors, "ADZONE_CONFIG_INVALID",
+                        "adzones[" + index + "].adzoneType",
+                        "推广位类型不合法", "adzone");
+            }
+            if (relationType != null && !relationType.equals(adzoneType)) {
+                add(errors, "ADZONE_CONFIG_INVALID",
+                        "adzones[" + index + "].relationType",
+                        "推广位类型与关联类型必须一致", "adzone");
+            }
             for (CpsAdzoneAttributionValidator.Violation violation
                     : CpsAdzoneAttributionValidator.validate(
-                    platformCode, adzone.getAdzoneType(), adzone.getRelationType(),
+                    platformCode, adzoneType, relationType,
                     adzone.getRelationId(), adzone.getAdzoneId(),
                     adzone.getExternalRelationId(), adzone.getExternalSpecialId())) {
                 String code = violation.type()

@@ -18,6 +18,14 @@ class CpsPlatformOnboardingMigrationSqlTest {
             CONCAT(LENGTH(CAST("tenant_id" AS varchar)), ':', CAST("tenant_id" AS varchar), \
             LENGTH("platform_code"), ':', "platform_code", \
             LENGTH("adzone_id"), ':', "adzone_id")""";
+    private static final String MYSQL_VENDOR_LENGTH_PREFIX = """
+            CONCAT(CHAR_LENGTH(CAST(`tenant_id` AS CHAR)), ':', CAST(`tenant_id` AS CHAR), \
+            CHAR_LENGTH(`vendor_code`), ':', `vendor_code`, \
+            CHAR_LENGTH(`platform_code`), ':', `platform_code`)""";
+    private static final String H2_VENDOR_LENGTH_PREFIX = """
+            CONCAT(LENGTH(CAST("tenant_id" AS varchar)), ':', CAST("tenant_id" AS varchar), \
+            LENGTH("vendor_code"), ':', "vendor_code", \
+            LENGTH("platform_code"), ':', "platform_code")""";
 
     @Test
     void adzoneDuplicateReconciliation_shouldPrecedeGeneratedUniqueConstraint() throws Exception {
@@ -64,6 +72,40 @@ class CpsPlatformOnboardingMigrationSqlTest {
                 "upgrade must use the same injective length-prefixed adzone key");
         assertTrue(h2Sql.contains(H2_LENGTH_PREFIX),
                 "H2 must model the same tenant/platform/adzone prefix order");
+    }
+
+    @Test
+    void vendorActiveKey_shouldAllowUnlimitedTombstonesAcrossSchemas() throws Exception {
+        String baselineSql = compact(readSql("cps-all-in-one.sql"));
+        String updateSql = compact(readSql("cps-update.sql")).replace("''", "'");
+        String h2Sql = compact(readTestSchema());
+
+        assertTrue(baselineSql.contains(MYSQL_VENDOR_LENGTH_PREFIX),
+                "baseline must use an injective active-only vendor key");
+        assertTrue(updateSql.contains(MYSQL_VENDOR_LENGTH_PREFIX),
+                "upgrade must add the same active-only vendor key");
+        assertTrue(h2Sql.contains(H2_VENDOR_LENGTH_PREFIX),
+                "H2 must model the same tenant/vendor/platform prefix order");
+        assertTrue(!baselineSql.contains(
+                        "UNIQUE KEY `uk_vendor_platform` (`vendor_code`, `platform_code`, `tenant_id`, `deleted`)"),
+                "baseline must not constrain all deleted vendor tombstones");
+        assertTrue(updateSql.contains("ALTER TABLE `cps_api_vendor` DROP INDEX `uk_vendor_platform`"),
+                "upgrade must remove the tombstone-constraining legacy key");
+        assertTrue(updateSql.contains(
+                        "ALTER TABLE `cps_api_vendor` ADD UNIQUE INDEX `uk_cps_api_vendor_active` (`active_unique_key`)"),
+                "upgrade must enforce one active vendor row through the generated key");
+        int legacyDrop = updateSql.indexOf("ALTER TABLE `cps_api_vendor` DROP INDEX `uk_vendor_platform`");
+        int reconciliation = updateSql.indexOf("UPDATE `cps_api_vendor` AS `older`");
+        int generatedColumn = updateSql.indexOf(
+                "ALTER TABLE `cps_api_vendor` ADD COLUMN `active_unique_key`");
+        int uniqueIndex = updateSql.indexOf(
+                "ALTER TABLE `cps_api_vendor` ADD UNIQUE INDEX `uk_cps_api_vendor_active`");
+        assertTrue(legacyDrop < reconciliation,
+                "upgrade must remove the deleted-inclusive key before duplicate reconciliation");
+        assertTrue(reconciliation < generatedColumn,
+                "upgrade must reconcile active duplicates before adding the generated key");
+        assertTrue(generatedColumn < uniqueIndex,
+                "upgrade must add the generated key before enforcing uniqueness");
     }
 
     private String compact(String sql) {

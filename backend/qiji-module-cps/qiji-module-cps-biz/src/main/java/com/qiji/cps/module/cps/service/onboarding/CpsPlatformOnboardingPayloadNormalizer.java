@@ -15,6 +15,8 @@ import java.util.Locale;
  */
 final class CpsPlatformOnboardingPayloadNormalizer {
 
+    private static final String ADZONE_TYPE_GENERAL = "general";
+
     private CpsPlatformOnboardingPayloadNormalizer() {
     }
 
@@ -49,8 +51,13 @@ final class CpsPlatformOnboardingPayloadNormalizer {
             }
             adzone.setPlatformCode(code(adzone.getPlatformCode()));
             adzone.setAdzoneId(opaque(adzone.getAdzoneId()));
-            adzone.setAdzoneType(code(adzone.getAdzoneType()));
-            adzone.setRelationType(code(adzone.getRelationType()));
+            String relationType = code(adzone.getRelationType());
+            String adzoneType = code(adzone.getAdzoneType());
+            if (adzoneType == null) {
+                adzoneType = relationType == null ? ADZONE_TYPE_GENERAL : relationType;
+            }
+            adzone.setAdzoneType(adzoneType);
+            adzone.setRelationType(relationType);
             adzone.setExternalRelationId(opaque(adzone.getExternalRelationId()));
             adzone.setExternalSpecialId(opaque(adzone.getExternalSpecialId()));
         }

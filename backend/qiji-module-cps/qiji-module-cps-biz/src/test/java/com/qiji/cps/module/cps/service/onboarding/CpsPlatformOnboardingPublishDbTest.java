@@ -237,7 +237,7 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
     }
 
     @Test
-    void vendorRemoveAndReadd_shouldKeepActiveUniqueRow() {
+    void vendorRepeatedRemoveAndReadd_shouldKeepActiveUniqueRow() {
         CpsApiVendorSaveReqVO request = new CpsApiVendorSaveReqVO();
         request.setVendorCode("jdunion");
         request.setVendorName("JD Union");
@@ -261,8 +261,34 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         request.setId(null);
         onboardingVendorService.upsertVendorForOnboarding(request);
         assertEquals(1, vendorMapper.selectAllByPlatformCode("jd").size());
+
+        onboardingVendorService.deleteVendorsNotIn("jd", Set.of());
+        assertNull(vendorMapper.selectByVendorAndPlatform("jdunion", "jd"));
+
+        request.setId(null);
+        onboardingVendorService.upsertVendorForOnboarding(request);
+        assertEquals(1, vendorMapper.selectAllByPlatformCode("jd").size());
         assertEquals("jdunion",
                 vendorMapper.selectByVendorAndPlatform("jdunion", "jd").getVendorCode());
+    }
+
+    @Test
+    void publish_missingAdzoneType_shouldReturnFingerprintCanonicalRuntimeType() {
+        CpsPlatformOnboardingPayload payload = bundle("jd", "jdunion", "jd-pid", "30", true);
+        payload.getAdzones().getFirst().setAdzoneType(null);
+        payload.getAdzones().getFirst().setRelationType("channel");
+        CpsPlatformOnboardingPayload canonical =
+                CpsPlatformOnboardingPayloadNormalizer.normalizeCopy(payload, objectMapper);
+        assertEquals("channel", canonical.getAdzones().getFirst().getAdzoneType());
+        CpsPlatformOnboardingPublishReqVO request = saveReadyDraft(payload);
+
+        CpsPlatformOnboardingDetailRespVO response = service.publish(request);
+
+        CpsAdzoneDO runtime = adzoneMapper.selectAllByPlatformCode("jd").getFirst();
+        assertEquals("channel", runtime.getAdzoneType());
+        assertEquals("channel", runtime.getRelationType());
+        assertEquals("channel", response.getPayload().getAdzones().getFirst().getAdzoneType());
+        assertEquals(fingerprint.calculate(canonical), response.getConfigFingerprint());
     }
 
     @Test

@@ -311,4 +311,67 @@ PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
 EXECUTE cps_onboarding_stmt;
 DEALLOCATE PREPARE cps_onboarding_stmt;
 
+-- ============================================================
+-- 修改时间：2026-07-24 16:45:00
+-- 目的：供应商唯一约束仅覆盖未删除记录，允许重复接入循环保留任意数量的历史软删记录。
+-- 说明：先移除包含 deleted 的旧唯一索引，再清理未删除重复行，最后建立生成列唯一索引。
+-- ============================================================
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`statistics`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_api_vendor'
+      AND `index_name` = 'uk_vendor_platform'
+  ),
+  'ALTER TABLE `cps_api_vendor` DROP INDEX `uk_vendor_platform`',
+  'SELECT 1'
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+-- 历史库若存在同租户、同供应商、同平台的多条未删除记录，保留最大 ID 的最新记录。
+UPDATE `cps_api_vendor` AS `older`
+INNER JOIN `cps_api_vendor` AS `newer`
+        ON `older`.`tenant_id` = `newer`.`tenant_id`
+       AND `older`.`vendor_code` = `newer`.`vendor_code`
+       AND `older`.`platform_code` = `newer`.`platform_code`
+       AND `older`.`id` < `newer`.`id`
+SET `older`.`deleted` = b'1',
+    `older`.`updater` = 'platform-onboarding-migration',
+    `older`.`update_time` = CURRENT_TIMESTAMP
+WHERE `older`.`deleted` = b'0'
+  AND `newer`.`deleted` = b'0';
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`columns`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_api_vendor'
+      AND `column_name` = 'active_unique_key'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_api_vendor` ADD COLUMN `active_unique_key` varchar(191) GENERATED ALWAYS AS (IF(`deleted` = b''0'', CONCAT(CHAR_LENGTH(CAST(`tenant_id` AS CHAR)), '':'', CAST(`tenant_id` AS CHAR), CHAR_LENGTH(`vendor_code`), '':'', `vendor_code`, CHAR_LENGTH(`platform_code`), '':'', `platform_code`), NULL)) STORED COMMENT ''未删除供应商租户唯一键（长度前缀编码）'''
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`statistics`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_api_vendor'
+      AND `index_name` = 'uk_cps_api_vendor_active'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_api_vendor` ADD UNIQUE INDEX `uk_cps_api_vendor_active` (`active_unique_key`) USING BTREE'
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
 SET FOREIGN_KEY_CHECKS = 1;

@@ -467,9 +467,16 @@ CREATE TABLE IF NOT EXISTS "cps_api_vendor" (
     "update_time" datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "deleted" bit NOT NULL DEFAULT FALSE,
     "tenant_id" bigint NOT NULL DEFAULT 0,
+    "active_unique_key" varchar(191) GENERATED ALWAYS AS (
+        CASE WHEN "deleted" = FALSE
+             THEN CONCAT(LENGTH(CAST("tenant_id" AS varchar)), ':',
+                         CAST("tenant_id" AS varchar),
+                         LENGTH("vendor_code"), ':', "vendor_code",
+                         LENGTH("platform_code"), ':', "platform_code")
+             ELSE NULL END
+    ),
     PRIMARY KEY ("id"),
-    CONSTRAINT "uk_cps_api_vendor_tenant" UNIQUE
-        ("tenant_id", "vendor_code", "platform_code", "deleted")
+    CONSTRAINT "uk_cps_api_vendor_active" UNIQUE ("active_unique_key")
 );
 
 CREATE TABLE IF NOT EXISTS "cps_adzone" (

@@ -158,17 +158,15 @@ public class CpsAdzoneServiceImpl implements CpsAdzoneService {
         request.setPlatformCode(normalizeCode(request.getPlatformCode()));
         request.setAdzoneId(trimToNull(request.getAdzoneId()));
         String adzoneType = normalizeCode(request.getAdzoneType());
-        if (adzoneType == null) {
-            adzoneType = normalizeCode(request.getRelationType());
-        }
-        if (adzoneType == null) {
-            adzoneType = CpsAdzoneTypeEnum.GENERAL.getType();
-        }
         if (!Arrays.asList(CpsAdzoneTypeEnum.ARRAYS).contains(adzoneType)) {
             throw exception(ADZONE_CONFIG_INVALID, "推广位类型不合法");
         }
+        String relationType = normalizeCode(request.getRelationType());
+        if (relationType != null && !relationType.equals(adzoneType)) {
+            throw exception(ADZONE_CONFIG_INVALID, "推广位类型与关联类型必须一致");
+        }
         request.setAdzoneType(adzoneType);
-        request.setRelationType(normalizeCode(request.getRelationType()));
+        request.setRelationType(relationType);
         request.setExternalRelationId(trimToNull(request.getExternalRelationId()));
         request.setExternalSpecialId(trimToNull(request.getExternalSpecialId()));
     }
