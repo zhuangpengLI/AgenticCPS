@@ -7,6 +7,7 @@ import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateConfigDO;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * CPS返利配置 Service 接口
@@ -65,5 +66,25 @@ public interface CpsRebateConfigService {
      * 按个人、等级、平台六级优先级匹配返利规则。
      */
     CpsRebateConfigDO matchRebateConfig(Long memberId, Long memberLevelId, String platformCode);
+
+    /**
+     * 获取平台接入流程管理的返利规则，不包含个人规则。
+     */
+    List<CpsRebateConfigDO> getManagedRebateRulesByPlatform(String platformCode);
+
+    /**
+     * 按平台、会员等级和优先级稳定键保存平台接入返利规则。
+     */
+    Long upsertManagedRebateRuleForOnboarding(@Valid CpsRebateConfigSaveReqVO saveReqVO);
+
+    /**
+     * 删除不再由当前平台接入配置管理的非个人返利规则。
+     */
+    void deleteManagedRebateRulesNotIn(String platformCode, Set<String> retainedScopeKeys);
+
+    static String managedScopeKey(Long memberLevelId, Integer priority) {
+        return (memberLevelId == null ? "default" : "level:" + memberLevelId)
+                + ":priority:" + (priority == null ? 0 : priority);
+    }
 
 }

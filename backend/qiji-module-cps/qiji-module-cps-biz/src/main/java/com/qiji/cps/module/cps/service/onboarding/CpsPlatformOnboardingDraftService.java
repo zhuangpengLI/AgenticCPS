@@ -20,25 +20,43 @@ public interface CpsPlatformOnboardingDraftService {
 
     DraftSnapshot getRequiredSnapshot(String platformCode, Long expectedVersion);
 
+    DraftSnapshot getRequiredSnapshot(String platformCode);
+
     void markValidating(Long draftId, Long expectedVersion);
 
     void markChecked(Long draftId, Long expectedVersion,
                      String status, String validatedFingerprint,
                      String checkSummary, LocalDateTime validatedAt);
 
+    void markPublished(Long draftId, Long expectedVersion, String expectedFingerprint,
+                       LocalDateTime publishedAt);
+
     final class DraftSnapshot {
 
         private final Long id;
         private final Long version;
         private final String configFingerprint;
+        private final String validatedFingerprint;
+        private final String status;
+        private final LocalDateTime publishedAt;
         private final CpsPlatformOnboardingPayload payload;
 
         public DraftSnapshot(Long id, Long version, String configFingerprint,
+                             String validatedFingerprint, String status,
+                             LocalDateTime publishedAt,
                              CpsPlatformOnboardingPayload payload) {
             this.id = id;
             this.version = version;
             this.configFingerprint = configFingerprint;
+            this.validatedFingerprint = validatedFingerprint;
+            this.status = status;
+            this.publishedAt = publishedAt;
             this.payload = payload;
+        }
+
+        public DraftSnapshot(Long id, Long version, String configFingerprint,
+                             CpsPlatformOnboardingPayload payload) {
+            this(id, version, configFingerprint, null, null, null, payload);
         }
 
         public Long id() {
@@ -51,6 +69,18 @@ public interface CpsPlatformOnboardingDraftService {
 
         public String configFingerprint() {
             return configFingerprint;
+        }
+
+        public String validatedFingerprint() {
+            return validatedFingerprint;
+        }
+
+        public String status() {
+            return status;
+        }
+
+        public LocalDateTime publishedAt() {
+            return publishedAt;
         }
 
         public CpsPlatformOnboardingPayload payload() {

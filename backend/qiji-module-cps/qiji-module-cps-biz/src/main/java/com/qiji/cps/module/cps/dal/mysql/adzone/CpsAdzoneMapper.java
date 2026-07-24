@@ -46,6 +46,12 @@ public interface CpsAdzoneMapper extends BaseMapperX<CpsAdzoneDO> {
                 .orderByAsc(CpsAdzoneDO::getId));
     }
 
+    default CpsAdzoneDO selectByPlatformAndAdzoneId(String platformCode, String adzoneId) {
+        return selectOne(new LambdaQueryWrapperX<CpsAdzoneDO>()
+                .eq(CpsAdzoneDO::getPlatformCode, platformCode)
+                .eq(CpsAdzoneDO::getAdzoneId, adzoneId));
+    }
+
     default CpsAdzoneDO selectActiveMemberAdzone(String platformCode, String adzoneId) {
         return selectOne(new LambdaQueryWrapperX<CpsAdzoneDO>()
                 .eq(CpsAdzoneDO::getPlatformCode, platformCode)

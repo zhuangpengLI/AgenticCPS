@@ -154,17 +154,24 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
 
     @Override
     public DraftSnapshot getRequiredSnapshot(String platformCode, Long expectedVersion) {
+        DraftSnapshot snapshot = getRequiredSnapshot(platformCode);
+        Integer requiredVersion = toVersion(expectedVersion);
+        if (!requiredVersion.equals(snapshot.version().intValue())) {
+            throw exception(ONBOARDING_DRAFT_VERSION_CONFLICT);
+        }
+        return snapshot;
+    }
+
+    @Override
+    public DraftSnapshot getRequiredSnapshot(String platformCode) {
         String normalizedCode = normalizePlatformCode(platformCode);
         CpsPlatformOnboardingDraftDO draft = draftMapper.selectByPlatformCode(normalizedCode);
         if (draft == null) {
             throw exception(ONBOARDING_DRAFT_NOT_EXISTS);
         }
-        Integer requiredVersion = toVersion(expectedVersion);
-        if (!requiredVersion.equals(draft.getDraftVersion())) {
-            throw exception(ONBOARDING_DRAFT_VERSION_CONFLICT);
-        }
-        return new DraftSnapshot(draft.getId(), requiredVersion.longValue(),
-                draft.getConfigFingerprint(), readPayload(draft.getPayloadCiphertext()));
+        return new DraftSnapshot(draft.getId(), draft.getDraftVersion().longValue(),
+                draft.getConfigFingerprint(), draft.getValidatedFingerprint(), draft.getStatus(),
+                draft.getPublishedAt(), readPayload(draft.getPayloadCiphertext()));
     }
 
     @Override
@@ -180,6 +187,17 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
         int updated = draftMapper.markChecked(draftId, toVersion(expectedVersion), status,
                 validatedFingerprint, checkSummary, validatedAt);
         ensureVersionUpdated(updated, draftId);
+    }
+
+    @Override
+    public void markPublished(Long draftId, Long expectedVersion, String expectedFingerprint,
+                              LocalDateTime publishedAt) {
+        int updated = draftMapper.markPublished(draftId, toVersion(expectedVersion),
+                expectedFingerprint, CpsPlatformOnboardingStatusEnum.READY.getCode(),
+                CpsPlatformOnboardingStatusEnum.PUBLISHED.getCode(), publishedAt);
+        if (updated == 0) {
+            throw exception(com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ONBOARDING_PUBLISH_CONFLICT);
+        }
     }
 
     private CpsPlatformOnboardingPayload buildRuntimePayload(CpsPlatformDO platform) {

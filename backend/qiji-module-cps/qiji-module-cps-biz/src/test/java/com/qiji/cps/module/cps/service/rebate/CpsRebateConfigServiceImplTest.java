@@ -4,6 +4,7 @@ import com.qiji.cps.framework.common.exception.ServiceException;
 import com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateConfigSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateConfigDO;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateConfigMapper;
+import com.qiji.cps.module.cps.service.onboarding.CpsPlatformOnboardingCacheInvalidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,12 +29,16 @@ class CpsRebateConfigServiceImplTest {
     @Mock
     private CpsRebateConfigMapper mapper;
 
+    @Mock
+    private CpsPlatformOnboardingCacheInvalidator cacheInvalidator;
+
     private CpsRebateConfigServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new CpsRebateConfigServiceImpl();
         ReflectionTestUtils.setField(service, "rebateConfigMapper", mapper);
+        ReflectionTestUtils.setField(service, "cacheInvalidator", cacheInvalidator);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.dal.mysql.onboarding;
 
 import com.qiji.cps.framework.mybatis.core.mapper.BaseMapperX;
+import com.qiji.cps.framework.tenant.core.context.TenantContextHolder;
 import com.qiji.cps.module.cps.dal.dataobject.onboarding.CpsPlatformOnboardingDraftDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -15,7 +16,9 @@ import java.time.LocalDateTime;
 public interface CpsPlatformOnboardingDraftMapper extends BaseMapperX<CpsPlatformOnboardingDraftDO> {
 
     default CpsPlatformOnboardingDraftDO selectByPlatformCode(String platformCode) {
-        return selectOne(CpsPlatformOnboardingDraftDO::getPlatformCode, platformCode);
+        return selectOne(CpsPlatformOnboardingDraftDO::getPlatformCode, platformCode,
+                CpsPlatformOnboardingDraftDO::getTenantId,
+                TenantContextHolder.getRequiredTenantId());
     }
 
     @Update("""
@@ -71,6 +74,25 @@ public interface CpsPlatformOnboardingDraftMapper extends BaseMapperX<CpsPlatfor
                     @Param("validatedFingerprint") String validatedFingerprint,
                     @Param("checkSummary") String checkSummary,
                     @Param("validatedAt") LocalDateTime validatedAt);
+
+    @Update("""
+            UPDATE cps_platform_onboarding_draft
+            SET status = #{publishedStatus},
+                published_at = #{publishedAt},
+                update_time = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+              AND draft_version = #{expectedVersion}
+              AND status = #{readyStatus}
+              AND config_fingerprint = #{expectedFingerprint}
+              AND validated_fingerprint = #{expectedFingerprint}
+              AND deleted = FALSE
+            """)
+    int markPublished(@Param("id") Long id,
+                      @Param("expectedVersion") Integer expectedVersion,
+                      @Param("expectedFingerprint") String expectedFingerprint,
+                      @Param("readyStatus") String readyStatus,
+                      @Param("publishedStatus") String publishedStatus,
+                      @Param("publishedAt") LocalDateTime publishedAt);
 
     @Update("""
             UPDATE cps_platform_onboarding_draft

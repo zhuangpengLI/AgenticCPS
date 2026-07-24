@@ -36,4 +36,26 @@ public interface CpsRebateConfigMapper extends BaseMapperX<CpsRebateConfigDO> {
                 .orderByAsc(CpsRebateConfigDO::getId));
     }
 
+    default List<CpsRebateConfigDO> selectListByScope(Long memberId, Long memberLevelId,
+                                                       String platformCode, Integer priority) {
+        LambdaQueryWrapperX<CpsRebateConfigDO> query = new LambdaQueryWrapperX<>();
+        if (memberId == null) {
+            query.isNull(CpsRebateConfigDO::getMemberId);
+        } else {
+            query.eq(CpsRebateConfigDO::getMemberId, memberId);
+        }
+        if (memberLevelId == null) {
+            query.isNull(CpsRebateConfigDO::getMemberLevelId);
+        } else {
+            query.eq(CpsRebateConfigDO::getMemberLevelId, memberLevelId);
+        }
+        if (platformCode == null) {
+            query.isNull(CpsRebateConfigDO::getPlatformCode);
+        } else {
+            query.eq(CpsRebateConfigDO::getPlatformCode, platformCode);
+        }
+        query.eq(CpsRebateConfigDO::getPriority, priority);
+        return selectList(query);
+    }
+
 }
