@@ -52,6 +52,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -85,6 +86,11 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
                     new TenantDatabaseInterceptor(new TenantProperties()));
             MyBatisUtils.addInterceptor(interceptor, tenantInterceptor, 0);
             return tenantInterceptor;
+        }
+
+        @Bean
+        JdbcTemplate jdbcTemplate(DataSource dataSource) {
+            return new JdbcTemplate(dataSource);
         }
     }
 
