@@ -46,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -94,6 +95,7 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
     @Resource private CpsRebateConfigMapper rebateMapper;
     @Resource private CpsOrderMapper orderMapper;
     @Resource private CpsRebateRecordMapper rebateRecordMapper;
+    @Resource private JdbcTemplate jdbcTemplate;
     @Resource private PlatformTransactionManager transactionManager;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -498,7 +500,7 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         assertEquals(0, rebateMapper.selectManagedRulesByPlatformCode("taobao").size());
         assertNotNull(rebateMapper.selectById(global.getId()));
         assertNotNull(rebateMapper.selectById(personal.getId()));
-        assertNotNull(orderMapper.selectById(order.getId()));
+        assertOrderRowExists(order.getId());
         assertNotNull(rebateRecordMapper.selectById(rebateRecord.getId()));
     }
 
@@ -551,8 +553,14 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         assertNotNull(draftMapper.selectByPlatformCode("taobao"));
         assertNotNull(rebateMapper.selectById(global.getId()));
         assertNotNull(rebateMapper.selectById(personal.getId()));
-        assertNotNull(orderMapper.selectById(order.getId()));
+        assertOrderRowExists(order.getId());
         assertNotNull(rebateRecordMapper.selectById(rebateRecord.getId()));
+    }
+
+    private void assertOrderRowExists(Long orderId) {
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM cps_order WHERE id = ? AND deleted = FALSE",
+                Integer.class, orderId));
     }
 
     private void executeDeleteInNewTransaction(
