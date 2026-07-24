@@ -123,6 +123,14 @@ public class CpsPlatformOnboardingValidator {
                         "vendors[" + index + "].platformCode",
                         "供应商平台必须与根平台一致", "vendor");
             }
+            Map<String, String> extraConfig = Map.of();
+            try {
+                extraConfig = parseExtraConfig(vendor.getExtraConfig());
+            } catch (Exception e) {
+                add(errors, "VENDOR_CONFIG_INVALID",
+                        "vendors[" + index + "].extraConfig",
+                        "供应商扩展配置格式无效", "vendor");
+            }
             if (!enabled(vendor.getStatus())) {
                 continue;
             }
@@ -134,14 +142,6 @@ public class CpsPlatformOnboardingValidator {
                 continue;
             }
             CpsVendorConfig config = toVendorConfig(vendor, platformCode);
-            Map<String, String> extraConfig = Map.of();
-            try {
-                extraConfig = parseExtraConfig(vendor.getExtraConfig());
-            } catch (Exception e) {
-                add(errors, "VENDOR_CONFIG_INVALID",
-                        "vendors[" + index + "].extraConfig",
-                        "供应商扩展配置格式无效", "vendor");
-            }
             config.setExtraConfig(extraConfig);
             if (descriptor.getConfigSchema() == null) {
                 add(errors, "VENDOR_CONFIG_SCHEMA_REQUIRED",
@@ -230,9 +230,16 @@ public class CpsPlatformOnboardingValidator {
         boolean defaultValid = StringUtils.hasText(defaultAdzoneId)
                 && enabledGeneral.stream().anyMatch(adzone ->
                 defaultAdzoneId.equals(opaque(adzone.getAdzoneId())));
-        if (!defaultValid) {
+        List<CpsOnboardingAdzone> flaggedDefaults = adzones.stream()
+                .filter(adzone -> adzone != null && Integer.valueOf(1).equals(adzone.getIsDefault()))
+                .toList();
+        boolean canonicalDefault = flaggedDefaults.size() == 1
+                && enabledGeneral.contains(flaggedDefaults.get(0))
+                && defaultAdzoneId != null
+                && defaultAdzoneId.equals(opaque(flaggedDefaults.get(0).getAdzoneId()));
+        if (!defaultValid || !canonicalDefault) {
             add(errors, "DEFAULT_ADZONE_INVALID", "runtimeDefaultAdzoneId",
-                    "运行时默认推广位必须指向本平台已启用的通用推广位", "adzone");
+                    "运行时默认推广位必须唯一指向本平台已启用的通用推广位", "adzone");
         }
     }
 
@@ -330,7 +337,12 @@ public class CpsPlatformOnboardingValidator {
                 .forEach(vendor -> vendor.setPlatformCode(platformCode));
         safeList(payload.getAdzones()).stream()
                 .filter(adzone -> adzone != null)
-                .forEach(adzone -> adzone.setPlatformCode(platformCode));
+                .forEach(adzone -> {
+                    adzone.setPlatformCode(platformCode);
+                    String defaultAdzoneId = opaque(payload.getRuntimeDefaultAdzoneId());
+                    adzone.setIsDefault(defaultAdzoneId != null
+                            && defaultAdzoneId.equals(opaque(adzone.getAdzoneId())) ? 1 : 0);
+                });
         safeList(payload.getRebateRules()).stream()
                 .filter(rule -> rule != null)
                 .forEach(rule -> rule.setPlatformCode(platformCode));

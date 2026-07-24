@@ -13,6 +13,7 @@ import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboard
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingDetailRespVO;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingPublishReqVO;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformSaveReqVO;
+import com.qiji.cps.module.cps.controller.admin.vendor.vo.CpsApiVendorSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.onboarding.CpsPlatformOnboardingDraftDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
@@ -47,6 +48,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ONBOARDING_DRAFT_NOT_EXISTS;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ONBOARDING_CONFIG_INVALID;
@@ -85,6 +87,7 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private CpsPlatformOnboardingFingerprint fingerprint;
     private CpsPlatformOnboardingService service;
+    private CpsApiVendorServiceImpl onboardingVendorService;
 
     @BeforeEach
     void setUp() {
@@ -97,7 +100,11 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         when(validator.validateNormalized(any())).thenAnswer(invocation -> {
             CpsPlatformOnboardingPayload payload = invocation.getArgument(0);
             if (payload.getVendors().stream().anyMatch(java.util.Objects::isNull)
-                    || payload.getAdzones().stream().anyMatch(java.util.Objects::isNull)) {
+                    || payload.getAdzones().stream().anyMatch(java.util.Objects::isNull)
+                    || payload.getVendors().stream().anyMatch(vendor ->
+                    vendor != null && Integer.valueOf(0).equals(vendor.getStatus())
+                            && vendor.getExtraConfig() != null
+                            && vendor.getExtraConfig().startsWith("{invalid"))) {
                 return new CpsPlatformOnboardingValidator.ValidationResult(
                         CpsPlatformOnboardingCheckRespVO.of(false, List.of()), null);
             }
@@ -105,20 +112,20 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
                     CpsPlatformOnboardingCheckRespVO.of(true, List.of()),
                     CpsPlatformOnboardingPayloadNormalizer.normalizeCopy(payload, objectMapper));
         });
-        CpsApiVendorServiceImpl vendorService = new CpsApiVendorServiceImpl();
-        ReflectionTestUtils.setField(vendorService, "vendorMapper", vendorMapper);
-        ReflectionTestUtils.setField(vendorService, "objectMapper", objectMapper);
-        ReflectionTestUtils.setField(vendorService, "vendorClients", List.of());
+        onboardingVendorService = new CpsApiVendorServiceImpl();
+        ReflectionTestUtils.setField(onboardingVendorService, "vendorMapper", vendorMapper);
+        ReflectionTestUtils.setField(onboardingVendorService, "objectMapper", objectMapper);
+        ReflectionTestUtils.setField(onboardingVendorService, "vendorClients", List.of());
         CpsAdzoneServiceImpl adzoneService = new CpsAdzoneServiceImpl();
         ReflectionTestUtils.setField(adzoneService, "adzoneMapper", adzoneMapper);
         CpsRebateConfigServiceImpl rebateService = new CpsRebateConfigServiceImpl();
         ReflectionTestUtils.setField(rebateService, "rebateConfigMapper", rebateMapper);
         CpsPlatformServiceImpl platformService = new CpsPlatformServiceImpl();
         ReflectionTestUtils.setField(platformService, "platformMapper", platformMapper);
-        ReflectionTestUtils.setField(platformService, "vendorService", vendorService);
+        ReflectionTestUtils.setField(platformService, "vendorService", onboardingVendorService);
         ReflectionTestUtils.setField(platformService, "adzoneService", adzoneService);
         CpsPlatformOnboardingService target = new CpsPlatformOnboardingServiceImpl(
-                draftService, validator, fingerprint, platformService, vendorService,
+                draftService, validator, fingerprint, platformService, onboardingVendorService,
                 adzoneService, rebateService, mock(CpsPlatformOnboardingCacheInvalidator.class));
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         service = request -> transactionTemplate.execute(status -> target.publish(request));
@@ -145,7 +152,7 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         CpsPlatformOnboardingPublishReqVO request =
                 saveReadyDraft(bundle("taobao", "haodanku", "new-pid", "35", true));
 
-        service.publish(request);
+        CpsPlatformOnboardingDetailRespVO response = service.publish(request);
 
         CpsPlatformDO platform = platformMapper.selectByPlatformCode("taobao");
         assertEquals("haodanku", platform.getActiveVendorCode());
@@ -156,6 +163,9 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
                 .getRebateRate().compareTo(new BigDecimal("35")));
         assertNull(vendorMapper.selectByVendorAndPlatform("dataoke", "taobao"));
         assertEquals(1, adzoneMapper.selectAllByPlatformCode("taobao").size());
+        assertNull(adzoneMapper.selectAllByPlatformCode("taobao").getFirst().getRelationType());
+        assertEquals("haodanku", response.getPayload().getVendors().getFirst().getVendorCode());
+        assertTrue(response.getPayload().getVendors().getFirst().getAppSecretConfigured());
         assertEquals(CpsPlatformOnboardingStatusEnum.PUBLISHED.getCode(),
                 draftMapper.selectByPlatformCode("taobao").getStatus());
     }
@@ -207,6 +217,52 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         assertEquals(0, vendorMapper.selectAllByPlatformCode("jd").size());
         assertEquals(0, adzoneMapper.selectAllByPlatformCode("jd").size());
         assertEquals(0, rebateMapper.selectManagedRulesByPlatformCode("jd").size());
+    }
+
+    @Test
+    void publish_disabledVendorWithMalformedExtraConfig_shouldRejectBeforeRuntimeWrites() {
+        CpsPlatformOnboardingPayload payload = bundle("jd", "jdunion", "jd-pid", "30", true);
+        payload.getVendors().getFirst().setStatus(0);
+        payload.getVendors().getFirst().setExtraConfig("{invalid");
+        CpsPlatformOnboardingPublishReqVO request = saveReadyDraft(payload);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.publish(request));
+
+        assertEquals(ONBOARDING_CONFIG_INVALID.getCode(), exception.getCode());
+        assertNull(platformMapper.selectByPlatformCode("jd"));
+        assertEquals(0, vendorMapper.selectAllByPlatformCode("jd").size());
+        assertEquals(0, adzoneMapper.selectAllByPlatformCode("jd").size());
+        assertEquals(0, rebateMapper.selectManagedRulesByPlatformCode("jd").size());
+    }
+
+    @Test
+    void vendorRemoveAndReadd_shouldKeepActiveUniqueRow() {
+        CpsApiVendorSaveReqVO request = new CpsApiVendorSaveReqVO();
+        request.setVendorCode("jdunion");
+        request.setVendorName("JD Union");
+        request.setVendorType("aggregator");
+        request.setPlatformCode("jd");
+        request.setAppKey("jd-key");
+        request.setAppSecret("jd-secret");
+        request.setAuthToken("jd-token");
+        request.setApiBaseUrl("https://api.example.test/jd");
+        request.setDefaultAdzoneId("jd-pid");
+        request.setExtraConfig("{\"vendor\":\"jdunion\"}");
+        request.setPriority(100);
+        request.setStatus(1);
+
+        onboardingVendorService.upsertVendorForOnboarding(request);
+        assertEquals(1, vendorMapper.selectAllByPlatformCode("jd").size());
+
+        onboardingVendorService.deleteVendorsNotIn("jd", Set.of());
+        assertNull(vendorMapper.selectByVendorAndPlatform("jdunion", "jd"));
+
+        request.setId(null);
+        onboardingVendorService.upsertVendorForOnboarding(request);
+        assertEquals(1, vendorMapper.selectAllByPlatformCode("jd").size());
+        assertEquals("jdunion",
+                vendorMapper.selectByVendorAndPlatform("jdunion", "jd").getVendorCode());
     }
 
     @Test

@@ -93,7 +93,7 @@ public class CpsPlatformOnboardingServiceImpl implements CpsPlatformOnboardingSe
         draftService.markPublished(draft.id(), draft.version(),
                 recalculatedFingerprint, LocalDateTime.now());
         cacheInvalidator.evictAfterCommit(platformCode);
-        return draftService.getDetail(platformCode);
+        return draftService.getRuntimeDetail(platformCode);
     }
 
     private CpsPlatformOnboardingDraftService.DraftSnapshot getPublishSnapshot(

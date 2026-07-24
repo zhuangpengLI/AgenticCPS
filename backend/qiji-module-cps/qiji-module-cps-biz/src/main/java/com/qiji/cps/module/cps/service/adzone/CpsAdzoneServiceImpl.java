@@ -168,7 +168,7 @@ public class CpsAdzoneServiceImpl implements CpsAdzoneService {
             throw exception(ADZONE_CONFIG_INVALID, "推广位类型不合法");
         }
         request.setAdzoneType(adzoneType);
-        request.setRelationType(adzoneType);
+        request.setRelationType(normalizeCode(request.getRelationType()));
         request.setExternalRelationId(trimToNull(request.getExternalRelationId()));
         request.setExternalSpecialId(trimToNull(request.getExternalSpecialId()));
     }

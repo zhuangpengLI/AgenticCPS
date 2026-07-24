@@ -300,6 +300,38 @@ class CpsPlatformOnboardingValidatorTest {
     }
 
     @Test
+    void validate_adzoneDefaultMustBeUniqueEnabledGeneralAndMatchRuntime() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getAdzones().get(1).setIsDefault(1);
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertContains(result, "DEFAULT_ADZONE_INVALID", "runtimeDefaultAdzoneId");
+    }
+
+    @Test
+    void validate_adzoneDefaultFlagMustMatchRuntimeDefault() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getAdzones().get(0).setIsDefault(0);
+        payload.getAdzones().get(1).setIsDefault(1);
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertContains(result, "DEFAULT_ADZONE_INVALID", "runtimeDefaultAdzoneId");
+    }
+
+    @Test
+    void validate_disabledVendor_shouldRejectMalformedExtraConfig() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getVendors().get(1).setStatus(0);
+        payload.getVendors().get(1).setExtraConfig("{invalid");
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertContains(result, "VENDOR_CONFIG_INVALID", "vendors[1].extraConfig");
+    }
+
+    @Test
     void validate_rebateRules_shouldValidateEveryFieldAndRequireDefault() {
         CpsPlatformOnboardingPayload payload = validPayload();
         CpsOnboardingRebateRule rule = payload.getRebateRules().get(0);
