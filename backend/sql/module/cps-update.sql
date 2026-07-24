@@ -374,4 +374,43 @@ PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
 EXECUTE cps_onboarding_stmt;
 DEALLOCATE PREPARE cps_onboarding_stmt;
 
+-- ============================================================
+-- 修改时间：2026-07-24 18:00:00
+-- 目的：将统一平台配置中心设为可见入口，并隐藏四个旧配置页面。
+-- ============================================================
+UPDATE `system_menu`
+SET `visible` = b'0', `updater` = 'platform-onboarding',
+    `update_time` = '2026-07-24 18:00:00'
+WHERE `id` IN (6229, 6251, 6256, 6261) AND `deleted` = b'0';
+
+INSERT INTO `system_menu`
+(`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`,
+ `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`,
+ `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+SELECT 6297, '平台配置中心', 'cps:platform-onboarding:query', 2, 10, 6287,
+       'platform-onboarding', 'ep:setting', 'cps-config/platform-onboarding',
+       'CpsPlatformOnboarding', 0, b'1', b'1', b'1', '1',
+       '2026-07-24 00:00:00', 'platform-onboarding', '2026-07-24 18:00:00', b'0'
+WHERE NOT EXISTS (SELECT 1 FROM `system_menu` WHERE `id` = 6297);
+
+INSERT INTO `system_menu`
+(`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`,
+ `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`,
+ `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+SELECT menu_id, menu_name, menu_permission, 3, menu_sort, 6297, '', '', '', '',
+       0, b'1', b'1', b'1', '1', '2026-07-24 00:00:00',
+       'platform-onboarding', '2026-07-24 18:00:00', b'0'
+FROM (
+  SELECT 6298 AS menu_id, '平台配置中心查询' AS menu_name,
+         'cps:platform-onboarding:query' AS menu_permission, 1 AS menu_sort
+  UNION ALL SELECT 6299, '平台配置中心创建', 'cps:platform-onboarding:create', 2
+  UNION ALL SELECT 6300, '平台配置中心更新', 'cps:platform-onboarding:update', 3
+  UNION ALL SELECT 6301, '平台配置中心删除', 'cps:platform-onboarding:delete', 4
+  UNION ALL SELECT 6302, '平台配置中心测试', 'cps:platform-onboarding:test', 5
+  UNION ALL SELECT 6303, '平台配置中心发布', 'cps:platform-onboarding:publish', 6
+) AS onboarding_menu
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_menu` existing WHERE existing.`id` = onboarding_menu.menu_id
+);
+
 SET FOREIGN_KEY_CHECKS = 1;

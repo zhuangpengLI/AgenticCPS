@@ -49,4 +49,10 @@ public class CpsPlatformOnboardingDetailRespVO {
     @Schema(description = "平台接入配置；敏感凭证只返回 configured 标记")
     private CpsPlatformOnboardingPayloadRespVO payload;
 
+    @Schema(description = "已发布的运行配置")
+    private CpsPlatformOnboardingPayloadRespVO runtimePayload;
+
+    @Schema(description = "当前草稿配置")
+    private CpsPlatformOnboardingPayloadRespVO draftPayload;
+
 }
