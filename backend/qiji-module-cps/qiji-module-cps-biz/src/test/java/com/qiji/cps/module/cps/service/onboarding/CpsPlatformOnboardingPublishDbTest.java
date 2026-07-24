@@ -258,6 +258,26 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
     }
 
     @Test
+    void publishWithDifferentStoredDraftFingerprint_shouldRejectBeforeRuntimeWrites() {
+        CpsPlatformOnboardingPublishReqVO request =
+                saveReadyDraft(bundle("jd", "jdunion", "jd-pid", "30", true));
+        CpsPlatformOnboardingDraftDO draft = draftMapper.selectByPlatformCode("jd");
+        draft.setConfigFingerprint("different-stored-draft-fingerprint");
+        draftMapper.updateById(draft);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.publish(request));
+
+        assertEquals(ONBOARDING_PUBLISH_CONFLICT.getCode(), exception.getCode());
+        assertNull(platformMapper.selectByPlatformCode("jd"));
+        assertEquals(0, vendorMapper.selectAllByPlatformCode("jd").size());
+        assertEquals(0, adzoneMapper.selectAllByPlatformCode("jd").size());
+        assertEquals(0, rebateMapper.selectManagedRulesByPlatformCode("jd").size());
+        assertEquals(CpsPlatformOnboardingStatusEnum.READY.getCode(),
+                draftMapper.selectByPlatformCode("jd").getStatus());
+    }
+
+    @Test
     void publishWithDifferentValidatedFingerprint_shouldRejectBeforeRuntimeWrites() {
         CpsPlatformOnboardingPublishReqVO request =
                 saveReadyDraft(bundle("jd", "jdunion", "jd-pid", "30", true));
