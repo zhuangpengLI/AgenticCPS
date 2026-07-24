@@ -47,6 +47,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -64,7 +65,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 @Import(CpsPlatformOnboardingPublishDbTest.TenantTestConfiguration.class)
@@ -94,18 +99,26 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private CpsPlatformOnboardingFingerprint fingerprint;
     private CpsPlatformOnboardingService service;
+    private CpsPlatformOnboardingService onboardingService;
     private CpsPlatformOnboardingLifecycleService lifecycleService;
+    private CpsPlatformOnboardingDraftServiceImpl onboardingDraftService;
+    private CpsPlatformOnboardingValidator onboardingValidator;
     private CpsApiVendorServiceImpl onboardingVendorService;
+    private CpsAdzoneServiceImpl onboardingAdzoneService;
+    private CpsRebateConfigServiceImpl onboardingRebateService;
+    private CpsPlatformServiceImpl onboardingPlatformService;
+    private CpsPlatformClientFactory onboardingClientFactory;
 
     @BeforeEach
     void setUp() {
         TenantContextHolder.setTenantId(1L);
         fingerprint = new CpsPlatformOnboardingFingerprint(objectMapper);
-        CpsPlatformOnboardingDraftService draftService =
-                new CpsPlatformOnboardingDraftServiceImpl(draftMapper, platformMapper, vendorMapper,
-                        adzoneMapper, rebateMapper, objectMapper, fingerprint);
-        CpsPlatformOnboardingValidator validator = mock(CpsPlatformOnboardingValidator.class);
-        when(validator.validateNormalized(any())).thenAnswer(invocation -> {
+        onboardingDraftService = new CpsPlatformOnboardingDraftServiceImpl(
+                draftMapper, platformMapper, vendorMapper, adzoneMapper, rebateMapper,
+                objectMapper, fingerprint);
+        CpsPlatformOnboardingDraftService draftService = onboardingDraftService;
+        onboardingValidator = mock(CpsPlatformOnboardingValidator.class);
+        when(onboardingValidator.validateNormalized(any())).thenAnswer(invocation -> {
             CpsPlatformOnboardingPayload payload = invocation.getArgument(0);
             if (payload.getVendors().stream().anyMatch(java.util.Objects::isNull)
                     || payload.getAdzones().stream().anyMatch(java.util.Objects::isNull)
@@ -124,25 +137,28 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         ReflectionTestUtils.setField(onboardingVendorService, "vendorMapper", vendorMapper);
         ReflectionTestUtils.setField(onboardingVendorService, "objectMapper", objectMapper);
         ReflectionTestUtils.setField(onboardingVendorService, "vendorClients", List.of());
-        CpsAdzoneServiceImpl adzoneService = new CpsAdzoneServiceImpl();
-        ReflectionTestUtils.setField(adzoneService, "adzoneMapper", adzoneMapper);
-        CpsRebateConfigServiceImpl rebateService = new CpsRebateConfigServiceImpl();
-        ReflectionTestUtils.setField(rebateService, "rebateConfigMapper", rebateMapper);
-        CpsPlatformServiceImpl platformService = new CpsPlatformServiceImpl();
-        ReflectionTestUtils.setField(platformService, "platformMapper", platformMapper);
-        ReflectionTestUtils.setField(platformService, "vendorService", onboardingVendorService);
-        ReflectionTestUtils.setField(platformService, "adzoneService", adzoneService);
-        ReflectionTestUtils.setField(platformService, "cacheInvalidator",
+        onboardingAdzoneService = new CpsAdzoneServiceImpl();
+        ReflectionTestUtils.setField(onboardingAdzoneService, "adzoneMapper", adzoneMapper);
+        onboardingRebateService = new CpsRebateConfigServiceImpl();
+        ReflectionTestUtils.setField(onboardingRebateService, "rebateConfigMapper", rebateMapper);
+        onboardingPlatformService = new CpsPlatformServiceImpl();
+        ReflectionTestUtils.setField(onboardingPlatformService, "platformMapper", platformMapper);
+        ReflectionTestUtils.setField(onboardingPlatformService, "vendorService", onboardingVendorService);
+        ReflectionTestUtils.setField(onboardingPlatformService, "adzoneService", onboardingAdzoneService);
+        ReflectionTestUtils.setField(onboardingPlatformService, "cacheInvalidator",
                 mock(CpsPlatformOnboardingCacheInvalidator.class));
-        CpsPlatformOnboardingService target = new CpsPlatformOnboardingServiceImpl(
-                draftService, validator, fingerprint, platformService, onboardingVendorService,
-                adzoneService, rebateService, mock(CpsPlatformOnboardingCacheInvalidator.class));
+        onboardingClientFactory = mock(CpsPlatformClientFactory.class);
+        onboardingService = new CpsPlatformOnboardingServiceImpl(
+                draftService, onboardingValidator, fingerprint, onboardingPlatformService,
+                onboardingVendorService, onboardingAdzoneService, onboardingRebateService,
+                mock(CpsPlatformOnboardingCacheInvalidator.class));
         lifecycleService = new CpsPlatformOnboardingLifecycleService(
-                draftService, target, validator, mock(CpsPlatformOnboardingConnectionTester.class),
-                mock(CpsPlatformClientFactory.class),
-                platformService, onboardingVendorService, adzoneService, rebateService);
+                draftService, onboardingService, onboardingValidator,
+                mock(CpsPlatformOnboardingConnectionTester.class), onboardingClientFactory,
+                onboardingPlatformService, onboardingVendorService, onboardingAdzoneService,
+                onboardingRebateService);
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        service = request -> transactionTemplate.execute(status -> target.publish(request));
+        service = request -> transactionTemplate.execute(status -> onboardingService.publish(request));
     }
 
     @AfterEach
@@ -474,7 +490,7 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         rebateRecord.setTenantId(TenantContextHolder.getRequiredTenantId());
         rebateRecordMapper.insert(rebateRecord);
 
-        lifecycleService.deletePlatformBundle("taobao");
+        executeDeleteInNewTransaction(lifecycleService, "taobao");
 
         assertNull(platformMapper.selectById(platform.getId()));
         assertEquals(0, vendorMapper.selectAllByPlatformCode("taobao").size());
@@ -484,6 +500,67 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         assertNotNull(rebateMapper.selectById(personal.getId()));
         assertNotNull(orderMapper.selectById(order.getId()));
         assertNotNull(rebateRecordMapper.selectById(rebateRecord.getId()));
+    }
+
+    @Test
+    void managedDelete_whenDraftDeleteFails_shouldRollbackAllManagedRows() {
+        seedRuntimeBundle("taobao", "dataoke", "old-pid", "20");
+        CpsPlatformDO platform = platformMapper.selectByPlatformCode("taobao");
+        platform.setStatus(0);
+        platformMapper.updateById(platform);
+        saveReadyDraft(bundle("taobao", "dataoke", "old-pid", "20", false));
+        CpsRebateConfigDO global = rebate(null, "5", 100);
+        rebateMapper.insert(global);
+        CpsRebateConfigDO personal = rebate("taobao", "90", 100);
+        personal.setMemberId(99L);
+        rebateMapper.insert(personal);
+        CpsOrderDO order = CpsOrderDO.builder()
+                .platformCode("taobao")
+                .platformOrderId("rollback-order")
+                .orderStatus("PAID")
+                .build();
+        order.setTenantId(TenantContextHolder.getRequiredTenantId());
+        orderMapper.insert(order);
+        CpsRebateRecordDO rebateRecord = CpsRebateRecordDO.builder()
+                .memberId(99L)
+                .orderId(order.getId())
+                .rebateType("REBATE")
+                .build();
+        rebateRecord.setTenantId(TenantContextHolder.getRequiredTenantId());
+        rebateRecordMapper.insert(rebateRecord);
+
+        CpsPlatformOnboardingDraftServiceImpl draftSpy = spy(onboardingDraftService);
+        doAnswer(invocation -> {
+            invocation.callRealMethod();
+            throw new IllegalStateException("injected draft delete failure");
+        }).when(draftSpy).deleteDraft(anyString(), anyLong());
+        CpsPlatformOnboardingLifecycleService rollbackLifecycle =
+                new CpsPlatformOnboardingLifecycleService(
+                        draftSpy, onboardingService, onboardingValidator,
+                        mock(CpsPlatformOnboardingConnectionTester.class), onboardingClientFactory,
+                        onboardingPlatformService, onboardingVendorService, onboardingAdzoneService,
+                        onboardingRebateService);
+
+        assertThrows(IllegalStateException.class,
+                () -> executeDeleteInNewTransaction(rollbackLifecycle, "taobao"));
+
+        assertNotNull(platformMapper.selectById(platform.getId()));
+        assertEquals(1, vendorMapper.selectAllByPlatformCode("taobao").size());
+        assertEquals(1, adzoneMapper.selectAllByPlatformCode("taobao").size());
+        assertEquals(1, rebateMapper.selectManagedRulesByPlatformCode("taobao").size());
+        assertNotNull(draftMapper.selectByPlatformCode("taobao"));
+        assertNotNull(rebateMapper.selectById(global.getId()));
+        assertNotNull(rebateMapper.selectById(personal.getId()));
+        assertNotNull(orderMapper.selectById(order.getId()));
+        assertNotNull(rebateRecordMapper.selectById(rebateRecord.getId()));
+    }
+
+    private void executeDeleteInNewTransaction(
+            CpsPlatformOnboardingLifecycleService lifecycle, String platformCode) {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.executeWithoutResult(
+                status -> lifecycle.deletePlatformBundle(platformCode));
     }
 
     private CpsPlatformOnboardingPublishReqVO saveReadyDraft(CpsPlatformOnboardingPayload payload) {
