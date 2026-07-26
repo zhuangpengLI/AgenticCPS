@@ -451,7 +451,7 @@ public class CpsPlatformOnboardingLifecycleService {
         if (StringUtils.hasText(req.getKeyword())
                 && !(contains(item.getPlatformCode(), req.getKeyword())
                 || contains(item.getPlatformName(), req.getKeyword()))) return false;
-        String status = normalize(req.getStatus());
+        String status = normalizeStatus(req.getStatus());
         return status == null || "ALL".equals(status)
                 || "INCOMPLETE".equals(status) && item.getCompletionPercent() < 100
                 || "READY".equals(status) && item.getCompletionPercent() == 100
@@ -466,6 +466,10 @@ public class CpsPlatformOnboardingLifecycleService {
 
     private static String normalize(String value) {
         return StringUtils.hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : null;
+    }
+
+    private static String normalizeStatus(String value) {
+        return StringUtils.hasText(value) ? value.trim().toUpperCase(Locale.ROOT) : null;
     }
 
     private static void addNormalized(Set<String> target, String value) {
