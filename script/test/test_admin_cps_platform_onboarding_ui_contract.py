@@ -194,3 +194,11 @@ def test_workspace_preserves_runtime_invariants_before_publish():
     assert "descriptors?.length" in vendor and "status: 1" in vendor
     assert "item.isDefault =" in adzone and "row.status === 1" in adzone
     assert "title=\"高级设置\"" in rebate and "status: 1" in rebate
+
+def test_unified_menu_replaces_four_visible_entries():
+    all_sql = read_utf8("backend/sql/module/cps-all-in-one.sql")
+    update_sql = read_utf8("backend/sql/module/cps-update.sql")
+    assert "平台配置中心" in all_sql
+    assert "cps/platformOnboarding/index" in all_sql
+    assert "cps:platform-onboarding:publish" in all_sql
+    assert "2026-07-23" in update_sql
