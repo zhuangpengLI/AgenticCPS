@@ -18,8 +18,8 @@ import { normalizeAdzoneRow } from '@/views/cps/components/adzoneRules'
 const props = defineProps<{ modelValue: boolean; row?: AdzoneForm; platformCode: string }>()
 const emit = defineEmits<{ 'update:modelValue': [boolean]; save: [AdzoneForm] }>()
 const visible = computed({ get: () => props.modelValue, set: (v) => emit('update:modelValue', v) })
-const form = reactive<AdzoneForm>({ platformCode: props.platformCode, adzoneId: '', adzoneType: 'GENERAL', isDefault: 0, status: 0 })
-const enabled = computed({ get: () => form.status === 0, set: (v: boolean) => (form.status = v ? 0 : 1) })
-watch(() => props.row, (row) => Object.assign(form, row || { platformCode: props.platformCode, adzoneId: '', adzoneType: 'GENERAL', isDefault: 0, status: 0 }), { immediate: true })
+const form = reactive<AdzoneForm>({ platformCode: props.platformCode, adzoneId: '', adzoneType: 'GENERAL', isDefault: 0, status: 1 })
+const enabled = computed({ get: () => form.status === 1, set: (v: boolean) => (form.status = v ? 1 : 0) })
+watch(() => props.row, (row) => Object.assign(form, row || { platformCode: props.platformCode, adzoneId: '', adzoneType: 'GENERAL', isDefault: 0, status: 1 }), { immediate: true })
 const submit = () => { emit('save', normalizeAdzoneRow({ ...form })); visible.value = false }
 </script>
