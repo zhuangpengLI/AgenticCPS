@@ -10,6 +10,7 @@
 </template>
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import type { AdzoneForm, PlatformOnboardingDraft } from '@/api/cps/platformOnboarding'
 import { normalizeAdzoneType, validateAdzoneDraft } from '@/views/cps/components/adzoneRules'
 import AdzoneEditorDialog from './AdzoneEditorDialog.vue'
