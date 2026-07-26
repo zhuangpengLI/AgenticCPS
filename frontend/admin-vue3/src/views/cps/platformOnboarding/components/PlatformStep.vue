@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-mutating-props -- the wizard intentionally shares one draft model across steps -->
 <template>
   <el-form ref="formRef" :model="draft.platform" label-width="110px">
     <el-alert v-if="unsupported" type="warning" title="该平台暂无可用适配器，请先选择已注册的平台能力" show-icon class="mb-12px" />

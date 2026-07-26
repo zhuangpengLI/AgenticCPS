@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-mutating-props -- the wizard intentionally shares one draft model across steps -->
 <template>
   <div>
     <div class="flex gap-8px"><el-button type="primary" @click="openEditor()">添加推广位</el-button><el-button @click="batchVisible = true">批量粘贴</el-button></div>

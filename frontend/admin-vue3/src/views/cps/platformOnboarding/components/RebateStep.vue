@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-mutating-props -- the wizard intentionally shares one draft model across steps -->
 <template>
   <div>
     <el-alert title="默认平台返利优先展示；高级设置可配置会员等级规则。金额输入单位为元。" type="info" show-icon class="mb-12px" />

@@ -19,11 +19,16 @@ export const validateAdzoneRow = (row: Partial<AdzoneForm>): string[] => {
   const errors: string[] = []
   if (!row.adzoneId?.trim()) errors.push('推广位 ID 不能为空')
   const kind = normalizeAdzoneType(row.adzoneType)
-  if (kind === 'CHANNEL' && !row.externalRelationId?.trim() && !row.relationId) {
-    errors.push('渠道推广位需要 relationId 或 externalRelationId')
+  const platformCode = row.platformCode?.trim().toLowerCase()
+  if ((kind === 'CHANNEL' || kind === 'MEMBER') && !row.relationId) {
+    errors.push(`${kind === 'CHANNEL' ? '渠道' : '会员'}推广位需要 relationId`)
   }
-  if (kind === 'MEMBER' && !row.externalSpecialId?.trim()) {
-    errors.push('会员推广位需要 externalSpecialId')
+  if (kind === 'CHANNEL' && platformCode === 'taobao' && !row.externalRelationId?.trim()) {
+    errors.push('淘宝渠道推广位需要 externalRelationId')
+  }
+  if (kind === 'MEMBER' && platformCode === 'taobao') {
+    if (!/^mm_\d+_\d+_\d+$/.test(row.adzoneId?.trim() || '')) errors.push('淘宝会员 PID 必须使用 mm_数字_数字_数字 格式')
+    if (!/^\d+$/.test(row.externalSpecialId?.trim() || '')) errors.push('淘宝会员推广位需要数字 externalSpecialId')
   }
   return errors
 }
