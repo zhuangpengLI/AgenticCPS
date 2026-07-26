@@ -2,10 +2,15 @@
   <el-dialog v-model="visible" title="返利规则" width="560px">
     <el-alert title="平台工作台仅支持平台默认和会员等级规则；全局及个人会员规则请在原有返利模块维护" type="warning" show-icon class="mb-12px" />
     <el-form :model="form" label-width="120px">
-      <el-form-item label="会员等级"><MemberLevelSelect v-model="form.memberLevelId" /></el-form-item>
       <el-form-item label="返利比例" required><el-input-number v-model="form.rebateRate" :min="0" :max="100" :precision="2" /></el-form-item>
-      <el-form-item label="最低金额"><el-input-number v-model="form.minRebateAmount" :min="0" /></el-form-item><el-form-item label="最高金额"><el-input-number v-model="form.maxRebateAmount" :min="0" /></el-form-item>
-      <el-form-item label="优先级"><el-input-number v-model="form.priority" :min="0" /></el-form-item>
+      <el-collapse accordion class="mt-12px">
+        <el-collapse-item title="高级设置" name="advanced">
+          <el-form-item label="会员等级"><MemberLevelSelect v-model="form.memberLevelId" /></el-form-item>
+          <el-form-item label="最低金额"><el-input-number v-model="form.minRebateAmount" :min="0" /></el-form-item>
+          <el-form-item label="最高金额"><el-input-number v-model="form.maxRebateAmount" :min="0" /></el-form-item>
+          <el-form-item label="优先级"><el-input-number v-model="form.priority" :min="0" /></el-form-item>
+        </el-collapse-item>
+      </el-collapse>
     </el-form>
     <template #footer><el-button @click="visible = false">取消</el-button><el-button type="primary" @click="submit">确定</el-button></template>
   </el-dialog>
