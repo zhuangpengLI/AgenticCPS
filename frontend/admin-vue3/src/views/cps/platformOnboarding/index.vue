@@ -1,5 +1,5 @@
 <template>
-  <workspace
+  <Workspace
     v-if="route.query.mode"
     :platform-code="route.query.platformCode as string | undefined"
     :mode="route.query.mode as 'create' | 'edit'"
@@ -151,6 +151,7 @@ import {
   type OnboardingPageReq
 } from '@/api/cps/platformOnboarding'
 import CompletionBadge from './components/CompletionBadge.vue'
+import Workspace from './workspace.vue'
 
 defineOptions({ name: 'CpsPlatformOnboarding' })
 
