@@ -88,10 +88,6 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
             return tenantInterceptor;
         }
 
-        @Bean
-        JdbcTemplate jdbcTemplate(DataSource dataSource) {
-            return new JdbcTemplate(dataSource);
-        }
     }
 
     @Resource private CpsPlatformOnboardingDraftMapper draftMapper;
@@ -101,10 +97,11 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
     @Resource private CpsRebateConfigMapper rebateMapper;
     @Resource private CpsOrderMapper orderMapper;
     @Resource private CpsRebateRecordMapper rebateRecordMapper;
-    @Resource private JdbcTemplate jdbcTemplate;
+    @Resource private DataSource dataSource;
     @Resource private PlatformTransactionManager transactionManager;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private JdbcTemplate jdbcTemplate;
     private CpsPlatformOnboardingFingerprint fingerprint;
     private CpsPlatformOnboardingService service;
     private CpsPlatformOnboardingService onboardingService;
@@ -120,6 +117,7 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
     @BeforeEach
     void setUp() {
         TenantContextHolder.setTenantId(1L);
+        jdbcTemplate = new JdbcTemplate(dataSource);
         fingerprint = new CpsPlatformOnboardingFingerprint(objectMapper);
         onboardingDraftService = new CpsPlatformOnboardingDraftServiceImpl(
                 draftMapper, platformMapper, vendorMapper, adzoneMapper, rebateMapper,
@@ -507,7 +505,7 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         assertNotNull(rebateMapper.selectById(global.getId()));
         assertNotNull(rebateMapper.selectById(personal.getId()));
         assertOrderRowExists(order.getId());
-        assertNotNull(rebateRecordMapper.selectById(rebateRecord.getId()));
+        assertRebateRecordRowExists(rebateRecord.getId());
     }
 
     @Test
@@ -560,13 +558,19 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         assertNotNull(rebateMapper.selectById(global.getId()));
         assertNotNull(rebateMapper.selectById(personal.getId()));
         assertOrderRowExists(order.getId());
-        assertNotNull(rebateRecordMapper.selectById(rebateRecord.getId()));
+        assertRebateRecordRowExists(rebateRecord.getId());
     }
 
     private void assertOrderRowExists(Long orderId) {
         assertEquals(1, jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM cps_order WHERE id = ? AND deleted = FALSE",
                 Integer.class, orderId));
+    }
+
+    private void assertRebateRecordRowExists(Long rebateRecordId) {
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM cps_rebate_record WHERE id = ? AND deleted = FALSE",
+                Integer.class, rebateRecordId));
     }
 
     private void executeDeleteInNewTransaction(
