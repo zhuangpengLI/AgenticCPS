@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-mutating-props -->
 <template>
   <div>
     <el-alert title="主供应商用于运行时请求；备用供应商只在故障切换时使用" type="info" show-icon class="mb-12px" />
@@ -15,7 +16,6 @@
   </div>
 </template>
 <script lang="ts" setup>
-/* eslint-disable vue/no-mutating-props -- the wizard intentionally shares one draft model across steps */
 import { computed, ref } from 'vue'
 import type { PlatformOnboardingDraft, VendorDescriptor, VendorForm, OnboardingCheckResult } from '@/api/cps/platformOnboarding'
 import CheckResultPanel from './CheckResultPanel.vue'
