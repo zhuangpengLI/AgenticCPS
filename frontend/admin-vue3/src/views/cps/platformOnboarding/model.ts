@@ -78,8 +78,18 @@ const normalizePayload = (draft: PlatformOnboardingDraft): PlatformOnboardingSav
       priority: rule.priority
     }))
     .sort((left, right) => {
-      const leftKey = `${left.platformCode}:${left.memberLevelId ?? 'DEFAULT'}:${left.memberId ?? 'DEFAULT'}:${left.priority ?? 0}`
-      const rightKey = `${right.platformCode}:${right.memberLevelId ?? 'DEFAULT'}:${right.memberId ?? 'DEFAULT'}:${right.priority ?? 0}`
+      const leftKey = [
+        left.platformCode,
+        left.memberLevelId ?? 'DEFAULT',
+        left.memberId ?? 'DEFAULT',
+        left.priority ?? 0
+      ].join(':')
+      const rightKey = [
+        right.platformCode,
+        right.memberLevelId ?? 'DEFAULT',
+        right.memberId ?? 'DEFAULT',
+        right.priority ?? 0
+      ].join(':')
       return compareText(leftKey, rightKey)
     })
 })
