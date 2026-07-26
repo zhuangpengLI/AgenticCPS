@@ -96,7 +96,7 @@
               v-if="row.runtimeStatus === 1"
               link
               type="warning"
-              v-hasPermi="['cps:platform-onboarding:publish']"
+              v-hasPermi="['cps:platform-onboarding:update']"
               @click="handleDisable(row)"
             >
               禁用
