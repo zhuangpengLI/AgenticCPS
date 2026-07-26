@@ -20,7 +20,7 @@ export const validateAdzoneRow = (row: Partial<AdzoneForm>): string[] => {
   if (!row.adzoneId?.trim()) errors.push('推广位 ID 不能为空')
   const kind = normalizeAdzoneType(row.adzoneType)
   const platformCode = row.platformCode?.trim().toLowerCase()
-  if ((kind === 'CHANNEL' || kind === 'MEMBER') && !row.relationId) {
+  if ((kind === 'MEMBER' || (kind === 'CHANNEL' && platformCode === 'taobao')) && !row.relationId) {
     errors.push(`${kind === 'CHANNEL' ? '渠道' : '会员'}推广位需要 relationId`)
   }
   if (kind === 'CHANNEL' && platformCode === 'taobao' && !row.externalRelationId?.trim()) {
