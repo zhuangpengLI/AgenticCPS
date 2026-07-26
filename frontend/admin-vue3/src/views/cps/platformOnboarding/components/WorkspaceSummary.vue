@@ -9,7 +9,12 @@
 import { computed } from 'vue'
 import type { PlatformOnboardingPayload } from '@/api/cps/platformOnboarding'
 const props = defineProps<{ runtimePayload?: PlatformOnboardingPayload; draftPayload?: PlatformOnboardingPayload }>()
-const label = (payload?: PlatformOnboardingPayload) => payload ? `${payload.platform.platformName || payload.platform.platformCode} / ${payload.primaryVendorCode || '未设置主供应商'}` : '无'
+const label = (payload?: PlatformOnboardingPayload) => {
+  if (!payload) return '无'
+  const vendor = payload.vendors?.find((item) => item.vendorCode === payload.primaryVendorCode)
+  const vendorLabel = vendor?.vendorName || payload.primaryVendorCode || '未设置主供应商'
+  return `${payload.platform.platformName || payload.platform.platformCode} / ${vendorLabel}`
+}
 const runtimeLabel = computed(() => props.runtimePayload ? label(props.runtimePayload) : '未发布')
 const draftLabel = computed(() => props.draftPayload ? `${label(props.draftPayload)}（可继续完善）` : '无')
 </script>
