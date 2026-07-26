@@ -12,6 +12,7 @@
 </template>
 <script lang="ts" setup>
 import { computed, reactive, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import type { RebateRuleForm } from '@/api/cps/platformOnboarding'
 import MemberLevelSelect from '@/views/member/level/components/MemberLevelSelect.vue'
 const props = defineProps<{ modelValue: boolean; row?: RebateRuleForm; platformCode: string }>()
