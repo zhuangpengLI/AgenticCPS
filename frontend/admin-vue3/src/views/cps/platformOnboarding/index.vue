@@ -110,7 +110,10 @@
             >
               启用
             </el-button>
-            <el-dropdown v-hasPermi="['cps:platform-onboarding:delete']">
+            <el-dropdown
+              v-if="row.draftStatus || row.runtimeStatus !== 1"
+              v-hasPermi="['cps:platform-onboarding:delete']"
+            >
               <el-button link type="danger">删除<Icon icon="ep:arrow-down" class="ml-1" /></el-button>
               <template #dropdown>
                 <el-dropdown-menu>
