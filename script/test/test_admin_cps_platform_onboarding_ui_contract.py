@@ -103,3 +103,15 @@ def test_platform_and_vendor_options_are_not_hard_coded_in_the_local_model():
         "'haodanku'",
     ]:
         assert forbidden not in source
+
+
+def test_rebate_amounts_follow_the_current_backend_yuan_contract_and_mask_extra_config():
+    api_source = read_utf8("frontend/admin-vue3/src/api/cps/platformOnboarding.ts")
+    model_source = read_utf8("frontend/admin-vue3/src/views/cps/platformOnboarding/model.ts")
+
+    assert "API amount values are yuan" in api_source
+    assert "Integer cents in the API contract" not in api_source
+    assert "left.platformCode" in model_source
+    assert "left.memberId" in model_source
+    assert "extraConfig: undefined" in model_source
+    assert "platform: { ...draft.platform, extraConfig: undefined }" in model_source

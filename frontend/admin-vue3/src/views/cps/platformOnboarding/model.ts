@@ -78,8 +78,8 @@ const normalizePayload = (draft: PlatformOnboardingDraft): PlatformOnboardingSav
       priority: rule.priority
     }))
     .sort((left, right) => {
-      const leftKey = `${left.memberLevelId ?? 'DEFAULT'}:${left.priority ?? 0}`
-      const rightKey = `${right.memberLevelId ?? 'DEFAULT'}:${right.priority ?? 0}`
+      const leftKey = `${left.platformCode}:${left.memberLevelId ?? 'DEFAULT'}:${left.memberId ?? 'DEFAULT'}:${left.priority ?? 0}`
+      const rightKey = `${right.platformCode}:${right.memberLevelId ?? 'DEFAULT'}:${right.memberId ?? 'DEFAULT'}:${right.priority ?? 0}`
       return compareText(leftKey, rightKey)
     })
 })
@@ -159,7 +159,7 @@ const hasConfiguredField = (vendor: VendorForm, fieldName: string): boolean =>
 /** Clears credential values while retaining the safe evidence used by masked inputs. */
 export const maskConfiguredSecrets = (draft: PlatformOnboardingDraft): PlatformOnboardingDraft => ({
   ...draft,
-  platform: { ...draft.platform },
+  platform: { ...draft.platform, extraConfig: undefined },
   vendors: draft.vendors.map((vendor) => {
     const appKeyConfigured = Boolean(
       vendor.appKeyConfigured ||
@@ -175,6 +175,7 @@ export const maskConfiguredSecrets = (draft: PlatformOnboardingDraft): PlatformO
       apiKey: undefined,
       appSecret: undefined,
       authToken: undefined,
+      extraConfig: undefined,
       appKeyConfigured,
       apiKeyConfigured: appKeyConfigured,
       appSecretConfigured: Boolean(
