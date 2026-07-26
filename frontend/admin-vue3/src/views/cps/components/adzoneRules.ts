@@ -10,7 +10,7 @@ export const normalizeAdzoneType = (value?: string): AdzoneKind => {
   return 'GENERAL'
 }
 
-export const isEnabled = (row: Pick<AdzoneForm, 'status'>): boolean => row.status === 0 || row.status === 1
+export const isEnabled = (row: Pick<AdzoneForm, 'status'>): boolean => row.status === 1
 
 export const isGeneralAdzone = (row: Pick<AdzoneForm, 'adzoneType'>): boolean =>
   normalizeAdzoneType(row.adzoneType) === 'GENERAL'
@@ -63,7 +63,7 @@ export const parseAdzoneBatch = (text: string, platformCode: string): AdzoneForm
         externalRelationId: externalRelationId.trim() || undefined,
         externalSpecialId: externalSpecialId.trim() || undefined,
         isDefault: 0,
-        status: 0
+        status: 1
       }
     })
 }
