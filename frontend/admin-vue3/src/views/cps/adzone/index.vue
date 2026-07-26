@@ -399,6 +399,7 @@ import { CpsPlatformApi, type CpsPlatformVO } from '@/api/cps/platform'
 import { getUserPage, type UserVO } from '@/api/member/user/index'
 import { formatDate } from '@/utils/formatTime'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { normalizeAdzoneType } from '@/views/cps/components/adzoneRules'
 
 defineOptions({ name: 'CpsAdzone' })
 
@@ -670,7 +671,7 @@ const parseBatchText = (): CpsAdzoneSaveVO[] => {
       const [adzoneId, adzoneName, adzoneType = 'general', relationId, externalId] = line
         .split(',')
         .map((item) => item.trim())
-      const normalizedType = adzoneType || 'general'
+      const normalizedType = normalizeAdzoneType(adzoneType).toLowerCase()
       return {
         platformCode: batchPlatformCode.value,
         adzoneId,
