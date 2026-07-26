@@ -20,5 +20,5 @@ const emit = defineEmits<{ 'update:modelValue': [boolean]; save: [RebateRuleForm
 const visible = computed({ get: () => props.modelValue, set: (v) => emit('update:modelValue', v) })
 const form = reactive<RebateRuleForm>({ platformCode: props.platformCode, status: 0, rebateRate: undefined })
 watch(() => props.row, (row) => Object.assign(form, row || { platformCode: props.platformCode, status: 0, rebateRate: undefined }), { immediate: true })
-const submit = () => { if (form.memberId) { ElMessage.error('不支持个人会员返利规则'); return }; if (form.rebateRate == null) { ElMessage.error('请输入返利比例'); return }; emit('save', { ...form }); visible.value = false }
+const submit = () => { const scope = (form as any).scope; if (scope === 'GLOBAL') { ElMessage.error('不支持全局返利规则'); return }; if (scope === 'PERSONAL' || form.memberId) { ElMessage.error('不支持个人会员返利规则'); return }; if (form.rebateRate == null) { ElMessage.error('请输入返利比例'); return }; emit('save', { ...form }); visible.value = false }
 </script>
