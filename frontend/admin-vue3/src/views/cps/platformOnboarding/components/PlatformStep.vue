@@ -14,15 +14,15 @@
   </el-form>
 </template>
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import type { PlatformCapability, PlatformOnboardingDraft } from '@/api/cps/platformOnboarding'
 import { PlatformOnboardingApi } from '@/api/cps/platformOnboarding'
 
 const props = defineProps<{ draft: PlatformOnboardingDraft; mode: 'CREATE' | 'RECONFIGURE' }>()
 const capabilities = ref<PlatformCapability[]>([])
-const formRef = ref()
 const unsupported = computed(() => Boolean(props.draft.platform.platformCode) && !capabilities.value.some((item) => item.platformCode === props.draft.platform.platformCode))
 const onPlatformChange = (code: string) => {
+  props.draft.platformCode = code
   const capability = capabilities.value.find((item) => item.platformCode === code)
   if (capability && !props.draft.platform.platformName) props.draft.platform.platformName = capability.platformName || code
 }

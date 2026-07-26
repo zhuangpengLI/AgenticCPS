@@ -155,6 +155,8 @@ def test_workspace_has_five_steps_and_draft_publish_actions():
         assert action in source
     for marker in ["draftVersion", "configFingerprint", "validatedFingerprint", "status === 'READY'", "onBeforeRouteLeave"]:
         assert marker in source
+    assert "draftPayload" in source
+    assert "!dirty.value" in source
 
 
 def test_each_step_exposes_validate():
@@ -183,3 +185,12 @@ def test_sensitive_fields_are_flagged_and_result_is_desensitized():
     assert "请求 payload JSON" not in result
     assert "不支持个人会员返利规则" in rebate
     assert "MemberLevelSelect" in rebate
+
+
+def test_workspace_preserves_runtime_invariants_before_publish():
+    vendor = read_utf8("frontend/admin-vue3/src/views/cps/platformOnboarding/components/VendorEditorDialog.vue")
+    adzone = read_utf8("frontend/admin-vue3/src/views/cps/platformOnboarding/components/AdzoneStep.vue")
+    rebate = read_utf8("frontend/admin-vue3/src/views/cps/platformOnboarding/components/RebateRuleDialog.vue")
+    assert "descriptors?.length" in vendor and "status: 1" in vendor
+    assert "item.isDefault =" in adzone and "row.status === 1" in adzone
+    assert "title=\"高级设置\"" in rebate and "status: 1" in rebate

@@ -70,7 +70,7 @@ const normalizePayload = (draft: PlatformOnboardingDraft): PlatformOnboardingSav
     .map((rule) => ({
       memberId: rule.memberId,
       memberLevelId: rule.memberLevelId,
-      platformCode: trim(rule.platformCode),
+      platformCode: trim(rule.platformCode || draft.platformCode || draft.platform.platformCode),
       rebateRate: rule.rebateRate,
       minRebateAmount: rule.minRebateAmount,
       maxRebateAmount: rule.maxRebateAmount,

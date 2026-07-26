@@ -11,7 +11,7 @@
     </el-table>
     <el-form-item label="主供应商" class="mt-16px" required><el-select v-model="draft.primaryVendorCode"><el-option v-for="row in draft.vendors" :key="row.vendorCode" :label="row.vendorName || row.vendorCode" :value="row.vendorCode" /></el-select></el-form-item>
     <CheckResultPanel :result="vendorResult" />
-    <VendorEditorDialog v-model="dialogVisible" :vendor="editingVendor" :descriptor="editingDescriptor" @save="saveVendor" />
+    <VendorEditorDialog v-model="dialogVisible" :vendor="editingVendor" :descriptor="editingDescriptor" :descriptors="descriptors" :platform-code="draft.platform.platformCode || draft.platformCode" @save="saveVendor" />
   </div>
 </template>
 <script lang="ts" setup>
@@ -29,7 +29,7 @@ const vendorResult = ref<OnboardingCheckResult>()
 const openEditor = (vendor?: VendorForm, index = -1) => { editingVendor.value = vendor; editingIndex.value = index; editingDescriptor.value = props.descriptors?.find((item) => item.vendorCode === vendor?.vendorCode); dialogVisible.value = true }
 const saveVendor = (vendor: VendorForm) => { if (editingIndex.value >= 0) props.draft.vendors.splice(editingIndex.value, 1, vendor); else props.draft.vendors.push(vendor); if (!props.draft.primaryVendorCode) props.draft.primaryVendorCode = vendor.vendorCode }
 const remove = (index: number) => { const removed = props.draft.vendors.splice(index, 1)[0]; if (removed?.vendorCode === props.draft.primaryVendorCode) props.draft.primaryVendorCode = props.draft.vendors[0]?.vendorCode || '' }
-const testVendor = (vendor: VendorForm) => { vendorResult.value = { success: Boolean(vendor.vendorCode && (vendor.appSecretConfigured || vendor.authTokenConfigured || vendor.appSecret || vendor.authToken)), items: [{ section: vendor.vendorName || vendor.vendorCode, code: 'VENDOR_CONNECTION', message: '测试结果已脱敏' }] } }
+const testVendor = (vendor: VendorForm) => { vendorResult.value = { success: Boolean(vendor.vendorCode && (vendor.appSecretConfigured || vendor.authTokenConfigured || vendor.appSecret || vendor.authToken)), items: [{ section: vendor.vendorName || vendor.vendorCode, code: 'VENDOR_PREFLIGHT', message: '凭证预检已完成；真实连接测试请在检测与启用步骤执行' }] } }
 const validate = async () => Boolean(props.draft.primaryVendorCode && props.draft.vendors.length >= 1 && props.draft.vendors.some((v) => v.vendorCode === props.draft.primaryVendorCode))
 defineExpose({ validate })
 </script>
