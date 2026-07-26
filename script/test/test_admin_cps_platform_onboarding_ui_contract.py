@@ -115,3 +115,34 @@ def test_rebate_amounts_follow_the_current_backend_yuan_contract_and_mask_extra_
     assert "left.memberId" in model_source
     assert "extraConfig: undefined" in model_source
     assert "platform: { ...draft.platform, extraConfig: undefined }" in model_source
+
+
+def test_platform_center_exposes_required_actions_and_permissions():
+    source = read_utf8("frontend/admin-vue3/src/views/cps/platformOnboarding/index.vue")
+
+    for label in ["接入新平台", "配置完整度", "连接状态", "运行状态", "备用供应商"]:
+        assert label in source
+
+    for permission in [
+        "cps:platform-onboarding:create",
+        "cps:platform-onboarding:update",
+        "cps:platform-onboarding:test",
+        "cps:platform-onboarding:publish",
+        "cps:platform-onboarding:delete",
+    ]:
+        assert permission in source
+
+    for behavior in [
+        "router.replace({ query: { mode: 'create' } })",
+        "router.replace({ query: { mode: 'edit', platformCode",
+        "PlatformOnboardingApi.getPage",
+        "PlatformOnboardingApi.disable",
+        "PlatformOnboardingApi.deleteDraft",
+        "PlatformOnboardingApi.deleteBundle",
+        "CompletionBadge",
+        "route.query.mode",
+    ]:
+        assert behavior in source
+
+    assert "runtimeStatus !== 1" in source or "runtimeStatus === 1" in source
+    assert "handleSuccess" in source or "await reload" in source or "await getList" in source
