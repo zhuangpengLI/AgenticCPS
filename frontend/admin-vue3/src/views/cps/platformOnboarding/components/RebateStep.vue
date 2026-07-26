@@ -8,12 +8,13 @@
 </template>
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import type { PlatformOnboardingDraft, RebateRuleForm } from '@/api/cps/platformOnboarding'
 import RebateRuleDialog from './RebateRuleDialog.vue'
 const props = defineProps<{ draft: PlatformOnboardingDraft }>()
 const dialogVisible = ref(false); const editingRow = ref<RebateRuleForm>(); const editingIndex = ref(-1)
 const openEditor = (row?: RebateRuleForm, index = -1) => { editingRow.value = row; editingIndex.value = index; dialogVisible.value = true }
 const saveRule = (row: RebateRuleForm) => { if (editingIndex.value >= 0) props.draft.rebateRules.splice(editingIndex.value, 1, row); else props.draft.rebateRules.push(row) }
-const validate = async () => { const defaults = props.draft.rebateRules.filter((row) => !row.memberId && !row.memberLevelId); return defaults.length > 0 && defaults.every((row) => row.rebateRate != null && row.rebateRate >= 0 && row.rebateRate <= 100) }
+const validate = async () => { const invalidScope = props.draft.rebateRules.some((row) => (row as any).scope === 'GLOBAL' || (row as any).scope === 'PERSONAL' || Boolean(row.memberId)); if (invalidScope) { ElMessage.error('工作台拒绝全局和个人 scope'); return false }; const defaults = props.draft.rebateRules.filter((row) => !row.memberLevelId); return defaults.length > 0 && defaults.every((row) => row.rebateRate != null && row.rebateRate >= 0 && row.rebateRate <= 100) }
 defineExpose({ validate })
 </script>
