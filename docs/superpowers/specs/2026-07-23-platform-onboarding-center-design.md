@@ -1,7 +1,16 @@
 # CPS 平台配置中心设计
 
 **日期：** 2026-07-23  
-**状态：** 已完成产品方案确认，等待书面规格审阅
+**状态：** 已完成产品方案确认，实现已落地，进入验证收口
+
+## 0. 实现入口与当前边界
+
+- 管理后台统一入口：`联盟配置 → 平台配置中心`，路由为 `/cps-config/platform-onboarding`。
+- 后端统一接口根路径：`/admin-api/cps/platform-onboarding`。
+- 首次接入和已有平台重配共用五步工作台：平台信息、API 供应商、推广位、返利配置、检测与启用。列表页保留查看、配置、检测、启停和删除，以及四类子配置的增删改能力。
+- 保存阶段只更新当前租户的 `cps_platform_onboarding_draft` 加密草稿；检测阶段校验草稿版本、规范化配置指纹、供应商能力和跨表关系；发布阶段要求检测通过的同版本同指纹，并在一个事务内切换运行配置。
+- `cps_platform`、`cps_api_vendor`、`cps_adzone`、`cps_rebate_config` 仍是搜索、转链、订单同步和返利结算的运行时事实来源。草稿表不是运行时配置，供应商凭证等敏感字段不得以明文返回或写入日志。
+- 原 API 供应商、平台、推广位和返利菜单已隐藏，旧页面、Controller、CRUD API 和权限暂时保留，以便兼容及回滚。备用供应商支持配置、优先级和检测，但本期**不实现运行时自动故障切换**。
 
 ## 1. 背景
 
@@ -292,6 +301,12 @@
 /admin-api/cps/platform-onboarding
 ```
 
+管理后台菜单路由：
+
+```text
+/cps-config/platform-onboarding
+```
+
 接口：
 
 | 方法 | 路径 | 用途 |
@@ -470,6 +485,29 @@ Playwright 覆盖：
 - 停用后逻辑删除平台。
 
 最终验收还需执行前端类型检查、ESLint、CPS 目标后端测试和生产构建；若仓库已有无关失败，必须单独记录并提供本功能目标验证证据。
+
+### 17.3 目标验证命令与环境边界
+
+平台配置中心的定向验证命令如下：
+
+```bash
+# repository root -> backend
+cd backend
+mvn test -pl qiji-module-cps/qiji-module-cps-biz -am "-Dtest=CpsPlatformOnboardingDraftMapperTest,CpsPlatformOnboardingFingerprintTest,CpsPlatformOnboardingDraftServiceImplTest,CpsPlatformOnboardingValidatorTest,CpsPlatformOnboardingConnectionTesterTest,CpsPlatformOnboardingPublishDbTest,CpsPlatformOnboardingCacheInvalidatorTest,CpsPlatformOnboardingLifecycleServiceTest,CpsPlatformOnboardingControllerTest,CpsPlatformServiceImplTest,CpsApiVendorServiceImplTest,CpsAdzoneServiceImplTest,CpsRebateConfigServiceImplTest" "-Dsurefire.failIfNoSpecifiedTests=false"
+
+# frontend/admin-vue3
+cd ../frontend/admin-vue3
+pnpm exec eslint src/api/cps/platformOnboarding.ts src/views/cps/platformOnboarding src/views/cps/components/adzoneRules.ts
+pnpm exec playwright test e2e/cps-platform-onboarding.spec.ts
+
+# repository root
+cd ../..
+python -m pytest script/test/test_admin_cps_platform_onboarding_ui_contract.py -q
+python script/check_utf8_integrity.py README.md docs/project-map.md backend/sql/module/cps-all-in-one.sql backend/sql/module/cps-update.sql
+git diff --check
+```
+
+`pnpm ts:check` 和 `pnpm build:prod` 仍属于最终门禁；如果被仓库其他模块已有类型错误、缺少浏览器运行时或外部账号/网络阻断，验收报告必须区分这些环境缺口与平台配置中心的定向证据。真实供应商连接需要专用测试租户和凭证，凭证不得出现在命令、日志或文档中。
 
 ## 18. 成功标准
 
