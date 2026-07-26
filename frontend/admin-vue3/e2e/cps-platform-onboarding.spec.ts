@@ -130,7 +130,8 @@ async function fillMinimumDraft(page: Page) {
   await page.getByRole('button', { name: '下一步' }).click()
 
   await page.getByRole('button', { name: '添加供应商' }).click()
-  await page.getByLabel('供应商编码').fill('dataoke')
+  await page.getByLabel('供应商编码').click()
+  await page.getByRole('option', { name: 'dataoke', exact: true }).click()
   await page.getByLabel('供应商名称').fill('大淘客')
   await page.getByLabel('appKey').fill('e2e-key')
   await page.getByLabel('appSecret').fill('e2e-secret')
