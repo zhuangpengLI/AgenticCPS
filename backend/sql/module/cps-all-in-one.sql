@@ -17,27 +17,37 @@
 --   7.  cps_withdraw                     提现申请表
 --   8.  cps_mcp_api_key                  MCP API Key管理表
 --   9.  cps_mcp_access_log               MCP访问日志表
---   10. cps_transfer_record              CPS转链记录表
---   11. cps_freeze_config                冻结解冻配置表
---   12. cps_freeze_record                冻结解冻记录表
---   13. cps_rebate_token_exchange_order  CPS返利兑换Token订单表
---   14. cps_order_sync_log               订单同步日志表
---   15. cps_statistics                   统计数据表
---   16. cps_risk_rule                    风控规则表
---   17. cps_api_vendor                   CPS API供应商配置表
---   18. cps_rebate_activity              CPS返利活动表
---   19. cps_selection_theme              选品主题表
---   20. cps_selection_theme_item         选品主题商品快照表
---   21. cpx_task                         CPX任务表
---   22. cpx_offer                        CPX任务报价表
---   23. cpx_material                     CPX素材表
---   24. cpx_platform_profile             CPX平台档案表
---   25. cpx_article                      CPX资讯文章表
---   26. cpx_tracking_link                CPX追踪链接表
---   27. cpx_event                        CPX事件表
---   28. cpx_conversion                   CPX转化表
---   29. cpx_settlement_record            CPX结算记录表
---   30. cpx_lead_detail                  CPX线索详情表
+--   10. cps_openapi_access_log           OpenAPI访问审计日志表
+--   11. cps_transfer_record              CPS转链记录表
+--   12. cps_freeze_config                冻结解冻配置表
+--   13. cps_freeze_record                冻结解冻记录表
+--   14. cps_rebate_token_exchange_order  CPS返利兑换Token订单表
+--   15. cps_order_sync_failure           订单同步失败恢复队列表
+--   16. cps_platform_bill_row            平台账单导入行表
+--   17. cps_platform_bill_diff           平台账单对账差异表
+--   18. cps_order_sync_log               订单同步日志表
+--   19. cps_statistics                   统计数据表
+--   20. cps_risk_rule                    风控规则表
+--   21. cps_api_vendor                   CPS API供应商配置表
+--   22. cps_rebate_activity              CPS返利活动表
+--   23. cps_selection_theme              选品主题表
+--   24. cps_selection_theme_item         选品主题商品快照表
+--   25. cps_goods_master                 CPS商品主档表
+--   26. cps_goods_source_mapping         CPS商品来源映射表
+--   27. cps_goods_price_snapshot         CPS商品价格快照表
+--   28. cps_coupon_pool                  CPS券池表
+--   29. cps_marketing_short_link         CPS营销短链表
+--   30. cps_marketing_click_event        CPS营销点击事件表
+--   31. cpx_task                         CPX任务表
+--   32. cpx_offer                        CPX任务报价表
+--   33. cpx_material                     CPX素材表
+--   34. cpx_platform_profile             CPX平台档案表
+--   35. cpx_article                      CPX资讯文章表
+--   36. cpx_tracking_link                CPX追踪链接表
+--   37. cpx_event                        CPX事件表
+--   38. cpx_conversion                   CPX转化表
+--   39. cpx_settlement_record            CPX结算记录表
+--   40. cpx_lead_detail                  CPX线索详情表
 -- ============================================================
 
 SET NAMES utf8mb4;
@@ -136,12 +146,18 @@ CREATE TABLE `cps_order` (
   `rebate_time`            datetime               DEFAULT NULL COMMENT '返利入账时间',
   `refund_time`            datetime               DEFAULT NULL COMMENT '退款时间',
   `confirm_receipt_time`   datetime               DEFAULT NULL COMMENT '确认收货时间',
-  `rebate_freeze_status`   varchar(16)            DEFAULT 'pending' COMMENT '返利冻结状态（pending:待冻结 frozen:已冻结 unfreezing:解冻中 unfreezed:已解冻）',
+  `rebate_freeze_status`   varchar(16)            DEFAULT NULL COMMENT '返利冻结状态（NULL/pending:待冻结 frozen:已冻结 unfreezing:解冻中 unfreezed:已解冻）',
   `plan_unfreeze_time`     datetime               DEFAULT NULL COMMENT '计划解冻时间',
   `actual_unfreeze_time`   datetime               DEFAULT NULL COMMENT '实际解冻时间',
   `platform_confirm_time`  datetime               DEFAULT NULL COMMENT '平台确认时间',
   `retry_count`            int                    DEFAULT '0' COMMENT '同步重试次数',
   `last_sync_error`        varchar(512)           DEFAULT NULL COMMENT '最后同步错误信息',
+  `last_sync_result`       varchar(32)            DEFAULT NULL COMMENT '最后同步结果（SUCCESS/PARTIAL/FAILED）',
+  `raw_platform_status_summary` varchar(512)       DEFAULT NULL COMMENT '原始平台状态摘要',
+  `status_version`         int           NOT NULL DEFAULT '0' COMMENT '订单状态变更版本号',
+  `rebate_settle_retry_count` int        NOT NULL DEFAULT '0' COMMENT '返利结算重试次数',
+  `rebate_settle_next_retry_time` datetime         DEFAULT NULL COMMENT '下次返利结算重试时间',
+  `rebate_settle_last_error` varchar(512)           DEFAULT NULL COMMENT '最近返利结算待处理或失败原因',
   `creator`                varchar(64)            DEFAULT NULL COMMENT '创建人',
   `create_time`            datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updater`                varchar(64)            DEFAULT NULL COMMENT '更新人',
@@ -149,14 +165,161 @@ CREATE TABLE `cps_order` (
   `deleted`                bit(1)                 DEFAULT b'0' COMMENT '是否删除',
   `tenant_id`              bigint        NOT NULL DEFAULT '0' COMMENT '租户编号',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_platform_order_id` (`platform_order_id`) USING BTREE,
+  UNIQUE KEY `uk_tenant_platform_order` (`tenant_id`, `platform_code`, `platform_order_id`) USING BTREE,
   KEY `idx_member_id` (`member_id`) USING BTREE,
   KEY `idx_special_id` (`platform_code`,`special_id`) USING BTREE,
   KEY `idx_relation_id` (`platform_code`,`relation_id`) USING BTREE,
   KEY `idx_order_status` (`order_status`) USING BTREE,
+  KEY `idx_order_rebate_settle_retry` (`tenant_id`, `order_status`, `rebate_settle_next_retry_time`, `create_time`, `id`) USING BTREE,
   KEY `idx_create_time` (`create_time`) USING BTREE,
   KEY `idx_platform_code` (`platform_code`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS订单表';
+
+-- ----------------------------
+-- 3.1 订单状态事件表
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_order_status_event`;
+CREATE TABLE `cps_order_status_event` (
+  `id`                 bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `order_id`           bigint                DEFAULT NULL COMMENT '订单ID',
+  `platform_code`      varchar(32)  NOT NULL COMMENT '平台编码',
+  `platform_order_id`  varchar(128) NOT NULL COMMENT '平台订单号',
+  `source_type`        varchar(32)  NOT NULL COMMENT '事件来源（ORDER_SYNC/MANUAL_SYNC/COMPENSATION）',
+  `source_batch_no`    varchar(128)          DEFAULT NULL COMMENT '同步批次号',
+  `raw_status`         varchar(64)           DEFAULT NULL COMMENT '平台原始状态值',
+  `raw_status_summary` varchar(512)          DEFAULT NULL COMMENT '供应商原始状态摘要',
+  `previous_status`    varchar(32)           DEFAULT NULL COMMENT '变更前系统状态',
+  `mapped_status`      varchar(32)  NOT NULL COMMENT '本次映射出的系统状态',
+  `current_status`     varchar(32)  NOT NULL COMMENT '事件后订单当前系统状态',
+  `event_time`         datetime     NOT NULL COMMENT '事件时间',
+  `status_version`     int          NOT NULL DEFAULT '0' COMMENT '订单状态版本',
+  `downgrade_rejected` bit(1)                DEFAULT b'0' COMMENT '是否拒绝状态降级',
+  `reject_reason`      varchar(512)          DEFAULT NULL COMMENT '拒绝降级原因',
+  `creator`            varchar(64)           DEFAULT NULL COMMENT '创建人',
+  `create_time`        datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`            varchar(64)           DEFAULT NULL COMMENT '更新人',
+  `update_time`        datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`            bit(1)                DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`          bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  KEY `idx_status_event_order` (`tenant_id`, `order_id`, `status_version`) USING BTREE,
+  KEY `idx_status_event_platform_order` (`tenant_id`, `platform_code`, `platform_order_id`, `event_time`) USING BTREE,
+  KEY `idx_status_event_batch` (`tenant_id`, `source_batch_no`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS订单状态事件表';
+
+-- ----------------------------
+-- 3.2 订单同步失败恢复队列表
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_order_sync_failure`;
+CREATE TABLE `cps_order_sync_failure` (
+  `id`                 bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `platform_code`      varchar(32)  NOT NULL COMMENT '平台编码',
+  `vendor_code`        varchar(64)  NOT NULL COMMENT '供应商编码',
+  `order_scene`        tinyint      NOT NULL DEFAULT '0' COMMENT '订单场景',
+  `query_type`         varchar(16)  NOT NULL COMMENT '查询时间类型',
+  `pagination_mode`    varchar(16)           DEFAULT NULL COMMENT '分页模式（PAGE/CURSOR）',
+  `page_no`            int                   DEFAULT NULL COMMENT '失败页码',
+  `next_cursor`        varchar(255)          DEFAULT NULL COMMENT '失败游标',
+  `sync_batch_no`      varchar(255)          DEFAULT NULL COMMENT '同步批次号',
+  `failure_stage`      varchar(32)  NOT NULL COMMENT '失败阶段',
+  `request_snapshot`   varchar(1000)         DEFAULT NULL COMMENT '脱敏请求快照',
+  `raw_summary`        varchar(2000)         DEFAULT NULL COMMENT '脱敏原始摘要',
+  `failure_reason`     varchar(1000)         DEFAULT NULL COMMENT '失败原因',
+  `status`             varchar(16)  NOT NULL COMMENT '恢复状态（PENDING/RETRYING/DEAD/RESOLVED）',
+  `retry_count`        int          NOT NULL DEFAULT '0' COMMENT '已重试次数',
+  `max_retry_count`    int          NOT NULL DEFAULT '3' COMMENT '最大重试次数',
+  `next_retry_time`    datetime              DEFAULT NULL COMMENT '下次重试时间',
+  `last_replay_time`   datetime              DEFAULT NULL COMMENT '最近人工重放时间',
+  `replay_operator_id` bigint                DEFAULT NULL COMMENT '人工重放操作人',
+  `replay_audit_note`  varchar(500)          DEFAULT NULL COMMENT '人工重放审计说明',
+  `idempotency_key`    varchar(128) NOT NULL COMMENT '失败记录幂等键',
+  `version`            int          NOT NULL DEFAULT '0' COMMENT '乐观锁版本号',
+  `creator`            varchar(64)           DEFAULT NULL COMMENT '创建人',
+  `create_time`        datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`            varchar(64)           DEFAULT NULL COMMENT '更新人',
+  `update_time`        datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`            bit(1)                DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`          bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sync_failure_idempotency` (`tenant_id`, `idempotency_key`) USING BTREE,
+  KEY `idx_sync_failure_status` (`tenant_id`, `status`, `next_retry_time`) USING BTREE,
+  KEY `idx_sync_failure_platform` (`tenant_id`, `platform_code`, `vendor_code`, `order_scene`, `query_type`) USING BTREE,
+  KEY `idx_sync_failure_batch` (`tenant_id`, `sync_batch_no`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单同步失败恢复队列表';
+
+-- ----------------------------
+-- 3.3 平台账单导入行表
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_platform_bill_row`;
+CREATE TABLE `cps_platform_bill_row` (
+  `id`                bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `platform_code`     varchar(32)  NOT NULL COMMENT '平台编码',
+  `vendor_code`       varchar(64)           DEFAULT NULL COMMENT '供应商编码',
+  `bill_batch_no`     varchar(128) NOT NULL COMMENT '平台账单批次号',
+  `platform_order_id` varchar(128) NOT NULL COMMENT '平台订单号',
+  `parent_order_id`   varchar(128)          DEFAULT NULL COMMENT '父订单号',
+  `bill_status`       varchar(64)           DEFAULT NULL COMMENT '平台账单状态',
+  `commission_amount` decimal(18,2)         DEFAULT NULL COMMENT '平台账单佣金金额',
+  `refund_amount`     decimal(18,2)         DEFAULT NULL COMMENT '平台账单退款金额',
+  `order_time`        datetime              DEFAULT NULL COMMENT '账单下单时间',
+  `settle_time`       datetime              DEFAULT NULL COMMENT '账单结算时间',
+  `refund_time`       datetime              DEFAULT NULL COMMENT '账单退款时间',
+  `source_file_name`  varchar(255)          DEFAULT NULL COMMENT '账单来源文件名',
+  `raw_summary`       varchar(2000)         DEFAULT NULL COMMENT '平台账单原始摘要',
+  `idempotency_key`   varchar(128) NOT NULL COMMENT '导入行幂等键',
+  `version`           int          NOT NULL DEFAULT '0' COMMENT '乐观锁版本号',
+  `creator`           varchar(64)           DEFAULT NULL COMMENT '创建人',
+  `create_time`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`           varchar(64)           DEFAULT NULL COMMENT '更新人',
+  `update_time`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`           bit(1)                DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`         bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_platform_bill_row_idempotency` (`tenant_id`, `idempotency_key`) USING BTREE,
+  KEY `idx_platform_bill_row_order` (`tenant_id`, `platform_code`, `platform_order_id`) USING BTREE,
+  KEY `idx_platform_bill_row_batch` (`tenant_id`, `bill_batch_no`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='平台账单导入行表';
+
+-- ----------------------------
+-- 3.4 平台账单对账差异表
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_platform_bill_diff`;
+CREATE TABLE `cps_platform_bill_diff` (
+  `id`                      bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `bill_row_id`             bigint                DEFAULT NULL COMMENT '平台账单导入行ID',
+  `order_id`                bigint                DEFAULT NULL COMMENT '本地订单ID',
+  `platform_code`           varchar(32)  NOT NULL COMMENT '平台编码',
+  `vendor_code`             varchar(64)           DEFAULT NULL COMMENT '供应商编码',
+  `bill_batch_no`           varchar(128) NOT NULL COMMENT '平台账单批次号',
+  `platform_order_id`       varchar(128) NOT NULL COMMENT '平台订单号',
+  `diff_type`               varchar(32)  NOT NULL COMMENT '差异类型',
+  `diff_status`             varchar(32)  NOT NULL COMMENT '差异状态（PENDING/HANDLED/REPULL_REQUESTED）',
+  `diff_summary`            varchar(512)          DEFAULT NULL COMMENT '差异摘要',
+  `order_commission_amount` decimal(18,2)         DEFAULT NULL COMMENT '本地订单佣金金额',
+  `bill_commission_amount`  decimal(18,2)         DEFAULT NULL COMMENT '平台账单佣金金额',
+  `bill_refund_amount`      decimal(18,2)         DEFAULT NULL COMMENT '平台账单退款金额',
+  `order_status`            varchar(32)           DEFAULT NULL COMMENT '本地订单状态',
+  `bill_status`             varchar(64)           DEFAULT NULL COMMENT '平台账单状态',
+  `order_settle_time`       datetime              DEFAULT NULL COMMENT '本地订单结算时间',
+  `bill_settle_time`        datetime              DEFAULT NULL COMMENT '平台账单结算时间',
+  `handle_conclusion`       varchar(64)           DEFAULT NULL COMMENT '处理结论',
+  `handle_audit_note`       varchar(500)          DEFAULT NULL COMMENT '处理审计说明',
+  `handle_operator_id`      bigint                DEFAULT NULL COMMENT '处理操作人',
+  `handle_time`             datetime              DEFAULT NULL COMMENT '处理时间',
+  `idempotency_key`         varchar(160) NOT NULL COMMENT '差异幂等键',
+  `version`                 int          NOT NULL DEFAULT '0' COMMENT '乐观锁版本号',
+  `creator`                 varchar(64)           DEFAULT NULL COMMENT '创建人',
+  `create_time`             datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`                 varchar(64)           DEFAULT NULL COMMENT '更新人',
+  `update_time`             datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`                 bit(1)                DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`               bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_platform_bill_diff_idempotency` (`tenant_id`, `idempotency_key`) USING BTREE,
+  KEY `idx_platform_bill_diff_status` (`tenant_id`, `diff_status`, `diff_type`) USING BTREE,
+  KEY `idx_platform_bill_diff_order` (`tenant_id`, `platform_code`, `platform_order_id`) USING BTREE,
+  KEY `idx_platform_bill_diff_batch` (`tenant_id`, `bill_batch_no`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='平台账单对账差异表';
 
 -- ----------------------------
 -- 4. 返利配置表
@@ -164,6 +327,7 @@ CREATE TABLE `cps_order` (
 DROP TABLE IF EXISTS `cps_rebate_config`;
 CREATE TABLE `cps_rebate_config` (
   `id`                bigint        NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `member_id`         bigint                 DEFAULT NULL COMMENT '会员ID（NULL表示无会员限制）',
   `member_level_id`   bigint                 DEFAULT NULL COMMENT '会员等级ID（NULL表示无等级限制）',
   `platform_code`     varchar(32)            DEFAULT NULL COMMENT '平台编码（NULL表示全平台）',
   `rebate_rate`       decimal(10,4) NOT NULL COMMENT '返利比例（百分比）',
@@ -178,6 +342,7 @@ CREATE TABLE `cps_rebate_config` (
   `deleted`           bit(1)                 DEFAULT b'0' COMMENT '是否删除',
   `tenant_id`         bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
   PRIMARY KEY (`id`),
+  KEY `idx_member_id` (`member_id`) USING BTREE,
   KEY `idx_member_level_id` (`member_level_id`) USING BTREE,
   KEY `idx_platform_code` (`platform_code`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='返利配置表';
@@ -198,6 +363,10 @@ CREATE TABLE `cps_rebate_record` (
   `commission_amount`    decimal(10,2)          DEFAULT '0.00' COMMENT '可分配佣金',
   `rebate_rate`          decimal(10,4)          DEFAULT '0.0000' COMMENT '返利比例',
   `rebate_amount`        decimal(10,2)          DEFAULT '0.00' COMMENT '返利金额',
+  `rebate_amount_cent`   bigint                 DEFAULT NULL COMMENT '返利金额（分，V2优先读取）',
+  `rebate_config_id`     bigint                 DEFAULT NULL COMMENT '结算时匹配的返利配置ID快照',
+  `member_level_id_snapshot` bigint             DEFAULT NULL COMMENT '结算时会员等级ID快照',
+  `idempotency_key`      varchar(128)           DEFAULT NULL COMMENT '资金操作幂等键',
   `rebate_type`          varchar(32)   NOT NULL DEFAULT 'rebate' COMMENT '返利类型（rebate:返利入账 refund:返利扣回 adjust:系统调整）',
   `rebate_status`        varchar(32)   NOT NULL DEFAULT 'pending' COMMENT '返利状态（pending:待结算 Rcptd:已到账 refunded:已扣回）',
   `preceding_rebate_id`  bigint                 DEFAULT NULL COMMENT '前序返利ID（扣回时关联）',
@@ -210,6 +379,7 @@ CREATE TABLE `cps_rebate_record` (
   `deleted`              bit(1)                 DEFAULT b'0' COMMENT '是否删除',
   `tenant_id`            bigint        NOT NULL DEFAULT '0' COMMENT '租户编号',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_order_rebate_type` (`tenant_id`, `order_id`, `rebate_type`) USING BTREE,
   KEY `idx_member_id` (`member_id`) USING BTREE,
   KEY `idx_order_id` (`order_id`) USING BTREE,
   KEY `idx_platform_order_id` (`platform_order_id`) USING BTREE,
@@ -228,6 +398,7 @@ CREATE TABLE `cps_rebate_account` (
   `total_rebate`      decimal(10,2)          DEFAULT '0.00' COMMENT '累计返利总额',
   `available_balance` decimal(10,2)          DEFAULT '0.00' COMMENT '可用余额',
   `frozen_balance`    decimal(10,2)          DEFAULT '0.00' COMMENT '冻结余额',
+  `debt_balance`      decimal(10,2)          DEFAULT '0.00' COMMENT '欠款余额',
   `withdrawn_amount`  decimal(10,2)          DEFAULT '0.00' COMMENT '已提现金额',
   `status`            tinyint       NOT NULL DEFAULT '1' COMMENT '状态（0冻结 1正常）',
   `version`           int           NOT NULL DEFAULT '0' COMMENT '乐观锁版本号',
@@ -238,7 +409,7 @@ CREATE TABLE `cps_rebate_account` (
   `deleted`            bit(1)                 DEFAULT b'0' COMMENT '是否删除',
   `tenant_id`          bigint        NOT NULL DEFAULT '0' COMMENT '租户编号',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_member_id` (`member_id`) USING BTREE,
+  UNIQUE KEY `uk_tenant_member_id` (`tenant_id`, `member_id`) USING BTREE,
   KEY `idx_status` (`status`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员返利账户表';
 
@@ -254,6 +425,7 @@ CREATE TABLE `cps_withdraw` (
   `withdraw_account`      varchar(128)  NOT NULL COMMENT '提现账户',
   `withdraw_account_name` varchar(64)            DEFAULT NULL COMMENT '账户名称',
   `amount`                decimal(10,2) NOT NULL COMMENT '提现金额',
+  `amount_cent`           bigint        NOT NULL COMMENT '提现金额（分，V2资金计算字段）',
   `fee_amount`            decimal(10,2)          DEFAULT '0.00' COMMENT '手续费',
   `actual_amount`         decimal(10,2) NOT NULL COMMENT '实际到账金额',
   `status`                varchar(32)   NOT NULL DEFAULT 'created' COMMENT '状态（created:已申请 reviewing:审核中 passed:审核通过 rejected:审核驳回 SUCCESS:成功 failed:失败 refunded:已退回）',
@@ -264,6 +436,14 @@ CREATE TABLE `cps_withdraw` (
   `transfer_status`       varchar(32)            DEFAULT NULL COMMENT '打款状态（WAITING:待打款 PROCESSING:打款中 SUCCESS:成功 FAILED:失败）',
   `transfer_time`         datetime               DEFAULT NULL COMMENT '转账时间',
   `transfer_error`        varchar(512)           DEFAULT NULL COMMENT '转账错误信息',
+  `freeze_record_id`      bigint                 DEFAULT NULL COMMENT '统一资产冻结记录ID',
+  `idempotency_key`       varchar(64)   NOT NULL COMMENT '提现请求幂等键（租户内唯一）',
+  `status_version`        int           NOT NULL DEFAULT '0' COMMENT '状态CAS版本',
+  `pay_transfer_id`       bigint                 DEFAULT NULL COMMENT 'Pay模块转账单ID',
+  `transfer_channel_code` varchar(32)            DEFAULT NULL COMMENT 'Pay模块转账渠道编码',
+  `retry_count`           int           NOT NULL DEFAULT '0' COMMENT '补偿重试次数',
+  `next_retry_time`       datetime               DEFAULT NULL COMMENT '下次补偿时间',
+  `last_attempt_time`     datetime               DEFAULT NULL COMMENT '最近打款尝试时间',
   `creator`               varchar(64)            DEFAULT NULL COMMENT '创建人',
   `create_time`           datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updater`               varchar(64)            DEFAULT NULL COMMENT '更新人',
@@ -272,11 +452,14 @@ CREATE TABLE `cps_withdraw` (
   `tenant_id`             bigint        NOT NULL DEFAULT '0' COMMENT '租户编号',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_withdraw_no` (`withdraw_no`) USING BTREE,
+  UNIQUE KEY `uk_withdraw_tenant_idempotency` (`tenant_id`, `idempotency_key`) USING BTREE,
   KEY `idx_member_id` (`member_id`) USING BTREE,
   KEY `idx_status` (`status`) USING BTREE,
   KEY `idx_create_time` (`create_time`) USING BTREE,
   KEY `idx_audit_user_id` (`audit_user_id`) USING BTREE,
-  KEY `idx_transfer_status` (`transfer_status`) USING BTREE
+  KEY `idx_transfer_status` (`transfer_status`) USING BTREE,
+  KEY `idx_withdraw_compensation` (`tenant_id`, `status`, `next_retry_time`) USING BTREE,
+  KEY `idx_pay_transfer_id` (`pay_transfer_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='提现申请表';
 
 -- ----------------------------
@@ -339,7 +522,32 @@ CREATE TABLE `cps_mcp_access_log` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='MCP访问日志表';
 
 -- ----------------------------
--- 11. CPS转链记录表（Phase7新增）
+-- 11. OpenAPI访问审计日志表
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_openapi_access_log`;
+CREATE TABLE `cps_openapi_access_log` (
+  `id`              bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `app_id`          varchar(64)           DEFAULT NULL COMMENT '调用方应用ID',
+  `request_method`  varchar(16)           DEFAULT NULL COMMENT 'HTTP方法',
+  `request_uri`     varchar(255)          DEFAULT NULL COMMENT '请求路径',
+  `idempotency_key` varchar(128)          DEFAULT NULL COMMENT '幂等键',
+  `request_headers` text                  DEFAULT NULL COMMENT '脱敏请求头快照JSON',
+  `status`          tinyint      NOT NULL DEFAULT '0' COMMENT '调用状态（0失败 1成功）',
+  `failure_reason`  varchar(128)          DEFAULT NULL COMMENT '失败原因',
+  `client_ip`       varchar(64)           DEFAULT NULL COMMENT '客户端IP',
+  `creator`         varchar(64)           DEFAULT '' COMMENT '创建者',
+  `create_time`     datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`         varchar(64)           DEFAULT '' COMMENT '更新者',
+  `update_time`     datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`         bit(1)       NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`       bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  KEY `idx_openapi_app_time` (`tenant_id`, `app_id`, `create_time`) USING BTREE,
+  KEY `idx_openapi_failure` (`tenant_id`, `failure_reason`, `create_time`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='OpenAPI访问审计日志表';
+
+-- ----------------------------
+-- 12. CPS转链记录表（Phase7新增）
 -- ----------------------------
 DROP TABLE IF EXISTS `cps_transfer_record`;
 CREATE TABLE `cps_transfer_record` (
@@ -374,7 +582,9 @@ DROP TABLE IF EXISTS `cps_freeze_config`;
 CREATE TABLE `cps_freeze_config` (
   `id`             bigint      NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `platform_code`  varchar(32)          DEFAULT NULL COMMENT '平台编码（NULL表示全平台）',
-  `unfreeze_days`  int         NOT NULL DEFAULT '15' COMMENT '解冻天数（确认收货后天数）',
+  `min_amount_cent` bigint     NOT NULL DEFAULT '0' COMMENT '返利金额下限（分，包含）',
+  `max_amount_cent` bigint              DEFAULT NULL COMMENT '返利金额上限（分，不包含；NULL表示无上限）',
+  `unfreeze_days`  int         NOT NULL DEFAULT '15' COMMENT '解冻天数（资格时间后天数）',
   `status`         tinyint     NOT NULL DEFAULT '1' COMMENT '状态（0禁用 1启用）',
   `remark`         varchar(255)         DEFAULT NULL COMMENT '备注',
   `creator`        varchar(64)          DEFAULT NULL COMMENT '创建人',
@@ -384,12 +594,12 @@ CREATE TABLE `cps_freeze_config` (
   `deleted`        bit(1)               DEFAULT b'0' COMMENT '是否删除',
   `tenant_id`      bigint      NOT NULL DEFAULT '0' COMMENT '租户编号',
   PRIMARY KEY (`id`),
-  KEY `idx_platform_code` (`platform_code`) USING BTREE
+  KEY `idx_platform_amount` (`tenant_id`, `platform_code`, `status`, `min_amount_cent`, `max_amount_cent`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='冻结解冻配置表';
 
 -- 初始化默认配置（全局15天解冻）
-INSERT INTO `cps_freeze_config` (`platform_code`, `unfreeze_days`, `status`, `remark`)
-VALUES (NULL, 15, 1, '全局默认配置-确认收货后15天解冻');
+INSERT INTO `cps_freeze_config` (`platform_code`, `min_amount_cent`, `max_amount_cent`, `unfreeze_days`, `status`, `remark`)
+VALUES (NULL, 0, NULL, 15, 1, '全平台全金额默认配置-资格时间后15天解冻');
 
 -- ----------------------------
 -- 13. 冻结解冻记录表（Phase7新增）
@@ -400,13 +610,19 @@ CREATE TABLE `cps_freeze_record` (
   `member_id`            bigint        NOT NULL COMMENT '会员ID',
   `order_id`             bigint                 DEFAULT NULL COMMENT '订单ID',
   `platform_order_id`    varchar(64)            DEFAULT NULL COMMENT '平台订单号',
-  `business_type`        varchar(32)            DEFAULT NULL COMMENT '业务类型',
+  `business_type`        varchar(32)            DEFAULT NULL COMMENT '业务类型（ORDER_REBATE/TOKEN_EXCHANGE）',
   `business_id`          varchar(64)            DEFAULT NULL COMMENT '业务单号',
   `idempotency_key`      varchar(64)            DEFAULT NULL COMMENT '幂等键',
   `freeze_amount`        decimal(10,2) NOT NULL COMMENT '冻结金额',
+  `amount_cent`          bigint        NOT NULL COMMENT '冻结金额（分，V2优先读取）',
+  `freeze_config_id`     bigint                 DEFAULT NULL COMMENT '匹配的冻结配置ID快照',
+  `freeze_days_snapshot` int                    DEFAULT NULL COMMENT '冻结天数快照',
+  `eligible_time`        datetime               DEFAULT NULL COMMENT '冻结资格时间（收货与平台结算时间取晚）',
   `unfreeze_time`        datetime      NOT NULL COMMENT '计划解冻时间',
   `actual_unfreeze_time` datetime               DEFAULT NULL COMMENT '实际解冻时间',
   `status`               varchar(16)   NOT NULL DEFAULT 'frozen' COMMENT '状态（frozen:已冻结 unfreezing:解冻中 unfreezed:已解冻）',
+  `manual_unfreeze_reason` varchar(512)         DEFAULT NULL COMMENT '管理员手动解冻原因',
+  `manual_unfreeze_operator_id` bigint          DEFAULT NULL COMMENT '管理员手动解冻操作人ID',
   `creator`              varchar(64)            DEFAULT NULL COMMENT '创建人',
   `create_time`          datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updater`              varchar(64)            DEFAULT NULL COMMENT '更新人',
@@ -414,12 +630,193 @@ CREATE TABLE `cps_freeze_record` (
   `deleted`              bit(1)                 DEFAULT b'0' COMMENT '是否删除',
   `tenant_id`            bigint        NOT NULL DEFAULT '0' COMMENT '租户编号',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_business_idempotency` (`business_type`, `idempotency_key`) USING BTREE,
+  UNIQUE KEY `uk_tenant_business_idempotency` (`tenant_id`, `business_type`, `idempotency_key`) USING BTREE,
   KEY `idx_member_id` (`member_id`) USING BTREE,
   KEY `idx_business_id` (`business_type`, `business_id`) USING BTREE,
   KEY `idx_unfreeze_time` (`unfreeze_time`) USING BTREE,
   KEY `idx_status` (`status`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='冻结解冻记录表';
+
+-- ----------------------------
+-- 14. 阶段一资金与归因安全基线
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_rebate_asset_ledger`;
+CREATE TABLE `cps_rebate_asset_ledger` (
+  `id`                    bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `member_id`             bigint       NOT NULL COMMENT '会员ID',
+  `source_system`         varchar(32)  NOT NULL COMMENT '来源系统',
+  `business_type`         varchar(32)  NOT NULL COMMENT '业务类型',
+  `business_id`           varchar(128) NOT NULL COMMENT '业务单号',
+  `order_id`              bigint                DEFAULT NULL COMMENT 'CPS订单ID',
+  `platform_order_id`     varchar(128)          DEFAULT NULL COMMENT '平台订单号',
+  `idempotency_key`       varchar(128) NOT NULL COMMENT '幂等键',
+  `available_change_cent` bigint       NOT NULL DEFAULT '0' COMMENT '可用余额变更（分）',
+  `frozen_change_cent`    bigint       NOT NULL DEFAULT '0' COMMENT '冻结余额变更（分）',
+  `debt_change_cent`      bigint       NOT NULL DEFAULT '0' COMMENT '欠款余额变更（分）',
+  `available_before_cent` bigint       NOT NULL COMMENT '变更前可用余额（分）',
+  `available_after_cent`  bigint       NOT NULL COMMENT '变更后可用余额（分）',
+  `frozen_before_cent`    bigint       NOT NULL COMMENT '变更前冻结余额（分）',
+  `frozen_after_cent`     bigint       NOT NULL COMMENT '变更后冻结余额（分）',
+  `debt_before_cent`      bigint       NOT NULL COMMENT '变更前欠款余额（分）',
+  `debt_after_cent`       bigint       NOT NULL COMMENT '变更后欠款余额（分）',
+  `operator_type`         varchar(32)  NOT NULL COMMENT '操作主体类型（SYSTEM/ADMIN/MEMBER/SERVICE）',
+  `operator_id`           varchar(128)          DEFAULT NULL COMMENT '操作主体ID',
+  `reason`                varchar(512) NOT NULL COMMENT '资金变更原因',
+  `creator`               varchar(64)           DEFAULT NULL COMMENT '创建人',
+  `create_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`               varchar(64)           DEFAULT NULL COMMENT '创建后不得更新，仅保留BaseDO兼容字段',
+  `update_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建后不得更新，仅保留BaseDO兼容字段',
+  `deleted`               bit(1)                DEFAULT b'0' COMMENT '固定为未删除；资产流水只允许追加',
+  `tenant_id`             bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_asset_ledger_idempotency` (`tenant_id`, `business_type`, `idempotency_key`) USING BTREE,
+  KEY `idx_asset_ledger_member_time` (`tenant_id`, `member_id`, `create_time`) USING BTREE,
+  KEY `idx_asset_ledger_order` (`tenant_id`, `order_id`) USING BTREE,
+  KEY `idx_asset_ledger_business` (`tenant_id`, `business_type`, `business_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='返利资产不可变流水表（只允许INSERT，禁止UPDATE/DELETE）';
+
+DROP TABLE IF EXISTS `cps_rebate_asset_migration_check`;
+CREATE TABLE `cps_rebate_asset_migration_check` (
+  `id`                                 bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `batch_no`                           varchar(64)  NOT NULL COMMENT '预检批次号',
+  `tenant_id`                          bigint       NOT NULL COMMENT '租户编号',
+  `duplicate_account_count`            bigint       NOT NULL DEFAULT '0' COMMENT '重复账户组数',
+  `duplicate_order_count`              bigint       NOT NULL DEFAULT '0' COMMENT '重复订单组数',
+  `duplicate_rebate_record_count`      bigint       NOT NULL DEFAULT '0' COMMENT '重复返利主记录组数',
+  `duplicate_ledger_idempotency_count` bigint       NOT NULL DEFAULT '0' COMMENT '重复资产幂等键组数',
+  `duplicate_freeze_idempotency_count` bigint       NOT NULL DEFAULT '0' COMMENT '重复冻结幂等键组数',
+  `account_ledger_mismatch_count`      bigint       NOT NULL DEFAULT '0' COMMENT '账户净资产与流水不一致账户数',
+  `freeze_account_mismatch_count`      bigint       NOT NULL DEFAULT '0' COMMENT '冻结记录与账户冻结余额不一致账户数',
+  `missing_opening_balance_count`      bigint       NOT NULL DEFAULT '0' COMMENT '缺失期初流水账户数',
+  `orphan_ledger_count`                bigint       NOT NULL DEFAULT '0' COMMENT '找不到同租户账户的资产流水数',
+  `orphan_active_freeze_count`         bigint       NOT NULL DEFAULT '0' COMMENT '找不到同租户账户的有效冻结记录数',
+  `ready`                              tinyint      NOT NULL DEFAULT '0' COMMENT '是否允许进入发布B审批',
+  `operator_id`                        varchar(64)  NOT NULL COMMENT '执行人',
+  `executed_at`                        datetime     NOT NULL COMMENT '执行时间',
+  `summary`                            varchar(512) NOT NULL COMMENT '检查摘要',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_migration_check_tenant_batch` (`tenant_id`, `batch_no`) USING BTREE,
+  KEY `idx_migration_check_tenant_time` (`tenant_id`, `executed_at`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='返利资产V2迁移预检不可变归档（只允许INSERT）';
+
+DROP TABLE IF EXISTS `cps_rebate_debt`;
+CREATE TABLE `cps_rebate_debt` (
+  `id`                    bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `member_id`             bigint       NOT NULL COMMENT '会员ID',
+  `order_id`              bigint                DEFAULT NULL COMMENT '来源订单ID',
+  `platform_order_id`     varchar(128)          DEFAULT NULL COMMENT '来源平台订单号',
+  `source_business_id`    varchar(128) NOT NULL COMMENT '来源退款或调整业务单号',
+  `idempotency_key`       varchar(128) NOT NULL COMMENT '欠款操作幂等键',
+  `original_debt_cent`    bigint       NOT NULL COMMENT '原始欠款（分）',
+  `repaid_debt_cent`      bigint       NOT NULL DEFAULT '0' COMMENT '已偿还欠款（分）',
+  `waived_debt_cent`      bigint       NOT NULL DEFAULT '0' COMMENT '已减免欠款（分）',
+  `outstanding_debt_cent` bigint       NOT NULL COMMENT '未偿还欠款（分）',
+  `status`                varchar(16)  NOT NULL DEFAULT 'OPEN' COMMENT '状态（OPEN/PARTIAL/CLEARED/WAIVED）',
+  `last_reminder_time`    datetime              DEFAULT NULL COMMENT '最近站内提醒时间',
+  `next_reminder_time`    datetime              DEFAULT NULL COMMENT '下次站内提醒时间',
+  `reminder_end_time`     datetime              DEFAULT NULL COMMENT '提醒截止时间',
+  `last_sms_time`         datetime              DEFAULT NULL COMMENT '最近短信提醒时间',
+  `reminder_count`        int          NOT NULL DEFAULT '0' COMMENT '站内提醒次数',
+  `sms_count`             int          NOT NULL DEFAULT '0' COMMENT '短信提醒次数',
+  `notification_status`   varchar(16)           DEFAULT NULL COMMENT '通知状态（PENDING/SUCCESS/FAILED）',
+  `notification_failure_reason` varchar(512)    DEFAULT NULL COMMENT '通知失败原因',
+  `creator`               varchar(64)           DEFAULT NULL COMMENT '创建人',
+  `create_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`               varchar(64)           DEFAULT NULL COMMENT '更新人',
+  `update_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`               bit(1)                DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`             bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_debt_idempotency` (`tenant_id`, `idempotency_key`) USING BTREE,
+  KEY `idx_debt_source` (`tenant_id`, `source_business_id`) USING BTREE,
+  KEY `idx_debt_member_status` (`tenant_id`, `member_id`, `status`, `create_time`) USING BTREE,
+  KEY `idx_debt_reminder` (`tenant_id`, `status`, `next_reminder_time`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='返利欠款账表';
+
+DROP TABLE IF EXISTS `cps_order_attribution_log`;
+CREATE TABLE `cps_order_attribution_log` (
+  `id`                    bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `order_id`              bigint                DEFAULT NULL COMMENT 'CPS订单ID',
+  `platform_code`         varchar(32)  NOT NULL COMMENT '平台编码',
+  `platform_order_id`     varchar(128) NOT NULL COMMENT '平台订单号',
+  `candidate_member_id`   bigint                DEFAULT NULL COMMENT '候选会员ID',
+  `attributed_member_id`  bigint                DEFAULT NULL COMMENT '最终归因会员ID',
+  `attribution_source`    varchar(32)           DEFAULT NULL COMMENT '归因来源',
+  `binding_type`          varchar(32)           DEFAULT NULL COMMENT '可信绑定类型',
+  `binding_id`            varchar(128)          DEFAULT NULL COMMENT '可信绑定标识',
+  `action`                varchar(32)  NOT NULL COMMENT '动作（AUTO/MANUAL/REBIND）',
+  `result`                varchar(16)  NOT NULL COMMENT '结果（BOUND/REJECTED/CONFLICT/UNATTRIBUTED）',
+  `reject_reason`         varchar(512)          DEFAULT NULL COMMENT '拒绝或冲突原因',
+  `operator_type`         varchar(32)  NOT NULL COMMENT '操作主体类型',
+  `operator_id`           varchar(128)          DEFAULT NULL COMMENT '操作主体ID',
+  `idempotency_key`        varchar(128)          DEFAULT NULL COMMENT '幂等键',
+  `review_status`          varchar(32)           DEFAULT NULL COMMENT '复核状态（APPROVED/PENDING_REVIEW/PENDING_COMPENSATION）',
+  `review_audit_note`      varchar(500)          DEFAULT NULL COMMENT '复核说明',
+  `review_operator_id`     bigint                DEFAULT NULL COMMENT '复核操作人ID',
+  `review_time`            datetime              DEFAULT NULL COMMENT '复核时间',
+  `creator`               varchar(64)           DEFAULT NULL COMMENT '创建人',
+  `create_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`               varchar(64)           DEFAULT NULL COMMENT '更新人',
+  `update_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`               bit(1)                DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`             bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_attribution_idempotency` (`tenant_id`, `idempotency_key`) USING BTREE,
+  KEY `idx_attribution_order` (`tenant_id`, `platform_code`, `platform_order_id`, `create_time`) USING BTREE,
+  KEY `idx_attribution_member` (`tenant_id`, `attributed_member_id`, `create_time`) USING BTREE,
+  KEY `idx_attribution_result` (`tenant_id`, `result`, `create_time`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单归因审计日志表';
+
+DROP TABLE IF EXISTS `cps_order_sync_checkpoint`;
+CREATE TABLE `cps_order_sync_checkpoint` (
+  `id`                    bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `platform_code`         varchar(32)  NOT NULL COMMENT '平台编码',
+  `vendor_code`           varchar(32)  NOT NULL DEFAULT 'OFFICIAL' COMMENT '供应商编码',
+  `order_scene`           tinyint      NOT NULL DEFAULT '1' COMMENT '订单场景',
+  `query_type`            varchar(32)  NOT NULL COMMENT '查询类型（INCREMENTAL/FULL/COMPENSATION）',
+  `pagination_mode`       varchar(16)           DEFAULT NULL COMMENT '分页模式（PAGE/CURSOR）',
+  `next_cursor`           varchar(512)          DEFAULT NULL COMMENT '下一页游标',
+  `next_page_no`          int                   DEFAULT NULL COMMENT '下一页页码',
+  `watermark_time`        datetime              DEFAULT NULL COMMENT '最近成功水位时间',
+  `query_end_time`        datetime              DEFAULT NULL COMMENT '当前分页窗口固定结束时间（完成前不得漂移）',
+  `last_sync_status`      varchar(16)           DEFAULT NULL COMMENT '最近同步状态（SUCCESS/PARTIAL/FAILED）',
+  `last_success_count`    int          NOT NULL DEFAULT '0' COMMENT '最近成功条数',
+  `last_failure_count`    int          NOT NULL DEFAULT '0' COMMENT '最近失败条数',
+  `failure_summary`       text                  DEFAULT NULL COMMENT '失败订单摘要',
+  `version`               int          NOT NULL DEFAULT '0' COMMENT '乐观锁版本号',
+  `creator`               varchar(64)           DEFAULT NULL COMMENT '创建人',
+  `create_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`               varchar(64)           DEFAULT NULL COMMENT '更新人',
+  `update_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`               bit(1)                DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`             bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sync_checkpoint` (`tenant_id`, `platform_code`, `vendor_code`, `order_scene`, `query_type`) USING BTREE,
+  KEY `idx_sync_checkpoint_status` (`tenant_id`, `last_sync_status`, `update_time`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单同步成功水位表';
+
+DROP TABLE IF EXISTS `cps_rebate_asset_policy`;
+CREATE TABLE `cps_rebate_asset_policy` (
+  `id`                         bigint      NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `v2_enabled`                 tinyint     NOT NULL DEFAULT '0' COMMENT '是否启用V2资产写入（0否 1是）',
+  `migration_ready`            tinyint     NOT NULL DEFAULT '0' COMMENT '发布B与最新预检批次已绑定（0否 1是）',
+  `latest_ready_check_batch_no` varchar(64)         DEFAULT NULL COMMENT '最近一次通过并获发布B批准的预检批次',
+  `ready_check_time`           datetime             DEFAULT NULL COMMENT '上述预检批次执行时间',
+  `read_only`                  tinyint     NOT NULL DEFAULT '0' COMMENT '资产操作只读开关（0否 1是）',
+  `large_debt_threshold_cent`  bigint      NOT NULL DEFAULT '10000' COMMENT '大额欠款阈值（分，默认100元）',
+  `reminder_interval_days`     int         NOT NULL DEFAULT '7' COMMENT '普通站内提醒间隔天数',
+  `normal_reminder_days`       int         NOT NULL DEFAULT '30' COMMENT '普通欠款提醒持续天数',
+  `large_reminder_days`        int         NOT NULL DEFAULT '180' COMMENT '大额欠款提醒持续天数',
+  `sms_interval_days`          int         NOT NULL DEFAULT '30' COMMENT '大额欠款短信最小间隔天数',
+  `creator`                    varchar(64)          DEFAULT NULL COMMENT '创建人',
+  `create_time`                datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`                    varchar(64)          DEFAULT NULL COMMENT '更新人',
+  `update_time`                datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`                    bit(1)               DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`                  bigint      NOT NULL DEFAULT '0' COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_asset_policy_tenant` (`tenant_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='租户返利资产V2策略表';
 
 -- ----------------------------
 -- 14.1 返利兑换AI Token订单表（生态P0新增）
@@ -441,6 +838,10 @@ CREATE TABLE `cps_rebate_token_exchange_order` (
   `failure_reason`           varchar(500)           DEFAULT NULL COMMENT '失败原因',
   `idempotency_key`          varchar(64)   NOT NULL COMMENT '幂等键',
   `completed_at`             datetime               DEFAULT NULL COMMENT '完成时间',
+  `retry_count`              int           NOT NULL DEFAULT '0' COMMENT '补偿重试次数',
+  `next_retry_time`          datetime               DEFAULT NULL COMMENT '下次补偿时间',
+  `last_compensation_at`     datetime               DEFAULT NULL COMMENT '最近补偿时间',
+  `status_version`           int           NOT NULL DEFAULT '0' COMMENT '状态变更版本',
   `creator`                  varchar(64)            DEFAULT NULL COMMENT '创建人',
   `create_time`              datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updater`                  varchar(64)            DEFAULT NULL COMMENT '更新人',
@@ -448,10 +849,10 @@ CREATE TABLE `cps_rebate_token_exchange_order` (
   `deleted`                  bit(1)                 DEFAULT b'0' COMMENT '是否删除',
   `tenant_id`                bigint        NOT NULL DEFAULT '0' COMMENT '租户编号',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_exchange_order_no` (`exchange_order_no`) USING BTREE,
-  UNIQUE KEY `uk_idempotency_key` (`idempotency_key`) USING BTREE,
+  UNIQUE KEY `uk_exchange_tenant_order_no` (`tenant_id`, `exchange_order_no`) USING BTREE,
+  UNIQUE KEY `uk_exchange_tenant_idempotency` (`tenant_id`, `idempotency_key`) USING BTREE,
   KEY `idx_member_id` (`member_id`) USING BTREE,
-  KEY `idx_status` (`status`) USING BTREE
+  KEY `idx_exchange_compensation` (`tenant_id`, `status`, `next_retry_time`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='返利兑换AI Token订单表';
 
 -- ----------------------------
@@ -722,6 +1123,200 @@ CREATE TABLE `cps_selection_theme_item`  (
   KEY `idx_cps_selection_theme_item_platform` (`tenant_id`, `deleted`, `platform_code`, `source_type`) USING BTREE,
   KEY `idx_cps_selection_theme_item_score` (`tenant_id`, `deleted`, `theme_id`, `recommend_score`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPS选品主题商品快照表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for cps_goods_master
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_goods_master`;
+CREATE TABLE `cps_goods_master` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '商品主档ID',
+  `master_code` varchar(64) NOT NULL COMMENT '商品主档编码',
+  `standard_title` varchar(512) DEFAULT NULL COMMENT '标准商品标题',
+  `brand_name` varchar(255) DEFAULT NULL COMMENT '品牌',
+  `category_name` varchar(255) DEFAULT NULL COMMENT '类目',
+  `main_pic` varchar(1024) DEFAULT NULL COMMENT '主图',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态（0禁用 1启用）',
+  `remark` varchar(512) DEFAULT NULL COMMENT '备注',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cps_goods_master_code` (`tenant_id`, `master_code`, `deleted`) USING BTREE,
+  KEY `idx_cps_goods_master_page` (`tenant_id`, `deleted`, `status`, `category_name`, `brand_name`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPS商品主档表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for cps_goods_source_mapping
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_goods_source_mapping`;
+CREATE TABLE `cps_goods_source_mapping` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '商品来源映射ID',
+  `master_id` bigint NOT NULL COMMENT '商品主档ID',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `vendor_code` varchar(64) NOT NULL DEFAULT '' COMMENT '供应商编码',
+  `external_goods_id` varchar(128) NOT NULL COMMENT '外部商品ID',
+  `goods_sign` varchar(255) NOT NULL DEFAULT '' COMMENT 'goodsSign',
+  `item_link` varchar(1024) DEFAULT NULL COMMENT '原始商品链接',
+  `source_title` varchar(512) DEFAULT NULL COMMENT '来源商品标题',
+  `source_main_pic` varchar(1024) DEFAULT NULL COMMENT '来源商品主图',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态（0禁用 1启用）',
+  `last_snapshot_time` datetime DEFAULT NULL COMMENT '最近快照时间',
+  `raw_data` mediumtext COMMENT '第三方来源原始数据',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cps_goods_source` (`tenant_id`, `platform_code`, `vendor_code`, `external_goods_id`, `goods_sign`, `deleted`) USING BTREE,
+  KEY `idx_cps_goods_source_master` (`tenant_id`, `deleted`, `master_id`, `status`) USING BTREE,
+  KEY `idx_cps_goods_source_page` (`tenant_id`, `deleted`, `platform_code`, `vendor_code`, `last_snapshot_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPS商品来源映射表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for cps_goods_price_snapshot
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_goods_price_snapshot`;
+CREATE TABLE `cps_goods_price_snapshot` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '商品价格快照ID',
+  `master_id` bigint NOT NULL COMMENT '商品主档ID',
+  `source_mapping_id` bigint NOT NULL COMMENT '商品来源映射ID',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `vendor_code` varchar(64) NOT NULL DEFAULT '' COMMENT '供应商编码',
+  `external_goods_id` varchar(128) NOT NULL COMMENT '外部商品ID',
+  `goods_sign` varchar(255) NOT NULL DEFAULT '' COMMENT 'goodsSign',
+  `original_price` int DEFAULT NULL COMMENT '原价（分）',
+  `actual_price` int DEFAULT NULL COMMENT '券后价（分）',
+  `coupon_price` int DEFAULT NULL COMMENT '优惠券金额（分）',
+  `coupon_start_time` datetime DEFAULT NULL COMMENT '券开始时间',
+  `coupon_end_time` datetime DEFAULT NULL COMMENT '券结束时间',
+  `commission_rate` decimal(10,4) DEFAULT NULL COMMENT '佣金率',
+  `commission_amount` int DEFAULT NULL COMMENT '预估佣金（分）',
+  `month_sales` bigint DEFAULT NULL COMMENT '近30天销量',
+  `shop_name` varchar(255) DEFAULT NULL COMMENT '店铺',
+  `activity_tag` varchar(255) DEFAULT NULL COMMENT '活动标签',
+  `snapshot_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '快照时间',
+  `raw_data` mediumtext COMMENT '第三方原始快照',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_cps_goods_price_master` (`tenant_id`, `deleted`, `master_id`, `snapshot_time`) USING BTREE,
+  KEY `idx_cps_goods_price_source` (`tenant_id`, `deleted`, `source_mapping_id`, `snapshot_time`) USING BTREE,
+  KEY `idx_cps_goods_price_platform` (`tenant_id`, `deleted`, `platform_code`, `vendor_code`, `snapshot_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPS商品价格快照表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for cps_coupon_pool
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_coupon_pool`;
+CREATE TABLE `cps_coupon_pool` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '券池ID',
+  `master_id` bigint DEFAULT NULL COMMENT '商品主档ID',
+  `source_mapping_id` bigint DEFAULT NULL COMMENT '商品来源映射ID',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `vendor_code` varchar(64) NOT NULL DEFAULT '' COMMENT '供应商编码',
+  `external_goods_id` varchar(128) NOT NULL COMMENT '外部商品ID',
+  `goods_sign` varchar(255) NOT NULL DEFAULT '' COMMENT 'goodsSign',
+  `coupon_id` varchar(128) DEFAULT NULL COMMENT '第三方优惠券ID',
+  `coupon_name` varchar(255) DEFAULT NULL COMMENT '优惠券名称',
+  `coupon_amount` int DEFAULT NULL COMMENT '优惠金额（分）',
+  `threshold_amount` int DEFAULT NULL COMMENT '使用门槛（分）',
+  `start_time` datetime DEFAULT NULL COMMENT '有效期开始时间',
+  `end_time` datetime DEFAULT NULL COMMENT '有效期结束时间',
+  `stock_total` int DEFAULT NULL COMMENT '总库存',
+  `stock_remain` int DEFAULT NULL COMMENT '剩余库存，NULL表示未知或不限量',
+  `status` varchar(32) NOT NULL DEFAULT 'VALID' COMMENT '状态：VALID/DISABLED/EXPIRED/OUT_OF_STOCK',
+  `source_type` varchar(32) NOT NULL DEFAULT 'VENDOR_SYNC' COMMENT '来源类型',
+  `activity_id` bigint DEFAULT NULL COMMENT '关联活动ID',
+  `theme_id` bigint DEFAULT NULL COMMENT '关联选品主题ID',
+  `last_sync_time` datetime DEFAULT NULL COMMENT '最近同步时间',
+  `raw_data` mediumtext COMMENT '第三方原始券数据',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_cps_coupon_goods` (`tenant_id`, `deleted`, `platform_code`, `vendor_code`, `external_goods_id`, `goods_sign`) USING BTREE,
+  KEY `idx_cps_coupon_status_time` (`tenant_id`, `deleted`, `status`, `start_time`, `end_time`) USING BTREE,
+  KEY `idx_cps_coupon_activity_theme` (`tenant_id`, `deleted`, `activity_id`, `theme_id`) USING BTREE,
+  KEY `idx_cps_coupon_source_mapping` (`tenant_id`, `deleted`, `source_mapping_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPS券池表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for cps_marketing_short_link
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_marketing_short_link`;
+CREATE TABLE `cps_marketing_short_link` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '营销短链ID',
+  `short_code` varchar(32) NOT NULL COMMENT '不可枚举短码',
+  `target_url` varchar(1024) NOT NULL COMMENT '目标跳转链接',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `vendor_code` varchar(64) DEFAULT NULL COMMENT '供应商编码',
+  `transfer_record_id` bigint DEFAULT NULL COMMENT '已有转链记录ID',
+  `campaign_id` varchar(128) DEFAULT NULL COMMENT '营销活动ID',
+  `creative_id` varchar(128) DEFAULT NULL COMMENT '素材ID',
+  `channel_code` varchar(128) DEFAULT NULL COMMENT '渠道编码',
+  `member_attribution_hash` varchar(64) DEFAULT NULL COMMENT '会员归因摘要，不存明文会员ID',
+  `request_hash` varchar(64) NOT NULL COMMENT '幂等请求摘要',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态（0禁用 1启用）',
+  `expire_time` datetime DEFAULT NULL COMMENT '过期时间',
+  `access_count` bigint NOT NULL DEFAULT 0 COMMENT '访问次数',
+  `last_access_time` datetime DEFAULT NULL COMMENT '最近访问时间',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cps_marketing_short_code` (`tenant_id`, `short_code`, `deleted`) USING BTREE,
+  UNIQUE KEY `uk_cps_marketing_request_hash` (`tenant_id`, `request_hash`, `deleted`) USING BTREE,
+  KEY `idx_cps_marketing_short_page` (`tenant_id`, `deleted`, `platform_code`, `vendor_code`, `campaign_id`, `channel_code`) USING BTREE,
+  KEY `idx_cps_marketing_short_transfer` (`tenant_id`, `deleted`, `transfer_record_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPS营销短链表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- 27. CPS营销点击事件表
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_marketing_click_event`;
+CREATE TABLE `cps_marketing_click_event` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '营销点击事件ID',
+  `click_id` varchar(64) NOT NULL COMMENT '点击唯一ID',
+  `short_code` varchar(32) NOT NULL COMMENT '短码',
+  `short_link_id` bigint DEFAULT NULL COMMENT '短链ID',
+  `campaign_id` varchar(128) DEFAULT NULL COMMENT '营销活动ID',
+  `creative_id` varchar(128) DEFAULT NULL COMMENT '素材ID',
+  `channel_code` varchar(128) DEFAULT NULL COMMENT '渠道编码',
+  `member_attribution_hash` varchar(64) DEFAULT NULL COMMENT '归因摘要',
+  `ip_hash` varchar(64) DEFAULT NULL COMMENT 'IP摘要',
+  `user_agent_hash` varchar(64) DEFAULT NULL COMMENT 'User-Agent摘要',
+  `device_hash` varchar(64) DEFAULT NULL COMMENT '设备摘要',
+  `dedupe_key` varchar(64) NOT NULL COMMENT '去重摘要',
+  `trusted_source` varchar(64) DEFAULT NULL COMMENT '可信来源',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态（0无效 1有效）',
+  `click_time` datetime NOT NULL COMMENT '点击时间',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cps_marketing_click_id` (`tenant_id`, `click_id`, `deleted`) USING BTREE,
+  UNIQUE KEY `uk_cps_marketing_click_dedupe` (`tenant_id`, `dedupe_key`, `deleted`) USING BTREE,
+  KEY `idx_cps_marketing_click_short` (`tenant_id`, `deleted`, `short_code`, `short_link_id`) USING BTREE,
+  KEY `idx_cps_marketing_click_funnel` (`tenant_id`, `deleted`, `campaign_id`, `creative_id`, `channel_code`, `click_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPS营销点击事件表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- CPX core tables: task, offer, material, article, platform profile, tracking, event, conversion and settlement
@@ -1029,7 +1624,8 @@ INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_i
 (6223, 'CPS订单', 'cps:order:query', 2, 10, 6286, 'order', 'ep:document', 'cps/order/index', 'CpsOrder', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6224, '订单查询', 'cps:order:query', 3, 1, 6223, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6225, '订单同步', 'cps:order:sync', 3, 2, 6223, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
-(6284, '订单删除', 'cps:order:delete', 3, 3, 6223, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-06 00:00:00', '1', '2026-07-06 00:00:00', b'0'),
+(6296, '人工归因绑定', 'cps:order:attribution-bind', 3, 3, 6223, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-14 00:00:00', '1', '2026-07-14 00:00:00', b'0'),
+(6284, '订单删除', 'cps:order:delete', 3, 4, 6223, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-06 00:00:00', '1', '2026-07-06 00:00:00', b'0'),
 (6226, '返利记录', 'cps:rebate-record:query', 2, 20, 6286, 'rebate/record', 'ep:list', 'cps/rebate/record/index', 'CpsRebateRecord', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6227, '返利记录查询', 'cps:rebate-record:query', 3, 1, 6226, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6228, '返利退款回扣', 'cps:rebate-record:reverse', 3, 2, 6226, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
@@ -1051,6 +1647,12 @@ INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_i
 (6241, '冻结配置删除', 'cps:freeze-config:delete', 3, 4, 6237, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6242, '冻结记录查询', 'cps:freeze-record:query', 3, 5, 6237, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6243, '冻结记录手动解冻', 'cps:freeze-record:unfreeze', 3, 6, 6237, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
+(6290, '资产安全中心', 'cps:rebate-debt:query', 2, 45, 6286, 'asset', 'ep:money', 'cps/asset/index', 'CpsAssetSafety', 0, b'1', b'1', b'1', '1', '2026-07-13 12:30:00', '1', '2026-07-13 12:30:00', b'0'),
+(6291, '返利欠款查询', 'cps:rebate-debt:query', 3, 1, 6290, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-13 12:30:00', '1', '2026-07-13 12:30:00', b'0'),
+(6292, '返利欠款调整', 'cps:rebate-debt:adjust', 3, 2, 6290, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-13 12:30:00', '1', '2026-07-13 12:30:00', b'0'),
+(6293, '资产流水查询', 'cps:rebate-asset-ledger:query', 3, 3, 6290, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-13 12:30:00', '1', '2026-07-13 12:30:00', b'0'),
+(6294, '资产策略查询', 'cps:rebate-asset-policy:query', 3, 4, 6290, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-13 12:30:00', '1', '2026-07-13 12:30:00', b'0'),
+(6295, '资产策略更新', 'cps:rebate-asset-policy:update', 3, 5, 6290, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-13 12:30:00', '1', '2026-07-13 12:30:00', b'0'),
 (6244, '风控规则', 'cps:risk-rule:query', 2, 50, 6286, 'risk', 'ep:warning', 'cps/risk/index', 'CpsRiskRule', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6245, '风控规则查询', 'cps:risk-rule:query', 3, 1, 6244, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6246, '风控规则创建', 'cps:risk-rule:create', 3, 2, 6244, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
@@ -1126,6 +1728,19 @@ WHERE rm.`deleted` = b'0'
       AND existing_rm.`deleted` = b'0'
   );
 
+INSERT INTO `system_role_menu` (`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT DISTINCT rm.`role_id`, 6296, '1', NOW(), '1', NOW(), b'0', rm.`tenant_id`
+FROM `system_role_menu` rm
+WHERE rm.`deleted` = b'0'
+  AND rm.`menu_id` = 6225
+  AND NOT EXISTS (
+    SELECT 1 FROM `system_role_menu` existing_rm
+    WHERE existing_rm.`role_id` = rm.`role_id`
+      AND existing_rm.`menu_id` = 6296
+      AND existing_rm.`tenant_id` = rm.`tenant_id`
+      AND existing_rm.`deleted` = b'0'
+  );
+
 UPDATE `system_tenant_package`
 SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6286),
     `updater` = '1',
@@ -1143,6 +1758,15 @@ WHERE `deleted` = b'0'
   AND JSON_VALID(`menu_ids`)
   AND JSON_CONTAINS(`menu_ids`, '6200')
   AND NOT JSON_CONTAINS(`menu_ids`, '6287');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6296),
+    `updater` = '1',
+    `update_time` = NOW()
+WHERE `deleted` = b'0'
+  AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '6225')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6296');
 COMMIT;
 
 SET FOREIGN_KEY_CHECKS = 1;
