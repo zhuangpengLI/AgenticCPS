@@ -1,7 +1,7 @@
 -- ============================================================
 -- CPS联盟返利系统 - 完整数据库建表脚本（All-in-One）
 -- Version: 2.0
--- Date: 2026-07-23
+-- Date: 2026-07-24
 -- Description: 新库全量初始化脚本，整合 CPS 核心表、P0 返利兑换、活动中心、选品库、CPX 扩展表、菜单与权限。
 -- Maintenance:
 --   1. 本文件只保存新库全量脚本。
@@ -11,43 +11,51 @@
 --   1.  cps_platform                     CPS平台配置表
 --   2.  cps_adzone                       推广位（PID）管理表
 --   3.  cps_order                        CPS订单表（含冻结与淘宝归因字段）
---   4.  cps_rebate_config                返利配置表
---   5.  cps_rebate_record                返利记录表（含冻结关联字段）
---   6.  cps_rebate_account               会员返利账户表
---   7.  cps_withdraw                     提现申请表
---   8.  cps_mcp_api_key                  MCP API Key管理表
---   9.  cps_mcp_access_log               MCP访问日志表
---   10. cps_openapi_access_log           OpenAPI访问审计日志表
---   11. cps_transfer_record              CPS转链记录表
---   12. cps_freeze_config                冻结解冻配置表
---   13. cps_freeze_record                冻结解冻记录表
---   14. cps_rebate_token_exchange_order  CPS返利兑换Token订单表
---   15. cps_order_sync_failure           订单同步失败恢复队列表
---   16. cps_platform_bill_row            平台账单导入行表
---   17. cps_platform_bill_diff           平台账单对账差异表
---   18. cps_order_sync_log               订单同步日志表
---   19. cps_statistics                   统计数据表
---   20. cps_risk_rule                    风控规则表
---   21. cps_api_vendor                   CPS API供应商配置表
---   22. cps_rebate_activity              CPS返利活动表
---   23. cps_selection_theme              选品主题表
---   24. cps_selection_theme_item         选品主题商品快照表
---   25. cps_goods_master                 CPS商品主档表
---   26. cps_goods_source_mapping         CPS商品来源映射表
---   27. cps_goods_price_snapshot         CPS商品价格快照表
---   28. cps_coupon_pool                  CPS券池表
---   29. cps_marketing_short_link         CPS营销短链表
---   30. cps_marketing_click_event        CPS营销点击事件表
---   31. cpx_task                         CPX任务表
---   32. cpx_offer                        CPX任务报价表
---   33. cpx_material                     CPX素材表
---   34. cpx_platform_profile             CPX平台档案表
---   35. cpx_article                      CPX资讯文章表
---   36. cpx_tracking_link                CPX追踪链接表
---   37. cpx_event                        CPX事件表
---   38. cpx_conversion                   CPX转化表
---   39. cpx_settlement_record            CPX结算记录表
---   40. cpx_lead_detail                  CPX线索详情表
+--   4.  cps_order_status_event           订单状态事件表
+--   5.  cps_order_sync_failure           订单同步失败恢复队列表
+--   6.  cps_platform_bill_row            平台账单导入行表
+--   7.  cps_platform_bill_diff           平台账单对账差异表
+--   8.  cps_rebate_config                返利配置表
+--   9.  cps_rebate_record                返利记录表（含冻结关联字段）
+--   10. cps_rebate_account               会员返利账户表
+--   11. cps_withdraw                     提现申请表
+--   12. cps_mcp_api_key                  MCP API Key管理表
+--   13. cps_mcp_access_log               MCP访问日志表
+--   14. cps_openapi_access_log           OpenAPI访问审计日志表
+--   15. cps_transfer_record              CPS转链记录表
+--   16. cps_freeze_config                冻结解冻配置表
+--   17. cps_freeze_record                冻结解冻记录表
+--   18. cps_rebate_asset_ledger          返利资产流水表
+--   19. cps_rebate_asset_migration_check 返利资产迁移核对表
+--   20. cps_rebate_debt                  返利债务表
+--   21. cps_order_attribution_log        订单归因日志表
+--   22. cps_order_sync_checkpoint        订单同步检查点表
+--   23. cps_rebate_asset_policy          返利资产策略表
+--   24. cps_rebate_token_exchange_order  CPS返利兑换Token订单表
+--   25. cps_order_sync_log               订单同步日志表
+--   26. cps_statistics                   统计数据表
+--   27. cps_risk_rule                    风控规则表
+--   28. cps_api_vendor                   CPS API供应商配置表
+--   29. cps_platform_onboarding_draft    CPS平台接入草稿表
+--   30. cps_rebate_activity              CPS返利活动表
+--   31. cps_selection_theme              选品主题表
+--   32. cps_selection_theme_item         选品主题商品快照表
+--   33. cps_goods_master                 CPS商品主档表
+--   34. cps_goods_source_mapping         CPS商品来源映射表
+--   35. cps_goods_price_snapshot         CPS商品价格快照表
+--   36. cps_coupon_pool                  CPS券池表
+--   37. cps_marketing_short_link         CPS营销短链表
+--   38. cps_marketing_click_event        CPS营销点击事件表
+--   39. cpx_task                         CPX任务表
+--   40. cpx_offer                        CPX任务报价表
+--   41. cpx_material                     CPX素材表
+--   42. cpx_platform_profile             CPX平台档案表
+--   43. cpx_article                      CPX资讯文章表
+--   44. cpx_tracking_link                CPX追踪链接表
+--   45. cpx_event                        CPX事件表
+--   46. cpx_conversion                   CPX转化表
+--   47. cpx_settlement_record            CPX结算记录表
+--   48. cpx_lead_detail                  CPX线索详情表
 -- ============================================================
 
 SET NAMES utf8mb4;

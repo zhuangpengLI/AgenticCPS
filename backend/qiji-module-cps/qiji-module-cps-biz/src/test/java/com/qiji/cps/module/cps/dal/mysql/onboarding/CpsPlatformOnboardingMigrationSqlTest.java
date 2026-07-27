@@ -5,10 +5,16 @@ import org.junit.jupiter.api.Test;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CpsPlatformOnboardingMigrationSqlTest {
+
+    private static final Pattern CREATE_TABLE_PATTERN = Pattern.compile(
+            "CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?`([^`]+)`",
+            Pattern.CASE_INSENSITIVE);
 
     private static final String MYSQL_LENGTH_PREFIX = """
             CONCAT(CHAR_LENGTH(CAST(`tenant_id` AS CHAR)), ':', CAST(`tenant_id` AS CHAR), \
@@ -117,6 +123,29 @@ class CpsPlatformOnboardingMigrationSqlTest {
         assertOnboardingMenuMigration(updateSql, "upgrade");
     }
 
+    @Test
+    void baselineHeader_shouldListEveryCreatedTableAndCurrentDate() throws Exception {
+        String sql = readSql("cps-all-in-one.sql");
+        String header = sql.substring(0, sql.indexOf("SET NAMES utf8mb4;"));
+
+        assertTrue(header.contains("-- Date: 2026-07-24"),
+                "baseline header date must reflect the latest schema and menu change");
+        Matcher matcher = CREATE_TABLE_PATTERN.matcher(sql);
+        while (matcher.find()) {
+            String tableName = matcher.group(1);
+            assertTrue(header.contains(tableName),
+                    "baseline header must list created table " + tableName);
+        }
+    }
+
+    @Test
+    void platformVendorRoutingColumns_shouldBeAddedIdempotentlyForExistingDatabases() throws Exception {
+        String updateSql = compact(readSql("cps-update.sql")).replace("''", "'");
+
+        assertIdempotentColumnMigration(updateSql, "active_vendor_code", "varchar(32)");
+        assertIdempotentColumnMigration(updateSql, "supported_vendors", "varchar(256)");
+    }
+
     private void assertOnboardingMenuMigration(String sql, String label) {
         assertTrue(sql.contains("'cps/platformOnboarding/index'"),
                 label + " must point at the actual onboarding page component");
@@ -128,6 +157,17 @@ class CpsPlatformOnboardingMigrationSqlTest {
             assertTrue(sql.contains("JSON_ARRAY_APPEND(`menu_ids`, '$', " + menuId + ")"),
                     label + " must migrate tenant-package ownership for onboarding menu " + menuId);
         }
+    }
+
+    private void assertIdempotentColumnMigration(String sql, String columnName, String columnType) {
+        String columnCheck = "`table_name` = 'cps_platform' AND `column_name` = '" + columnName + "'";
+        String addColumn = "ALTER TABLE `cps_platform` ADD COLUMN `" + columnName + "` " + columnType;
+        assertTrue(sql.contains(columnCheck),
+                "upgrade must inspect information_schema before adding " + columnName);
+        assertTrue(sql.contains(addColumn),
+                "upgrade must add missing platform column " + columnName);
+        assertTrue(sql.indexOf(columnCheck) < sql.indexOf(addColumn),
+                "upgrade must guard the " + columnName + " migration before executing it");
     }
 
     private String compact(String sql) {

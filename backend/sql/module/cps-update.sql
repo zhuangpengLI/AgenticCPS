@@ -1323,4 +1323,39 @@ WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
   AND JSON_CONTAINS(`menu_ids`, '[6231, 6253, 6258, 6263, 6232, 6254, 6259, 6264]')
   AND NOT JSON_CONTAINS(`menu_ids`, '6303');
 
+-- ============================================================
+-- 修改时间：2026-07-27 11:10:00
+-- 目的：为历史平台表补齐供应商路由字段，保持旧库升级结构与全量建库结构一致。
+-- 说明：通过 information_schema 判断字段是否存在，可安全重复执行。
+-- ============================================================
+SET @cps_platform_vendor_routing_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`columns`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_platform'
+      AND `column_name` = 'active_vendor_code'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_platform` ADD COLUMN `active_vendor_code` varchar(32) DEFAULT ''dataoke'' COMMENT ''当前激活的供应商编码（用于路由选择）'' AFTER `tenant_id`'
+);
+PREPARE cps_platform_vendor_routing_stmt FROM @cps_platform_vendor_routing_sql;
+EXECUTE cps_platform_vendor_routing_stmt;
+DEALLOCATE PREPARE cps_platform_vendor_routing_stmt;
+
+SET @cps_platform_vendor_routing_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`columns`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_platform'
+      AND `column_name` = 'supported_vendors'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_platform` ADD COLUMN `supported_vendors` varchar(256) DEFAULT ''dataoke'' COMMENT ''支持的供应商列表（逗号分隔）'' AFTER `active_vendor_code`'
+);
+PREPARE cps_platform_vendor_routing_stmt FROM @cps_platform_vendor_routing_sql;
+EXECUTE cps_platform_vendor_routing_stmt;
+DEALLOCATE PREPARE cps_platform_vendor_routing_stmt;
+
 SET FOREIGN_KEY_CHECKS = 1;
