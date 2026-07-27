@@ -1,8 +1,8 @@
 <template>
   <Workspace
     v-if="route.query.mode"
-    :platform-code="route.query.platformCode as string | undefined"
-    :mode="route.query.mode as 'create' | 'edit'"
+    :platform-code="typeof route.query.platformCode === 'string' ? route.query.platformCode : undefined"
+    :mode="route.query.mode === 'edit' ? 'edit' : 'create'"
     @close="closeWorkspace"
     @published="handlePublished"
   />

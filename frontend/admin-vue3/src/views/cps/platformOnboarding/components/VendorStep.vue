@@ -1,7 +1,7 @@
-<!-- eslint-disable vue/no-mutating-props -->
 <template>
+  <!-- eslint-disable vue/no-mutating-props -->
   <div>
-    <el-alert title="主供应商用于运行时请求；备用供应商只在故障切换时使用" type="info" show-icon class="mb-12px" />
+    <el-alert title="主供应商用于运行时请求；备用供应商仅保存为候选配置，当前不自动故障切换" type="info" show-icon class="mb-12px" />
     <el-button type="primary" @click="openEditor()">添加供应商</el-button>
     <el-table :data="draft.vendors" class="mt-12px" border>
       <el-table-column prop="vendorName" label="供应商" />
@@ -16,6 +16,7 @@
   </div>
 </template>
 <script lang="ts" setup>
+/* eslint-disable vue/no-mutating-props */
 import { computed, ref } from 'vue'
 import type { PlatformOnboardingDraft, VendorDescriptor, VendorForm, OnboardingCheckResult } from '@/api/cps/platformOnboarding'
 import CheckResultPanel from './CheckResultPanel.vue'

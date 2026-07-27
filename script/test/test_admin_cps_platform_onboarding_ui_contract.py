@@ -190,9 +190,12 @@ def test_sensitive_fields_are_flagged_and_result_is_desensitized():
 
 def test_workspace_preserves_runtime_invariants_before_publish():
     vendor = read_utf8("frontend/admin-vue3/src/views/cps/platformOnboarding/components/VendorEditorDialog.vue")
+    vendor_step = read_utf8("frontend/admin-vue3/src/views/cps/platformOnboarding/components/VendorStep.vue")
     adzone = read_utf8("frontend/admin-vue3/src/views/cps/platformOnboarding/components/AdzoneStep.vue")
     rebate = read_utf8("frontend/admin-vue3/src/views/cps/platformOnboarding/components/RebateRuleDialog.vue")
     assert "descriptors?.length" in vendor and "status: 1" in vendor
+    assert "当前不自动故障切换" in vendor_step
+    assert "只在故障切换时使用" not in vendor_step
     assert "item.isDefault =" in adzone and "row.status === 1" in adzone
     assert "title=\"高级设置\"" in rebate and "status: 1" in rebate
 

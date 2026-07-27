@@ -1,5 +1,5 @@
-<!-- eslint-disable vue/no-mutating-props -->
 <template>
+  <!-- eslint-disable vue/no-mutating-props -->
   <div>
     <el-alert title="默认平台返利优先展示；高级设置可配置会员等级规则。金额输入单位为元。" type="info" show-icon class="mb-12px" />
     <el-button type="primary" @click="openEditor()">添加返利规则</el-button>
@@ -8,6 +8,7 @@
   </div>
 </template>
 <script lang="ts" setup>
+/* eslint-disable vue/no-mutating-props */
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { PlatformOnboardingDraft, RebateRuleForm } from '@/api/cps/platformOnboarding'

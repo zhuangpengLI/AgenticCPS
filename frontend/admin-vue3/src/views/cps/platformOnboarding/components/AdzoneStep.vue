@@ -1,4 +1,3 @@
-<!-- eslint-disable vue/no-mutating-props -->
 <template>
   <div>
     <div class="flex gap-8px"><el-button type="primary" @click="openEditor()">添加推广位</el-button><el-button @click="batchVisible = true">批量粘贴</el-button></div>
@@ -10,6 +9,7 @@
   </div>
 </template>
 <script lang="ts" setup>
+/* eslint-disable vue/no-mutating-props */
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { AdzoneForm, PlatformOnboardingDraft } from '@/api/cps/platformOnboarding'
