@@ -23,6 +23,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -344,6 +346,44 @@ class CpsPlatformOnboardingLifecycleServiceTest {
                     .anyMatch(field -> field.getName().equalsIgnoreCase("tenantId")),
                     requestType.getSimpleName());
         }
+    }
+
+    @Test
+    void pageStatusFilters_shouldAcceptUppercaseFrontendValues() throws Exception {
+        Method matches = CpsPlatformOnboardingLifecycleService.class
+                .getDeclaredMethod("matches", CpsPlatformOnboardingPageRespVO.class,
+                        CpsPlatformOnboardingPageReqVO.class);
+        matches.setAccessible(true);
+
+        CpsPlatformOnboardingPageRespVO incomplete = CpsPlatformOnboardingPageRespVO.builder()
+                .platformCode("taobao").completionPercent(80).runtimeStatus(0)
+                .connectionStatus("NOT_TESTED").build();
+        CpsPlatformOnboardingPageRespVO ready = CpsPlatformOnboardingPageRespVO.builder()
+                .platformCode("jd").completionPercent(100).runtimeStatus(0)
+                .connectionStatus("PASSED").build();
+        CpsPlatformOnboardingPageRespVO enabled = CpsPlatformOnboardingPageRespVO.builder()
+                .platformCode("pdd").completionPercent(100).runtimeStatus(1)
+                .connectionStatus("PASSED").build();
+        CpsPlatformOnboardingPageRespVO failed = CpsPlatformOnboardingPageRespVO.builder()
+                .platformCode("douyin").completionPercent(80).runtimeStatus(0)
+                .connectionStatus("FAILED").build();
+
+        assertTrue(matches(matches, incomplete, statusRequest("INCOMPLETE")));
+        assertTrue(matches(matches, ready, statusRequest("READY")));
+        assertTrue(matches(matches, enabled, statusRequest("ENABLED")));
+        assertTrue(matches(matches, failed, statusRequest("FAILED")));
+        assertTrue(matches(matches, ready, statusRequest("ALL")));
+    }
+
+    private static boolean matches(Method method, CpsPlatformOnboardingPageRespVO item,
+                                   CpsPlatformOnboardingPageReqVO request) throws Exception {
+        return (Boolean) method.invoke(null, item, request);
+    }
+
+    private static CpsPlatformOnboardingPageReqVO statusRequest(String status) {
+        CpsPlatformOnboardingPageReqVO request = new CpsPlatformOnboardingPageReqVO();
+        request.setStatus(status);
+        return request;
     }
 
     private static CpsPlatformOnboardingPayloadRespVO completePayload() {

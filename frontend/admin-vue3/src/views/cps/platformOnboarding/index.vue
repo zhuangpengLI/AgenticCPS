@@ -1,8 +1,8 @@
 <template>
-  <workspace
+  <Workspace
     v-if="route.query.mode"
-    :platform-code="route.query.platformCode as string | undefined"
-    :mode="route.query.mode as 'create' | 'edit'"
+    :platform-code="typeof route.query.platformCode === 'string' ? route.query.platformCode : undefined"
+    :mode="route.query.mode === 'edit' ? 'edit' : 'create'"
     @close="closeWorkspace"
     @published="handlePublished"
   />
@@ -96,7 +96,7 @@
               v-if="row.runtimeStatus === 1"
               link
               type="warning"
-              v-hasPermi="['cps:platform-onboarding:publish']"
+              v-hasPermi="['cps:platform-onboarding:update']"
               @click="handleDisable(row)"
             >
               禁用
@@ -111,7 +111,7 @@
               启用
             </el-button>
             <el-dropdown
-              v-if="row.draftStatus || row.runtimeStatus !== 1"
+              v-if="row.draftStatus || (row.runtimeStatus != null && row.runtimeStatus !== 1)"
               v-hasPermi="['cps:platform-onboarding:delete']"
             >
               <el-button link type="danger">删除<Icon icon="ep:arrow-down" class="ml-1" /></el-button>
@@ -120,7 +120,10 @@
                   <el-dropdown-item v-if="row.draftStatus" @click="handleDeleteDraft(row)">
                     删除草稿
                   </el-dropdown-item>
-                  <el-dropdown-item v-if="row.runtimeStatus !== 1" @click="handleDeleteBundle(row)">
+                   <el-dropdown-item
+                     v-if="row.runtimeStatus != null && row.runtimeStatus !== 1"
+                     @click="handleDeleteBundle(row)"
+                   >
                     删除运行配置
                   </el-dropdown-item>
                 </el-dropdown-menu>
@@ -148,6 +151,7 @@ import {
   type OnboardingPageReq
 } from '@/api/cps/platformOnboarding'
 import CompletionBadge from './components/CompletionBadge.vue'
+import Workspace from './workspace.vue'
 
 defineOptions({ name: 'CpsPlatformOnboarding' })
 
@@ -217,7 +221,7 @@ const handleDeleteDraft = async (row: OnboardingPageItem) => {
 }
 
 const handleDeleteBundle = async (row: OnboardingPageItem) => {
-  if (row.runtimeStatus === 1) return
+  if (row.runtimeStatus == null || row.runtimeStatus === 1) return
   await confirm(`确定删除平台“${row.platformName || row.platformCode}”的运行配置吗？`)
   await PlatformOnboardingApi.deleteBundle(row.platformCode)
   ElMessage.success('运行配置已删除')

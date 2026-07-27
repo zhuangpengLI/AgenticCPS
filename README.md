@@ -1,4 +1,4 @@
-﻿<p align="center">
+<p align="center">
   <img src="https://img.shields.io/badge/Spring%20Boot-3.5.9-blue.svg" alt="Spring Boot">
   <img src="https://img.shields.io/badge/Vue-3.x-brightgreen.svg" alt="Vue">
   <img src="https://img.shields.io/badge/Java-17%2F21-orange.svg" alt="Java">
@@ -245,6 +245,35 @@ set MIDSCENE_MODEL_NAME=your-vl-model
 set MIDSCENE_MODEL_FAMILY=qwen2.5-vl
 pnpm e2e:midscene
 ```
+
+### CPS 平台配置中心
+
+新平台接入和已有平台重配统一从管理后台菜单 **联盟配置 → 平台配置中心** 进入，前端路由为 `/cps-config/platform-onboarding`，后端接口根路径为 `/admin-api/cps/platform-onboarding`。平台列表仍提供配置、检测、启停、删除以及供应商、推广位和返利规则的增删改入口。
+
+工作台按“平台信息 → API 供应商 → 推广位 → 返利配置 → 检测与启用”五步组织配置。保存只写当前租户的加密草稿；检测针对草稿版本和配置指纹执行，失败时可以保留为待完善/禁用状态。已有平台重配期间运行流量继续读取旧配置，只有检测通过且版本、指纹一致的草稿才能在一个事务中切换 `cps_platform`、`cps_api_vendor`、`cps_adzone` 和 `cps_rebate_config`，事务提交后才清理缓存。
+
+四张运行表仍是搜索、转链、订单同步和返利结算的运行时事实来源；`cps_platform_onboarding_draft` 只保存待发布编辑态，供应商凭证等敏感字段使用项目统一加密处理，响应和日志均不返回明文。旧的 API 供应商、平台、推广位、返利菜单已隐藏，但其后端 CRUD 接口和权限暂时保留，便于兼容与回滚。备用供应商目前只参与配置、优先级和检测，**尚未实现运行时自动故障切换**。
+
+平台配置中心的目标验证命令：
+
+```bash
+# 后端 CPS 配置中心目标测试
+cd backend
+mvn test -pl qiji-module-cps/qiji-module-cps-biz -am "-Dtest=CpsPlatformOnboardingDraftMapperTest,CpsPlatformOnboardingFingerprintTest,CpsPlatformOnboardingDraftServiceImplTest,CpsPlatformOnboardingValidatorTest,CpsPlatformOnboardingConnectionTesterTest,CpsPlatformOnboardingPublishDbTest,CpsPlatformOnboardingCacheInvalidatorTest,CpsPlatformOnboardingLifecycleServiceTest,CpsPlatformOnboardingControllerTest,CpsPlatformServiceImplTest,CpsApiVendorServiceImplTest,CpsAdzoneServiceImplTest,CpsRebateConfigServiceImplTest" "-Dsurefire.failIfNoSpecifiedTests=false"
+
+# 前端定向检查与确定性 E2E
+cd ../frontend/admin-vue3
+pnpm exec eslint src/api/cps/platformOnboarding.ts src/views/cps/platformOnboarding src/views/cps/components/adzoneRules.ts
+pnpm exec playwright test e2e/cps-platform-onboarding.spec.ts
+
+# UI 契约、UTF-8 与差异检查
+cd ../..
+python -m pytest script/test/test_admin_cps_platform_onboarding_ui_contract.py -q
+python script/check_utf8_integrity.py README.md docs/project-map.md backend/sql/module/cps-all-in-one.sql backend/sql/module/cps-update.sql
+git diff --check
+```
+
+完整仓库的 `pnpm ts:check` 或真实供应商凭证冒烟测试若受既有类型错误、外部账号或网络环境影响，应单独记录，不得把这类环境结果当作平台配置中心已实现自动故障切换的证据。
 
 ### 质量门禁
 

@@ -39,18 +39,19 @@ async function mockAdminBootstrapAndMenu(page: Page, permissions = [
 ]) {
   await page.addInitScript(() => {
     const expires = Date.now() + 60 * 60 * 1000
-    const cache = (value: unknown) => JSON.stringify({ c: Date.now(), e: expires, v: JSON.stringify(value) })
-    localStorage.setItem('ACCESS_TOKEN', cache('e2e-token'))
-    localStorage.setItem('REFRESH_TOKEN', cache('e2e-refresh'))
-    localStorage.setItem('tenantId', cache(1))
+    const put = (key: string, value: unknown) => localStorage.setItem(key, JSON.stringify({ c: Date.now(), e: expires, v: JSON.stringify(value) }))
+    put('ACCESS_TOKEN', 'e2e-token')
+    put('REFRESH_TOKEN', 'e2e-refresh')
+    put('tenantId', 1)
   })
   await page.route('**/admin-api/system/auth/get-permission-info', (route) => route.fulfill({
     contentType: 'application/json',
     body: JSON.stringify(ok({
       user: { id: 1, nickname: 'E2E管理员', avatar: '', deptId: 1 }, roles: ['admin'], permissions,
-      menus: [{ id: 6287, name: '联盟配置', type: 1, path: '/cps-config', component: null, visible: true, keepAlive: true, alwaysShow: true, children: [{
-        id: 6297, name: '平台配置中心', type: 2, path: 'platform-onboarding', componentName: 'CpsPlatformOnboarding',
-        component: 'cps/platformOnboarding/index', permission: 'cps:platform-onboarding:query', visible: true, keepAlive: true, alwaysShow: true
+      menus: [{ id: 6287, name: '联盟配置', type: 1, path: '/cps-config', component: null, children: [{
+        id: 6297, name: '平台配置中心', type: 2, path: 'platform-onboarding',
+        component: 'cps/platformOnboarding/index', componentName: 'CpsPlatformOnboarding', permission: 'cps:platform-onboarding:query',
+        visible: true, keepAlive: true, alwaysShow: true
       }] }]
     }))
   }))
@@ -60,7 +61,7 @@ async function mockAdminBootstrapAndMenu(page: Page, permissions = [
   }))
   await page.route('**/admin-api/system/menu/**', (route) => route.fulfill({
     contentType: 'application/json',
-    body: JSON.stringify(ok([{ id: 6297, name: '平台配置中心', type: 2, path: 'platform-onboarding', componentName: 'CpsPlatformOnboarding', component: 'cps/platformOnboarding/index', visible: true, keepAlive: true, alwaysShow: true }]))
+    body: JSON.stringify(ok([{ id: 6297, name: '平台配置中心', type: 2, path: 'platform-onboarding', component: 'cps/platformOnboarding/index', componentName: 'CpsPlatformOnboarding', visible: true, keepAlive: true, alwaysShow: true }]))
   }))
   await page.route('**/admin-api/system/auth/refresh-token**', (route) => route.fulfill({
     contentType: 'application/json', body: JSON.stringify(ok({ accessToken: 'e2e-token', refreshToken: 'e2e-refresh' }))
@@ -93,7 +94,13 @@ async function mockOnboardingApi(page: Page, options: { testStatus?: 'FAILED' | 
     }
     if (path.endsWith('/test')) {
       const success = options.testStatus !== 'FAILED'
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok({ success, items: [{ section: '供应商', code: 'VENDOR_CONNECTION', message: success ? '连接成功（已脱敏）' : '凭证无效（已脱敏）' }] })))
+      return route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify(ok({
+          success,
+          items: [{ section: '供应商', code: 'VENDOR_CONNECTION', message: success ? '连接成功（已脱敏）' : '凭证无效（已脱敏）' }]
+        }))
+      })
     }
     if (path.endsWith('/publish')) {
       const body = route.request().postDataJSON() as { enableAfterPublish?: boolean }
@@ -123,7 +130,8 @@ async function fillMinimumDraft(page: Page) {
   await page.getByRole('button', { name: '下一步' }).click()
 
   await page.getByRole('button', { name: '添加供应商' }).click()
-  await page.getByLabel('供应商编码').fill('dataoke')
+  await page.getByLabel('供应商编码').click()
+  await page.getByRole('option', { name: 'dataoke', exact: true }).click()
   await page.getByLabel('供应商名称').fill('大淘客')
   await page.getByLabel('appKey').fill('e2e-key')
   await page.getByLabel('appSecret').fill('e2e-secret')

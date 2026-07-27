@@ -4,6 +4,7 @@
       <el-form-item label="推广位 ID" required><el-input v-model="form.adzoneId" /></el-form-item>
       <el-form-item label="名称"><el-input v-model="form.adzoneName" /></el-form-item>
       <el-form-item label="类型"><el-select v-model="form.adzoneType"><el-option label="通用" value="GENERAL" /><el-option label="渠道" value="CHANNEL" /><el-option label="会员" value="MEMBER" /></el-select></el-form-item>
+      <el-form-item label="关系 ID" v-if="form.adzoneType === 'CHANNEL' || form.adzoneType === 'MEMBER'"><el-input-number v-model="form.relationId" :min="1" /></el-form-item>
       <el-form-item label="渠道关系 ID" v-if="form.adzoneType === 'CHANNEL'"><el-input v-model="form.externalRelationId" /></el-form-item>
       <el-form-item label="会员 Special ID" v-if="form.adzoneType === 'MEMBER'"><el-input v-model="form.externalSpecialId" /></el-form-item>
       <el-form-item label="启用"><el-switch v-model="enabled" /></el-form-item>

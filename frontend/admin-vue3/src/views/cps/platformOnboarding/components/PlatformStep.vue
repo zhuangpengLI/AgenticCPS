@@ -1,4 +1,5 @@
 <template>
+  <!-- eslint-disable vue/no-mutating-props -->
   <el-form ref="formRef" :model="draft.platform" label-width="110px">
     <el-alert v-if="unsupported" type="warning" title="该平台暂无可用适配器，请先选择已注册的平台能力" show-icon class="mb-12px" />
     <el-form-item label="平台编码" prop="platformCode" required>
@@ -14,15 +15,16 @@
   </el-form>
 </template>
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+/* eslint-disable vue/no-mutating-props */
+import { computed, onMounted } from 'vue'
 import type { PlatformCapability, PlatformOnboardingDraft } from '@/api/cps/platformOnboarding'
 import { PlatformOnboardingApi } from '@/api/cps/platformOnboarding'
 
 const props = defineProps<{ draft: PlatformOnboardingDraft; mode: 'CREATE' | 'RECONFIGURE' }>()
 const capabilities = ref<PlatformCapability[]>([])
-const formRef = ref()
 const unsupported = computed(() => Boolean(props.draft.platform.platformCode) && !capabilities.value.some((item) => item.platformCode === props.draft.platform.platformCode))
 const onPlatformChange = (code: string) => {
+  props.draft.platformCode = code
   const capability = capabilities.value.find((item) => item.platformCode === code)
   if (capability && !props.draft.platform.platformName) props.draft.platform.platformName = capability.platformName || code
 }

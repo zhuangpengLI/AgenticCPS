@@ -65,9 +65,9 @@ export interface RebateRuleForm {
   memberLevelId?: number
   platformCode: string
   rebateRate?: number
-  /** Integer cents in the API contract. */
+  /** API amount values are yuan (the backend VO uses BigDecimal). */
   minRebateAmount?: number
-  /** Integer cents in the API contract. */
+  /** API amount values are yuan (the backend VO uses BigDecimal). */
   maxRebateAmount?: number
   status: number
   priority?: number

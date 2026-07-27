@@ -1183,7 +1183,19 @@ SELECT 6297, '平台配置中心', 'cps:platform-onboarding:query', 2, 10, 6287,
     WHERE NOT EXISTS (SELECT 1 FROM `system_menu` WHERE `id` = 6297);
 
 UPDATE `system_menu`
-SET `component` = 'cps/platformOnboarding/index',
+SET `name` = '平台配置中心',
+    `permission` = 'cps:platform-onboarding:query',
+    `type` = 2,
+    `sort` = 10,
+    `parent_id` = 6287,
+    `path` = 'platform-onboarding',
+    `icon` = 'ep:setting',
+    `component` = 'cps/platformOnboarding/index',
+    `component_name` = 'CpsPlatformOnboarding',
+    `status` = 0,
+    `visible` = b'1',
+    `keep_alive` = b'1',
+    `always_show` = b'1',
     `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
 WHERE `id` = 6297 AND `deleted` = b'0';
 

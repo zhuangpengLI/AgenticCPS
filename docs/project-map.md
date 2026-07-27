@@ -3,7 +3,7 @@
 > 资金与归因基线：订单返利、冻结/解冻、退款欠款与 Token 兑换统一通过 `CpsRebateAssetService` 写入账户并追加 `cps_rebate_asset_ledger`；`CpsRebateAssetMigrationService` 只允许在 `migration_ready=false` 且 V2 未启用时回填历史账户期初流水。迁移预检按租户归档重复键、NULL 对账和孤儿资金记录等十类风险，`migration_ready` 必须绑定最新 ready 批次，首次启用还会在同一事务内重检后才能不可逆开启；可信归因审计与固定窗口同步 checkpoint 说明见 [cps-funds-attribution-safety-baseline.md](cps-funds-attribution-safety-baseline.md)。
 
 > 生成日期：2026-05-24
-> 生成方式：只读扫描仓库结构、配置、POM、前端 `package.json`、CPS 核心代码与既有技术债文档后整理；2026-05-24 补充活动中心、返利工具箱与选品库落地信息；2026-05-26 补充 CPS 主导型 CPX 任务/资讯/平台资料库骨架、后台页面、看板骨架与 OpenAPI 签名校验；2026-07-10 补充滴滴联盟 DUnion SDK 子模块、官方适配器和后台诊断接口；2026-07-14 补充 P3 SDK 标准化描述符、能力矩阵、配置 Schema、连接治理策略、结构化不支持能力异常和 official skeleton 启用门禁；2026-07-15 补充 P4 增长分析、风险监控、实验分流、Token 事件对账和 billing 边界校验入口。
+> 生成方式：只读扫描仓库结构、配置、POM、前端 `package.json`、CPS 核心代码与既有技术债文档后整理；2026-05-24 补充活动中心、返利工具箱与选品库落地信息；2026-05-26 补充 CPS 主导型 CPX 任务/资讯/平台资料库骨架、后台页面、看板骨架与 OpenAPI 签名校验；2026-07-10 补充滴滴联盟 DUnion SDK 子模块、官方适配器和后台诊断接口；2026-07-14 补充 P3 SDK 标准化描述符、能力矩阵、配置 Schema、连接治理策略、结构化不支持能力异常和 official skeleton 启用门禁；2026-07-15 补充 P4 增长分析、风险监控、实验分流、Token 事件对账和 billing 边界校验入口；2026-07-26 补充 CPS 平台配置中心统一入口、草稿检测发布生命周期和验证命令。
 > 约束：仓库当前已有多处未提交改动，见“风险与注意事项”。后续编辑需继续区分既有改动和本次改动。
 
 ## 1. 项目入口在哪里
@@ -39,6 +39,17 @@
   - `package.json` 脚本包括 `dev`、`dev:h5`、`build`、`build:prod`、`type-check`、`lint`。
 - 商城移动端：`frontend/mall-uniapp`
   - Shopro/UniApp 模板，当前 `package.json` 主要只有 `prettier` 脚本，构建更多依赖 HBuilderX / uni-app 运行环境。
+
+### CPS 平台配置中心统一入口
+
+- 管理后台菜单路径：`联盟配置 → 平台配置中心`。
+- 前端路由：`/cps-config/platform-onboarding`，页面入口：`frontend/admin-vue3/src/views/cps/platformOnboarding/index.vue`；五步工作台在同目录的 `workspace.vue`。
+- 后端接口根路径：`/admin-api/cps/platform-onboarding`，Controller 位于 `backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/onboarding/`。
+- 工作流：保存当前租户的加密草稿 → 对草稿版本和稳定配置指纹做结构/能力/连接检测 → 检测失败仍可保存为待完善或禁用 → 检测通过后发布；已有平台只有发布事务提交后才切换运行态。
+- 运行时真相仍是四张表：`cps_platform`、`cps_api_vendor`、`cps_adzone`、`cps_rebate_config`。`cps_platform_onboarding_draft` 仅保存编辑态快照，敏感凭证通过 `EncryptTypeHandler` 等统一加密能力落库。
+- 发布按供应商、推广位、返利规则、平台顺序在同一事务内更新，平台写最后；提交后才失效平台、供应商和返利缓存。草稿版本冲突、指纹不一致或任一写入失败都不能产生部分运行态。
+- 原 API 供应商、平台、推广位、返利菜单已经隐藏，旧 Controller/API 和权限保留用于兼容与回滚。备用供应商目前仅配置优先级和可用性检测，运行时自动故障切换不在本期实现。
+- 目标验证：`mvn test -pl qiji-module-cps/qiji-module-cps-biz -am` 运行平台配置中心后端测试，`pnpm exec eslint ...platformOnboarding...` 和 `pnpm exec playwright test e2e/cps-platform-onboarding.spec.ts` 运行前端定向检查，`python -m pytest script/test/test_admin_cps_platform_onboarding_ui_contract.py -q` 运行 UI 契约测试。
 
 ### Docker 入口
 
@@ -82,12 +93,12 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 
 | 包 | 当前职责 |
 |---|---|
-| `controller/admin` | 后台管理：活动中心、返利工具箱、商品广场、平台、推广位、订单、返利配置/记录、冻结、风控、统计、供应商、提现、转账、选品库、滴滴联盟素材/连接测试/归因诊断，以及新增 CPX 任务/资讯/平台对接中心和 CPX 看板汇总。 |
+| `controller/admin` | 后台管理：活动中心、返利工具箱、商品广场、平台、推广位、订单、返利配置/记录、冻结、风控、统计、供应商、提现、转账、选品库、滴滴联盟素材/连接测试/归因诊断，以及平台配置中心、CPX 任务/资讯/平台对接中心和 CPX 看板汇总。 |
 | `controller/app` | 用户端：商品搜索/转链、我的订单列表/详情、我的返利账户/记录、返利兑换 Token。 |
 | `controller/openapi` | 服务间 OpenAPI：返利余额、冻结、解冻、确认扣减；CPX 曝光、点击、线索、动作/转化事件上报，统一 HMAC 签名与幂等键。 |
 | `client` | CPS 平台与供应商适配器，包含大淘客、好单库、官方 API、淘宝/京东/拼多多/抖音/美团/唯品会适配器，以及 `didi + official` 的 `DidiOfficialVendorClient` 和 `DidiPlatformClientAdapter`。 |
 | `service` | 核心业务：goods、toolbox、activity、order、rebate、freeze、exchange、risk、statistics、withdraw、transfer、vendor、adzone、selection、cpx。 |
-| `dal/dataobject` + `dal/mysql` | CPS 表 DO 与 MyBatis Mapper，包括 `cps_rebate_activity` 活动卡片配置、`cps_selection_theme` 选品主题、`cps_selection_theme_item` 主题商品快照；CPX 新增 `cpx_task`、`cpx_offer`、`cpx_material`、`cpx_article`、`cpx_platform_profile`、`cpx_tracking_link`、`cpx_event`、`cpx_conversion`、`cpx_settlement_record`、`cpx_lead_detail`。 |
+| `dal/dataobject` + `dal/mysql` | CPS 表 DO 与 MyBatis Mapper，包括 `cps_rebate_activity` 活动卡片配置、`cps_selection_theme` 选品主题、`cps_selection_theme_item` 主题商品快照和加密的 `cps_platform_onboarding_draft` 草稿；CPX 新增 `cpx_task`、`cpx_offer`、`cpx_material`、`cpx_article`、`cpx_platform_profile`、`cpx_tracking_link`、`cpx_event`、`cpx_conversion`、`cpx_settlement_record`、`cpx_lead_detail`。 |
 | `job` | 定时任务：订单同步、返利结算、冻结解冻、统计聚合。 |
 | `mcp/tool` | Agent 可调用工具：搜索、比价、转链、查订单、查返利汇总、推广策略建议、返利规则咨询、AIoT 场景推荐、购买决策、选品库主题查询与主题商品推荐、Token 兑换查询/创建，以及 CPX 任务/转化/内容工具。 |
 | `config` | CPS 缓存、aitoken 兑换配置。 |
