@@ -3,8 +3,10 @@ package com.qiji.cps.module.cps.controller.admin.platform;
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
+import com.qiji.cps.module.cps.client.CpsApiVendorClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformConnectionTestRespVO;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformRespVO;
@@ -89,8 +91,13 @@ public class CpsPlatformController {
     @Parameter(name = "platformCode", description = "平台编码", required = true)
     @PreAuthorize("@ss.hasPermission('cps:platform:query')")
     public CommonResult<CpsPlatformConnectionTestRespVO> testConnection(@RequestParam("platformCode") String platformCode) {
-        CpsPlatformClient client = platformClientFactory.getClient(platformCode);
-        if (client == null) {
+        CpsApiVendorClient vendorClient = platformClientFactory.getActiveVendorClient(platformCode);
+        CpsVendorConfig vendorConfig = vendorClient == null
+                ? null : platformClientFactory.getActiveVendorConfig(platformCode);
+        boolean useVendorClient = vendorClient != null && vendorConfig != null;
+        CpsPlatformClient platformClient = useVendorClient
+                ? null : platformClientFactory.getClient(platformCode);
+        if (!useVendorClient && platformClient == null) {
             return success(CpsPlatformConnectionTestRespVO.builder()
                     .platformCode(platformCode)
                     .supported(false)
@@ -99,7 +106,9 @@ public class CpsPlatformController {
                     .build());
         }
         try {
-            boolean success = client.testConnection();
+            boolean success = useVendorClient
+                    ? vendorClient.testConnection(vendorConfig)
+                    : platformClient.testConnection();
             return success(CpsPlatformConnectionTestRespVO.builder()
                     .platformCode(platformCode)
                     .supported(true)

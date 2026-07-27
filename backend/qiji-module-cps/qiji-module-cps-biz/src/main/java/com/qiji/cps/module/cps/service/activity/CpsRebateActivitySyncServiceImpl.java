@@ -138,6 +138,10 @@ public class CpsRebateActivitySyncServiceImpl {
                 .vendorCode(CpsVendorCodeEnum.HAODANKU.getCode())
                 .platformCode(null)
                 .build()));
+        mergeResult(aggregate, syncThirdPartyActivities(request.toBuilder()
+                .vendorCode(CpsVendorCodeEnum.JUTUIKE.getCode())
+                .platformCode(null)
+                .build()));
         return aggregate;
     }
 

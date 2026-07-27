@@ -26,6 +26,7 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
 
     private static final String PARSE_CONTENT_PATH = "/tb-service/parse-content";
     private static final String COUPON_INFO_PATH = "/dels/taobao/kit/coupon/get-coupon-info";
+    private static final String SUPER_CATEGORY_PATH = "/category/get-super-category";
     private static final String HOT_KEYWORDS_PATH = "/category/get-top100";
     private static final String SEARCH_SUGGESTION_PATH = "/goods/search-suggestion";
     private static final String IMAGE_SEARCH_URL = "https://openapiv2.dataoke.com/open-api/goods/search-by-image";
@@ -318,12 +319,14 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
 
     @Override
     protected String getTestConnectionApiPath() {
-        return "/goods/get-super-category";
+        return SUPER_CATEGORY_PATH;
     }
 
     @Override
     protected Map<String, Object> buildTestConnectionParams() {
-        return new HashMap<>();
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("version", "v1.1.0");
+        return params;
     }
 
     @Override
@@ -356,7 +359,9 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
 
     @Override
     public CpsGoodsSelectionMeta getSelectionMeta(CpsVendorConfig config) {
-        JsonNode response = executeRequest("/goods/get-super-category", new LinkedHashMap<>(), config);
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("version", "v1.1.0");
+        JsonNode response = executeRequest(SUPER_CATEGORY_PATH, params, config);
         if (response == null || !isSuccessResponse(response)) {
             return CpsGoodsSelectionMeta.builder().metaSource(getVendorCode()).build();
         }

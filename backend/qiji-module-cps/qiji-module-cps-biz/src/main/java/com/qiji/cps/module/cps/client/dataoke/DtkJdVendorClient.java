@@ -29,7 +29,7 @@ public class DtkJdVendorClient extends AbstractDtkVendorClient {
 
     @Override
     protected String getSearchApiPath() {
-        return "/dels/jd/goods/search-goods";
+        return "/dels/jd/goods/search";
     }
 
     @Override
@@ -138,7 +138,7 @@ public class DtkJdVendorClient extends AbstractDtkVendorClient {
 
     @Override
     protected String getTestConnectionApiPath() {
-        return "/dels/jd/goods/search-goods";
+        return "/dels/jd/goods/search";
     }
 
     @Override

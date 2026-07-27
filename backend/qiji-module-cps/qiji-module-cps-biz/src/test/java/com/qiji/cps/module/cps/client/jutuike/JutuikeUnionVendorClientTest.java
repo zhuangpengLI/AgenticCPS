@@ -67,6 +67,31 @@ class JutuikeUnionVendorClientTest {
     }
 
     @Test
+    @DisplayName("fetchActivities maps official Jutuike paged act_list response")
+    void fetchActivities_mapsOfficialPagedActivityList() throws Exception {
+        StubJutuikeUnionVendorClient client = new StubJutuikeUnionVendorClient("""
+                {"code":1,"data":{"total":63,"per_page":20,"current_page":1,"last_page":4,"data":[{"act_id":45,"act_name":"美团外卖品质商家活动","desc":"美团外卖品质商家红包","img":"https://img.example/meituan.jpg","icon":"https://img.example/meituan.png","start_date":"2026-01-01","end_date":"2026-12-31","settlement_time":"T+1","cate_name":"美团"}]}}
+                """);
+
+        CpsThirdPartyPage<CpsThirdPartyActivity> page = client.fetchActivities(
+                CpsThirdPartyActivityRequest.builder()
+                        .platformCode("meituan")
+                        .keyword("美团")
+                        .pageNo(1)
+                        .pageSize(20)
+                        .build(),
+                config());
+
+        assertEquals(63L, page.getTotal());
+        assertEquals(1, page.getList().size());
+        CpsThirdPartyActivity activity = page.getList().get(0);
+        assertEquals("jtk:45", activity.getExternalActivityId());
+        assertEquals("美团外卖品质商家活动", activity.getActivityName());
+        assertEquals("meituan", activity.getPlatformCode());
+        assertEquals("T+1", activity.getExtraFields().get("settlement_time"));
+    }
+
+    @Test
     @DisplayName("generatePromotionLink maps Jutuike union act response to standard promotion link")
     void generatePromotionLink_mapsActivityLink() throws Exception {
         StubJutuikeUnionVendorClient client = new StubJutuikeUnionVendorClient("""
@@ -84,6 +109,24 @@ class JutuikeUnionVendorClientTest {
         assertEquals("https://s.example/a", result.getShortUrl());
         assertEquals("https://union.example/act?s=member-1", result.getLongUrl());
         assertEquals("member-1", result.getExtraFields().get("sid"));
+    }
+
+    @Test
+    @DisplayName("generatePromotionLink maps official Jutuike h5 and long_h5 fields")
+    void generatePromotionLink_mapsOfficialActivityLinkFields() throws Exception {
+        StubJutuikeUnionVendorClient client = new StubJutuikeUnionVendorClient("""
+                {"code":1,"data":{"h5":"https://s.example/h5","long_h5":"https://union.example/long","act_name":"美团外卖","we_app_info":{"app_id":"wx123","page_path":"pages/index"}}}
+                """);
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsId("45");
+        request.setExternalId("member-1");
+
+        CpsPromotionLinkResult result = client.generatePromotionLink(request, config());
+
+        assertEquals("https://s.example/h5", result.getShortUrl());
+        assertEquals("https://union.example/long", result.getLongUrl());
+        assertEquals("https://s.example/h5", result.getMobileUrl());
+        assertEquals("美团外卖", result.getExtraFields().get("act_name"));
     }
 
     @Test
@@ -111,6 +154,30 @@ class JutuikeUnionVendorClientTest {
         assertEquals("1.20", order.getCommissionAmount().toPlainString());
         assertEquals("member-1", order.getExternalId());
         assertEquals("已付款", order.getExtraFields().get("status_desc"));
+    }
+
+    @Test
+    @DisplayName("queryOrders maps official Jutuike paged order response")
+    void queryOrders_mapsOfficialPagedUnionOrders() throws Exception {
+        StubJutuikeUnionVendorClient client = new StubJutuikeUnionVendorClient("""
+                {"code":1,"data":{"total":4,"per_page":20,"current_page":1,"last_page":1,"data":[{"act_name":"美团外卖","act_id":7,"sid":"member-1","jtk_share_rate":"0.03","jtk_share_fee":"0.56","order_sn":"85669950292410503","order_title":"正宗安徽板面","create_time":"2026-05-26 10:00:00","pay_time":"2026-05-26 10:01:00","modified_time":"2026-05-26 10:20:00","order_price":"18.80","pay_price":"18.80","status":3,"status_desc":"已结算","brand_id":1}]}}
+                """);
+        CpsOrderQueryRequest request = new CpsOrderQueryRequest();
+        request.setStartTime("2026-05-26 10:00:00");
+        request.setEndTime("2026-05-26 10:30:00");
+        request.setPageNo(1);
+        request.setPageSize(20);
+
+        List<CpsOrderDTO> orders = client.queryOrders(request, config());
+
+        assertEquals(1, orders.size());
+        CpsOrderDTO order = orders.get(0);
+        assertEquals("85669950292410503", order.getPlatformOrderId());
+        assertEquals("meituan", order.getPlatformCode());
+        assertEquals("7", order.getItemId());
+        assertEquals("3.00", order.getCommissionRate().toPlainString());
+        assertEquals("0.56", order.getCommissionAmount().toPlainString());
+        assertEquals("member-1", order.getExternalId());
     }
 
     private CpsVendorConfig config() {

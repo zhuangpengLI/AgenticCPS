@@ -4,6 +4,7 @@ import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivity;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyApiCategory;
 import com.qiji.cps.module.cps.client.dto.CpsThirdPartyPage;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
+import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
 import com.qiji.cps.module.cps.client.haodanku.activity.HaodankuActivityVendorClient;
 import com.qiji.cps.module.cps.client.jutuike.JutuikeUnionVendorClient;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
@@ -36,6 +37,9 @@ class CpsRebateActivityThirdPartySyncServiceImplTest {
 
     @Mock
     private JutuikeUnionVendorClient jutuikeUnionVendorClient;
+
+    @Mock
+    private DtkActivityVendorClient dtkActivityVendorClient;
 
     @Mock
     private CpsPlatformClientFactory platformClientFactory;
@@ -99,6 +103,53 @@ class CpsRebateActivityThirdPartySyncServiceImplTest {
         assertEquals("T+1", saved.getRebateDesc());
         assertEquals("url", saved.getJumpType());
         assertEquals("https://example.com/activity", saved.getJumpUrl());
+    }
+
+    @Test
+    @DisplayName("syncThirdPartyActivities - all 同步同时覆盖大淘客、好单库和聚推客")
+    void syncThirdPartyActivities_allIncludesJutuike() {
+        when(dtkActivityVendorClient.getVendorCode()).thenReturn("dataoke");
+        when(dtkActivityVendorClient.getPlatformCode()).thenReturn("taobao");
+        when(haodankuActivityVendorClient.getVendorCode()).thenReturn("haodanku");
+        when(haodankuActivityVendorClient.getPlatformCode()).thenReturn("activity");
+        when(jutuikeUnionVendorClient.getVendorCode()).thenReturn("jutuike");
+        when(jutuikeUnionVendorClient.getPlatformCode()).thenReturn("union");
+        when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(CpsVendorConfig.builder()
+                .vendorCode("dataoke")
+                .platformCode("taobao")
+                .appKey("dtk-key")
+                .appSecret("dtk-secret")
+                .apiBaseUrl("https://openapi.dataoke.com/api")
+                .build());
+        when(platformClientFactory.getVendorConfig("jutuike", "union")).thenReturn(CpsVendorConfig.builder()
+                .vendorCode("jutuike")
+                .platformCode("union")
+                .appKey("jtk-key")
+                .apiBaseUrl("http://api.jutuike.com")
+                .build());
+        when(dtkActivityVendorClient.fetchActivities(any(), any())).thenReturn(emptyPage());
+        when(haodankuActivityVendorClient.fetchActivities(any(), any())).thenReturn(emptyPage());
+        when(jutuikeUnionVendorClient.fetchActivities(any(), any())).thenReturn(emptyPage());
+
+        service.syncThirdPartyActivities(CpsRebateActivitySyncRequest.builder()
+                .vendorCode("all")
+                .pageSize(20)
+                .maxPages(1)
+                .build());
+
+        verify(dtkActivityVendorClient).fetchActivities(any(), any());
+        verify(haodankuActivityVendorClient).fetchActivities(any(), any());
+        verify(jutuikeUnionVendorClient).fetchActivities(any(), any());
+    }
+
+    private CpsThirdPartyPage<CpsThirdPartyActivity> emptyPage() {
+        return CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                .category(CpsThirdPartyApiCategory.ACTIVITY_PULL)
+                .list(List.of())
+                .pageNo(1)
+                .pageSize(20)
+                .total(0L)
+                .build();
     }
 
 }

@@ -91,9 +91,9 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
                     .build();
         }
         List<CpsThirdPartyActivity> activities = new ArrayList<>();
-        JsonNode data = response.path("data");
-        if (data.isArray()) {
-            for (JsonNode item : data) {
+        JsonNode items = pageItems(response);
+        if (items.isArray()) {
+            for (JsonNode item : items) {
                 CpsThirdPartyActivity activity = parseActivity(item, request);
                 if (activity != null) {
                     activities.add(activity);
@@ -103,7 +103,7 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
         return CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
                 .category(CpsThirdPartyApiCategory.ACTIVITY_PULL)
                 .list(activities)
-                .total(response.path("total").asLong(activities.size()))
+                .total(pageTotal(response, activities.size()))
                 .pageNo(defaultInt(request.getPageNo(), 1))
                 .pageSize(defaultInt(request.getPageSize(), 20))
                 .nextPageId(String.valueOf(defaultInt(request.getPageNo(), 1) + 1))
@@ -153,10 +153,11 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
     protected CpsPromotionLinkResult parsePromotionLinkResponse(JsonNode response) {
         JsonNode data = payload(response);
         return CpsPromotionLinkResult.builder()
-                .shortUrl(firstText(data, "short_url", "shortUrl"))
-                .longUrl(firstText(data, "url", "link", "h5"))
-                .mobileUrl(firstText(data, "h5", "url", "link"))
-                .extraFields(toMap(data, "sid", "relation_flag_name", "qrcode", "mini_path"))
+                .shortUrl(firstText(data, "short_url", "shortUrl", "h5"))
+                .longUrl(firstText(data, "long_h5", "longH5", "url", "link", "h5"))
+                .mobileUrl(firstText(data, "h5", "url", "link", "long_h5"))
+                .extraFields(toMap(data, "sid", "relation_flag_name", "qrcode", "mini_path",
+                        "act_name", "h5", "long_h5"))
                 .rawPayload(toRawPayload(data))
                 .build();
     }
@@ -181,11 +182,11 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
     @Override
     protected List<CpsOrderDTO> parseOrderQueryResponse(JsonNode response) {
         List<CpsOrderDTO> orders = new ArrayList<>();
-        JsonNode data = response.path("data");
-        if (!data.isArray()) {
+        JsonNode items = pageItems(response);
+        if (!items.isArray()) {
             return orders;
         }
-        for (JsonNode item : data) {
+        for (JsonNode item : items) {
             orders.add(parseOrder(item));
         }
         return orders;
@@ -260,6 +261,33 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
     private JsonNode payload(JsonNode response) {
         JsonNode data = response == null ? null : response.path("data");
         return data != null && !data.isMissingNode() && !data.isNull() ? data : response;
+    }
+
+    private JsonNode pageItems(JsonNode response) {
+        JsonNode data = response == null ? null : response.path("data");
+        if (data == null || data.isMissingNode() || data.isNull()) {
+            return objectMapper.createArrayNode();
+        }
+        if (data.isArray()) {
+            return data;
+        }
+        JsonNode nestedData = data.path("data");
+        return nestedData.isArray() ? nestedData : objectMapper.createArrayNode();
+    }
+
+    private long pageTotal(JsonNode response, int fallback) {
+        if (response == null || response.isMissingNode() || response.isNull()) {
+            return fallback;
+        }
+        JsonNode total = response.path("total");
+        if (total.canConvertToLong()) {
+            return total.asLong();
+        }
+        JsonNode nestedTotal = response.path("data").path("total");
+        if (nestedTotal.canConvertToLong()) {
+            return nestedTotal.asLong();
+        }
+        return fallback;
     }
 
     private String platformFromBrandId(int brandId) {
