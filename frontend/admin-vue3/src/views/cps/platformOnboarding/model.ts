@@ -74,8 +74,8 @@ const normalizePayload = (draft: PlatformOnboardingDraft): PlatformOnboardingSav
       rebateRate: rule.rebateRate,
       minRebateAmount: rule.minRebateAmount,
       maxRebateAmount: rule.maxRebateAmount,
-      status: rule.status,
-      priority: rule.priority
+      status: rule.status ?? 1,
+      priority: rule.priority ?? 0
     }))
     .sort((left, right) => {
       const leftKey = [
@@ -207,7 +207,11 @@ export const maskConfiguredSecrets = (draft: PlatformOnboardingDraft): PlatformO
     }
   }),
   adzones: draft.adzones.map((adzone) => ({ ...adzone })),
-  rebateRules: draft.rebateRules.map((rule) => ({ ...rule })),
+  rebateRules: draft.rebateRules.map((rule) => ({
+    ...rule,
+    status: rule.status ?? 1,
+    priority: rule.priority ?? 0
+  })),
   checkResult: draft.checkResult
     ? {
         ...draft.checkResult,

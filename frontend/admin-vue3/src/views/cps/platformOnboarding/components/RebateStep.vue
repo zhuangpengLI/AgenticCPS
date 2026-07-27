@@ -22,6 +22,28 @@ const sortedRules = computed(() => [...props.draft.rebateRules].sort((left, righ
 const dialogVisible = ref(false); const editingRow = ref<RebateRuleForm>(); const editingIndex = ref(-1)
 const openEditor = (row?: RebateRuleForm, index = -1) => { editingRow.value = row; editingIndex.value = index; dialogVisible.value = true }
 const saveRule = (row: RebateRuleForm) => { if (editingIndex.value >= 0) props.draft.rebateRules.splice(editingIndex.value, 1, row); else props.draft.rebateRules.push(row) }
-const validate = async () => { const invalidScope = props.draft.rebateRules.some((row) => (row as any).scope === 'GLOBAL' || (row as any).scope === 'PERSONAL' || Boolean(row.memberId)); if (invalidScope) { ElMessage.error('工作台拒绝全局和个人 scope'); return false }; const defaults = props.draft.rebateRules.filter((row) => !row.memberId && !row.memberLevelId); return defaults.length === 1 && defaults[0].status === 1 && defaults[0].rebateRate != null && defaults[0].rebateRate >= 0 && defaults[0].rebateRate <= 100 }
+const validate = async () => {
+  const invalidScope = props.draft.rebateRules.some(
+    (row) => (row as any).scope === 'GLOBAL' || (row as any).scope === 'PERSONAL' || Boolean(row.memberId)
+  )
+  if (invalidScope) {
+    ElMessage.error('工作台拒绝全局和个人 scope')
+    return false
+  }
+  if (
+    props.draft.rebateRules.some(
+      (row) => row.priority == null || !Number.isInteger(row.priority) || row.priority < 0
+    )
+  ) {
+    ElMessage.error('返利规则优先级必须为非负整数')
+    return false
+  }
+  const defaults = props.draft.rebateRules.filter((row) => !row.memberId && !row.memberLevelId)
+  return defaults.length === 1
+    && defaults[0].status === 1
+    && defaults[0].rebateRate != null
+    && defaults[0].rebateRate >= 0
+    && defaults[0].rebateRate <= 100
+}
 defineExpose({ validate })
 </script>

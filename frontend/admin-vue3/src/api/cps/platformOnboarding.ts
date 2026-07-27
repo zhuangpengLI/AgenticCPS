@@ -87,8 +87,8 @@ export interface OnboardingCheckResult {
 
 export interface PlatformOnboardingPayload {
   platform: PlatformForm
-  primaryVendorCode: string
-  runtimeDefaultAdzoneId: string
+  primaryVendorCode: string | null
+  runtimeDefaultAdzoneId: string | null
   vendors: VendorForm[]
   adzones: AdzoneForm[]
   rebateRules: RebateRuleForm[]
@@ -120,6 +120,8 @@ export interface PlatformOnboardingSavePayload {
 export interface PlatformOnboardingDraft extends PlatformOnboardingPayload {
   id?: number
   platformCode: string
+  primaryVendorCode: string
+  runtimeDefaultAdzoneId: string
   mode: 'CREATE' | 'RECONFIGURE'
   draftVersion?: number
   configFingerprint?: string
@@ -169,7 +171,7 @@ export interface OnboardingPageItem {
   connectionStatus?: string
   runtimeStatus?: number
   draftStatus?: OnboardingStatus
-  updateTime?: string
+  updateTime?: string | number
 }
 
 export interface SaveDraftReq {

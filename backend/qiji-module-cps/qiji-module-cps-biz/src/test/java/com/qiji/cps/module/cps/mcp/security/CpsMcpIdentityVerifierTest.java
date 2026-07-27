@@ -20,7 +20,9 @@ import java.util.Base64;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CpsMcpIdentityVerifierTest {

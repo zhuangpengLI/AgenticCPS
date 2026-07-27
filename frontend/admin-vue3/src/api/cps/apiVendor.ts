@@ -23,9 +23,14 @@ export const PLATFORM_CODE_OPTIONS = [
   { label: '京东联盟', value: 'jd' },
   { label: '拼多多联盟', value: 'pdd' },
   { label: '抖音联盟', value: 'douyin' },
-  { label: '唯品会联盟', value: 'vip' },
+  { label: '滴滴联盟', value: 'didi' },
+  { label: '唯品会', value: 'vip' },
   { label: '美团联盟', value: 'meituan' }
 ]
+
+/** 平台编码对应的中文展示名称，未知平台保留接口名称或原编码 */
+export const getPlatformLabel = (platformCode: string, fallback?: string) =>
+  PLATFORM_CODE_OPTIONS.find((item) => item.value === platformCode)?.label || fallback || platformCode
 
 // ===== VO 类型定义 =====
 

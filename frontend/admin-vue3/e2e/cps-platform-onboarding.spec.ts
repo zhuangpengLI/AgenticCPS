@@ -3,15 +3,32 @@ import type { Page, Route } from '@playwright/test'
 
 const ok = (data: unknown) => ({ code: 200, data, msg: '' })
 
-const payload = (vendor = 'dataoke') => ({
-  platform: { platformCode: 'taobao', platformName: '淘宝', status: 0 },
+type PlatformScenario = {
+  platformCode: string
+  platformName: string
+  vendorCode: string
+  vendorName: string
+  rebateRate: number
+}
+
+const platformScenarios: PlatformScenario[] = [
+  { platformCode: 'taobao', platformName: '淘宝', vendorCode: 'dataoke', vendorName: '大淘客', rebateRate: 80 },
+  { platformCode: 'jd', platformName: '京东', vendorCode: 'dataoke', vendorName: '大淘客', rebateRate: 75 },
+  { platformCode: 'pdd', platformName: '拼多多', vendorCode: 'dataoke', vendorName: '大淘客', rebateRate: 70 },
+  { platformCode: 'douyin', platformName: '抖音', vendorCode: 'official', vendorName: '抖音官方', rebateRate: 65 }
+]
+
+const scenarioFor = (platformCode = 'taobao') => platformScenarios.find((item) => item.platformCode === platformCode) || platformScenarios[0]
+const vendorName = (vendorCode: string, platformCode: string) => vendorCode === 'haodanku' ? '好单库' : vendorCode === 'official' ? `${scenarioFor(platformCode).platformName}官方` : '大淘客'
+const payload = (vendor = 'dataoke', platformCode = 'taobao') => ({
+  platform: { platformCode, platformName: scenarioFor(platformCode).platformName, status: 0 },
   primaryVendorCode: vendor,
   runtimeDefaultAdzoneId: 'pid-default',
   vendors: [{
     vendorCode: vendor,
-    vendorName: vendor === 'dataoke' ? '大淘客' : '好单库',
-    vendorType: 'aggregator',
-    platformCode: 'taobao',
+    vendorName: vendorName(vendor, platformCode),
+    vendorType: vendor === 'official' ? 'official' : 'aggregator',
+    platformCode,
     appKeyConfigured: true,
     apiKeyConfigured: true,
     appSecretConfigured: true,
@@ -22,14 +39,14 @@ const payload = (vendor = 'dataoke') => ({
     priority: 1,
     status: 1
   }],
-  adzones: [{ platformCode: 'taobao', adzoneId: 'pid-default', adzoneName: '默认位', adzoneType: 'GENERAL', isDefault: 1, status: 1 }],
-  rebateRules: [{ platformCode: 'taobao', rebateRate: 80, status: 1, priority: 0 }]
+  adzones: [{ platformCode, adzoneId: 'pid-default', adzoneName: '默认位', adzoneType: 'GENERAL', isDefault: 1, status: 1 }],
+  rebateRules: [{ platformCode, rebateRate: scenarioFor(platformCode).rebateRate, status: 1, priority: 0 }]
 })
 
-const detail = (vendor = 'dataoke', overrides: Record<string, unknown> = {}) => ({
-  platformCode: 'taobao', mode: 'RECONFIGURE', draftVersion: 3,
+const detail = (vendor = 'dataoke', overrides: Record<string, unknown> = {}, platformCode = 'taobao') => ({
+  platformCode, mode: 'RECONFIGURE', draftVersion: 3,
   configFingerprint: 'fp-3', validatedFingerprint: undefined, status: 'DRAFT',
-  payload: payload(vendor), runtimePayload: payload('dataoke'), draftPayload: payload(vendor), ...overrides
+  payload: payload(vendor, platformCode), runtimePayload: payload(platformCode === 'douyin' ? 'official' : 'dataoke', platformCode), draftPayload: payload(vendor, platformCode), ...overrides
 })
 
 async function mockAdminBootstrapAndMenu(page: Page, permissions = [
@@ -68,31 +85,50 @@ async function mockAdminBootstrapAndMenu(page: Page, permissions = [
   }))
 }
 
-async function mockOnboardingApi(page: Page, options: { testStatus?: 'FAILED' | 'SUCCESS'; runtimeVendor?: string; draftVendor?: string; staleConflict?: boolean } = {}) {
+async function mockOnboardingApi(page: Page, options: { testStatus?: 'FAILED' | 'SUCCESS'; runtimeVendor?: string; draftVendor?: string; staleConflict?: boolean; nullRuntimeDefaultAdzone?: boolean; trace?: string[] } = {}) {
   let current = detail(options.draftVendor || options.runtimeVendor || 'dataoke', { status: 'DRAFT' })
+  let runtimeVendor = options.runtimeVendor || 'dataoke'
+  if (options.nullRuntimeDefaultAdzone) {
+    const incompletePayload = { ...payload(options.draftVendor || options.runtimeVendor || 'dataoke'), runtimeDefaultAdzoneId: null }
+    current = detail(options.draftVendor || options.runtimeVendor || 'dataoke', {
+      status: 'DRAFT',
+      payload: incompletePayload,
+      runtimePayload: incompletePayload,
+      draftPayload: incompletePayload
+    })
+  }
   await page.route('**/admin-api/cps/platform-onboarding/**', async (route: Route) => {
     const url = new URL(route.request().url())
     const path = url.pathname
     const method = route.request().method()
     if (path.endsWith('/page')) {
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok({
-        list: [{ platformCode: 'taobao', platformName: '淘宝', primaryVendorCode: options.runtimeVendor || 'dataoke', backupVendorCount: 1,
+        list: [{ platformCode: 'taobao', platformName: '淘宝', primaryVendorCode: runtimeVendor, backupVendorCount: 1,
           runtimeDefaultAdzoneId: 'pid-default', defaultRebateRate: 80, completionPercent: 100, missingItems: [],
-          connectionStatus: 'SUCCESS', runtimeStatus: 1, draftStatus: options.draftVendor ? 'DRAFT' : undefined, updateTime: '2026-07-23 10:00:00' }], total: 1
+          connectionStatus: 'SUCCESS', runtimeStatus: 1, draftStatus: options.draftVendor ? 'DRAFT' : undefined, updateTime: 1784604831000 }], total: 1
       })) })
     }
-    if (path.endsWith('/platform-capabilities')) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok([{ platformCode: 'taobao', platformName: '淘宝', capabilities: ['SEARCH'], vendors: [] }])) })
-    if (path.endsWith('/vendor-descriptors')) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok([{ vendorCode: 'dataoke', platformCode: 'taobao', vendorType: 'aggregator', capabilities: ['SEARCH'], configSchema: { fields: [{ name: 'appKey', required: true, sensitive: true }, { name: 'appSecret', required: true, sensitive: true }] }, governancePolicy: { timeoutMillis: 1000, rateLimitPerMinute: 60, circuitBreakerFailureThreshold: 3, circuitBreakerOpenMillis: 1000, tokenRefreshSupported: false, metricsEnabled: true, maskedDiagnosticsEnabled: true, retryPolicy: { maxAttempts: 1, initialBackoffMillis: 1, maxBackoffMillis: 1, idempotentOnly: true, retryOnTimeout: false, retryOnRateLimit: false, retryOnBusinessError: false } } }])) })
+    if (path.endsWith('/platform-capabilities')) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(platformScenarios.map((item) => ({ platformCode: item.platformCode, platformName: item.platformName, capabilities: ['SEARCH'], vendors: [] })))) })
+    if (path.endsWith('/vendor-descriptors')) {
+      const descriptorFor = (vendorCode: string, platformCode: string) => ({ vendorCode, platformCode, vendorType: vendorCode === 'official' ? 'official' : 'aggregator', capabilities: ['SEARCH'], configSchema: { fields: [{ name: 'appKey', required: true, sensitive: true }, { name: 'appSecret', required: true, sensitive: true }] }, governancePolicy: { timeoutMillis: 1000, rateLimitPerMinute: 60, circuitBreakerFailureThreshold: 3, circuitBreakerOpenMillis: 1000, tokenRefreshSupported: false, metricsEnabled: true, maskedDiagnosticsEnabled: true, retryPolicy: { maxAttempts: 1, initialBackoffMillis: 1, maxBackoffMillis: 1, idempotentOnly: true, retryOnTimeout: false, retryOnRateLimit: false, retryOnBusinessError: false } } })
+      const descriptors = [descriptorFor('dataoke', 'taobao'), descriptorFor('haodanku', 'taobao'), descriptorFor('dataoke', 'jd'), descriptorFor('dataoke', 'pdd'), descriptorFor('official', 'douyin')]
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(descriptors)) })
+    }
     if (path.endsWith('/get')) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(current)) })
     if (path.endsWith('/draft') && method === 'POST') {
       if (options.staleConflict) {
         return route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ code: 409, data: null, msg: '草稿版本冲突' }) })
       }
-      const body = route.request().postDataJSON() as { payload?: unknown }
-      current = { ...current, draftVersion: (current.draftVersion as number) + 1, configFingerprint: 'fp-next', status: 'DRAFT', payload: body.payload || (current as any).payload }
+      const body = route.request().postDataJSON() as { platformCode?: string; payload?: any }
+      const savedPayload = body.payload || (current as any).payload
+      const platformCode = body.platformCode || savedPayload?.platform?.platformCode || (current as any).platformCode
+      options.trace?.push(`draft:${platformCode}`)
+      current = { ...current, platformCode, draftVersion: (current.draftVersion as number) + 1, configFingerprint: 'fp-next', validatedFingerprint: undefined, status: 'DRAFT', payload: savedPayload, draftPayload: savedPayload }
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(current)) })
     }
     if (path.endsWith('/test')) {
+      const body = route.request().postDataJSON() as { platformCode?: string }
+      options.trace?.push(`test:${body.platformCode}`)
       const success = options.testStatus !== 'FAILED'
       return route.fulfill({
         contentType: 'application/json',
@@ -103,8 +139,10 @@ async function mockOnboardingApi(page: Page, options: { testStatus?: 'FAILED' | 
       })
     }
     if (path.endsWith('/publish')) {
-      const body = route.request().postDataJSON() as { enableAfterPublish?: boolean }
-      const publishedPayload = { ...(current as any).payload, primaryVendorCode: options.draftVendor || (current as any).payload.primaryVendorCode }
+      const body = route.request().postDataJSON() as { platformCode?: string; enableAfterPublish?: boolean }
+      options.trace?.push(`publish:${body.platformCode}:${Boolean(body.enableAfterPublish)}`)
+      const publishedPayload = { ...(current as any).draftPayload, primaryVendorCode: options.draftVendor || (current as any).draftPayload.primaryVendorCode }
+      if (body.enableAfterPublish) runtimeVendor = publishedPayload.primaryVendorCode
       current = { ...current, status: 'PUBLISHED', validatedFingerprint: current.configFingerprint, payload: publishedPayload, runtimePayload: body.enableAfterPublish ? publishedPayload : (current as any).runtimePayload, draftPayload: publishedPayload, runtimeStatus: body.enableAfterPublish ? 1 : 0 }
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(current)) })
     }
@@ -123,50 +161,100 @@ async function openReconfigureWorkspace(page: Page, platformCode = 'taobao') {
   await expect(page.getByText('平台接入工作台')).toBeVisible()
 }
 
-async function fillMinimumDraft(page: Page) {
+async function fillMinimumDraft(page: Page, scenario = platformScenarios[0]) {
   await page.getByLabel('平台编码').click()
-  await page.getByRole('option', { name: '淘宝' }).click()
-  await page.getByLabel('平台名称').fill('淘宝')
+  await page.getByRole('option', { name: scenario.platformName }).click()
+  await page.getByLabel('平台名称').fill(scenario.platformName)
   await page.getByRole('button', { name: '下一步' }).click()
 
   await page.getByRole('button', { name: '添加供应商' }).click()
   await page.getByLabel('供应商编码').click()
-  await page.getByRole('option', { name: 'dataoke', exact: true }).click()
-  await page.getByLabel('供应商名称').fill('大淘客')
+  await page.getByRole('option', { name: scenario.vendorCode, exact: true }).click()
+  await page.getByLabel('供应商名称').fill(scenario.vendorName)
   await page.getByLabel('appKey').fill('e2e-key')
   await page.getByLabel('appSecret').fill('e2e-secret')
   await page.getByRole('button', { name: '确定' }).click()
   await page.getByRole('button', { name: '下一步' }).click()
 
   await page.getByRole('button', { name: '添加推广位' }).click()
-  await page.getByLabel('推广位 ID').fill('pid-default')
+  await page.getByLabel('推广位 ID').fill(`pid-${scenario.platformCode}`)
   await page.getByLabel('名称').fill('默认位')
   await page.getByRole('button', { name: '确定' }).click()
   await page.getByRole('button', { name: '下一步' }).click()
 
   await page.getByRole('button', { name: '添加返利规则' }).click()
-  await page.getByLabel('返利比例').fill('80')
+  await expect(page.getByLabel('优先级')).toBeVisible()
+  await expect(page.getByLabel('优先级')).toHaveValue('0')
+  await page.getByLabel('返利比例').fill(String(scenario.rebateRate))
   await page.getByRole('button', { name: '确定' }).click()
   await page.getByRole('button', { name: '下一步' }).click()
 }
 
 test.describe('CPS platform onboarding', () => {
+  test('advances past rebate configuration when an incomplete draft has a null runtime default adzone', async ({ page }) => {
+    await mockAdminBootstrapAndMenu(page)
+    await mockOnboardingApi(page, { nullRuntimeDefaultAdzone: true })
+    await openReconfigureWorkspace(page)
+    const pageError = new Promise<string | null>((resolve) => {
+      const timeout = setTimeout(() => resolve(null), 1000)
+      page.once('pageerror', (error) => {
+        clearTimeout(timeout)
+        resolve(error.message)
+      })
+    })
+    await page.getByText('返利配置', { exact: true }).click()
+    await page.getByRole('button', { name: '下一步' }).click()
+    expect(await pageError).toBeNull()
+    await expect(page.getByRole('button', { name: '连接测试' })).toBeVisible()
+  })
+
+  test('keeps required rebate fields visible and advances to review', async ({ page }) => {
+    await mockAdminBootstrapAndMenu(page)
+    await mockOnboardingApi(page)
+    await openPlatformCenter(page)
+    await expect(page.getByText('2026-07-21 11:33:51')).toBeVisible()
+    await page.getByRole('button', { name: '接入新平台' }).click()
+    await fillMinimumDraft(page)
+    await expect(page.getByRole('button', { name: '连接测试' })).toBeVisible()
+  })
+
+  for (const scenario of platformScenarios) {
+    test(`completes save, connection test, and enabled publication for ${scenario.platformName}`, async ({ page }) => {
+      const trace: string[] = []
+      await mockAdminBootstrapAndMenu(page)
+      await mockOnboardingApi(page, { trace })
+      await openPlatformCenter(page)
+      await page.getByRole('button', { name: '接入新平台' }).click()
+      await fillMinimumDraft(page, scenario)
+      await page.getByRole('button', { name: '连接测试' }).click()
+      await expect(page.getByText('连接测试通过')).toBeVisible()
+      await expect(page.getByRole('button', { name: '发布并启用' })).toBeEnabled()
+      await page.getByRole('button', { name: '发布并启用' }).click()
+      await expect(page.getByText('已发布并启用')).toBeVisible()
+      expect(trace).toEqual([
+        `draft:${scenario.platformCode}`,
+        `test:${scenario.platformCode}`,
+        `publish:${scenario.platformCode}:true`
+      ])
+    })
+  }
+
   test('saves a failed first-time setup as an incomplete draft', async ({ page }) => {
     await mockAdminBootstrapAndMenu(page); await mockOnboardingApi(page, { testStatus: 'FAILED' }); await openPlatformCenter(page)
     await page.getByRole('button', { name: '接入新平台' }).click(); await expect(page.getByText('平台信息')).toBeVisible(); await fillMinimumDraft(page)
     await page.getByRole('button', { name: '连接测试' }).click(); await expect(page.getByText('连接测试失败')).toBeVisible()
-    await page.getByRole('button', { name: '保存草稿' }).click(); await expect(page.getByText('草稿已保存')).toBeVisible(); await expect(page.getByRole('button', { name: '发布并启用' })).toBeDisabled()
+    await page.getByRole('button', { name: '保存草稿' }).click(); await expect(page.getByText('草稿已保存').last()).toBeVisible(); await expect(page.getByRole('button', { name: '发布并启用' })).toBeDisabled()
   })
 
   test('keeps runtime summary until a reconfiguration draft is published', async ({ page }) => {
     await mockAdminBootstrapAndMenu(page); await mockOnboardingApi(page, { runtimeVendor: 'dataoke', draftVendor: 'haodanku', testStatus: 'SUCCESS' }); await openReconfigureWorkspace(page)
-    await expect(page.getByText(/大淘客/).first()).toBeVisible(); await expect(page.getByText(/好单库/).first()).toBeVisible()
-    await page.getByText('检测与启用', { exact: true }).click(); await page.getByRole('button', { name: '连接测试' }).click(); await page.getByRole('button', { name: '发布并启用' }).click(); await expect(page.getByText(/好单库/).first()).toBeVisible()
+    await expect(page.getByRole('cell', { name: '淘宝 / 大淘客', exact: true })).toBeVisible(); await expect(page.getByRole('cell', { name: '淘宝 / 好单库（可继续完善）', exact: true })).toBeVisible()
+    await page.getByText('检测与启用', { exact: true }).click(); await page.getByRole('button', { name: '连接测试' }).click(); await page.getByRole('button', { name: '发布并启用' }).click(); await expect(page.getByRole('cell', { name: 'haodanku', exact: true })).toBeVisible()
   })
 
   test('resumes an existing draft and exposes backup vendor management', async ({ page }) => {
     await mockAdminBootstrapAndMenu(page); await mockOnboardingApi(page, { draftVendor: 'haodanku' }); await openPlatformCenter(page)
-    await page.getByRole('button', { name: '配置' }).click(); await expect(page.getByText('平台接入工作台')).toBeVisible(); await page.getByText('API供应商', { exact: true }).click(); await expect(page.getByText('好单库')).toBeVisible(); await expect(page.getByText('备用供应商')).toBeVisible()
+    await page.getByRole('button', { name: '配置', exact: true }).click(); await expect(page.getByText('平台接入工作台')).toBeVisible(); await page.getByText('API供应商', { exact: true }).click(); await expect(page.getByRole('cell', { name: '好单库', exact: true })).toBeVisible(); await expect(page.getByText('备用供应商')).toBeVisible()
   })
 
   test('changes runtime default adzone and validates advanced rebate rules', async ({ page }) => {
@@ -182,6 +270,6 @@ test.describe('CPS platform onboarding', () => {
   })
 
   test('hides mutation actions when permissions are absent', async ({ page }) => {
-    await mockAdminBootstrapAndMenu(page, ['cps:platform-onboarding:query']); await mockOnboardingApi(page); await openPlatformCenter(page); await expect(page.getByRole('button', { name: '接入新平台' })).toHaveCount(0); await expect(page.getByRole('button', { name: '配置' })).toHaveCount(0)
+    await mockAdminBootstrapAndMenu(page, ['cps:platform-onboarding:query']); await mockOnboardingApi(page); await openPlatformCenter(page); await expect(page.getByRole('button', { name: '接入新平台' })).toHaveCount(0); await expect(page.getByRole('button', { name: '配置', exact: true })).toHaveCount(0)
   })
 })

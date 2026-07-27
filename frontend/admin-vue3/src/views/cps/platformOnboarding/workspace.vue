@@ -13,7 +13,7 @@
     <CheckResultPanel :result="draft.checkResult" />
     <div class="flex justify-between mt-16px">
       <el-button :disabled="currentStep === 0" @click="currentStep--">上一步</el-button>
-      <div class="flex gap-8px"><el-button @click="saveDraft" :loading="saving">保存草稿</el-button><el-button v-if="currentStep === 4" type="warning" :loading="testing" :disabled="!draft.draftVersion" @click="runTest">连接测试</el-button><el-button v-if="currentStep < 4" type="primary" @click="next">下一步</el-button><template v-else><el-button type="primary" :loading="publishing" :disabled="!canPublish" @click="publish(false)">发布但保持禁用</el-button><el-button type="success" :loading="publishing" :disabled="!canPublish" @click="publish(true)">发布并启用</el-button></template></div>
+      <div class="flex gap-8px"><el-button @click="saveDraft" :loading="saving">保存草稿</el-button><el-button v-if="currentStep === 4" type="warning" :loading="testing" @click="runTest">连接测试</el-button><el-button v-if="currentStep < 4" type="primary" @click="next">下一步</el-button><template v-else><el-button type="primary" :loading="publishing" :disabled="!canPublish" @click="publish(false)">发布但保持禁用</el-button><el-button type="success" :loading="publishing" :disabled="!canPublish" @click="publish(true)">发布并启用</el-button></template></div>
     </div>
   </div>
 </template>
@@ -45,7 +45,20 @@ const saving = ref(false); const testing = ref(false); const publishing = ref(fa
 const platformRef = ref(); const vendorRef = ref(); const adzoneRef = ref(); const rebateRef = ref(); const reviewRef = ref()
 const dirty = computed(() => isDirty(originalDraft.value, draft.value))
 const canPublish = computed(() => !dirty.value && draft.value.status === 'READY' && Boolean(draft.value.draftVersion && draft.value.configFingerprint && draft.value.validatedFingerprint && draft.value.configFingerprint === draft.value.validatedFingerprint))
-const payloadFromDetail = (detail: any): PlatformOnboardingDraft => { const payload = detail?.draftPayload || detail?.payload || detail?.runtimePayload || {}; return maskConfiguredSecrets({ ...createEmptyDraft(detail?.platformCode || props.platformCode || ''), ...detail, ...payload, platformCode: detail?.platformCode || payload.platform?.platformCode || props.platformCode || '', mode: detail?.mode || (props.mode === 'edit' ? 'RECONFIGURE' : 'CREATE'), status: detail?.status || 'DRAFT', checkResult: detail?.checkResult }) }
+const payloadFromDetail = (detail: any): PlatformOnboardingDraft => {
+  const payload = detail?.draftPayload || detail?.payload || detail?.runtimePayload || {}
+  return maskConfiguredSecrets({
+    ...createEmptyDraft(detail?.platformCode || props.platformCode || ''),
+    ...detail,
+    ...payload,
+    platformCode: detail?.platformCode || payload.platform?.platformCode || props.platformCode || '',
+    primaryVendorCode: payload.primaryVendorCode ?? '',
+    runtimeDefaultAdzoneId: payload.runtimeDefaultAdzoneId ?? '',
+    mode: detail?.mode || (props.mode === 'edit' ? 'RECONFIGURE' : 'CREATE'),
+    status: detail?.status || 'DRAFT',
+    checkResult: detail?.checkResult
+  })
+}
 const load = async () => { if (props.platformCode) { const detail = await PlatformOnboardingApi.getDetail(props.platformCode); runtimePayload.value = detail.runtimePayload; draftPayload.value = detail.draftPayload; draft.value = payloadFromDetail(detail); originalDraft.value = JSON.parse(JSON.stringify(draft.value)); descriptors.value = await PlatformOnboardingApi.getVendorDescriptors(props.platformCode) } else { descriptors.value = await PlatformOnboardingApi.getVendorDescriptors() } }
 const saveDraft = async () => { saving.value = true; try { const response = await PlatformOnboardingApi.saveDraft(normalizeDraftForSave(draft.value)); const next = payloadFromDetail(response); draft.value = { ...draft.value, ...next, status: next.status || 'DRAFT', checkResult: undefined, validatedFingerprint: undefined }; originalDraft.value = JSON.parse(JSON.stringify(draft.value)); ElMessage.success('草稿已保存') } catch (error: any) { if (error?.response?.status === 409) ElMessage.error(error.response.data?.msg || '草稿版本冲突'); throw error } finally { saving.value = false } }
 const validateStep = async (index: number) => { const target = [platformRef, vendorRef, adzoneRef, rebateRef, reviewRef][index].value; return !target?.validate || await target.validate() }

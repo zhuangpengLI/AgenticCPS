@@ -78,7 +78,12 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="更新时间" prop="updateTime" width="170" />
+        <el-table-column
+          label="更新时间"
+          prop="updateTime"
+          width="170"
+          :formatter="dateFormatter"
+        />
         <el-table-column label="操作" fixed="right" width="260" align="center">
           <template #default="{ row }">
             <el-button link type="primary" v-hasPermi="['cps:platform-onboarding:update']" @click="openEdit(row.platformCode)">
@@ -150,6 +155,7 @@ import {
   type OnboardingPageItem,
   type OnboardingPageReq
 } from '@/api/cps/platformOnboarding'
+import { dateFormatter } from '@/utils/formatTime'
 import CompletionBadge from './components/CompletionBadge.vue'
 import Workspace from './workspace.vue'
 
