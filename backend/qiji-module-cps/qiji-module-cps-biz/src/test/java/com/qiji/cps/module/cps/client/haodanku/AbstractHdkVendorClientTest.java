@@ -59,6 +59,19 @@ class AbstractHdkVendorClientTest {
     }
 
     @Test
+    @DisplayName("好单库配置只要求 apikey 和基础地址")
+    void configSchemaShouldAcceptApiKeyWithoutAppSecret() {
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .appKey("hdk-key")
+                .apiBaseUrl("http://v2.api.haodanku.com")
+                .build();
+
+        assertTrue(client.getConfigSchema().validate(config).isValid());
+        assertFalse(client.getConfigSchema().getFields().stream()
+                .anyMatch(field -> field.isRequired() && "appSecret".equals(field.getName())));
+    }
+
+    @Test
     @DisplayName("好单库鉴权应注入 apikey 且不生成签名")
     void testInjectSignParams() {
         CpsVendorConfig config = CpsVendorConfig.builder().appKey("hdk-key").build();

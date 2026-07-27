@@ -31,11 +31,11 @@ const payload = (vendor = 'dataoke', platformCode = 'taobao') => ({
     platformCode,
     appKeyConfigured: true,
     apiKeyConfigured: true,
-    appSecretConfigured: true,
+    appSecretConfigured: vendor !== 'haodanku',
     authTokenConfigured: false,
     apiBaseUrlConfigured: true,
     extraConfigConfigured: false,
-    configuredFields: ['appKey', 'appSecret'],
+    configuredFields: vendor === 'haodanku' ? ['appKey', 'apiBaseUrl'] : ['appKey', 'appSecret'],
     priority: 1,
     status: 1
   }],
@@ -110,7 +110,7 @@ async function mockOnboardingApi(page: Page, options: { testStatus?: 'FAILED' | 
     }
     if (path.endsWith('/platform-capabilities')) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(platformScenarios.map((item) => ({ platformCode: item.platformCode, platformName: item.platformName, capabilities: ['SEARCH'], vendors: [] })))) })
     if (path.endsWith('/vendor-descriptors')) {
-      const descriptorFor = (vendorCode: string, platformCode: string) => ({ vendorCode, platformCode, vendorType: vendorCode === 'official' ? 'official' : 'aggregator', capabilities: ['SEARCH'], configSchema: { fields: [{ name: 'appKey', required: true, sensitive: true }, { name: 'appSecret', required: true, sensitive: true }] }, governancePolicy: { timeoutMillis: 1000, rateLimitPerMinute: 60, circuitBreakerFailureThreshold: 3, circuitBreakerOpenMillis: 1000, tokenRefreshSupported: false, metricsEnabled: true, maskedDiagnosticsEnabled: true, retryPolicy: { maxAttempts: 1, initialBackoffMillis: 1, maxBackoffMillis: 1, idempotentOnly: true, retryOnTimeout: false, retryOnRateLimit: false, retryOnBusinessError: false } } })
+      const descriptorFor = (vendorCode: string, platformCode: string) => ({ vendorCode, platformCode, vendorType: vendorCode === 'official' ? 'official' : 'aggregator', capabilities: ['SEARCH'], configSchema: { fields: vendorCode === 'haodanku' ? [{ name: 'appKey', required: true, sensitive: true }, { name: 'apiBaseUrl', required: true, sensitive: false }] : [{ name: 'appKey', required: true, sensitive: true }, { name: 'appSecret', required: true, sensitive: true }] }, governancePolicy: { timeoutMillis: 1000, rateLimitPerMinute: 60, circuitBreakerFailureThreshold: 3, circuitBreakerOpenMillis: 1000, tokenRefreshSupported: false, metricsEnabled: true, maskedDiagnosticsEnabled: true, retryPolicy: { maxAttempts: 1, initialBackoffMillis: 1, maxBackoffMillis: 1, idempotentOnly: true, retryOnTimeout: false, retryOnRateLimit: false, retryOnBusinessError: false } } })
       const descriptors = [descriptorFor('dataoke', 'taobao'), descriptorFor('haodanku', 'taobao'), descriptorFor('dataoke', 'jd'), descriptorFor('dataoke', 'pdd'), descriptorFor('official', 'douyin')]
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(descriptors)) })
     }
@@ -255,6 +255,17 @@ test.describe('CPS platform onboarding', () => {
   test('resumes an existing draft and exposes backup vendor management', async ({ page }) => {
     await mockAdminBootstrapAndMenu(page); await mockOnboardingApi(page, { draftVendor: 'haodanku' }); await openPlatformCenter(page)
     await page.getByRole('button', { name: '配置', exact: true }).click(); await expect(page.getByText('平台接入工作台')).toBeVisible(); await page.getByText('API供应商', { exact: true }).click(); await expect(page.getByRole('cell', { name: '好单库', exact: true })).toBeVisible(); await expect(page.getByText('备用供应商')).toBeVisible()
+  })
+
+  test('recognizes Haodanku apikey-only credentials as configured', async ({ page }) => {
+    await mockAdminBootstrapAndMenu(page)
+    await mockOnboardingApi(page, { runtimeVendor: 'dataoke', draftVendor: 'haodanku' })
+    await openReconfigureWorkspace(page)
+    await page.getByText('API供应商', { exact: true }).click()
+    const haodankuRow = page.getByRole('row').filter({ hasText: '好单库' })
+    await expect(haodankuRow.getByText('已配置（已脱敏）')).toBeVisible()
+    await haodankuRow.getByRole('button', { name: '测试' }).click()
+    await expect(page.getByText('检查成功')).toBeVisible()
   })
 
   test('changes runtime default adzone and validates advanced rebate rules', async ({ page }) => {
