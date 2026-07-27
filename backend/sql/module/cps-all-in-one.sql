@@ -1,7 +1,7 @@
 -- ============================================================
 -- CPS联盟返利系统 - 完整数据库建表脚本（All-in-One）
 -- Version: 2.0
--- Date: 2026-07-09
+-- Date: 2026-07-23
 -- Description: 新库全量初始化脚本，整合 CPS 核心表、P0 返利兑换、活动中心、选品库、CPX 扩展表、菜单与权限。
 -- Maintenance:
 --   1. 本文件只保存新库全量脚本。
@@ -80,8 +80,9 @@ CREATE TABLE `cps_platform` (
   `tenant_id`            bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
   `active_vendor_code`   varchar(32)           DEFAULT 'dataoke' COMMENT '当前激活的供应商编码（用于路由选择）',
   `supported_vendors`    varchar(256)          DEFAULT 'dataoke' COMMENT '支持的供应商列表（逗号分隔）',
+  `active_unique_key`    varchar(128) GENERATED ALWAYS AS (IF(`deleted` = b'0', CONCAT(`tenant_id`, ':', `platform_code`), NULL)) STORED COMMENT '未删除平台租户唯一键',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_platform_code` (`platform_code`) USING BTREE
+  UNIQUE KEY `uk_cps_platform_active` (`active_unique_key`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS平台配置表';
 
 -- ----------------------------
@@ -106,7 +107,9 @@ CREATE TABLE `cps_adzone` (
   `update_time`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted`       bit(1)                DEFAULT b'0' COMMENT '是否删除',
   `tenant_id`     bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  `active_unique_key` varchar(191) GENERATED ALWAYS AS (IF(`deleted` = b'0', CONCAT(CHAR_LENGTH(CAST(`tenant_id` AS CHAR)), ':', CAST(`tenant_id` AS CHAR), CHAR_LENGTH(`platform_code`), ':', `platform_code`, CHAR_LENGTH(`adzone_id`), ':', `adzone_id`), NULL)) STORED COMMENT '未删除推广位租户唯一键（长度前缀编码）',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cps_adzone_active` (`active_unique_key`) USING BTREE,
   KEY `idx_platform_code` (`platform_code`) USING BTREE,
   KEY `idx_adzone_id` (`adzone_id`) USING BTREE,
   KEY `idx_external_relation_id` (`platform_code`,`external_relation_id`) USING BTREE,
@@ -980,11 +983,40 @@ CREATE TABLE `cps_api_vendor` (
   `update_time`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted`           bit(1)                DEFAULT b'0' COMMENT '是否删除',
   `tenant_id`         bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  `active_unique_key` varchar(191) GENERATED ALWAYS AS (IF(`deleted` = b'0', CONCAT(CHAR_LENGTH(CAST(`tenant_id` AS CHAR)), ':', CAST(`tenant_id` AS CHAR), CHAR_LENGTH(`vendor_code`), ':', `vendor_code`, CHAR_LENGTH(`platform_code`), ':', `platform_code`), NULL)) STORED COMMENT '未删除供应商租户唯一键（长度前缀编码）',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_vendor_platform` (`vendor_code`, `platform_code`, `tenant_id`, `deleted`) USING BTREE,
+  UNIQUE KEY `uk_cps_api_vendor_active` (`active_unique_key`) USING BTREE,
   INDEX `idx_platform_code` (`platform_code`) USING BTREE,
   INDEX `idx_vendor_code` (`vendor_code`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS API供应商配置表';
+
+-- ----------------------------
+-- 31. CPS平台接入草稿表
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_platform_onboarding_draft`;
+CREATE TABLE `cps_platform_onboarding_draft` (
+  `id`                    bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `platform_code`         varchar(32)  NOT NULL COMMENT '平台编码',
+  `mode`                  varchar(16)  NOT NULL COMMENT '接入模式（CREATE/RECONFIGURE）',
+  `payload_ciphertext`    longtext     NOT NULL COMMENT '加密后的配置草稿JSON',
+  `draft_version`         int          NOT NULL DEFAULT '1' COMMENT '草稿乐观锁版本',
+  `config_fingerprint`    varchar(64)           DEFAULT NULL COMMENT '当前配置指纹',
+  `validated_fingerprint` varchar(64)           DEFAULT NULL COMMENT '最近校验通过的配置指纹',
+  `status`                varchar(16)  NOT NULL DEFAULT 'DRAFT' COMMENT '状态（DRAFT/VALIDATING/READY/FAILED/PUBLISHED）',
+  `check_summary`         text                  COMMENT '最近校验摘要',
+  `validated_at`          datetime              DEFAULT NULL COMMENT '最近校验时间',
+  `published_at`          datetime              DEFAULT NULL COMMENT '发布时间',
+  `creator`               varchar(64)           DEFAULT NULL COMMENT '创建人',
+  `create_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`               varchar(64)           DEFAULT NULL COMMENT '更新人',
+  `update_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`               bit(1)       NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`             bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+  `active_unique_key`     varchar(128) GENERATED ALWAYS AS (IF(`deleted` = b'0', CONCAT(`tenant_id`, ':', `platform_code`), NULL)) STORED COMMENT '未删除草稿租户平台唯一键',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cps_platform_onboarding_draft_active` (`active_unique_key`) USING BTREE,
+  KEY `idx_cps_platform_onboarding_draft_status` (`tenant_id`, `status`, `update_time`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS平台接入草稿表';
 
 
 
@@ -1630,7 +1662,7 @@ INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_i
 (6227, '返利记录查询', 'cps:rebate-record:query', 3, 1, 6226, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6228, '返利退款回扣', 'cps:rebate-record:reverse', 3, 2, 6226, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6285, '返利记录删除', 'cps:rebate-record:delete', 3, 3, 6226, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-06 00:00:00', '1', '2026-07-06 00:00:00', b'0'),
-(6229, '返利配置', 'cps:rebate-config:query', 2, 10, 6287, 'rebate/config', 'ep:setting', 'cps/rebate/config/index', 'CpsRebateConfig', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
+(6229, '返利配置', 'cps:rebate-config:query', 2, 10, 6287, 'rebate/config', 'ep:setting', 'cps/rebate/config/index', 'CpsRebateConfig', 0, b'0', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6230, '返利配置查询', 'cps:rebate-config:query', 3, 1, 6229, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6231, '返利配置创建', 'cps:rebate-config:create', 3, 2, 6229, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6232, '返利配置更新', 'cps:rebate-config:update', 3, 3, 6229, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
@@ -1662,21 +1694,30 @@ INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_i
 (6250, '统计查询', 'cps:statistics:query', 3, 1, 6249, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 
 -- 基础配置
-(6251, '平台配置', 'cps:platform:query', 2, 20, 6287, 'platform', 'ep:platform', 'cps/platform/index', 'CpsPlatform', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
+(6251, '平台配置', 'cps:platform:query', 2, 20, 6287, 'platform', 'ep:platform', 'cps/platform/index', 'CpsPlatform', 0, b'0', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6252, '平台配置查询', 'cps:platform:query', 3, 1, 6251, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6253, '平台配置创建', 'cps:platform:create', 3, 2, 6251, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6254, '平台配置更新', 'cps:platform:update', 3, 3, 6251, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6255, '平台配置删除', 'cps:platform:delete', 3, 4, 6251, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
-(6256, '推广位管理', 'cps:adzone:query', 2, 30, 6287, 'adzone', 'ep:link', 'cps/adzone/index', 'CpsAdzone', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
+(6256, '推广位管理', 'cps:adzone:query', 2, 30, 6287, 'adzone', 'ep:link', 'cps/adzone/index', 'CpsAdzone', 0, b'0', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6257, '推广位查询', 'cps:adzone:query', 3, 1, 6256, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6258, '推广位创建', 'cps:adzone:create', 3, 2, 6256, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6259, '推广位更新', 'cps:adzone:update', 3, 3, 6256, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6260, '推广位删除', 'cps:adzone:delete', 3, 4, 6256, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
-(6261, 'API供应商管理', 'cps:api-vendor:query', 2, 40, 6287, 'api-vendor', 'ep:connection', 'cps/apiVendor/index', 'CpsApiVendor', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
+(6261, 'API供应商管理', 'cps:api-vendor:query', 2, 40, 6287, 'api-vendor', 'ep:connection', 'cps/apiVendor/index', 'CpsApiVendor', 0, b'0', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6262, '供应商查询', 'cps:api-vendor:query', 3, 1, 6261, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6263, '供应商创建', 'cps:api-vendor:create', 3, 2, 6261, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
 (6264, '供应商更新', 'cps:api-vendor:update', 3, 3, 6261, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
-(6265, '供应商删除', 'cps:api-vendor:delete', 3, 4, 6261, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0');
+(6265, '供应商删除', 'cps:api-vendor:delete', 3, 4, 6261, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-05-24 00:00:00', '1', '2026-05-24 00:00:00', b'0'),
+
+-- 平台配置中心（稳定 ID 不占用既有 6200-6296）
+(6297, '平台配置中心', 'cps:platform-onboarding:query', 2, 10, 6287, 'platform-onboarding', 'ep:setting', 'cps/platformOnboarding/index', 'CpsPlatformOnboarding', 0, b'1', b'1', b'1', '1', '2026-07-24 00:00:00', '1', '2026-07-24 00:00:00', b'0'),
+(6298, '平台配置中心查询', 'cps:platform-onboarding:query', 3, 1, 6297, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-24 00:00:00', '1', '2026-07-24 00:00:00', b'0'),
+(6299, '平台配置中心创建', 'cps:platform-onboarding:create', 3, 2, 6297, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-24 00:00:00', '1', '2026-07-24 00:00:00', b'0'),
+(6300, '平台配置中心更新', 'cps:platform-onboarding:update', 3, 3, 6297, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-24 00:00:00', '1', '2026-07-24 00:00:00', b'0'),
+(6301, '平台配置中心删除', 'cps:platform-onboarding:delete', 3, 4, 6297, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-24 00:00:00', '1', '2026-07-24 00:00:00', b'0'),
+(6302, '平台配置中心测试', 'cps:platform-onboarding:test', 3, 5, 6297, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-24 00:00:00', '1', '2026-07-24 00:00:00', b'0'),
+(6303, '平台配置中心发布', 'cps:platform-onboarding:publish', 3, 6, 6297, '', '', '', '', 0, b'1', b'1', b'1', '1', '2026-07-24 00:00:00', '1', '2026-07-24 00:00:00', b'0');
 COMMIT;
 
 -- CPX extension menus: CPS remains the primary business under the upgraded CPX alliance.
@@ -1728,6 +1769,61 @@ WHERE rm.`deleted` = b'0'
       AND existing_rm.`deleted` = b'0'
   );
 
+-- Preserve the four original configuration permission boundaries when granting
+-- the unified page. Query/test require all four legacy pages; mutations require
+-- the corresponding action in all four domains; publish requires create+update.
+INSERT INTO `system_role_menu`
+(`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT eligible.`role_id`, eligible.`target_menu_id`, '1', NOW(), '1', NOW(), b'0', eligible.`tenant_id`
+FROM (
+  SELECT rm.`role_id`, rm.`tenant_id`, mapping.`target_menu_id`
+  FROM `system_role_menu` rm
+  JOIN (
+    SELECT 6297 AS `target_menu_id`, 6229 AS `source_menu_id`, 4 AS `required_count`
+    UNION ALL SELECT 6297, 6251, 4
+    UNION ALL SELECT 6297, 6256, 4
+    UNION ALL SELECT 6297, 6261, 4
+    UNION ALL SELECT 6298 AS `target_menu_id`, 6229 AS `source_menu_id`, 4 AS `required_count`
+    UNION ALL SELECT 6298, 6251, 4
+    UNION ALL SELECT 6298, 6256, 4
+    UNION ALL SELECT 6298, 6261, 4
+    UNION ALL SELECT 6299 AS `target_menu_id`, 6231 AS `source_menu_id`, 4 AS `required_count`
+    UNION ALL SELECT 6299, 6253, 4
+    UNION ALL SELECT 6299, 6258, 4
+    UNION ALL SELECT 6299, 6263, 4
+    UNION ALL SELECT 6300 AS `target_menu_id`, 6232 AS `source_menu_id`, 4 AS `required_count`
+    UNION ALL SELECT 6300, 6254, 4
+    UNION ALL SELECT 6300, 6259, 4
+    UNION ALL SELECT 6300, 6264, 4
+    UNION ALL SELECT 6301 AS `target_menu_id`, 6233 AS `source_menu_id`, 4 AS `required_count`
+    UNION ALL SELECT 6301, 6255, 4
+    UNION ALL SELECT 6301, 6260, 4
+    UNION ALL SELECT 6301, 6265, 4
+    UNION ALL SELECT 6302 AS `target_menu_id`, 6229 AS `source_menu_id`, 4 AS `required_count`
+    UNION ALL SELECT 6302, 6251, 4
+    UNION ALL SELECT 6302, 6256, 4
+    UNION ALL SELECT 6302, 6261, 4
+    UNION ALL SELECT 6303 AS `target_menu_id`, 6231 AS `source_menu_id`, 8 AS `required_count`
+    UNION ALL SELECT 6303, 6253, 8
+    UNION ALL SELECT 6303, 6258, 8
+    UNION ALL SELECT 6303, 6263, 8
+    UNION ALL SELECT 6303, 6232, 8
+    UNION ALL SELECT 6303, 6254, 8
+    UNION ALL SELECT 6303, 6259, 8
+    UNION ALL SELECT 6303, 6264, 8
+  ) mapping ON mapping.`source_menu_id` = rm.`menu_id`
+  WHERE rm.`deleted` = b'0'
+  GROUP BY rm.`role_id`, rm.`tenant_id`, mapping.`target_menu_id`, mapping.`required_count`
+  HAVING COUNT(DISTINCT rm.`menu_id`) = mapping.`required_count`
+) eligible
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_role_menu` existing_rm
+  WHERE existing_rm.`role_id` = eligible.`role_id`
+    AND existing_rm.`menu_id` = eligible.`target_menu_id`
+    AND existing_rm.`tenant_id` = eligible.`tenant_id`
+    AND existing_rm.`deleted` = b'0'
+);
+
 INSERT INTO `system_role_menu` (`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 SELECT DISTINCT rm.`role_id`, 6296, '1', NOW(), '1', NOW(), b'0', rm.`tenant_id`
 FROM `system_role_menu` rm
@@ -1767,6 +1863,55 @@ WHERE `deleted` = b'0'
   AND JSON_VALID(`menu_ids`)
   AND JSON_CONTAINS(`menu_ids`, '6225')
   AND NOT JSON_CONTAINS(`menu_ids`, '6296');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6297),
+    `updater` = '1', `update_time` = NOW()
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6229, 6251, 6256, 6261]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6297');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6298),
+    `updater` = '1', `update_time` = NOW()
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6229, 6251, 6256, 6261]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6298');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6299),
+    `updater` = '1', `update_time` = NOW()
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6231, 6253, 6258, 6263]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6299');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6300),
+    `updater` = '1', `update_time` = NOW()
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6232, 6254, 6259, 6264]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6300');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6301),
+    `updater` = '1', `update_time` = NOW()
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6233, 6255, 6260, 6265]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6301');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6302),
+    `updater` = '1', `update_time` = NOW()
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6229, 6251, 6256, 6261]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6302');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6303),
+    `updater` = '1', `update_time` = NOW()
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6231, 6253, 6258, 6263, 6232, 6254, 6259, 6264]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6303');
 COMMIT;
 
 SET FOREIGN_KEY_CHECKS = 1;

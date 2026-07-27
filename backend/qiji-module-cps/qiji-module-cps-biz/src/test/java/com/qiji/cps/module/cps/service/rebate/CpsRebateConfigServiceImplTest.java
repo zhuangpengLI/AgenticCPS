@@ -1,7 +1,10 @@
 package com.qiji.cps.module.cps.service.rebate;
 
+import com.qiji.cps.framework.common.exception.ServiceException;
+import com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateConfigSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateConfigDO;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateConfigMapper;
+import com.qiji.cps.module.cps.service.onboarding.CpsPlatformOnboardingCacheInvalidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,7 +16,13 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ONBOARDING_CONFIG_INVALID;
+import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.REBATE_CONFIG_AMOUNT_RANGE_INVALID;
 
 @ExtendWith(MockitoExtension.class)
 class CpsRebateConfigServiceImplTest {
@@ -21,12 +30,16 @@ class CpsRebateConfigServiceImplTest {
     @Mock
     private CpsRebateConfigMapper mapper;
 
+    @Mock
+    private CpsPlatformOnboardingCacheInvalidator cacheInvalidator;
+
     private CpsRebateConfigServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new CpsRebateConfigServiceImpl();
         ReflectionTestUtils.setField(service, "rebateConfigMapper", mapper);
+        ReflectionTestUtils.setField(service, "cacheInvalidator", cacheInvalidator);
     }
 
     @Test
@@ -40,6 +53,71 @@ class CpsRebateConfigServiceImplTest {
         CpsRebateConfigDO matched = service.matchRebateConfig(9L, 3L, "taobao");
 
         assertEquals(4L, matched.getId());
+    }
+
+    @Test
+    void createRebateConfig_whenMinGreaterThanMax_shouldReject() {
+        CpsRebateConfigSaveReqVO request = invalidRangeRequest();
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.createRebateConfig(request));
+
+        assertEquals(REBATE_CONFIG_AMOUNT_RANGE_INVALID.getCode(), exception.getCode());
+        verify(mapper, never()).insert(any(CpsRebateConfigDO.class));
+    }
+
+    @Test
+    void updateRebateConfig_whenMinGreaterThanMax_shouldReject() {
+        CpsRebateConfigSaveReqVO request = invalidRangeRequest();
+        request.setId(9L);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.updateRebateConfig(request));
+
+        assertEquals(REBATE_CONFIG_AMOUNT_RANGE_INVALID.getCode(), exception.getCode());
+        verify(mapper, never()).updateById(any(CpsRebateConfigDO.class));
+    }
+
+    @Test
+    void createRebateConfig_whenPriorityNegative_shouldReject() {
+        CpsRebateConfigSaveReqVO request = validRequest();
+        request.setPriority(-1);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.createRebateConfig(request));
+
+        assertEquals(ONBOARDING_CONFIG_INVALID.getCode(), exception.getCode());
+        verify(mapper, never()).insert(any(CpsRebateConfigDO.class));
+    }
+
+    @Test
+    void createRebateConfig_whenStatusOutsideSupportedValues_shouldReject() {
+        CpsRebateConfigSaveReqVO request = validRequest();
+        request.setStatus(2);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.createRebateConfig(request));
+
+        assertEquals(ONBOARDING_CONFIG_INVALID.getCode(), exception.getCode());
+        verify(mapper, never()).insert(any(CpsRebateConfigDO.class));
+    }
+
+    private static CpsRebateConfigSaveReqVO validRequest() {
+        CpsRebateConfigSaveReqVO request = new CpsRebateConfigSaveReqVO();
+        request.setPlatformCode("taobao");
+        request.setRebateRate(new BigDecimal("20"));
+        request.setStatus(1);
+        return request;
+    }
+
+    private static CpsRebateConfigSaveReqVO invalidRangeRequest() {
+        CpsRebateConfigSaveReqVO request = new CpsRebateConfigSaveReqVO();
+        request.setPlatformCode("taobao");
+        request.setRebateRate(new BigDecimal("20"));
+        request.setMinRebateAmount(new BigDecimal("100"));
+        request.setMaxRebateAmount(new BigDecimal("50"));
+        request.setStatus(1);
+        return request;
     }
 
     private static CpsRebateConfigDO config(Long id, Long memberId, Long levelId,

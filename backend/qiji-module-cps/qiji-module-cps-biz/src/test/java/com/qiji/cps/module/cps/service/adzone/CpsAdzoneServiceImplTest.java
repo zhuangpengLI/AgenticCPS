@@ -16,6 +16,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ADZONE_RELATION_REQUIRED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -66,6 +67,38 @@ class CpsAdzoneServiceImplTest {
     }
 
     @Test
+    @DisplayName("createAdzone - 淘宝渠道推广位必须配置渠道关系 ID")
+    void createAdzone_rejectsTaobaoChannelWithoutExternalRelationId() {
+        CpsAdzoneSaveReqVO reqVO = buildGeneralReqVO("mm_1_2_3", "渠道 PID");
+        reqVO.setAdzoneType("channel");
+        reqVO.setRelationType("channel");
+        reqVO.setRelationId(9001L);
+        reqVO.setExternalRelationId(null);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.createAdzone(reqVO));
+
+        assertEquals(ADZONE_RELATION_REQUIRED.getCode(), exception.getCode());
+        verify(adzoneMapper, never()).insert(any(CpsAdzoneDO.class));
+    }
+
+    @Test
+    @DisplayName("updateAdzone - 淘宝会员推广位缺 specialId 使用统一关联信息错误")
+    void updateAdzone_rejectsTaobaoMemberWithoutSpecialIdUsingRelationRequiredCode() {
+        CpsAdzoneSaveReqVO reqVO = buildTaobaoMemberReqVO();
+        reqVO.setId(9L);
+        reqVO.setAdzoneId("mm_1_2_3");
+        reqVO.setExternalSpecialId(null);
+        when(adzoneMapper.selectById(9L)).thenReturn(CpsAdzoneDO.builder().id(9L).build());
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.updateAdzone(reqVO));
+
+        assertEquals(ADZONE_RELATION_REQUIRED.getCode(), exception.getCode());
+        verify(adzoneMapper, never()).updateById(any(CpsAdzoneDO.class));
+    }
+
+    @Test
     @DisplayName("updateAdzone - 淘宝会员推广位更新时同样校验 PID")
     void updateAdzone_rejectsInvalidTaobaoMemberPidFormat() {
         CpsAdzoneSaveReqVO reqVO = buildTaobaoMemberReqVO();
@@ -89,6 +122,7 @@ class CpsAdzoneServiceImplTest {
         channel.setAdzoneType("channel");
         channel.setRelationType("channel");
         channel.setRelationId(9001L);
+        channel.setExternalRelationId("tb-channel-9001");
         when(adzoneMapper.insert(any(CpsAdzoneDO.class))).thenReturn(1);
 
         CpsAdzoneBatchCreateRespVO response = service.batchCreateAdzones(List.of(general, invalidMember, channel));

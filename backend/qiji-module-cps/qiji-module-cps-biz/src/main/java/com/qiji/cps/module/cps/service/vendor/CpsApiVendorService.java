@@ -8,6 +8,7 @@ import com.qiji.cps.module.cps.dal.dataobject.vendor.CpsApiVendorDO;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * CPS API 供应商配置 Service 接口
@@ -55,6 +56,21 @@ public interface CpsApiVendorService {
      * 获取所有已启用的供应商列表
      */
     List<CpsApiVendorDO> getEnabledVendorList();
+
+    /**
+     * 获取指定平台的全部供应商，包括禁用的备用供应商。
+     */
+    List<CpsApiVendorDO> getVendorListByPlatform(String platformCode);
+
+    /**
+     * 按供应商编码和平台编码稳定键保存平台接入供应商。
+     */
+    Long upsertVendorForOnboarding(@Valid CpsApiVendorSaveReqVO saveReqVO);
+
+    /**
+     * 删除不再由当前平台接入配置管理的供应商。
+     */
+    void deleteVendorsNotIn(String platformCode, Set<String> retainedVendorCodes);
 
     /**
      * 构建供应商运行时配置 DTO（从 DO 转换为传入客户端的配置）

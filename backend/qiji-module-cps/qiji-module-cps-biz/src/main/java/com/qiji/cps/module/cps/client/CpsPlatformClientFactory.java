@@ -236,8 +236,11 @@ public class CpsPlatformClientFactory {
     public List<CpsVendorDescriptor> getRegisteredVendorDescriptors() {
         return vendorClientMap.values().stream()
                 .map(CpsApiVendorClient::describe)
-                .sorted(Comparator.comparing(CpsVendorDescriptor::getPlatformCode)
-                        .thenComparing(CpsVendorDescriptor::getVendorCode))
+                .filter(java.util.Objects::nonNull)
+                .sorted(Comparator.comparing(CpsVendorDescriptor::getPlatformCode,
+                                Comparator.nullsFirst(String::compareTo))
+                        .thenComparing(CpsVendorDescriptor::getVendorCode,
+                                Comparator.nullsFirst(String::compareTo)))
                 .toList();
     }
 

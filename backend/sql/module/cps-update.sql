@@ -982,5 +982,333 @@ CREATE TABLE IF NOT EXISTS `cps_marketing_click_event` (
   KEY `idx_cps_marketing_click_short` (`tenant_id`, `deleted`, `short_code`, `short_link_id`) USING BTREE,
   KEY `idx_cps_marketing_click_funnel` (`tenant_id`, `deleted`, `campaign_id`, `creative_id`, `channel_code`, `click_time`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS营销点击事件表';
+-- ============================================================
+-- 修改时间：2026-07-23 00:00:00
+-- 目的：新增租户隔离、密文存储的平台接入草稿，并修正平台与推广位的未删除记录唯一约束。
+-- 说明：生成列允许历史软删记录保留；索引与列变更通过 information_schema 判定，可重复执行。
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `cps_platform_onboarding_draft` (
+                                                               `id`                    bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+                                                               `platform_code`         varchar(32)  NOT NULL COMMENT '平台编码',
+    `mode`                  varchar(16)  NOT NULL COMMENT '接入模式（CREATE/RECONFIGURE）',
+    `payload_ciphertext`    longtext     NOT NULL COMMENT '加密后的配置草稿JSON',
+    `draft_version`         int          NOT NULL DEFAULT '1' COMMENT '草稿乐观锁版本',
+    `config_fingerprint`    varchar(64)           DEFAULT NULL COMMENT '当前配置指纹',
+    `validated_fingerprint` varchar(64)           DEFAULT NULL COMMENT '最近校验通过的配置指纹',
+    `status`                varchar(16)  NOT NULL DEFAULT 'DRAFT' COMMENT '状态（DRAFT/VALIDATING/READY/FAILED/PUBLISHED）',
+    `check_summary`         text                  COMMENT '最近校验摘要',
+    `validated_at`          datetime              DEFAULT NULL COMMENT '最近校验时间',
+    `published_at`          datetime              DEFAULT NULL COMMENT '发布时间',
+    `creator`               varchar(64)           DEFAULT NULL COMMENT '创建人',
+    `create_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updater`               varchar(64)           DEFAULT NULL COMMENT '更新人',
+    `update_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted`               bit(1)       NOT NULL DEFAULT b'0' COMMENT '是否删除',
+    `tenant_id`             bigint       NOT NULL DEFAULT '0' COMMENT '租户编号',
+    `active_unique_key`     varchar(128) GENERATED ALWAYS AS (IF(`deleted` = b'0', CONCAT(`tenant_id`, ':', `platform_code`), NULL)) STORED COMMENT '未删除草稿租户平台唯一键',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_cps_platform_onboarding_draft_active` (`active_unique_key`) USING BTREE,
+    KEY `idx_cps_platform_onboarding_draft_status` (`tenant_id`, `status`, `update_time`) USING BTREE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS平台接入草稿表';
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`columns`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_platform'
+      AND `column_name` = 'active_unique_key'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_platform` ADD COLUMN `active_unique_key` varchar(128) GENERATED ALWAYS AS (IF(`deleted` = b''0'', CONCAT(`tenant_id`, '':'', `platform_code`), NULL)) STORED COMMENT ''未删除平台租户唯一键'''
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+-- 历史库可能存在同租户、同平台、同推广位的多条未删除记录。
+-- 唯一索引创建前保留最大 ID 的最新记录，并软删除其余记录；重复执行不会再次修改数据。
+UPDATE `cps_adzone` AS `older`
+    INNER JOIN `cps_adzone` AS `newer`
+ON `older`.`tenant_id` = `newer`.`tenant_id`
+    AND `older`.`platform_code` = `newer`.`platform_code`
+    AND `older`.`adzone_id` = `newer`.`adzone_id`
+    AND `older`.`id` < `newer`.`id`
+    SET `older`.`deleted` = b'1',
+        `older`.`updater` = 'platform-onboarding-migration',
+        `older`.`update_time` = CURRENT_TIMESTAMP
+WHERE `older`.`deleted` = b'0'
+  AND `newer`.`deleted` = b'0';
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`statistics`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_platform'
+      AND `index_name` = 'uk_cps_platform_active'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_platform` ADD UNIQUE INDEX `uk_cps_platform_active` (`active_unique_key`) USING BTREE'
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`statistics`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_platform'
+      AND `index_name` = 'uk_platform_code'
+  ),
+  'ALTER TABLE `cps_platform` DROP INDEX `uk_platform_code`',
+  'SELECT 1'
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`columns`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_adzone'
+      AND `column_name` = 'active_unique_key'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_adzone` ADD COLUMN `active_unique_key` varchar(191) GENERATED ALWAYS AS (IF(`deleted` = b''0'', CONCAT(CHAR_LENGTH(CAST(`tenant_id` AS CHAR)), '':'', CAST(`tenant_id` AS CHAR), CHAR_LENGTH(`platform_code`), '':'', `platform_code`, CHAR_LENGTH(`adzone_id`), '':'', `adzone_id`), NULL)) STORED COMMENT ''未删除推广位租户唯一键（长度前缀编码）'''
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`statistics`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_adzone'
+      AND `index_name` = 'uk_cps_adzone_active'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_adzone` ADD UNIQUE INDEX `uk_cps_adzone_active` (`active_unique_key`) USING BTREE'
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+-- ============================================================
+-- 修改时间：2026-07-24 16:45:00
+-- 目的：供应商唯一约束仅覆盖未删除记录，允许重复接入循环保留任意数量的历史软删记录。
+-- 说明：先移除包含 deleted 的旧唯一索引，再清理未删除重复行，最后建立生成列唯一索引。
+-- ============================================================
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`statistics`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_api_vendor'
+      AND `index_name` = 'uk_vendor_platform'
+  ),
+  'ALTER TABLE `cps_api_vendor` DROP INDEX `uk_vendor_platform`',
+  'SELECT 1'
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+-- 历史库若存在同租户、同供应商、同平台的多条未删除记录，保留最大 ID 的最新记录。
+UPDATE `cps_api_vendor` AS `older`
+    INNER JOIN `cps_api_vendor` AS `newer`
+ON `older`.`tenant_id` = `newer`.`tenant_id`
+    AND `older`.`vendor_code` = `newer`.`vendor_code`
+    AND `older`.`platform_code` = `newer`.`platform_code`
+    AND `older`.`id` < `newer`.`id`
+    SET `older`.`deleted` = b'1',
+        `older`.`updater` = 'platform-onboarding-migration',
+        `older`.`update_time` = CURRENT_TIMESTAMP
+WHERE `older`.`deleted` = b'0'
+  AND `newer`.`deleted` = b'0';
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`columns`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_api_vendor'
+      AND `column_name` = 'active_unique_key'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_api_vendor` ADD COLUMN `active_unique_key` varchar(191) GENERATED ALWAYS AS (IF(`deleted` = b''0'', CONCAT(CHAR_LENGTH(CAST(`tenant_id` AS CHAR)), '':'', CAST(`tenant_id` AS CHAR), CHAR_LENGTH(`vendor_code`), '':'', `vendor_code`, CHAR_LENGTH(`platform_code`), '':'', `platform_code`), NULL)) STORED COMMENT ''未删除供应商租户唯一键（长度前缀编码）'''
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+SET @cps_onboarding_sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM `information_schema`.`statistics`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_api_vendor'
+      AND `index_name` = 'uk_cps_api_vendor_active'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_api_vendor` ADD UNIQUE INDEX `uk_cps_api_vendor_active` (`active_unique_key`) USING BTREE'
+);
+PREPARE cps_onboarding_stmt FROM @cps_onboarding_sql;
+EXECUTE cps_onboarding_stmt;
+DEALLOCATE PREPARE cps_onboarding_stmt;
+
+-- ============================================================
+-- 修改时间：2026-07-24 18:00:00
+-- 目的：将统一平台配置中心设为可见入口，并隐藏四个旧配置页面。
+-- ============================================================
+UPDATE `system_menu`
+SET `visible` = b'0', `updater` = 'platform-onboarding',
+    `update_time` = '2026-07-24 18:00:00'
+WHERE `id` IN (6229, 6251, 6256, 6261) AND `deleted` = b'0';
+
+INSERT INTO `system_menu`
+(`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`,
+ `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`,
+ `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+SELECT 6297, '平台配置中心', 'cps:platform-onboarding:query', 2, 10, 6287,
+       'platform-onboarding', 'ep:setting', 'cps/platformOnboarding/index',
+       'CpsPlatformOnboarding', 0, b'1', b'1', b'1', '1',
+       '2026-07-24 00:00:00', 'platform-onboarding', '2026-07-24 18:00:00', b'0'
+    WHERE NOT EXISTS (SELECT 1 FROM `system_menu` WHERE `id` = 6297);
+
+UPDATE `system_menu`
+SET `component` = 'cps/platformOnboarding/index',
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `id` = 6297 AND `deleted` = b'0';
+
+INSERT INTO `system_menu`
+(`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`,
+ `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`,
+ `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+SELECT menu_id, menu_name, menu_permission, 3, menu_sort, 6297, '', '', '', '',
+       0, b'1', b'1', b'1', '1', '2026-07-24 00:00:00',
+       'platform-onboarding', '2026-07-24 18:00:00', b'0'
+FROM (
+         SELECT 6298 AS menu_id, '平台配置中心查询' AS menu_name,
+                'cps:platform-onboarding:query' AS menu_permission, 1 AS menu_sort
+         UNION ALL SELECT 6299, '平台配置中心创建', 'cps:platform-onboarding:create', 2
+         UNION ALL SELECT 6300, '平台配置中心更新', 'cps:platform-onboarding:update', 3
+         UNION ALL SELECT 6301, '平台配置中心删除', 'cps:platform-onboarding:delete', 4
+         UNION ALL SELECT 6302, '平台配置中心测试', 'cps:platform-onboarding:test', 5
+         UNION ALL SELECT 6303, '平台配置中心发布', 'cps:platform-onboarding:publish', 6
+     ) AS onboarding_menu
+WHERE NOT EXISTS (
+    SELECT 1 FROM `system_menu` existing WHERE existing.`id` = onboarding_menu.menu_id
+);
+
+-- Preserve the four original configuration permission boundaries when granting
+-- the unified page. Query/test require all four legacy pages; mutations require
+-- the corresponding action in all four domains; publish requires create+update.
+INSERT INTO `system_role_menu`
+(`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT eligible.`role_id`, eligible.`target_menu_id`, '1', NOW(), '1', NOW(), b'0', eligible.`tenant_id`
+FROM (
+         SELECT rm.`role_id`, rm.`tenant_id`, mapping.`target_menu_id`
+         FROM `system_role_menu` rm
+                  JOIN (
+             SELECT 6297 AS `target_menu_id`, 6229 AS `source_menu_id`, 4 AS `required_count`
+             UNION ALL SELECT 6297, 6251, 4
+             UNION ALL SELECT 6297, 6256, 4
+             UNION ALL SELECT 6297, 6261, 4
+             UNION ALL SELECT 6298 AS `target_menu_id`, 6229 AS `source_menu_id`, 4 AS `required_count`
+             UNION ALL SELECT 6298, 6251, 4
+             UNION ALL SELECT 6298, 6256, 4
+             UNION ALL SELECT 6298, 6261, 4
+             UNION ALL SELECT 6299 AS `target_menu_id`, 6231 AS `source_menu_id`, 4 AS `required_count`
+             UNION ALL SELECT 6299, 6253, 4
+             UNION ALL SELECT 6299, 6258, 4
+             UNION ALL SELECT 6299, 6263, 4
+             UNION ALL SELECT 6300 AS `target_menu_id`, 6232 AS `source_menu_id`, 4 AS `required_count`
+             UNION ALL SELECT 6300, 6254, 4
+             UNION ALL SELECT 6300, 6259, 4
+             UNION ALL SELECT 6300, 6264, 4
+             UNION ALL SELECT 6301 AS `target_menu_id`, 6233 AS `source_menu_id`, 4 AS `required_count`
+             UNION ALL SELECT 6301, 6255, 4
+             UNION ALL SELECT 6301, 6260, 4
+             UNION ALL SELECT 6301, 6265, 4
+             UNION ALL SELECT 6302 AS `target_menu_id`, 6229 AS `source_menu_id`, 4 AS `required_count`
+             UNION ALL SELECT 6302, 6251, 4
+             UNION ALL SELECT 6302, 6256, 4
+             UNION ALL SELECT 6302, 6261, 4
+             UNION ALL SELECT 6303 AS `target_menu_id`, 6231 AS `source_menu_id`, 8 AS `required_count`
+             UNION ALL SELECT 6303, 6253, 8
+             UNION ALL SELECT 6303, 6258, 8
+             UNION ALL SELECT 6303, 6263, 8
+             UNION ALL SELECT 6303, 6232, 8
+             UNION ALL SELECT 6303, 6254, 8
+             UNION ALL SELECT 6303, 6259, 8
+             UNION ALL SELECT 6303, 6264, 8
+         ) mapping ON mapping.`source_menu_id` = rm.`menu_id`
+         WHERE rm.`deleted` = b'0'
+         GROUP BY rm.`role_id`, rm.`tenant_id`, mapping.`target_menu_id`, mapping.`required_count`
+         HAVING COUNT(DISTINCT rm.`menu_id`) = mapping.`required_count`
+     ) eligible
+WHERE NOT EXISTS (
+    SELECT 1 FROM `system_role_menu` existing_rm
+    WHERE existing_rm.`role_id` = eligible.`role_id`
+      AND existing_rm.`menu_id` = eligible.`target_menu_id`
+      AND existing_rm.`tenant_id` = eligible.`tenant_id`
+      AND existing_rm.`deleted` = b'0'
+);
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6297),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6229, 6251, 6256, 6261]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6297');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6298),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6229, 6251, 6256, 6261]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6298');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6299),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6231, 6253, 6258, 6263]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6299');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6300),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6232, 6254, 6259, 6264]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6300');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6301),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6233, 6255, 6260, 6265]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6301');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6302),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6229, 6251, 6256, 6261]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6302');
+
+UPDATE `system_tenant_package`
+SET `menu_ids` = JSON_ARRAY_APPEND(`menu_ids`, '$', 6303),
+    `updater` = 'platform-onboarding', `update_time` = '2026-07-24 18:00:00'
+WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
+  AND JSON_CONTAINS(`menu_ids`, '[6231, 6253, 6258, 6263, 6232, 6254, 6259, 6264]')
+  AND NOT JSON_CONTAINS(`menu_ids`, '6303');
 
 SET FOREIGN_KEY_CHECKS = 1;

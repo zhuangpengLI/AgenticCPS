@@ -50,4 +50,10 @@ public interface CpsPlatformService {
      */
     CpsPlatformDO getPlatformByCode(String platformCode);
 
+    /**
+     * 按平台编码稳定键保存平台接入运行配置。
+     */
+    Long upsertPlatformForOnboarding(@Valid CpsPlatformSaveReqVO saveReqVO,
+                                     List<String> supportedVendorCodes);
+
 }

@@ -72,10 +72,12 @@ public abstract class AbstractAggregatorVendorClient extends AbstractApiVendorCl
         try {
             HttpResponse response = HttpRequest.get(fullUrl).timeout(HTTP_TIMEOUT).execute();
             String body = response.body();
-            log.debug("[{}:{}] 请求: {} 响应: {}", getVendorCode(), getPlatformCode(), path, body);
+            log.debug("[{}:{}] 请求完成: path={}, status={}",
+                    getVendorCode(), getPlatformCode(), path, response.getStatus());
             return objectMapper.readTree(body);
         } catch (Exception e) {
-            log.error("[{}:{}] HTTP请求异常: path={}", getVendorCode(), getPlatformCode(), path, e);
+            log.error("[{}:{}] HTTP请求异常: path={}, type={}",
+                    getVendorCode(), getPlatformCode(), path, e.getClass().getSimpleName());
             return null;
         }
     }
@@ -108,10 +110,12 @@ public abstract class AbstractAggregatorVendorClient extends AbstractApiVendorCl
                     .timeout(HTTP_TIMEOUT)
                     .execute();
             String body = response.body();
-            log.debug("[{}:{}] POST请求: {} 响应: {}", getVendorCode(), getPlatformCode(), fullUrl, body);
+            log.debug("[{}:{}] POST请求完成: status={}",
+                    getVendorCode(), getPlatformCode(), response.getStatus());
             return objectMapper.readTree(body);
         } catch (Exception e) {
-            log.error("[{}:{}] HTTP POST请求异常: url={}", getVendorCode(), getPlatformCode(), fullUrl, e);
+            log.error("[{}:{}] HTTP POST请求异常: type={}",
+                    getVendorCode(), getPlatformCode(), e.getClass().getSimpleName());
             return null;
         }
     }

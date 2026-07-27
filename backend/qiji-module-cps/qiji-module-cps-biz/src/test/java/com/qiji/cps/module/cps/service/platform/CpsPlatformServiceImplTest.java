@@ -8,6 +8,7 @@ import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import com.qiji.cps.module.cps.dal.dataobject.vendor.CpsApiVendorDO;
 import com.qiji.cps.module.cps.dal.mysql.platform.CpsPlatformMapper;
 import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
+import com.qiji.cps.module.cps.service.onboarding.CpsPlatformOnboardingCacheInvalidator;
 import com.qiji.cps.module.cps.service.vendor.CpsApiVendorService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,9 @@ class CpsPlatformServiceImplTest {
 
     @Mock
     private CpsAdzoneService adzoneService;
+
+    @Mock
+    private CpsPlatformOnboardingCacheInvalidator cacheInvalidator;
 
     @Test
     @DisplayName("createPlatform - activeVendorCode 必须属于当前平台启用供应商")

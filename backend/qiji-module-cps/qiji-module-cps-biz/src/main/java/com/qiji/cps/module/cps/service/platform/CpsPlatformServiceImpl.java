@@ -11,15 +11,16 @@ import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import com.qiji.cps.module.cps.dal.dataobject.vendor.CpsApiVendorDO;
 import com.qiji.cps.module.cps.dal.mysql.platform.CpsPlatformMapper;
 import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
+import com.qiji.cps.module.cps.service.onboarding.CpsPlatformOnboardingCacheInvalidator;
 import com.qiji.cps.module.cps.service.vendor.CpsApiVendorService;
 import jakarta.annotation.Resource;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
+import java.util.Objects;
 
 import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.*;
@@ -44,38 +45,47 @@ public class CpsPlatformServiceImpl implements CpsPlatformService {
     @Resource
     private CpsAdzoneService adzoneService;
 
+    @Resource
+    private CpsPlatformOnboardingCacheInvalidator cacheInvalidator;
+
     @Override
     public Long createPlatform(CpsPlatformSaveReqVO createReqVO) {
         // 校验平台编码唯一
         validatePlatformCodeUnique(null, createReqVO.getPlatformCode());
-        validateDefaultVendor(createReqVO.getPlatformCode(), createReqVO.getActiveVendorCode());
-        validateDefaultAdzone(createReqVO.getPlatformCode(), createReqVO.getDefaultAdzoneId());
+        validatePublishableReferences(createReqVO);
         // 插入
         CpsPlatformDO platform = BeanUtils.toBean(createReqVO, CpsPlatformDO.class);
         platformMapper.insert(platform);
+        cacheInvalidator.evictPlatformAfterCommit(platform.getPlatformCode());
         return platform.getId();
     }
 
     @Override
-    @CacheEvict(cacheNames = CpsCacheConfig.CACHE_PLATFORM, key = "#updateReqVO.platformCode")
     public void updatePlatform(CpsPlatformSaveReqVO updateReqVO) {
         // 校验存在
-        validatePlatformExists(updateReqVO.getId());
+        CpsPlatformDO existing = validatePlatformExists(updateReqVO.getId());
+        if (!Objects.equals(existing.getPlatformCode(), updateReqVO.getPlatformCode())) {
+            throw exception(ONBOARDING_CONFIG_INVALID, "平台编码创建后不可修改");
+        }
         // 校验平台编码唯一
         validatePlatformCodeUnique(updateReqVO.getId(), updateReqVO.getPlatformCode());
-        validateDefaultVendor(updateReqVO.getPlatformCode(), updateReqVO.getActiveVendorCode());
-        validateDefaultAdzone(updateReqVO.getPlatformCode(), updateReqVO.getDefaultAdzoneId());
+        validatePublishableReferences(updateReqVO);
         // 更新
         CpsPlatformDO updateObj = BeanUtils.toBean(updateReqVO, CpsPlatformDO.class);
         platformMapper.updateById(updateObj);
+        cacheInvalidator.evictPlatformAfterCommit(updateReqVO.getPlatformCode());
     }
 
     @Override
     public void deletePlatform(Long id) {
         // 校验存在
-        validatePlatformExists(id);
+        CpsPlatformDO platform = validatePlatformExists(id);
+        if (CPS_ENABLE_STATUS.equals(platform.getStatus())) {
+            throw exception(ONBOARDING_PLATFORM_ENABLED);
+        }
         // 删除
         platformMapper.deleteById(id);
+        cacheInvalidator.evictPlatformAfterCommit(platform.getPlatformCode());
     }
 
     @Override
@@ -100,10 +110,35 @@ public class CpsPlatformServiceImpl implements CpsPlatformService {
         return platformMapper.selectByPlatformCode(platformCode);
     }
 
-    private void validatePlatformExists(Long id) {
-        if (platformMapper.selectById(id) == null) {
+    @Override
+    public Long upsertPlatformForOnboarding(CpsPlatformSaveReqVO saveReqVO,
+                                            List<String> supportedVendorCodes) {
+        CpsPlatformDO existing = platformMapper.selectByPlatformCode(saveReqVO.getPlatformCode());
+        validateOnboardingReferences(saveReqVO);
+        CpsPlatformDO target = BeanUtils.toBean(saveReqVO, CpsPlatformDO.class);
+        target.setSupportedVendors(supportedVendorCodes == null ? null
+                : supportedVendorCodes.stream()
+                .filter(StringUtils::hasText)
+                .distinct()
+                .collect(java.util.stream.Collectors.joining(",")));
+        if (existing == null) {
+            platformMapper.insert(target);
+            return target.getId();
+        }
+        if (!Objects.equals(existing.getPlatformCode(), saveReqVO.getPlatformCode())) {
+            throw exception(ONBOARDING_CONFIG_INVALID, "平台编码创建后不可修改");
+        }
+        target.setId(existing.getId());
+        platformMapper.updateById(target);
+        return existing.getId();
+    }
+
+    private CpsPlatformDO validatePlatformExists(Long id) {
+        CpsPlatformDO platform = platformMapper.selectById(id);
+        if (platform == null) {
             throw exception(PLATFORM_NOT_EXISTS);
         }
+        return platform;
     }
 
     private void validatePlatformCodeUnique(Long id, String platformCode) {
@@ -136,6 +171,44 @@ public class CpsPlatformServiceImpl implements CpsPlatformService {
                         && CPS_ENABLE_STATUS.equals(adzone.getStatus()));
         if (!exists) {
             throw exception(ADZONE_NOT_EXISTS);
+        }
+    }
+
+    private void validatePublishableReferences(CpsPlatformSaveReqVO request) {
+        if (CPS_ENABLE_STATUS.equals(request.getStatus())
+                && (!StringUtils.hasText(request.getActiveVendorCode())
+                || !StringUtils.hasText(request.getDefaultAdzoneId()))) {
+            throw exception(ONBOARDING_CONFIG_INVALID,
+                    "启用平台必须绑定主供应商和运行时默认推广位");
+        }
+        validateDefaultVendor(request.getPlatformCode(), request.getActiveVendorCode());
+        validateDefaultAdzone(request.getPlatformCode(), request.getDefaultAdzoneId());
+    }
+
+    private void validateOnboardingReferences(CpsPlatformSaveReqVO request) {
+        if (CPS_ENABLE_STATUS.equals(request.getStatus())
+                && (!StringUtils.hasText(request.getActiveVendorCode())
+                || !StringUtils.hasText(request.getDefaultAdzoneId()))) {
+            throw exception(ONBOARDING_CONFIG_INVALID,
+                    "启用平台必须绑定主供应商和运行时默认推广位");
+        }
+        if (StringUtils.hasText(request.getActiveVendorCode())) {
+            boolean vendorExists = vendorService.getVendorListByPlatform(request.getPlatformCode())
+                    .stream()
+                    .anyMatch(vendor -> request.getActiveVendorCode().equals(vendor.getVendorCode())
+                            && CPS_ENABLE_STATUS.equals(vendor.getStatus()));
+            if (!vendorExists) {
+                throw exception(VENDOR_NOT_EXISTS);
+            }
+        }
+        if (StringUtils.hasText(request.getDefaultAdzoneId())) {
+            boolean adzoneExists = adzoneService.getAdzoneListByPlatform(request.getPlatformCode())
+                    .stream()
+                    .anyMatch(adzone -> request.getDefaultAdzoneId().equals(adzone.getAdzoneId())
+                            && CPS_ENABLE_STATUS.equals(adzone.getStatus()));
+            if (!adzoneExists) {
+                throw exception(ADZONE_NOT_EXISTS);
+            }
         }
     }
 

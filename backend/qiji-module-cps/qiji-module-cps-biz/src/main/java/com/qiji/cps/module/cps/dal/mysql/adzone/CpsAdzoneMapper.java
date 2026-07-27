@@ -39,6 +39,19 @@ public interface CpsAdzoneMapper extends BaseMapperX<CpsAdzoneDO> {
                 .eq(CpsAdzoneDO::getStatus, 1));
     }
 
+    default List<CpsAdzoneDO> selectAllByPlatformCode(String platformCode) {
+        return selectList(new LambdaQueryWrapperX<CpsAdzoneDO>()
+                .eq(CpsAdzoneDO::getPlatformCode, platformCode)
+                .orderByDesc(CpsAdzoneDO::getIsDefault)
+                .orderByAsc(CpsAdzoneDO::getId));
+    }
+
+    default CpsAdzoneDO selectByPlatformAndAdzoneId(String platformCode, String adzoneId) {
+        return selectOne(new LambdaQueryWrapperX<CpsAdzoneDO>()
+                .eq(CpsAdzoneDO::getPlatformCode, platformCode)
+                .eq(CpsAdzoneDO::getAdzoneId, adzoneId));
+    }
+
     default CpsAdzoneDO selectActiveMemberAdzone(String platformCode, String adzoneId) {
         return selectOne(new LambdaQueryWrapperX<CpsAdzoneDO>()
                 .eq(CpsAdzoneDO::getPlatformCode, platformCode)

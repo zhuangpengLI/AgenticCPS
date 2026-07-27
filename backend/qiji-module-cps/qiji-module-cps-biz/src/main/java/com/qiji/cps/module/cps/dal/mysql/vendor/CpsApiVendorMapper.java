@@ -41,6 +41,13 @@ public interface CpsApiVendorMapper extends BaseMapperX<CpsApiVendorDO> {
                 .orderByDesc(CpsApiVendorDO::getPriority));
     }
 
+    default List<CpsApiVendorDO> selectAllByPlatformCode(String platformCode) {
+        return selectList(new LambdaQueryWrapperX<CpsApiVendorDO>()
+                .eq(CpsApiVendorDO::getPlatformCode, platformCode)
+                .orderByDesc(CpsApiVendorDO::getPriority)
+                .orderByAsc(CpsApiVendorDO::getId));
+    }
+
     default List<CpsApiVendorDO> selectListByVendorCode(String vendorCode) {
         return selectList(new LambdaQueryWrapperX<CpsApiVendorDO>()
                 .eq(CpsApiVendorDO::getVendorCode, vendorCode)

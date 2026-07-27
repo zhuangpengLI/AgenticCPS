@@ -197,4 +197,24 @@ class CpsPlatformClientFactoryTest {
         assertEquals(2, codes.size());
     }
 
+    @Test
+    @DisplayName("getRegisteredVendorDescriptors 应忽略空描述符并保持排序稳定")
+    void testGetRegisteredVendorDescriptors_ignoresNullDescriptor() throws Exception {
+        CpsApiVendorClient nullDescriptor = new StubVendorClient("null-vendor", "taobao") {
+            @Override
+            public CpsVendorDescriptor describe() {
+                return null;
+            }
+        };
+        var field = CpsPlatformClientFactory.class.getDeclaredField("vendorClientMap");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        var map = (java.util.Map<String, CpsApiVendorClient>) field.get(factory);
+        map.put("null-vendor:taobao", nullDescriptor);
+
+        assertDoesNotThrow(() -> factory.getRegisteredVendorDescriptors());
+        assertTrue(factory.getRegisteredVendorDescriptors().stream()
+                .noneMatch(descriptor -> descriptor == null));
+    }
+
 }

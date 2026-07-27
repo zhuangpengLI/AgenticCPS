@@ -8,6 +8,7 @@ import com.qiji.cps.module.cps.client.dto.*;
 import com.qiji.cps.module.cps.controller.admin.vendor.vo.CpsApiVendorSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.vendor.CpsApiVendorDO;
 import com.qiji.cps.module.cps.dal.mysql.vendor.CpsApiVendorMapper;
+import com.qiji.cps.module.cps.service.onboarding.CpsPlatformOnboardingCacheInvalidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ class CpsApiVendorServiceImplTest {
 
     @Mock
     private CpsApiVendorMapper vendorMapper;
+
+    @Mock
+    private CpsPlatformOnboardingCacheInvalidator cacheInvalidator;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
