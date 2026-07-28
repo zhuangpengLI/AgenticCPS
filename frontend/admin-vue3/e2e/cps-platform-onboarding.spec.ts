@@ -134,7 +134,12 @@ async function mockOnboardingApi(page: Page, options: { testStatus?: 'FAILED' | 
         contentType: 'application/json',
         body: JSON.stringify(ok({
           success,
-          items: [{ section: '供应商', code: 'VENDOR_CONNECTION', message: success ? '连接成功（已脱敏）' : '凭证无效（已脱敏）' }]
+          items: [{
+            section: '供应商',
+            code: success ? 'VENDOR_CONNECTION_OK' : 'VENDOR_CONNECTION_FAILED',
+            fieldPath: success ? undefined : 'vendors.union',
+            message: success ? '连接成功（已脱敏）' : '凭证无效（已脱敏）'
+          }]
         }))
       })
     }
@@ -244,6 +249,18 @@ test.describe('CPS platform onboarding', () => {
     await page.getByRole('button', { name: '接入新平台' }).click(); await expect(page.getByText('平台信息')).toBeVisible(); await fillMinimumDraft(page)
     await page.getByRole('button', { name: '连接测试' }).click(); await expect(page.getByText('连接测试失败')).toBeVisible()
     await page.getByRole('button', { name: '保存草稿' }).click(); await expect(page.getByText('草稿已保存').last()).toBeVisible(); await expect(page.getByRole('button', { name: '发布并启用' })).toBeDisabled()
+  })
+
+  test('stays on detection step when connection test fails with a field path', async ({ page }) => {
+    await mockAdminBootstrapAndMenu(page)
+    await mockOnboardingApi(page, { testStatus: 'FAILED' })
+    await openReconfigureWorkspace(page)
+    await page.getByText('检测与启用', { exact: true }).click()
+    await page.getByRole('button', { name: '连接测试' }).click()
+    await expect(page.getByText('连接测试失败')).toBeVisible()
+    await expect(page.getByText('检查结果', { exact: true })).toHaveCount(1)
+    await expect(page.getByRole('button', { name: '连接测试' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '发布并启用' })).toBeDisabled()
   })
 
   test('keeps runtime summary until a reconfiguration draft is published', async ({ page }) => {

@@ -78,6 +78,8 @@ class CpsPlatformOnboardingConnectionTesterTest {
         CpsPlatformOnboardingCheckRespVO result = tester.test("taobao", 5L);
 
         assertTrue(result.isSuccess());
+        assertEquals("dataoke vendor（主供应商，dataoke）", result.getItems().get(0).getSection());
+        assertEquals("official vendor（备用供应商，official）", result.getItems().get(1).getSection());
         verify(draftService).markValidating(7L, 5L);
         verify(draftService).markChecked(eq(7L), eq(5L),
                 eq(CpsPlatformOnboardingStatusEnum.READY.getCode()),

@@ -23,8 +23,8 @@ import java.util.Map;
  * <p>封装好单库特有的 apikey 鉴权机制，所有通过好单库对接的电商平台（淘宝/京东/拼多多）继承此类。</p>
  *
  * <p>鉴权方式：无签名，通过 apikey 参数传递认证信息</p>
- * <p>商品搜索基础URL：http://v2.api.haodanku.com</p>
- * <p>推广转链基础URL：http://v3.api.haodanku.com（POST方式）</p>
+ * <p>商品搜索基础URL：https://v2.api.haodanku.com</p>
+ * <p>推广转链基础URL：https://v3.api.haodanku.com（POST方式）</p>
  *
  * @author CPS System
  */
@@ -67,6 +67,16 @@ public abstract class AbstractHdkVendorClient extends AbstractAggregatorVendorCl
     }
 
     @Override
+    protected String resolveApiBaseUrl(CpsVendorConfig config) {
+        String baseUrl = super.resolveApiBaseUrl(config);
+        if (baseUrl != null && (baseUrl.startsWith("http://v2.api.haodanku.com")
+                || baseUrl.startsWith("http://v3.api.haodanku.com"))) {
+            return "https://" + baseUrl.substring("http://".length());
+        }
+        return baseUrl;
+    }
+
+    @Override
     protected boolean isSuccessResponse(JsonNode root) {
         // 好单库不同接口成功码不完全一致：淘宝商品/转链常见 code=1，京东/PDD/本地生活 v3 接口常见 code=200。
         int code = root == null ? -1 : root.path("code").asInt(-1);
@@ -83,7 +93,7 @@ public abstract class AbstractHdkVendorClient extends AbstractAggregatorVendorCl
      * @return 转链API基础URL
      */
     protected String getPromotionLinkBaseUrl(CpsVendorConfig config) {
-        String baseUrl = config.getApiBaseUrl();
+        String baseUrl = resolveApiBaseUrl(config);
         if (baseUrl != null && baseUrl.contains("v2.api.haodanku.com")) {
             return baseUrl.replace("v2.api.haodanku.com", "v3.api.haodanku.com");
         }

@@ -100,7 +100,8 @@ class AbstractHdkVendorClientTest {
                 .apiBaseUrl("http://v2.api.haodanku.com")
                 .build();
 
-        assertEquals("http://v3.api.haodanku.com", client.getPromotionLinkBaseUrl(config));
+        assertEquals("https://v2.api.haodanku.com", client.resolveApiBaseUrl(config));
+        assertEquals("https://v3.api.haodanku.com", client.getPromotionLinkBaseUrl(config));
     }
 
     @Test

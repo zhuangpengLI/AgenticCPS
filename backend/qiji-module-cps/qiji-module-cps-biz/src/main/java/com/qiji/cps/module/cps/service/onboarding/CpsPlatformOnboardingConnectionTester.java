@@ -58,6 +58,7 @@ public class CpsPlatformOnboardingConnectionTester {
             return markUnexpectedFailure(snapshot.id(), draftVersion);
         }
         String normalizedPlatform = normalize(payload.getPlatform().getPlatformCode());
+        String normalizedPrimaryVendor = normalize(payload.getPrimaryVendorCode());
         List<CpsPlatformOnboardingCheckRespVO.Item> items = new ArrayList<>();
         boolean allPassed = true;
         for (CpsOnboardingVendor vendor : safeList(payload.getVendors())) {
@@ -70,7 +71,7 @@ public class CpsPlatformOnboardingConnectionTester {
             items.add(CpsPlatformOnboardingCheckRespVO.Item.builder()
                     .code(passed ? "VENDOR_CONNECTION_OK" : "VENDOR_CONNECTION_FAILED")
                     .fieldPath("vendors." + vendorCode)
-                    .section("vendor")
+                    .section(describeVendor(vendor, vendorCode, normalizedPrimaryVendor))
                     .message(passed
                             ? "供应商连接检测通过"
                             : "供应商连接检测失败，请检查凭证和网络配置")
@@ -89,6 +90,15 @@ public class CpsPlatformOnboardingConnectionTester {
                     null, summarize(response), null);
         }
         return response;
+    }
+
+    private String describeVendor(CpsOnboardingVendor vendor, String vendorCode,
+                                  String primaryVendorCode) {
+        String vendorName = StringUtils.hasText(vendor.getVendorName())
+                ? vendor.getVendorName().trim() : vendorCode;
+        String role = vendorCode != null && vendorCode.equals(primaryVendorCode)
+                ? "主供应商" : "备用供应商";
+        return vendorName + "（" + role + "，" + vendorCode + "）";
     }
 
     private CpsPlatformOnboardingCheckRespVO markUnexpectedFailure(Long draftId,

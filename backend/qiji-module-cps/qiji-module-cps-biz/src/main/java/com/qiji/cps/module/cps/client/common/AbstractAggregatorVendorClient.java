@@ -52,6 +52,14 @@ public abstract class AbstractAggregatorVendorClient extends AbstractApiVendorCl
     protected abstract void injectSignParams(Map<String, Object> params, CpsVendorConfig config,
                                              Map<String, String> signContext);
 
+    /**
+     * Resolve the base URL used by GET requests. Vendor adapters may override this
+     * to normalize legacy endpoints without mutating the persisted configuration.
+     */
+    protected String resolveApiBaseUrl(CpsVendorConfig config) {
+        return config.getApiBaseUrl();
+    }
+
     @Override
     protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
         // 1. 复制参数，避免修改原始参数
@@ -65,7 +73,7 @@ public abstract class AbstractAggregatorVendorClient extends AbstractApiVendorCl
         allParams.entrySet().removeIf(entry -> entry.getValue() == null);
 
         // 4. 构建 URL
-        String url = config.getApiBaseUrl() + path;
+        String url = resolveApiBaseUrl(config) + path;
         String fullUrl = buildUrlWithParams(url, allParams);
 
         // 5. 发起 HTTP GET 请求
