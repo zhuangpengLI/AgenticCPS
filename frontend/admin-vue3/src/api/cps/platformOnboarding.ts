@@ -282,6 +282,12 @@ export const PlatformOnboardingApi = {
       data: { platformCode, draftVersion }
     }),
 
+  testVendor: (platformCode: string, draftVersion: number, vendorCode: string) =>
+    request.post<OnboardingCheckResult>({
+      url: '/cps/platform-onboarding/test-vendor',
+      data: { platformCode, draftVersion, vendorCode }
+    }),
+
   publish: (data: PublishReq) =>
     request.post<PlatformOnboardingDetail>({
       url: '/cps/platform-onboarding/publish',

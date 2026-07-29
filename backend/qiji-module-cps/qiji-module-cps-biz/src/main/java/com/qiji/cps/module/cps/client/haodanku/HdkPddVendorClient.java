@@ -7,8 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -37,7 +35,7 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
     @Override
     protected Map<String, Object> buildSearchParams(CpsGoodsSearchRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("keyword", encodeKeywordOnce(request.getKeyword()));
+        params.put("keyword", request.getKeyword());
         params.put("min_id", request.getPageNo());
         params.put("limit", request.getPageSize());
         params.put("sort", convertSortType(request.getSortType()));
@@ -171,14 +169,20 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
     @Override
     protected Map<String, Object> buildTestConnectionParams() {
         Map<String, Object> params = new HashMap<>();
-        params.put("keyword", encodeKeywordOnce("手机"));
+        params.put("keyword", "手机");
         params.put("min_id", 1);
         params.put("limit", 10);
         return params;
     }
 
-    private String encodeKeywordOnce(String keyword) {
-        return keyword == null ? null : URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+    @Override
+    protected Map<String, Object> buildTestConnectionParams(CpsVendorConfig config) {
+        Map<String, Object> params = buildTestConnectionParams();
+        if (config != null && config.getDefaultAdzoneId() != null
+                && !config.getDefaultAdzoneId().isBlank()) {
+            params.put("pid", config.getDefaultAdzoneId().trim());
+        }
+        return params;
     }
 
     private Integer convertSortType(Integer sortType) {

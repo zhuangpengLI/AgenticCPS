@@ -7,6 +7,7 @@ import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboard
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingLifecycleReqVO;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingPublishReqVO;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingTestReqVO;
+import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingVendorTestReqVO;
 import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboardingValidateReqVO;
 import com.qiji.cps.module.cps.service.onboarding.CpsPlatformOnboardingLifecycleService;
 import jakarta.validation.Validation;
@@ -58,6 +59,7 @@ class CpsPlatformOnboardingControllerTest {
                 Map.entry("deleteDraft", DELETE),
                 Map.entry("validate", UPDATE),
                 Map.entry("test", TEST),
+                Map.entry("testVendor", TEST),
                 Map.entry("publish", PUBLISH),
                 Map.entry("enable", PUBLISH),
                 Map.entry("disable", UPDATE),
@@ -74,6 +76,7 @@ class CpsPlatformOnboardingControllerTest {
         assertEquals("/draft", mapping(method("deleteDraft"), DeleteMapping.class));
         assertEquals("/validate", mapping(method("validate"), PostMapping.class));
         assertEquals("/test", mapping(method("test"), PostMapping.class));
+        assertEquals("/test-vendor", mapping(method("testVendor"), PostMapping.class));
         assertEquals("/publish", mapping(method("publish"), PostMapping.class));
         assertEquals("/enable", mapping(method("enable"), PutMapping.class));
         assertEquals("/disable", mapping(method("disable"), PutMapping.class));
@@ -91,6 +94,7 @@ class CpsPlatformOnboardingControllerTest {
             assertFalse(validator.validate(new CpsPlatformOnboardingDraftSaveReqVO()).isEmpty());
             assertFalse(validator.validate(new CpsPlatformOnboardingValidateReqVO()).isEmpty());
             assertFalse(validator.validate(new CpsPlatformOnboardingTestReqVO()).isEmpty());
+            assertFalse(validator.validate(new CpsPlatformOnboardingVendorTestReqVO()).isEmpty());
             assertFalse(validator.validate(new CpsPlatformOnboardingPublishReqVO()).isEmpty());
             assertFalse(validator.validate(new CpsPlatformOnboardingLifecycleReqVO()).isEmpty());
 

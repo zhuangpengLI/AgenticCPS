@@ -85,6 +85,14 @@ public class CpsPlatformOnboardingController {
         return success(lifecycleService.test(request));
     }
 
+    @PostMapping("/test-vendor")
+    @Operation(summary = "测试单个平台供应商连接")
+    @PreAuthorize("@ss.hasPermission('cps:platform-onboarding:test')")
+    public CommonResult<CpsPlatformOnboardingCheckRespVO> testVendor(
+            @Valid @RequestBody CpsPlatformOnboardingVendorTestReqVO request) {
+        return success(lifecycleService.testVendor(request));
+    }
+
     @PostMapping("/publish")
     @Operation(summary = "发布平台接入草稿")
     @PreAuthorize("@ss.hasPermission('cps:platform-onboarding:publish')")

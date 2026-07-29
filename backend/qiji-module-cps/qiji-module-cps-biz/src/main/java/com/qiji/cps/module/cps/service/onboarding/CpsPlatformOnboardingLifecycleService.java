@@ -131,6 +131,12 @@ public class CpsPlatformOnboardingLifecycleService {
         return connectionTester.test(request.getPlatformCode(), request.getDraftVersion());
     }
 
+    public CpsPlatformOnboardingCheckRespVO testVendor(
+            CpsPlatformOnboardingVendorTestReqVO request) {
+        return connectionTester.testVendor(
+                request.getPlatformCode(), request.getDraftVersion(), request.getVendorCode());
+    }
+
     public CpsPlatformOnboardingDetailRespVO saveDraft(CpsPlatformOnboardingDraftSaveReqVO request) {
         return draftService.saveDraft(request);
     }

@@ -92,6 +92,43 @@ public class CpsPlatformOnboardingConnectionTester {
         return response;
     }
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public CpsPlatformOnboardingCheckRespVO testVendor(
+            String platformCode, Long draftVersion, String requestedVendorCode) {
+        CpsPlatformOnboardingDraftService.DraftSnapshot snapshot =
+                draftService.getRequiredSnapshot(platformCode, draftVersion);
+        CpsPlatformOnboardingPayload payload = snapshot.payload();
+        String normalizedPlatform = payload == null || payload.getPlatform() == null
+                ? normalize(platformCode) : normalize(payload.getPlatform().getPlatformCode());
+        String vendorCode = normalize(requestedVendorCode);
+        String primaryVendorCode = payload == null
+                ? null : normalize(payload.getPrimaryVendorCode());
+        CpsOnboardingVendor vendor = safeList(payload == null ? null : payload.getVendors()).stream()
+                .filter(item -> item != null && Integer.valueOf(1).equals(item.getStatus()))
+                .filter(item -> vendorCode != null && vendorCode.equals(normalize(item.getVendorCode())))
+                .findFirst()
+                .orElse(null);
+        if (vendor == null) {
+            return CpsPlatformOnboardingCheckRespVO.failed(
+                    CpsPlatformOnboardingCheckRespVO.Item.builder()
+                            .code("VENDOR_NOT_ENABLED")
+                            .fieldPath("vendors." + vendorCode)
+                            .section(vendorCode)
+                            .message("供应商不存在或未启用")
+                            .build());
+        }
+        boolean passed = testVendor(vendor, vendorCode, normalizedPlatform);
+        return CpsPlatformOnboardingCheckRespVO.of(passed, List.of(
+                CpsPlatformOnboardingCheckRespVO.Item.builder()
+                        .code(passed ? "VENDOR_CONNECTION_OK" : "VENDOR_CONNECTION_FAILED")
+                        .fieldPath("vendors." + vendorCode)
+                        .section(describeVendor(vendor, vendorCode, primaryVendorCode))
+                        .message(passed
+                                ? "供应商连接检测通过"
+                                : "供应商连接检测失败，请检查凭证和网络配置")
+                        .build()));
+    }
+
     private String describeVendor(CpsOnboardingVendor vendor, String vendorCode,
                                   String primaryVendorCode) {
         String vendorName = StringUtils.hasText(vendor.getVendorName())

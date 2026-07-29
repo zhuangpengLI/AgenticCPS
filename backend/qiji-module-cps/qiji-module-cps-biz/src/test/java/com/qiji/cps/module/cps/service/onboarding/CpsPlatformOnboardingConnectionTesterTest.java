@@ -114,6 +114,22 @@ class CpsPlatformOnboardingConnectionTesterTest {
     }
 
     @Test
+    void testVendor_shouldCallOnlySelectedVendorWithoutChangingDraftLifecycleState() {
+        when(clientFactory.getVendorClient("dataoke", "taobao")).thenReturn(primaryClient);
+        when(primaryClient.testConnection(any())).thenReturn(true);
+
+        CpsPlatformOnboardingCheckRespVO result =
+                tester.testVendor("taobao", 5L, "dataoke");
+
+        assertTrue(result.isSuccess());
+        assertEquals("VENDOR_CONNECTION_OK", result.getItems().get(0).getCode());
+        verify(primaryClient).testConnection(any());
+        verify(backupClient, never()).testConnection(any());
+        verify(draftService, never()).markValidating(any(), any());
+        verify(draftService, never()).markChecked(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
     void test_structuralFailure_shouldStoreSanitizedFailedStateAndNotCallClient() {
         CpsPlatformOnboardingCheckRespVO structural = CpsPlatformOnboardingCheckRespVO.failed(
                 CpsPlatformOnboardingCheckRespVO.Item.builder()

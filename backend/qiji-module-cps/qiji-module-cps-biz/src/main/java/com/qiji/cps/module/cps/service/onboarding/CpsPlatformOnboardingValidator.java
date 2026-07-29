@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -31,6 +32,9 @@ public class CpsPlatformOnboardingValidator {
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
     private static final Set<String> ADZONE_TYPES = Set.of("general", "channel", "member");
+    private static final Map<String, String> KNOWN_VENDOR_API_HOSTS = Map.of(
+            "dataoke.com", "dataoke",
+            "haodanku.com", "haodanku");
 
     private final CpsPlatformClientFactory clientFactory;
     private final ObjectMapper objectMapper;
@@ -144,6 +148,11 @@ public class CpsPlatformOnboardingValidator {
             }
             CpsVendorConfig config = toVendorConfig(vendor, platformCode);
             config.setExtraConfig(extraConfig);
+            if (belongsToAnotherVendor(vendorCode, config.getApiBaseUrl())) {
+                add(errors, "VENDOR_CONFIG_INVALID",
+                        "vendors[" + index + "].apiBaseUrl",
+                        "供应商 API 地址与供应商编码不匹配", "vendor");
+            }
             if (descriptor.getConfigSchema() == null) {
                 add(errors, "VENDOR_CONFIG_SCHEMA_REQUIRED",
                         "vendors[" + index + "].configSchema",
@@ -379,6 +388,29 @@ public class CpsPlatformOnboardingValidator {
 
     private static boolean negative(BigDecimal value) {
         return value != null && value.compareTo(BigDecimal.ZERO) < 0;
+    }
+
+    private static boolean belongsToAnotherVendor(String vendorCode, String apiBaseUrl) {
+        if (!StringUtils.hasText(vendorCode) || !StringUtils.hasText(apiBaseUrl)) {
+            return false;
+        }
+        String host;
+        try {
+            host = URI.create(apiBaseUrl.trim()).getHost();
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+        if (!StringUtils.hasText(host)) {
+            return false;
+        }
+        String normalizedHost = host.toLowerCase();
+        String owner = KNOWN_VENDOR_API_HOSTS.entrySet().stream()
+                .filter(entry -> normalizedHost.equals(entry.getKey())
+                        || normalizedHost.endsWith("." + entry.getKey()))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
+        return owner != null && !owner.equals(vendorCode);
     }
 
     private static String normalize(String value) {

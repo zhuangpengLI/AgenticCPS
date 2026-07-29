@@ -238,6 +238,24 @@ class CpsPlatformOnboardingValidatorTest {
     }
 
     @Test
+    void validate_vendorApiBaseUrlBelongingToAnotherVendor_shouldReject() {
+        CpsPlatformOnboardingPayload payload = validPayload();
+        payload.getVendors().get(0).setApiBaseUrl("https://v2.api.haodanku.com");
+
+        CpsOnboardingVendor haodanku = payload.getVendors().get(1);
+        haodanku.setVendorCode("haodanku");
+        haodanku.setApiBaseUrl("https://openapi.dataoke.com/api");
+        when(clientFactory.getVendorDescriptor("haodanku", "taobao"))
+                .thenReturn(descriptor("haodanku", Set.of(CpsVendorCapability.GOODS_SEARCH)));
+        when(clientFactory.getVendorClient("haodanku", "taobao")).thenReturn(officialClient);
+
+        CpsPlatformOnboardingCheckRespVO result = validator.validate(payload);
+
+        assertContains(result, "VENDOR_CONFIG_INVALID", "vendors[0].apiBaseUrl");
+        assertContains(result, "VENDOR_CONFIG_INVALID", "vendors[1].apiBaseUrl");
+    }
+
+    @Test
     void validate_malformedExtraConfig_shouldStillAggregateCapabilityFailure() {
         CpsVendorDescriptor descriptor = CpsVendorDescriptor.builder()
                 .vendorCode("dataoke")

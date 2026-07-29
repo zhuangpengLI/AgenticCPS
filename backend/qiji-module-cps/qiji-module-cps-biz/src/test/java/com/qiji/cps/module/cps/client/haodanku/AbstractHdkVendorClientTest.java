@@ -162,13 +162,35 @@ class AbstractHdkVendorClientTest {
         linkRequest.setExternalId("user_1");
         Map<String, Object> linkParams = pddClient.buildPromotionLinkParams(linkRequest, CpsVendorConfig.builder().build());
 
-        assertEquals("%E8%8A%9D%E9%BA%BB%E7%B3%8A", searchParams.get("keyword"));
+        assertEquals("芝麻糊", searchParams.get("keyword"));
         assertEquals(3, searchParams.get("min_id"));
         assertEquals(20, searchParams.get("limit"));
         assertEquals(2, searchParams.get("sort"));
         assertEquals("/unify_pdditems_link", pddClient.getPromotionLinkApiPath());
         assertEquals("pdd-goods-sign", linkParams.get("itemid"));
         assertEquals("user_1", linkParams.get("channel"));
+    }
+
+    @Test
+    @DisplayName("拼多多连接测试应携带配置的默认 PID")
+    void pddConnectionTestShouldIncludeConfiguredPid() {
+        class CapturingHdkPddVendorClient extends HdkPddVendorClient {
+            private Map<String, Object> capturedParams;
+
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                capturedParams = new HashMap<>(params);
+                return OBJECT_MAPPER.createObjectNode().put("code", 200);
+            }
+        }
+        CapturingHdkPddVendorClient pddClient = new CapturingHdkPddVendorClient();
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .defaultAdzoneId("8248392_317210977")
+                .build();
+
+        assertTrue(pddClient.testConnection(config));
+        assertEquals("8248392_317210977", pddClient.capturedParams.get("pid"));
+        assertEquals("手机", pddClient.capturedParams.get("keyword"));
     }
 
     @Test

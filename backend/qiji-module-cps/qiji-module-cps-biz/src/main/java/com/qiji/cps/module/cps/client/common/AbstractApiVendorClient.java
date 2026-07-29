@@ -79,6 +79,15 @@ public abstract class AbstractApiVendorClient implements CpsApiVendorClient {
     /** 子类实现：构建连接测试参数 */
     protected abstract Map<String, Object> buildTestConnectionParams();
 
+    /**
+     * 构建可读取当前供应商配置的连接测试参数。
+     *
+     * <p>默认保持旧实现，只有测试接口依赖推广位等配置时才需要覆盖。</p>
+     */
+    protected Map<String, Object> buildTestConnectionParams(CpsVendorConfig config) {
+        return buildTestConnectionParams();
+    }
+
     // ==================== HTTP 执行（由子类实现） ====================
 
     /**
@@ -249,7 +258,7 @@ public abstract class AbstractApiVendorClient implements CpsApiVendorClient {
     public boolean testConnection(CpsVendorConfig config) {
         try {
             String path = getTestConnectionApiPath();
-            Map<String, Object> params = buildTestConnectionParams();
+            Map<String, Object> params = buildTestConnectionParams(config);
             JsonNode response = executeRequest(path, params, config);
             return response != null && isSuccessResponse(response);
         } catch (Exception e) {
