@@ -13,6 +13,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -167,6 +168,32 @@ class HdkActivityClientTest {
         assertEquals("pages/index/index", result.getExtraFields().get("wxPath"));
         assertEquals("tbopen://activity", result.getExtraFields().get("taobaoSchemeUrl"));
         assertEquals("alipays://activity", result.getExtraFields().get("alipayMiniUrl"));
+    }
+
+    @Test
+    @DisplayName("generateElemeActivityLink - H5 为空时保留官方返回的淘口令和 Scheme")
+    void generateElemeActivityLink_acceptsSchemeAndTpwdWhenH5Missing() throws Exception {
+        CapturingClient client = new CapturingClient(OBJECT_MAPPER.readTree("""
+                {"code":200,"msg":"success","data":{
+                  "h5_short_link":"",
+                  "h5_url":"",
+                  "full_taobao_word":"闪购品牌日官方淘口令",
+                  "tb_scheme_url":"tbopen://m.taobao.com/activity",
+                  "ele_scheme_url":"eleme://miniapp/activity"
+                }}
+                """));
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsId("12698");
+
+        CpsPromotionLinkResult result = client.generateElemeActivityLink(request,
+                CpsVendorConfig.builder().appKey("api-key").build(), null);
+
+        assertNotNull(result);
+        assertNull(result.getShortUrl());
+        assertNull(result.getLongUrl());
+        assertEquals("闪购品牌日官方淘口令", result.getTpwd());
+        assertEquals("eleme://miniapp/activity", result.getMobileUrl());
+        assertEquals("tbopen://m.taobao.com/activity", result.getExtraFields().get("taobaoSchemeUrl"));
     }
 
     @Test

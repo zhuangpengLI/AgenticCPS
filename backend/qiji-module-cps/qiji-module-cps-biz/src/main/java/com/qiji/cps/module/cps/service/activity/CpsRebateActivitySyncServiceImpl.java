@@ -119,6 +119,10 @@ public class CpsRebateActivitySyncServiceImpl {
                 break;
             }
             for (CpsThirdPartyActivity item : page.getList()) {
+                if (shouldSkipThirdPartyActivity(request, item)) {
+                    result.setSkippedCount(result.getSkippedCount() + 1);
+                    continue;
+                }
                 upsertThirdPartyActivity(request, result, item);
             }
             if (isLastThirdPartyPage(page, pageNo, pageSize)) {
@@ -197,7 +201,10 @@ public class CpsRebateActivitySyncServiceImpl {
                                 HdkActivityCategory category, HdkSecondaryCategory secondaryCategory,
                                 HdkActivityItem item) {
         String platformCode = HaodankuActivityVendorClient.normalizeActivityPlatformCode(item.getPlatform());
-        if (!StringUtils.hasText(item.getId()) || !StringUtils.hasText(platformCode)) {
+        if (!StringUtils.hasText(item.getId())
+                || !HaodankuActivityVendorClient.supportsOfficialActivityPromotionLink(platformCode)
+                || !matchesRequestedPlatform(request.getPlatformCode(), platformCode)
+                || !StringUtils.hasText(firstText(item.getActivityId(), item.getActivityUrl()))) {
             result.setSkippedCount(result.getSkippedCount() + 1);
             return;
         }
@@ -261,6 +268,22 @@ public class CpsRebateActivitySyncServiceImpl {
         }
         Object value = extraFields.get("legacyExternalActivityId");
         return value == null ? null : String.valueOf(value);
+    }
+
+    private boolean shouldSkipThirdPartyActivity(CpsRebateActivitySyncRequest request, CpsThirdPartyActivity item) {
+        if (!CpsVendorCodeEnum.HAODANKU.getCode().equalsIgnoreCase(request.getVendorCode())) {
+            return false;
+        }
+        String platformCode = HaodankuActivityVendorClient.normalizeActivityPlatformCode(item.getPlatformCode());
+        return !HaodankuActivityVendorClient.supportsOfficialActivityPromotionLink(platformCode)
+                || !matchesRequestedPlatform(request.getPlatformCode(), platformCode)
+                || !StringUtils.hasText(firstText(item.getPromotionActivityId(), item.getJumpUrl()));
+    }
+
+    private boolean matchesRequestedPlatform(String requestedPlatformCode, String activityPlatformCode) {
+        return !StringUtils.hasText(requestedPlatformCode)
+                || HaodankuActivityVendorClient.normalizeActivityPlatformCode(requestedPlatformCode)
+                .equals(activityPlatformCode);
     }
 
     private CpsRebateActivityDO toActivity(CpsRebateActivitySyncRequest request, HdkActivityCategory category,

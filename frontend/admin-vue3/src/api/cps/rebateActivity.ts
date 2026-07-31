@@ -82,6 +82,7 @@ export interface CpsRebateActivityCenterReqVO {
   pageNo: number
   pageSize: number
   platformCode?: string
+  sourceType?: string
   billingType?: string
   keyword?: string
   sortMode?: string

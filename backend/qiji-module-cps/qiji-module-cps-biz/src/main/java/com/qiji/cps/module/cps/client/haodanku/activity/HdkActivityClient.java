@@ -152,21 +152,27 @@ public class HdkActivityClient {
         JsonNode data = root.path("data").isObject() ? root.path("data") : root;
         String shortUrl = firstText(data, "h5_short_link", "h5ShortLink");
         String longUrl = firstText(data, "h5_url", "h5Url");
-        if (!isHttpUrl(firstText(shortUrl, longUrl))) {
+        String tpwd = firstText(data, "full_taobao_word", "fullTaobaoWord");
+        String elemeSchemeUrl = firstText(data, "ele_scheme_url", "eleSchemeUrl");
+        String taobaoSchemeUrl = firstText(data, "tb_scheme_url", "tbSchemeUrl");
+        String alipayMiniUrl = firstText(data, "alipay_mini_url", "alipayMiniUrl");
+        String miniQrcode = firstText(data, "mini_qrcode", "miniQrcode");
+        if (!hasElemePromotionMaterial(shortUrl, longUrl, tpwd, elemeSchemeUrl,
+                taobaoSchemeUrl, alipayMiniUrl, miniQrcode)) {
             return null;
         }
         Map<String, Object> extraFields = new LinkedHashMap<>();
-        extraFields.put("miniQrcode", firstText(data, "mini_qrcode", "miniQrcode"));
+        extraFields.put("miniQrcode", miniQrcode);
         extraFields.put("wxAppId", firstText(data, "wx_appid", "wxAppId"));
         extraFields.put("wxPath", firstText(data, "wx_path", "wxPath"));
-        extraFields.put("taobaoSchemeUrl", firstText(data, "tb_scheme_url", "tbSchemeUrl"));
-        extraFields.put("alipayMiniUrl", firstText(data, "alipay_mini_url", "alipayMiniUrl"));
+        extraFields.put("taobaoSchemeUrl", taobaoSchemeUrl);
+        extraFields.put("alipayMiniUrl", alipayMiniUrl);
         extraFields.entrySet().removeIf(entry -> entry.getValue() == null);
         return CpsPromotionLinkResult.builder()
                 .shortUrl(shortUrl)
                 .longUrl(longUrl)
-                .tpwd(firstText(data, "full_taobao_word", "fullTaobaoWord"))
-                .mobileUrl(firstText(data, "ele_scheme_url", "eleSchemeUrl"))
+                .tpwd(tpwd)
+                .mobileUrl(elemeSchemeUrl)
                 .extraFields(extraFields)
                 .rawPayload(toJson(root))
                 .build();
@@ -279,6 +285,23 @@ public class HdkActivityClient {
     private boolean isHttpUrl(String value) {
         return StringUtils.hasText(value)
                 && (value.startsWith("https://") || value.startsWith("http://"));
+    }
+
+    private boolean hasElemePromotionMaterial(String shortUrl, String longUrl, String tpwd,
+                                               String elemeSchemeUrl, String taobaoSchemeUrl,
+                                               String alipayMiniUrl, String miniQrcode) {
+        return isHttpUrl(shortUrl)
+                || isHttpUrl(longUrl)
+                || StringUtils.hasText(tpwd)
+                || hasScheme(elemeSchemeUrl, "eleme")
+                || hasScheme(taobaoSchemeUrl, "tbopen")
+                || hasScheme(alipayMiniUrl, "alipays")
+                || isHttpUrl(miniQrcode);
+    }
+
+    private boolean hasScheme(String value, String scheme) {
+        return StringUtils.hasText(value) && value.regionMatches(true, 0, scheme + "://", 0,
+                scheme.length() + 3);
     }
 
     private boolean isValidSid(String value) {

@@ -89,7 +89,10 @@ public class HaodankuActivityVendorClient implements CpsThirdPartyActivityVendor
         for (HdkActivityItem item : page.getItems()) {
             String rowId = item.getId();
             String platformCode = normalizeActivityPlatformCode(item.getPlatform());
-            if (!StringUtils.hasText(rowId) || !StringUtils.hasText(platformCode)) {
+            if (!StringUtils.hasText(rowId)
+                    || !supportsOfficialActivityPromotionLink(platformCode)
+                    || !matchesRequestedPlatform(request.getPlatformCode(), platformCode)
+                    || !hasPromotionMaterial(item)) {
                 continue;
             }
             Map<String, Object> extraFields = buildExtraFields(category, secondaryCategory, item);
@@ -199,6 +202,24 @@ public class HaodankuActivityVendorClient implements CpsThirdPartyActivityVendor
             case "16" -> "fliggy";
             default -> platform;
         };
+    }
+
+    /**
+     * 只有已经在活动推广服务中完成官方转链和响应解析的平台，才允许进入活动同步。
+     * 文档中存在接口但尚未完成参数映射的平台不能提前放行。
+     */
+    public static boolean supportsOfficialActivityPromotionLink(String platformCode) {
+        String normalized = normalizeActivityPlatformCode(platformCode);
+        return CpsPlatformCodeEnum.TAOBAO.getCode().equals(normalized) || "eleme".equals(normalized);
+    }
+
+    private boolean matchesRequestedPlatform(String requestedPlatformCode, String activityPlatformCode) {
+        return !StringUtils.hasText(requestedPlatformCode)
+                || normalizeActivityPlatformCode(requestedPlatformCode).equals(activityPlatformCode);
+    }
+
+    private boolean hasPromotionMaterial(HdkActivityItem item) {
+        return StringUtils.hasText(item.getActivityId()) || StringUtils.hasText(item.getActivityUrl());
     }
 
     private String firstText(String... values) {

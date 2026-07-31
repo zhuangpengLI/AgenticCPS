@@ -138,18 +138,25 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
 
     @Override
     public List<CpsRebateActivityDO> getEnabledActivityList() {
-        return activityMapper.selectEnabledList(LocalDateTime.now());
+        return activityMapper.selectEnabledList(LocalDateTime.now()).stream()
+                .filter(this::hasUsablePromotionCapability)
+                .toList();
     }
 
     @Override
     public CpsRebateActivityCenterRespVO getActivityCenter(CpsRebateActivityCenterReqVO reqVO) {
-        List<CpsRebateActivityDO> enabledActivities = activityMapper.selectEnabledList(LocalDateTime.now());
+        List<CpsRebateActivityDO> enabledActivities = activityMapper.selectEnabledList(LocalDateTime.now()).stream()
+                .filter(this::hasUsablePromotionCapability)
+                .toList();
         List<CpsPlatformDO> enabledPlatforms = loadEnabledPlatforms();
         Map<String, CpsPlatformDO> platformMap = enabledPlatforms.stream()
                 .filter(platform -> StringUtils.hasText(platform.getPlatformCode()))
                 .collect(Collectors.toMap(CpsPlatformDO::getPlatformCode, Function.identity(), (left, right) -> left));
 
-        List<CpsRebateActivityDO> filtered = enabledActivities.stream()
+        List<CpsRebateActivityDO> sourceFilteredActivities = enabledActivities.stream()
+                .filter(activity -> matchSourceType(activity, reqVO.getSourceType()))
+                .toList();
+        List<CpsRebateActivityDO> filtered = sourceFilteredActivities.stream()
                 .filter(activity -> matchPlatform(activity, reqVO.getPlatformCode()))
                 .filter(activity -> matchBillingType(activity, reqVO.getBillingType()))
                 .filter(activity -> matchKeyword(activity, reqVO.getKeyword()))
@@ -163,8 +170,8 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         int toIndex = Math.min(fromIndex + pageSize, total);
 
         return CpsRebateActivityCenterRespVO.builder()
-                .tabs(buildTabs(enabledActivities, enabledPlatforms))
-                .billingTypeOptions(buildBillingTypeOptions(enabledActivities))
+                .tabs(buildTabs(sourceFilteredActivities, enabledPlatforms))
+                .billingTypeOptions(buildBillingTypeOptions(sourceFilteredActivities))
                 .cards(filtered.subList(fromIndex, toIndex).stream()
                         .map(activity -> toCard(activity, platformMap))
                         .toList())
@@ -244,7 +251,7 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                                                                           CpsRebateActivityPromotionReqVO reqVO,
                                                                           Long memberId) {
         String platformCode = normalizePlatformCode(activity.getPlatformCode());
-        if (!PLATFORM_TAOBAO.equals(platformCode) && !PLATFORM_ELEME.equals(platformCode)) {
+        if (!HaodankuActivityVendorClient.supportsOfficialActivityPromotionLink(platformCode)) {
             return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(),
                     "当前好单库活动平台尚未接入官方活动转链");
         }
@@ -294,8 +301,9 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         } else {
             linkResult = hdkActivityClient.generateConferenceLink(request, config, activity.getActivityName());
         }
-        String promotionUrl = linkResult == null ? null : firstText(linkResult.getShortUrl(), linkResult.getLongUrl());
-        if (!isSafeExternalUrl(promotionUrl)) {
+        String promotionUrl = resolveHaodankuPromotionTarget(linkResult);
+        if (linkResult == null
+                || (!StringUtils.hasText(promotionUrl) && !StringUtils.hasText(linkResult.getTpwd()))) {
             return buildFailedPromotion(activity, reqVO, actualAdzoneId, "好单库官方活动转链暂不可用");
         }
         if (sidRecord != null) {
@@ -571,6 +579,50 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         }
     }
 
+    private String resolveHaodankuPromotionTarget(CpsPromotionLinkResult linkResult) {
+        if (linkResult == null) {
+            return null;
+        }
+        return firstSafePromotionTarget(linkResult.getShortUrl(), linkResult.getLongUrl(), linkResult.getMobileUrl(),
+                linkExtraText(linkResult, "taobaoSchemeUrl"), linkExtraText(linkResult, "alipayMiniUrl"));
+    }
+
+    private String firstSafePromotionTarget(String... values) {
+        for (String value : values) {
+            if (isSafeOfficialPromotionTarget(value)) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    private boolean isSafeOfficialPromotionTarget(String value) {
+        if (isSafeExternalUrl(value)) {
+            return true;
+        }
+        if (!StringUtils.hasText(value)) {
+            return false;
+        }
+        try {
+            URI uri = URI.create(value.trim());
+            String scheme = uri.getScheme();
+            return StringUtils.hasText(uri.getSchemeSpecificPart())
+                    && ("eleme".equalsIgnoreCase(scheme)
+                    || "tbopen".equalsIgnoreCase(scheme)
+                    || "alipays".equalsIgnoreCase(scheme));
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private String linkExtraText(CpsPromotionLinkResult linkResult, String key) {
+        if (linkResult.getExtraFields() == null) {
+            return null;
+        }
+        Object value = linkResult.getExtraFields().get(key);
+        return value == null ? null : String.valueOf(value);
+    }
+
     private boolean isPrivate172Host(String host) {
         if (!host.startsWith("172.")) {
             return false;
@@ -604,6 +656,17 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         return !StringUtils.hasText(platformCode)
                 || PLATFORM_HOT.equals(platformCode)
                 || platformCode.equals(normalizePlatformCode(activity.getPlatformCode()));
+    }
+
+    private boolean matchSourceType(CpsRebateActivityDO activity, String sourceType) {
+        return !StringUtils.hasText(sourceType)
+                || BILLING_TYPE_ALL.equalsIgnoreCase(sourceType)
+                || sourceType.equalsIgnoreCase(firstText(activity.getSourceType(), ""));
+    }
+
+    private boolean hasUsablePromotionCapability(CpsRebateActivityDO activity) {
+        return !SOURCE_HAODANKU.equalsIgnoreCase(firstText(activity.getSourceType(), ""))
+                || HaodankuActivityVendorClient.supportsOfficialActivityPromotionLink(activity.getPlatformCode());
     }
 
     private boolean matchBillingType(CpsRebateActivityDO activity, String billingType) {

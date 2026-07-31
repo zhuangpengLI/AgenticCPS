@@ -15,6 +15,9 @@ public class CpsRebateActivityCenterReqVO extends PageParam {
     @Schema(description = "平台编码，hot 表示热门全平台", example = "meituan")
     private String platformCode;
 
+    @Schema(description = "活动来源/API 供应商，all 表示全部", example = "dataoke")
+    private String sourceType;
+
     @Schema(description = "计费类型：CPS/CPA/CPS+CPA", example = "CPS")
     private String billingType;
 

@@ -103,16 +103,24 @@ class CpsRebateActivityServiceImplTest {
     }
 
     @Test
-    @DisplayName("getEnabledActivityList - 只返回当前有效活动并保持排序")
-    void getEnabledActivityList_usesMapperEnabledWindowQuery() {
+    @DisplayName("getEnabledActivityList - 隐藏历史遗留的不可转链好单库活动")
+    void getEnabledActivityList_hidesUnsupportedHaodankuActivities() {
+        CpsRebateActivityDO configuredMeituan = CpsRebateActivityDO.builder()
+                .id(1L).activityName("运营配置美团").platformCode("meituan")
+                .sourceType("configured").sort(1).status(1).build();
+        CpsRebateActivityDO haodankuTaobao = CpsRebateActivityDO.builder()
+                .id(2L).activityName("好单库淘宝").platformCode("taobao")
+                .sourceType("haodanku").sort(2).status(1).build();
+        CpsRebateActivityDO haodankuMeituan = CpsRebateActivityDO.builder()
+                .id(3L).activityName("好单库美团").platformCode("meituan")
+                .sourceType("haodanku").sort(3).status(1).build();
         List<CpsRebateActivityDO> activities = List.of(
-                CpsRebateActivityDO.builder().id(1L).activityName("饿了么").sort(1).status(1).build(),
-                CpsRebateActivityDO.builder().id(2L).activityName("美团").sort(2).status(1).build());
+                configuredMeituan, haodankuTaobao, haodankuMeituan);
         when(activityMapper.selectEnabledList(any(LocalDateTime.class))).thenReturn(activities);
 
         List<CpsRebateActivityDO> result = service.getEnabledActivityList();
 
-        assertEquals(activities, result);
+        assertEquals(List.of(configuredMeituan, haodankuTaobao), result);
         verify(activityMapper).selectEnabledList(any(LocalDateTime.class));
     }
 
@@ -152,6 +160,36 @@ class CpsRebateActivityServiceImplTest {
         assertEquals("search", card.getJumpType());
         assertEquals("美团外卖", card.getSearchKeyword());
         assertEquals("configured", card.getSourceType());
+    }
+
+    @Test
+    @DisplayName("getActivityCenter - 按活动来源 API 供应商过滤")
+    void getActivityCenter_filtersBySourceType() {
+        CpsRebateActivityDO dataokeActivity = buildActivity(1L, "大淘客淘宝会场", "taobao", "CPS", 100, 1);
+        dataokeActivity.setSourceType("dataoke");
+        CpsRebateActivityDO haodankuActivity = buildActivity(2L, "好单库淘宝会场", "taobao", "CPS", 90, 2);
+        haodankuActivity.setSourceType("haodanku");
+        CpsRebateActivityDO configuredActivity = buildActivity(3L, "运营配置会场", "taobao", "CPS", 80, 3);
+        configuredActivity.setSourceType("configured");
+        when(activityMapper.selectEnabledList(any(LocalDateTime.class))).thenReturn(
+                List.of(dataokeActivity, haodankuActivity, configuredActivity));
+        when(platformService.getEnabledPlatformList()).thenReturn(List.of(
+                CpsPlatformDO.builder().platformCode("taobao").platformName("淘宝").sort(1).build()));
+
+        CpsRebateActivityCenterReqVO reqVO = new CpsRebateActivityCenterReqVO();
+        reqVO.setSourceType("dataoke");
+        reqVO.setPlatformCode("hot");
+        reqVO.setBillingType("all");
+        reqVO.setPageNo(1);
+        reqVO.setPageSize(10);
+
+        CpsRebateActivityCenterRespVO result = service.getActivityCenter(reqVO);
+
+        assertEquals(1L, result.getTotal());
+        assertEquals(1, result.getCards().size());
+        assertEquals("大淘客淘宝会场", result.getCards().getFirst().getActivityName());
+        assertEquals("dataoke", result.getCards().getFirst().getSourceType());
+        assertEquals(1L, result.getTabs().getFirst().getActivityCount().longValue());
     }
 
     @Test
@@ -570,6 +608,49 @@ class CpsRebateActivityServiceImplTest {
         verify(platformClientFactory).getVendorConfig("haodanku", "taobao");
         assertEquals("SUCCESS", result.getLinkStatus());
         assertEquals("https://s.click.ele.me/channel-hdk", result.getPromotionUrl());
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 闪购活动无 H5 时使用官方应用唤起链接")
+    void generatePromotionContent_usesOfficialSchemeWhenElemeH5Missing() {
+        CpsRebateActivityDO activity = buildActivity(20L, "闪购品牌日 单单有福利", "eleme", "CPS", 66, 1);
+        activity.setSourceType("haodanku");
+        activity.setPromotionActivityId("12698");
+        when(activityMapper.selectById(20L)).thenReturn(activity);
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .vendorCode("haodanku")
+                .platformCode("taobao")
+                .appKey("shared-api-key")
+                .build();
+        when(platformClientFactory.getVendorConfig("haodanku", "eleme")).thenReturn(null);
+        when(platformClientFactory.getVendorConfig("haodanku", "taobao")).thenReturn(config);
+        when(hdkActivityClient.generateElemeActivityLink(any(CpsPromotionLinkRequest.class), eq(config), isNull()))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .tpwd("闪购品牌日官方淘口令")
+                        .mobileUrl("eleme://miniapp/activity")
+                        .build());
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(20L);
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
+
+        assertEquals("SUCCESS", result.getLinkStatus());
+        assertEquals("EXTERNAL_PROMOTION", result.getLinkType());
+        assertEquals("eleme://miniapp/activity", result.getPromotionUrl());
+        assertEquals("闪购品牌日官方淘口令", result.getTpwd());
+        assertTrue(result.getPromotionContent().contains("eleme://miniapp/activity"));
+        assertTrue(result.getPromotionContent().contains("闪购品牌日官方淘口令"));
+
+        when(hdkActivityClient.generateElemeActivityLink(any(CpsPromotionLinkRequest.class), eq(config), isNull()))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .mobileUrl("javascript:alert(1)")
+                        .build());
+
+        CpsRebateActivityPromotionRespVO rejected = service.generatePromotionContent(reqVO);
+
+        assertEquals("FAILED", rejected.getLinkStatus());
+        assertNull(rejected.getPromotionUrl());
     }
 
     @Test

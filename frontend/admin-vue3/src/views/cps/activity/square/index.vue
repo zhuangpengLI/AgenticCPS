@@ -49,6 +49,22 @@
 
     <ContentWrap class="filter-wrap">
       <div class="filter-line">
+        <div class="source-field">
+          <span class="filter-label">API供应商</span>
+          <el-select
+            v-model="queryParams.sourceType"
+            aria-label="API供应商"
+            class="source-filter"
+            @change="handleQuery"
+          >
+            <el-option
+              v-for="item in sourceFilterOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+        </div>
         <el-segmented
           v-model="queryParams.billingType"
           :options="billingSegmentOptions"
@@ -419,6 +435,7 @@ const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
   platformCode: 'hot',
+  sourceType: 'all',
   billingType: 'all',
   keyword: '',
   sortMode: 'hot'
@@ -450,6 +467,13 @@ const promotionForm = reactive<CpsRebateActivityPromotionReqVO>({
 const sortOptions = [
   { label: '热门', value: 'hot' },
   { label: '最新', value: 'latest' }
+]
+const sourceFilterOptions = [
+  { label: '全部供应商', value: 'all' },
+  { label: '大淘客', value: 'dataoke' },
+  { label: '好单库', value: 'haodanku' },
+  { label: '聚推客', value: 'jutuike' },
+  { label: '运营配置', value: 'configured' }
 ]
 const platformLabelMap: Record<string, string> = {
   hot: '热门',
@@ -1022,6 +1046,21 @@ onMounted(getCenter)
   flex-wrap: wrap;
   align-items: center;
   gap: 16px;
+}
+
+.source-filter {
+  width: 150px;
+}
+
+.source-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-label {
+  color: #606266;
+  white-space: nowrap;
 }
 
 .filter-search {

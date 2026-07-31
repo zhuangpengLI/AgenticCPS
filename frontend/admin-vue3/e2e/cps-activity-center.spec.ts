@@ -299,11 +299,13 @@ test.describe('CPS activity center promotion links', () => {
     await mockGoodsSquareLanding(page)
   })
 
-  test('queries activities with the selected platform and keyword', async ({ page }) => {
+  test('queries activities with the selected source, platform and keyword', async ({ page }) => {
     const centerRequests: URLSearchParams[] = []
     await mockActivityApi(page, centerRequests)
     await openActivityCenter(page)
 
+    await page.locator('.source-filter .el-select__wrapper').click()
+    await page.getByRole('option', { name: '大淘客' }).click()
     await page.locator('.platform-tab').filter({ hasText: '淘宝' }).click()
     await page.getByPlaceholder('请输入搜索关键字').fill('88VIP')
     await page.getByPlaceholder('请输入搜索关键字').press('Enter')
@@ -320,6 +322,7 @@ test.describe('CPS activity center promotion links', () => {
     )
     expect(matched?.get('pageNo')).toBe('1')
     expect(matched?.get('pageSize')).toBe('10')
+    expect(matched?.get('sourceType')).toBe('dataoke')
     expect(matched?.get('billingType')).toBe('all')
     expect(matched?.get('sortMode')).toBe('hot')
   })

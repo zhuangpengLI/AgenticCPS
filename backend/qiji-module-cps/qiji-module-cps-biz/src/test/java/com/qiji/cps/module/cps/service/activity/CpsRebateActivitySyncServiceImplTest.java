@@ -65,20 +65,20 @@ class CpsRebateActivitySyncServiceImplTest {
     @DisplayName("syncHaodankuActivities - 按平台分类分页同步并插入好单库活动")
     void syncHaodankuActivities_insertsPlatformActivityFromCategoryList() {
         when(hdkActivityClient.fetchCategories()).thenReturn(List.of(
-                HdkActivityCategory.builder().catId(6).name("美团").build()));
+                HdkActivityCategory.builder().catId(7).name("淘宝闪购").build()));
         when(hdkActivityClient.fetchActivities(any())).thenReturn(HdkActivityPage.builder()
                 .countPage(1)
                 .itemCount(58)
                 .items(List.of(HdkActivityItem.builder()
                         .id("1677")
                         .activityId("7")
-                        .activityPic("http://img.example/meituan.jpg")
-                        .activityName("美团外卖节")
+                        .activityPic("http://img.example/eleme.jpg")
+                        .activityName("淘宝闪购外卖节")
                         .activityLabel("外卖")
                         .activityUrl("https://example.com/activity")
                         .startTime("2025-12-23 11:08:05")
                         .endTime("2027-12-31 11:08:05")
-                        .platform("6")
+                        .platform("7")
                         .describe("结算说明：</br>官方账号推广统一结算")
                         .commissionRate("预估红包3%、页面：0.1%")
                         .promotionNum("708")
@@ -88,7 +88,7 @@ class CpsRebateActivitySyncServiceImplTest {
         when(activityMapper.selectBySourceTypeAndExternalActivityId(eq("haodanku"), anyString())).thenReturn(null);
 
         CpsRebateActivitySyncResult result = service.syncHaodankuActivities(CpsRebateActivitySyncRequest.builder()
-                .platformCode("meituan")
+                .platformCode("eleme")
                 .pageSize(20)
                 .maxPages(1)
                 .build());
@@ -98,24 +98,50 @@ class CpsRebateActivitySyncServiceImplTest {
         CpsRebateActivityDO saved = captor.getValue();
         assertEquals(1, result.getInsertedCount());
         assertEquals(0, result.getUpdatedCount());
-        assertEquals("美团外卖节", saved.getActivityName());
-        assertEquals("美团", saved.getActivityType());
-        assertEquals("meituan", saved.getPlatformCode());
-        assertEquals("http://img.example/meituan.jpg", saved.getMainPic());
+        assertEquals("淘宝闪购外卖节", saved.getActivityName());
+        assertEquals("淘宝闪购", saved.getActivityType());
+        assertEquals("eleme", saved.getPlatformCode());
+        assertEquals("http://img.example/eleme.jpg", saved.getMainPic());
         assertEquals("官方账号推广统一结算", saved.getShortDesc());
         assertEquals("预估红包3%、页面：0.1%", saved.getRebateDesc());
         assertEquals("CPS", saved.getBillingType());
         assertEquals(708, saved.getPromotionCount());
         assertEquals("haodanku", saved.getSourceType());
-        assertEquals("hdk:meituan:1677", saved.getExternalActivityId());
+        assertEquals("hdk:eleme:1677", saved.getExternalActivityId());
         assertEquals("7", saved.getPromotionActivityId());
         assertTrue(saved.getVendorMetadata().contains("activity_url"));
         assertEquals("外卖", saved.getTagText());
         assertEquals("url", saved.getJumpType());
         assertEquals("https://example.com/activity", saved.getJumpUrl());
-        assertEquals("美团外卖节", saved.getSearchKeyword());
+        assertEquals("淘宝闪购外卖节", saved.getSearchKeyword());
         assertEquals(LocalDateTime.of(2025, 12, 23, 11, 8, 5), saved.getStartTime());
         assertEquals(LocalDateTime.of(2027, 12, 31, 11, 8, 5), saved.getEndTime());
+    }
+
+    @Test
+    @DisplayName("syncHaodankuActivities - 没有已接入活动转链的平台只计为跳过")
+    void syncHaodankuActivities_skipsPlatformWithoutImplementedConversion() {
+        when(hdkActivityClient.fetchCategories()).thenReturn(List.of(
+                HdkActivityCategory.builder().catId(6).name("美团").build()));
+        when(hdkActivityClient.fetchActivities(any())).thenReturn(HdkActivityPage.builder()
+                .countPage(1)
+                .items(List.of(HdkActivityItem.builder()
+                        .id("meituan-row")
+                        .activityId("meituan-activity")
+                        .activityName("美团外卖节")
+                        .platform("6")
+                        .build()))
+                .build());
+
+        CpsRebateActivitySyncResult result = service.syncHaodankuActivities(CpsRebateActivitySyncRequest.builder()
+                .maxPages(1)
+                .build());
+
+        assertEquals(0, result.getInsertedCount());
+        assertEquals(0, result.getUpdatedCount());
+        assertEquals(1, result.getSkippedCount());
+        verify(activityMapper, never()).insert(any(CpsRebateActivityDO.class));
+        verify(activityMapper, never()).updateById(any(CpsRebateActivityDO.class));
     }
 
     @Test
@@ -128,8 +154,8 @@ class CpsRebateActivitySyncServiceImplTest {
                 .items(List.of(
                         HdkActivityItem.builder().id("row-taobao").activityId("shared-activity")
                                 .activityName("淘宝活动").platform("1").build(),
-                        HdkActivityItem.builder().id("row-jd").activityId("shared-activity")
-                                .activityName("京东活动").platform("2").build()))
+                        HdkActivityItem.builder().id("row-eleme").activityId("shared-activity")
+                                .activityName("淘宝闪购活动").platform("7").build()))
                 .build());
         when(activityMapper.selectBySourceTypeAndExternalActivityId(anyString(), anyString())).thenReturn(null);
 
@@ -140,7 +166,7 @@ class CpsRebateActivitySyncServiceImplTest {
         ArgumentCaptor<CpsRebateActivityDO> captor = ArgumentCaptor.forClass(CpsRebateActivityDO.class);
         verify(activityMapper, times(2)).insert(captor.capture());
         assertEquals(2, result.getInsertedCount());
-        assertEquals(List.of("hdk:taobao:row-taobao", "hdk:jd:row-jd"), captor.getAllValues().stream()
+        assertEquals(List.of("hdk:taobao:row-taobao", "hdk:eleme:row-eleme"), captor.getAllValues().stream()
                 .map(CpsRebateActivityDO::getExternalActivityId)
                 .toList());
         assertEquals(List.of("shared-activity", "shared-activity"), captor.getAllValues().stream()
@@ -153,11 +179,11 @@ class CpsRebateActivitySyncServiceImplTest {
     void syncHaodankuActivities_updatesExistingSecondaryCategoryActivity() {
         when(hdkActivityClient.fetchCategories()).thenReturn(List.of(
                 HdkActivityCategory.builder()
-                        .catId(88)
-                        .name("抖音")
+                        .catId(7)
+                        .name("淘宝闪购")
                         .secondaryCategories(List.of(HdkSecondaryCategory.builder()
-                                .secondaryCatId(9)
-                                .name("抖音团购")
+                                .secondaryCatId(71)
+                                .name("外卖会场")
                                 .build()))
                         .build()));
         when(hdkActivityClient.fetchActivities(any())).thenReturn(HdkActivityPage.builder()
@@ -165,9 +191,9 @@ class CpsRebateActivitySyncServiceImplTest {
                 .itemCount(1)
                 .items(List.of(HdkActivityItem.builder()
                         .id("2000")
-                        .activityId("douyin-group-1")
-                        .activityName("抖音团购大额券")
-                        .platform("88")
+                        .activityId("eleme-activity-1")
+                        .activityName("淘宝闪购大额券")
+                        .platform("7")
                         .commissionRate("最高10%")
                         .promotionNum("99")
                         .promotionType("3")
@@ -177,13 +203,13 @@ class CpsRebateActivitySyncServiceImplTest {
                 .id(99L)
                 .activityName("旧名称")
                 .sourceType("haodanku")
-                .externalActivityId("hdk:douyin:2000")
+                .externalActivityId("hdk:eleme:2000")
                 .build();
-        when(activityMapper.selectBySourceTypeAndExternalActivityId("haodanku", "hdk:douyin:2000"))
+        when(activityMapper.selectBySourceTypeAndExternalActivityId("haodanku", "hdk:eleme:2000"))
                 .thenReturn(existing);
 
         CpsRebateActivitySyncResult result = service.syncHaodankuActivities(CpsRebateActivitySyncRequest.builder()
-                .platformCode("douyin")
+                .platformCode("eleme")
                 .maxPages(1)
                 .build());
 
@@ -194,17 +220,17 @@ class CpsRebateActivitySyncServiceImplTest {
         assertEquals(0, result.getInsertedCount());
         assertEquals(1, result.getUpdatedCount());
         assertEquals(99L, updated.getId());
-        assertEquals("抖音团购大额券", updated.getActivityName());
-        assertEquals("抖音团购", updated.getActivityType());
-        assertEquals("douyin", updated.getPlatformCode());
+        assertEquals("淘宝闪购大额券", updated.getActivityName());
+        assertEquals("外卖会场", updated.getActivityType());
+        assertEquals("eleme", updated.getPlatformCode());
         assertEquals("CPS+CPA", updated.getBillingType());
         assertEquals("search", updated.getJumpType());
-        assertEquals("douyin-group-1", updated.getPromotionActivityId());
+        assertEquals("eleme-activity-1", updated.getPromotionActivityId());
     }
 
     @Test
-    @DisplayName("syncThirdPartyActivities - all 同时同步大淘客和好单库并汇总结果")
-    void syncThirdPartyActivities_allAggregatesDataokeAndHaodanku() {
+    @DisplayName("syncThirdPartyActivities - all 跳过没有已接入活动转链的好单库平台")
+    void syncThirdPartyActivities_allSkipsHaodankuPlatformWithoutImplementedConversion() {
         CpsVendorConfig dataokeConfig = CpsVendorConfig.builder()
                 .vendorCode("dataoke")
                 .platformCode("taobao")
@@ -244,8 +270,6 @@ class CpsRebateActivitySyncServiceImplTest {
                                 .jumpUrl("https://example.com/hdk")
                                 .build()))
                         .build());
-        when(activityMapper.selectBySourceTypeAndExternalActivityId("haodanku", "hdk:7")).thenReturn(null);
-
         CpsRebateActivitySyncResult result = service.syncThirdPartyActivities(CpsRebateActivitySyncRequest.builder()
                 .vendorCode("all")
                 .platformCode("taobao")
@@ -254,11 +278,12 @@ class CpsRebateActivitySyncServiceImplTest {
                 .pageSize(20)
                 .build());
 
-        assertEquals(2, result.getInsertedCount());
+        assertEquals(1, result.getInsertedCount());
         assertEquals(0, result.getUpdatedCount());
-        assertEquals(0, result.getSkippedCount());
+        assertEquals(1, result.getSkippedCount());
         verify(dtkActivityVendorClient).fetchActivities(any(CpsThirdPartyActivityRequest.class), eq(dataokeConfig));
         verify(haodankuActivityVendorClient).fetchActivities(any(CpsThirdPartyActivityRequest.class), eq(null));
+        verify(activityMapper, never()).selectBySourceTypeAndExternalActivityId("haodanku", "hdk:7");
     }
 
     @Test

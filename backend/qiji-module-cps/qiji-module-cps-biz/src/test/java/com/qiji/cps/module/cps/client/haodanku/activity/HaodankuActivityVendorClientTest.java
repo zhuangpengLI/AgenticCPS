@@ -26,8 +26,8 @@ class HaodankuActivityVendorClientTest {
     private HdkActivityClient hdkActivityClient;
 
     @Test
-    @DisplayName("fetchActivities - 将好单库活动数字平台码归一化为系统平台码")
-    void fetchActivities_normalizesNumericActivityPlatformCodes() {
+    @DisplayName("fetchActivities - 仅保留已接入官方活动转链的平台")
+    void fetchActivities_keepsOnlyPlatformsWithImplementedActivityConversion() {
         when(hdkActivityClient.fetchCategories()).thenReturn(List.of(
                 HdkActivityCategory.builder().catId(111).name("热门").build()));
         when(hdkActivityClient.fetchActivities(any())).thenReturn(HdkActivityPage.builder()
@@ -49,8 +49,7 @@ class HaodankuActivityVendorClientTest {
                 .pageSize(20)
                 .build(), null);
 
-        assertEquals(List.of("taobao", "jd", "pdd", "douyin", "meituan", "eleme", "local_life",
-                "local_life", "taobao", "fliggy"), page.getList().stream()
+        assertEquals(List.of("taobao", "eleme", "taobao"), page.getList().stream()
                 .map(CpsThirdPartyActivity::getPlatformCode)
                 .toList());
         assertEquals("hdk:taobao:row-1", page.getList().get(0).getExternalActivityId());
@@ -61,12 +60,15 @@ class HaodankuActivityVendorClientTest {
     }
 
     @Test
-    @DisplayName("fetchActivities - 不使用请求平台覆盖好单库活动自身平台")
-    void fetchActivities_doesNotOverrideActivityPlatformWithRequestPlatform() {
+    @DisplayName("fetchActivities - 请求平台只返回同平台且可转链的好单库活动")
+    void fetchActivities_filtersByRequestedSupportedPlatform() {
         when(hdkActivityClient.fetchCategories()).thenReturn(List.of(
                 HdkActivityCategory.builder().catId(6).name("美团").build()));
         when(hdkActivityClient.fetchActivities(any())).thenReturn(HdkActivityPage.builder()
-                .items(List.of(activity("6", "美团外卖节")))
+                .items(List.of(
+                        activity("1", "淘宝会场"),
+                        activity("7", "淘宝闪购"),
+                        activity("6", "美团外卖节")))
                 .build());
 
         CpsThirdPartyPage<CpsThirdPartyActivity> page = client.fetchActivities(CpsThirdPartyActivityRequest.builder()
@@ -75,7 +77,8 @@ class HaodankuActivityVendorClientTest {
                 .pageSize(20)
                 .build(), null);
 
-        assertEquals("meituan", page.getList().get(0).getPlatformCode());
+        assertEquals(1, page.getList().size());
+        assertEquals("taobao", page.getList().get(0).getPlatformCode());
     }
 
     private HdkActivityItem activity(String platform, String activityName) {
