@@ -87,16 +87,19 @@ public class HaodankuActivityVendorClient implements CpsThirdPartyActivityVendor
         List<CpsThirdPartyActivity> activities = new ArrayList<>();
         String activityType = secondaryCategory == null ? category.getName() : secondaryCategory.getName();
         for (HdkActivityItem item : page.getItems()) {
-            String externalIdValue = firstText(item.getActivityId(), item.getId());
-            if (!StringUtils.hasText(externalIdValue)) {
+            String rowId = item.getId();
+            String platformCode = normalizeActivityPlatformCode(item.getPlatform());
+            if (!StringUtils.hasText(rowId) || !StringUtils.hasText(platformCode)) {
                 continue;
             }
+            Map<String, Object> extraFields = buildExtraFields(category, secondaryCategory, item);
             activities.add(CpsThirdPartyActivity.builder()
                     .sourceType(SOURCE_HAODANKU)
-                    .externalActivityId(EXTERNAL_PREFIX + externalIdValue)
+                    .externalActivityId(EXTERNAL_PREFIX + platformCode + ":" + rowId)
+                    .promotionActivityId(item.getActivityId())
                     .activityName(firstText(item.getActivityName(), activityType))
                     .activityType(activityType)
-                    .platformCode(normalizeActivityPlatformCode(item.getPlatform()))
+                    .platformCode(platformCode)
                     .mainPic(item.getActivityPic())
                     .shortDesc(sanitizeDescription(item.getDescribe()))
                     .rebateDesc(item.getCommissionRate())
@@ -108,7 +111,7 @@ public class HaodankuActivityVendorClient implements CpsThirdPartyActivityVendor
                     .searchKeyword(firstText(item.getActivityName(), activityType))
                     .startTime(parseTime(item.getStartTime()))
                     .endTime(parseTime(item.getEndTime()))
-                    .extraFields(buildExtraFields(category, secondaryCategory, item))
+                    .extraFields(extraFields)
                     .rawPayload(null)
                     .build());
         }
@@ -169,12 +172,18 @@ public class HaodankuActivityVendorClient implements CpsThirdPartyActivityVendor
             extraFields.put("secondary_category_name", secondaryCategory.getName());
         }
         extraFields.put("activity_label", item.getActivityLabel());
+        extraFields.put("row_id", item.getId());
+        extraFields.put("activity_id", item.getActivityId());
+        extraFields.put("activity_url", item.getActivityUrl());
         extraFields.put("platform", item.getPlatform());
         extraFields.put("describe", item.getDescribe());
         extraFields.put("commission_rate", item.getCommissionRate());
         extraFields.put("promotion_type", item.getPromotionType());
         extraFields.put("activity_date", item.getActivityDate());
         extraFields.put("is_channel", item.getIsChannel());
+        if (StringUtils.hasText(item.getActivityId())) {
+            extraFields.put("legacyExternalActivityId", EXTERNAL_PREFIX + item.getActivityId());
+        }
         return extraFields;
     }
 

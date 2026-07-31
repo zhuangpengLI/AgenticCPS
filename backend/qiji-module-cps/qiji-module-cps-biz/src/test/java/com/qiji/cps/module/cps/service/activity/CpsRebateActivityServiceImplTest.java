@@ -6,14 +6,19 @@ import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
+import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityClient;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCenterReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCenterRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivitySaveReqVO;
+import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
+import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.activity.CpsRebateActivityMapper;
+import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
+import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
 import com.qiji.cps.module.cps.service.platform.CpsPlatformService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,10 +32,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,6 +60,15 @@ class CpsRebateActivityServiceImplTest {
 
     @Mock
     private DtkActivityVendorClient dtkActivityVendorClient;
+
+    @Mock
+    private HdkActivityClient hdkActivityClient;
+
+    @Mock
+    private CpsAdzoneService adzoneService;
+
+    @Mock
+    private CpsTransferRecordMapper transferRecordMapper;
 
     @Test
     @DisplayName("createActivity - 保存运营配置活动卡片")
@@ -236,6 +253,7 @@ class CpsRebateActivityServiceImplTest {
         CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
 
         assertEquals("SUCCESS", result.getLinkStatus());
+        assertEquals("EXTERNAL_PROMOTION", result.getLinkType());
         assertEquals("https://uland.taobao.com/coupon/edetail?activityId=abc", result.getPromotionUrl());
         assertEquals("mm_123_456_789", result.getAdzoneId());
         assertTrue(result.getPromotionContent().contains("品牌U享礼金专场"));
@@ -255,13 +273,14 @@ class CpsRebateActivityServiceImplTest {
 
         CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
         reqVO.setActivityId(11L);
-        reqVO.setLandingBaseUrl("https://admin.example.com");
 
         CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
 
-        assertEquals("SUCCESS", result.getLinkStatus());
-        assertEquals("https://admin.example.com/cps/goods/square?platformCode=fliggy&keyword=%E9%85%92%E5%BA%97%E7%BA%A2%E5%8C%85&activityTag=%E5%A4%A9%E5%A4%A9%E7%89%B9%E6%83%A0",
+        assertEquals("INTERNAL_FALLBACK", result.getLinkStatus());
+        assertEquals("INTERNAL_LANDING", result.getLinkType());
+        assertEquals("/cps-ops/goods/square?platformCode=fliggy&keyword=%E9%85%92%E5%BA%97%E7%BA%A2%E5%8C%85&activityTag=%E5%A4%A9%E5%A4%A9%E7%89%B9%E6%83%A0",
                 result.getPromotionUrl());
+        assertFalse(result.getPromotionUrl().contains("localhost"));
         assertTrue(result.getPromotionContent().contains("飞猪酒店特惠"));
         assertTrue(result.getPromotionContent().contains("酒店红包"));
         assertTrue(result.getPromotionContent().contains(result.getPromotionUrl()));
@@ -303,6 +322,7 @@ class CpsRebateActivityServiceImplTest {
         assertEquals("mm_1_2_3", captor.getValue().getAdzoneId());
         assertEquals("wechat_a", captor.getValue().getExternalId());
         assertEquals("SUCCESS", result.getLinkStatus());
+        assertEquals("EXTERNAL_PROMOTION", result.getLinkType());
         assertEquals("https://s.click.taobao.com/abc", result.getPromotionUrl());
         assertEquals("￥ABC123￥", result.getTpwd());
         assertTrue(result.getPromotionContent().contains("https://s.click.taobao.com/abc"));
@@ -310,8 +330,8 @@ class CpsRebateActivityServiceImplTest {
     }
 
     @Test
-    @DisplayName("generatePromotionContent - 大淘客官方转链超时后回退活动落地链接")
-    void generatePromotionContent_fallsBackToActivityLandingWhenDtkLinkUnavailable() {
+    @DisplayName("generatePromotionContent - 大淘客官方转链超时后明确返回失败")
+    void generatePromotionContent_failsWhenDtkLinkUnavailable() {
         CpsRebateActivityDO activity = buildActivity(13L, "淘宝官方补贴", "taobao", "CPS", 88, 1);
         activity.setSourceType("dataoke");
         activity.setExternalActivityId("dtk:10001");
@@ -335,13 +355,233 @@ class CpsRebateActivityServiceImplTest {
 
         CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
 
-        assertEquals("SUCCESS", result.getLinkStatus());
-        assertEquals("https://uland.taobao.com/coupon/edetail?activityId=abc", result.getPromotionUrl());
+        assertEquals("FAILED", result.getLinkStatus());
+        assertEquals("NONE", result.getLinkType());
+        assertNull(result.getPromotionUrl());
+        assertNull(result.getPromotionContent());
         assertEquals("mm_1_2_3", result.getAdzoneId());
         assertEquals("wechat_a", result.getChannelTag());
         assertTrue(result.getLinkMessage().contains("官方活动转链暂不可用"));
-        assertTrue(result.getPromotionContent().contains("https://uland.taobao.com/coupon/edetail?activityId=abc"));
-        assertTrue(result.getPromotionContent().contains("推广位：mm_1_2_3"));
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 大淘客未配置供应商时不伪造成功链接")
+    void generatePromotionContent_failsWhenDtkConfigMissing() {
+        CpsRebateActivityDO activity = buildActivity(14L, "淘宝官方补贴", "taobao", "CPS", 88, 1);
+        activity.setSourceType("dataoke");
+        activity.setExternalActivityId("dtk:10001");
+        when(activityMapper.selectById(14L)).thenReturn(activity);
+        when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(null);
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(14L);
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
+
+        assertEquals("FAILED", result.getLinkStatus());
+        assertEquals("NONE", result.getLinkType());
+        assertNull(result.getPromotionUrl());
+        assertFalse(String.valueOf(result.getPromotionContent()).contains("127.0.0.1"));
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 好单库淘宝活动使用官方会场转链且不误传渠道关系ID")
+    void generatePromotionContent_usesHaodankuOfficialConferenceLink() {
+        CpsRebateActivityDO activity = buildActivity(15L, "淘宝官方超级补贴会场", "taobao", "CPS", 66, 1);
+        activity.setSourceType("haodanku");
+        activity.setExternalActivityId("hdk:taobao:1677");
+        activity.setPromotionActivityId("20150318020023228");
+        activity.setVendorMetadata("{\"activity_url\":\"https://pages.tmall.com/wow/activity\"}");
+        when(activityMapper.selectById(15L)).thenReturn(activity);
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .vendorCode("haodanku")
+                .platformCode("taobao")
+                .appKey("api-key")
+                .authToken("authorized-tb-name")
+                .defaultAdzoneId("mm_default")
+                .build();
+        when(platformClientFactory.getVendorConfig("haodanku", "taobao")).thenReturn(config);
+        when(hdkActivityClient.generateConferenceLink(any(CpsPromotionLinkRequest.class), eq(config),
+                eq("淘宝官方超级补贴会场"))).thenReturn(CpsPromotionLinkResult.builder()
+                .shortUrl("https://s.click.taobao.com/hdk")
+                .tpwd("￥HDK123￥")
+                .build());
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(15L);
+        reqVO.setChannelTag("wechat_group_a");
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
+
+        ArgumentCaptor<CpsPromotionLinkRequest> captor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
+        verify(hdkActivityClient).generateConferenceLink(captor.capture(), eq(config), eq("淘宝官方超级补贴会场"));
+        assertEquals("20150318020023228", captor.getValue().getGoodsId());
+        assertEquals("https://pages.tmall.com/wow/activity", captor.getValue().getItemLink());
+        assertEquals("wechat_group_a", captor.getValue().getExternalId());
+        assertNull(captor.getValue().getRelationId());
+        assertEquals("SUCCESS", result.getLinkStatus());
+        assertEquals("EXTERNAL_PROMOTION", result.getLinkType());
+        assertEquals("https://s.click.taobao.com/hdk", result.getPromotionUrl());
+        assertEquals("￥HDK123￥", result.getTpwd());
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 好单库淘宝缺少授权账号名时返回可操作提示")
+    void generatePromotionContent_reportsMissingHaodankuTbName() {
+        CpsRebateActivityDO activity = buildActivity(19L, "淘宝官方超级补贴会场", "taobao", "CPS", 66, 1);
+        activity.setSourceType("haodanku");
+        activity.setPromotionActivityId("20150318020023228");
+        when(activityMapper.selectById(19L)).thenReturn(activity);
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .vendorCode("haodanku")
+                .platformCode("taobao")
+                .appKey("api-key")
+                .defaultAdzoneId("mm_default")
+                .build();
+        when(platformClientFactory.getVendorConfig("haodanku", "taobao")).thenReturn(config);
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(19L);
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
+
+        assertEquals("FAILED", result.getLinkStatus());
+        assertTrue(result.getLinkMessage().contains("tb_name"));
+        verify(hdkActivityClient, never()).generateConferenceLink(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 会员淘宝会场只使用可信专属推广位关系")
+    void generatePromotionContent_usesTrustedMemberRelationForHaodankuConference() {
+        CpsRebateActivityDO activity = buildActivity(16L, "淘宝官方超级补贴会场", "taobao", "CPS", 66, 1);
+        activity.setSourceType("haodanku");
+        activity.setPromotionActivityId("20150318020023228");
+        when(activityMapper.selectById(16L)).thenReturn(activity);
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .vendorCode("haodanku")
+                .platformCode("taobao")
+                .appKey("api-key")
+                .authToken("authorized-tb-name")
+                .defaultAdzoneId("mm_default")
+                .build();
+        when(platformClientFactory.getVendorConfig("haodanku", "taobao")).thenReturn(config);
+        when(adzoneService.getMemberAdzone("taobao", 1002L)).thenReturn(CpsAdzoneDO.builder()
+                .adzoneId("mm_member_1002")
+                .relationType("member")
+                .relationId(1002L)
+                .externalRelationId("relation-1002")
+                .status(1)
+                .build());
+        when(hdkActivityClient.generateConferenceLink(any(CpsPromotionLinkRequest.class), eq(config),
+                eq("淘宝官方超级补贴会场"))).thenReturn(CpsPromotionLinkResult.builder()
+                .shortUrl("https://s.click.taobao.com/member-hdk")
+                .build());
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(16L);
+        reqVO.setAdzoneId("mm_untrusted_request");
+        reqVO.setChannelTag("1002");
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO, 1002L);
+
+        ArgumentCaptor<CpsPromotionLinkRequest> captor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
+        verify(hdkActivityClient).generateConferenceLink(captor.capture(), eq(config),
+                eq("淘宝官方超级补贴会场"));
+        assertEquals("mm_member_1002", captor.getValue().getAdzoneId());
+        assertEquals("relation-1002", captor.getValue().getRelationId());
+        assertNull(captor.getValue().getSpecialId());
+        assertEquals("MEMBER_TRACKED", result.getAttributionStatus());
+        assertTrue(result.getAttributionMessage().contains("会员"));
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 会员闪购会场使用短 sid 并保存可信映射")
+    void generatePromotionContent_tracksHaodankuElemeActivityWithOpaqueSid() {
+        CpsRebateActivityDO activity = buildActivity(17L, "淘宝闪购天天领红包", "eleme", "CPS", 66, 1);
+        activity.setSourceType("haodanku");
+        activity.setPromotionActivityId("elm-activity-1");
+        activity.setJumpUrl("https://market.m.taobao.com/app/eleme/activity");
+        when(activityMapper.selectById(17L)).thenReturn(activity);
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .vendorCode("haodanku")
+                .platformCode("eleme")
+                .appKey("api-key")
+                .build();
+        when(platformClientFactory.getVendorConfig("haodanku", "eleme")).thenReturn(config);
+        when(transferRecordMapper.insert(any(CpsTransferRecordDO.class))).thenAnswer(invocation -> {
+            CpsTransferRecordDO record = invocation.getArgument(0);
+            record.setId(9001L);
+            return 1;
+        });
+        when(hdkActivityClient.generateElemeActivityLink(any(CpsPromotionLinkRequest.class), eq(config), any()))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .shortUrl("https://s.click.ele.me/member-hdk")
+                        .tpwd("闪购口令")
+                        .build());
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(17L);
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO, 1002L);
+
+        ArgumentCaptor<String> sidCaptor = ArgumentCaptor.forClass(String.class);
+        verify(hdkActivityClient).generateElemeActivityLink(any(CpsPromotionLinkRequest.class), eq(config),
+                sidCaptor.capture());
+        String sid = sidCaptor.getValue();
+        assertTrue(sid.matches("[A-Za-z0-9_]{12,15}"));
+        assertFalse(sid.contains("1002"));
+        ArgumentCaptor<CpsTransferRecordDO> recordCaptor = ArgumentCaptor.forClass(CpsTransferRecordDO.class);
+        verify(transferRecordMapper).insert(recordCaptor.capture());
+        assertEquals(1002L, recordCaptor.getValue().getMemberId());
+        assertEquals("haodanku", recordCaptor.getValue().getVendorCode());
+        assertEquals("eleme", recordCaptor.getValue().getPlatformCode());
+        assertEquals(17L, recordCaptor.getValue().getActivityId());
+        assertEquals("SID", recordCaptor.getValue().getAttributionType());
+        assertEquals(sid, recordCaptor.getValue().getAttributionToken());
+        assertEquals("MEMBER_TRACKED", result.getAttributionStatus());
+        assertEquals("https://s.click.ele.me/member-hdk", result.getPromotionUrl());
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 闪购未单独配置时复用好单库淘宝账号")
+    void generatePromotionContent_reusesHaodankuTaobaoAccountForEleme() {
+        CpsRebateActivityDO activity = buildActivity(18L, "淘宝闪购天天领红包", "eleme", "CPS", 66, 1);
+        activity.setSourceType("haodanku");
+        activity.setPromotionActivityId("elm-activity-2");
+        when(activityMapper.selectById(18L)).thenReturn(activity);
+        CpsVendorConfig taobaoConfig = CpsVendorConfig.builder()
+                .vendorCode("haodanku")
+                .platformCode("taobao")
+                .appKey("shared-api-key")
+                .build();
+        when(platformClientFactory.getVendorConfig("haodanku", "eleme")).thenReturn(null);
+        when(platformClientFactory.getVendorConfig("haodanku", "taobao")).thenReturn(taobaoConfig);
+        when(hdkActivityClient.generateElemeActivityLink(any(CpsPromotionLinkRequest.class), eq(taobaoConfig),
+                isNull())).thenReturn(CpsPromotionLinkResult.builder()
+                .shortUrl("https://s.click.ele.me/channel-hdk")
+                .build());
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(18L);
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
+
+        verify(platformClientFactory).getVendorConfig("haodanku", "eleme");
+        verify(platformClientFactory).getVendorConfig("haodanku", "taobao");
+        assertEquals("SUCCESS", result.getLinkStatus());
+        assertEquals("https://s.click.ele.me/channel-hdk", result.getPromotionUrl());
+    }
+
+    @Test
+    @DisplayName("createActivity - url 跳转缺少有效公网地址时拒绝保存")
+    void createActivity_rejectsInvalidUrlTarget() {
+        CpsRebateActivitySaveReqVO reqVO = buildReqVO();
+        reqVO.setJumpType("url");
+        reqVO.setJumpUrl("http://localhost/activity");
+        reqVO.setSearchKeyword(null);
+
+        assertThrows(ServiceException.class, () -> service.createActivity(reqVO));
+        verify(activityMapper, never()).insert(any(CpsRebateActivityDO.class));
     }
 
     private CpsRebateActivitySaveReqVO buildReqVO() {

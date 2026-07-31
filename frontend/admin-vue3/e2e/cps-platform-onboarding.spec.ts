@@ -297,6 +297,26 @@ test.describe('CPS platform onboarding', () => {
     await mockAdminBootstrapAndMenu(page); await mockOnboardingApi(page); await openPlatformCenter(page); await expect(page.getByRole('button', { name: '禁用' })).toBeVisible(); await expect(page.getByText('删除运行配置')).toHaveCount(0)
   })
 
+  test('keeps every platform row action on the same line', async ({ page }) => {
+    await mockAdminBootstrapAndMenu(page)
+    await mockOnboardingApi(page, { draftVendor: 'haodanku' })
+    await openPlatformCenter(page)
+
+    const platformRow = page.getByRole('row').filter({ hasText: '淘宝' })
+    const actions = platformRow.getByRole('button')
+    await expect(actions).toHaveCount(4)
+
+    const verticalBounds = await actions.evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const box = button.getBoundingClientRect()
+        return { top: box.top, bottom: box.bottom }
+      })
+    )
+    const sharedTop = Math.max(...verticalBounds.map(({ top }) => top))
+    const sharedBottom = Math.min(...verticalBounds.map(({ bottom }) => bottom))
+    expect(sharedTop).toBeLessThan(sharedBottom)
+  })
+
   test('hides mutation actions when permissions are absent', async ({ page }) => {
     await mockAdminBootstrapAndMenu(page, ['cps:platform-onboarding:query']); await mockOnboardingApi(page); await openPlatformCenter(page); await expect(page.getByRole('button', { name: '接入新平台' })).toHaveCount(0); await expect(page.getByRole('button', { name: '配置', exact: true })).toHaveCount(0)
   })

@@ -63,6 +63,19 @@ public interface CpsOrderMapper extends BaseMapperX<CpsOrderDO> {
     }
 
     /**
+     * 仅在订单尚未归因时绑定会员，避免并发申领覆盖已确认归属。
+     */
+    default int bindMemberIfUnattributed(Long orderId, Long memberId, String memberNickname,
+                                         String attributionSource) {
+        return update(null, new LambdaUpdateWrapper<CpsOrderDO>()
+                .eq(CpsOrderDO::getId, orderId)
+                .isNull(CpsOrderDO::getMemberId)
+                .set(CpsOrderDO::getMemberId, memberId)
+                .set(CpsOrderDO::getMemberNickname, memberNickname)
+                .set(CpsOrderDO::getAttributionSource, attributionSource));
+    }
+
+    /**
      * 使用订单状态版本号做条件更新，避免退款与结算同步并发时发生最后写覆盖。
      */
     default int updateByIdAndStatusVersion(CpsOrderDO updateDO, Integer expectedStatusVersion) {

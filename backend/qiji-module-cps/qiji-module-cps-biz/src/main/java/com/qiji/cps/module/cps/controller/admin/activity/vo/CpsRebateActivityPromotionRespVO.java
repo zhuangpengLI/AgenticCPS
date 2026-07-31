@@ -9,11 +9,20 @@ import lombok.Data;
 @Builder
 public class CpsRebateActivityPromotionRespVO {
 
-    @Schema(description = "生成状态 SUCCESS/FAILED")
+    @Schema(description = "生成状态 SUCCESS/INTERNAL_FALLBACK/FAILED")
     private String linkStatus;
+
+    @Schema(description = "链接类型 EXTERNAL_PROMOTION/INTERNAL_LANDING/NONE")
+    private String linkType;
 
     @Schema(description = "生成提示")
     private String linkMessage;
+
+    @Schema(description = "归因状态 MEMBER_TRACKED/CHANNEL_TRACKED/UNTRACKED")
+    private String attributionStatus;
+
+    @Schema(description = "订单归因提示")
+    private String attributionMessage;
 
     @Schema(description = "活动 ID")
     private Long activityId;

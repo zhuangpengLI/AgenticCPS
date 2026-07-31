@@ -20,6 +20,22 @@ const CpsOrderApi = {
       },
     });
   },
+  claimOrder: (data) => {
+    return request({
+      url: '/cps/order/claim',
+      method: 'POST',
+      data,
+    });
+  },
+  getClaimList: () => {
+    return request({
+      url: '/cps/order/claim/list',
+      method: 'GET',
+      custom: {
+        showLoading: false,
+      },
+    });
+  },
 };
 
 export default CpsOrderApi;

@@ -41,6 +41,9 @@ public class CpsOrderAttributionLogPageReqVO extends PageParam {
     @Schema(description = "归因结果", example = "BOUND")
     private String result;
 
+    @Schema(description = "审核状态", example = "PENDING_REVIEW")
+    private String reviewStatus;
+
     @Schema(description = "创建时间范围")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] createTime;

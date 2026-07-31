@@ -4,6 +4,9 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
+import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
+import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -18,7 +21,10 @@ import java.util.Map;
 public class HdkActivityClient {
 
     private static final String BASE_URL = "https://www.haodanku.com/openapi";
+    private static final String CONFERENCE_URL = "https://v2.api.haodanku.com/createConference_code";
+    private static final String ELEME_ACTIVITY_URL = "https://v3.api.haodanku.com/elm_activity_ratesurl";
     private static final int HTTP_TIMEOUT = 5000;
+    private static final int CONFERENCE_HTTP_TIMEOUT = 10000;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -80,6 +86,114 @@ public class HdkActivityClient {
                 .build();
     }
 
+    public CpsPromotionLinkResult generateConferenceLink(CpsPromotionLinkRequest request, CpsVendorConfig config,
+                                                          String activityTitle) {
+        if (request == null || config == null || !StringUtils.hasText(config.getAppKey())) {
+            return null;
+        }
+        String pid = firstText(request.getAdzoneId(), config.getDefaultAdzoneId());
+        String activityId = request.getGoodsId();
+        String activityUrl = request.getItemLink();
+        String tbName = firstText(config.getAuthToken(), getExtraConfig(config, "tb_name"));
+        String title = normalizeTitle(activityTitle);
+        boolean useActivityId = StringUtils.hasText(activityId);
+        if (!StringUtils.hasText(pid)
+                || !StringUtils.hasText(tbName)
+                || (!StringUtils.hasText(activityId) && !StringUtils.hasText(activityUrl))
+                || title.length() <= 8) {
+            return null;
+        }
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("apikey", config.getAppKey());
+        params.put(useActivityId ? "activity_id" : "activity_url", useActivityId ? activityId : activityUrl);
+        params.put("pid", pid);
+        params.put("tb_name", tbName);
+        params.put("title", title);
+        params.put("relation_id", request.getRelationId());
+        params.entrySet().removeIf(entry -> entry.getValue() == null
+                || entry.getValue() instanceof String value && !StringUtils.hasText(value));
+
+        JsonNode root = executeConferenceRequest(params);
+        if (!isConferenceSuccess(root)) {
+            return null;
+        }
+        JsonNode data = root.path("data").isObject() ? root.path("data") : root;
+        String url = firstText(data, "url", "click_url", "short_url");
+        if (!isHttpUrl(url)) {
+            return null;
+        }
+        return CpsPromotionLinkResult.builder()
+                .shortUrl(url)
+                .longUrl(url)
+                .tpwd(firstText(data, "tao_code", "taoCode", "tpwd"))
+                .rawPayload(toJson(root))
+                .build();
+    }
+
+    public CpsPromotionLinkResult generateElemeActivityLink(CpsPromotionLinkRequest request, CpsVendorConfig config,
+                                                             String sid) {
+        if (request == null || config == null || !StringUtils.hasText(config.getAppKey())
+                || StringUtils.hasText(sid) && !isValidSid(sid)) {
+            return null;
+        }
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("apikey", config.getAppKey());
+        params.put("activity_id", request.getGoodsId());
+        params.put("sid", sid);
+        params.put("link", request.getItemLink());
+        params.entrySet().removeIf(entry -> entry.getValue() == null
+                || entry.getValue() instanceof String value && !StringUtils.hasText(value));
+
+        JsonNode root = executeElemeActivityRequest(params);
+        if (!isConferenceSuccess(root)) {
+            return null;
+        }
+        JsonNode data = root.path("data").isObject() ? root.path("data") : root;
+        String shortUrl = firstText(data, "h5_short_link", "h5ShortLink");
+        String longUrl = firstText(data, "h5_url", "h5Url");
+        if (!isHttpUrl(firstText(shortUrl, longUrl))) {
+            return null;
+        }
+        Map<String, Object> extraFields = new LinkedHashMap<>();
+        extraFields.put("miniQrcode", firstText(data, "mini_qrcode", "miniQrcode"));
+        extraFields.put("wxAppId", firstText(data, "wx_appid", "wxAppId"));
+        extraFields.put("wxPath", firstText(data, "wx_path", "wxPath"));
+        extraFields.put("taobaoSchemeUrl", firstText(data, "tb_scheme_url", "tbSchemeUrl"));
+        extraFields.put("alipayMiniUrl", firstText(data, "alipay_mini_url", "alipayMiniUrl"));
+        extraFields.entrySet().removeIf(entry -> entry.getValue() == null);
+        return CpsPromotionLinkResult.builder()
+                .shortUrl(shortUrl)
+                .longUrl(longUrl)
+                .tpwd(firstText(data, "full_taobao_word", "fullTaobaoWord"))
+                .mobileUrl(firstText(data, "ele_scheme_url", "eleSchemeUrl"))
+                .extraFields(extraFields)
+                .rawPayload(toJson(root))
+                .build();
+    }
+
+    protected JsonNode executeConferenceRequest(Map<String, Object> params) {
+        try {
+            HttpRequest request = HttpRequest.post(CONFERENCE_URL).timeout(CONFERENCE_HTTP_TIMEOUT);
+            params.forEach(request::form);
+            return objectMapper.readTree(request.execute().body());
+        } catch (Exception e) {
+            log.warn("[HdkActivityClient] 淘宝会场转链请求异常", e);
+            return null;
+        }
+    }
+
+    protected JsonNode executeElemeActivityRequest(Map<String, Object> params) {
+        try {
+            HttpRequest request = HttpRequest.post(ELEME_ACTIVITY_URL).timeout(CONFERENCE_HTTP_TIMEOUT);
+            params.forEach(request::form);
+            return objectMapper.readTree(request.execute().body());
+        } catch (Exception e) {
+            log.warn("[HdkActivityClient] 淘宝闪购会场转链请求异常", e);
+            return null;
+        }
+    }
+
     private JsonNode get(String path, Map<String, Object> params) {
         try {
             HttpRequest request = HttpRequest.get(BASE_URL + path)
@@ -129,6 +243,11 @@ public class HdkActivityClient {
         return root != null && root.path("code").asInt(-1) == 200;
     }
 
+    private boolean isConferenceSuccess(JsonNode root) {
+        int code = root == null ? -1 : root.path("code").asInt(-1);
+        return code == 1 || code == 200;
+    }
+
     private String firstText(JsonNode root, String... fieldNames) {
         for (String fieldName : fieldNames) {
             String value = root.path(fieldName).asText(null);
@@ -137,6 +256,41 @@ public class HdkActivityClient {
             }
         }
         return null;
+    }
+
+    private String firstText(String... values) {
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String getExtraConfig(CpsVendorConfig config, String key) {
+        return config.getExtraConfig() == null ? null : config.getExtraConfig().get(key);
+    }
+
+    private String normalizeTitle(String value) {
+        String title = StringUtils.hasText(value) ? value.trim() : "官方联盟活动推广会场";
+        return title.length() > 8 ? title : title + "官方活动推广";
+    }
+
+    private boolean isHttpUrl(String value) {
+        return StringUtils.hasText(value)
+                && (value.startsWith("https://") || value.startsWith("http://"));
+    }
+
+    private boolean isValidSid(String value) {
+        return StringUtils.hasText(value) && value.matches("[A-Za-z0-9_]{1,15}");
+    }
+
+    private String toJson(JsonNode value) {
+        try {
+            return value == null ? null : objectMapper.writeValueAsString(value);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     private Integer parseInt(String value) {

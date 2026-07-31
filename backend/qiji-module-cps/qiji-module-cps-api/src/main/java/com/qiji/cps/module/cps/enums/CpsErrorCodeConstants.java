@@ -25,6 +25,9 @@ public interface CpsErrorCodeConstants {
     ErrorCode ORDER_ALREADY_EXISTS = new ErrorCode(1_100_003_001, "CPS订单[{}]已存在");
     ErrorCode ORDER_STATUS_INVALID = new ErrorCode(1_100_003_002, "CPS订单状态不合法");
     ErrorCode ORDER_ATTRIBUTION_BIND_INVALID = new ErrorCode(1_100_003_003, "订单归因绑定失败：{}");
+    ErrorCode ORDER_CLAIM_INVALID = new ErrorCode(1_100_003_004, "订单申领请求不合法：{}");
+    ErrorCode ORDER_CLAIM_NOT_EXISTS = new ErrorCode(1_100_003_005, "订单申领记录不存在");
+    ErrorCode ORDER_CLAIM_STATUS_INVALID = new ErrorCode(1_100_003_006, "订单申领状态不允许当前操作");
 
     // ========== 返利配置 1-100-004-000 ==========
     ErrorCode REBATE_CONFIG_NOT_EXISTS = new ErrorCode(1_100_004_000, "返利配置不存在");
@@ -82,6 +85,7 @@ public interface CpsErrorCodeConstants {
 
     // ========== 返利活动 1-100-015-000 ==========
     ErrorCode REBATE_ACTIVITY_NOT_EXISTS = new ErrorCode(1_100_015_000, "返利活动不存在");
+    ErrorCode REBATE_ACTIVITY_JUMP_INVALID = new ErrorCode(1_100_015_001, "返利活动跳转配置不合法：{}");
 
     // ========== 选品库 1-100-016-000 ==========
     ErrorCode SELECTION_THEME_NOT_EXISTS = new ErrorCode(1_100_016_000, "选品主题不存在");

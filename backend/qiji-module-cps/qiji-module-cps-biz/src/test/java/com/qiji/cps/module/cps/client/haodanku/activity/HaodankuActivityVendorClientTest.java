@@ -53,6 +53,11 @@ class HaodankuActivityVendorClientTest {
                 "local_life", "taobao", "fliggy"), page.getList().stream()
                 .map(CpsThirdPartyActivity::getPlatformCode)
                 .toList());
+        assertEquals("hdk:taobao:row-1", page.getList().get(0).getExternalActivityId());
+        assertEquals("1-activity", page.getList().get(0).getPromotionActivityId());
+        assertEquals("https://example.com/activity/row-1", page.getList().get(0).getJumpUrl());
+        assertEquals("https://example.com/activity/row-1",
+                page.getList().get(0).getExtraFields().get("activity_url"));
     }
 
     @Test
@@ -75,7 +80,9 @@ class HaodankuActivityVendorClientTest {
 
     private HdkActivityItem activity(String platform, String activityName) {
         return HdkActivityItem.builder()
+                .id("row-1")
                 .activityId(platform + "-activity")
+                .activityUrl("https://example.com/activity/row-1")
                 .activityName(activityName)
                 .platform(platform)
                 .promotionType("1")

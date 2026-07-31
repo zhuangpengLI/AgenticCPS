@@ -121,6 +121,12 @@ class CpsRebateActivityThirdPartySyncServiceImplTest {
                 .appSecret("dtk-secret")
                 .apiBaseUrl("https://openapi.dataoke.com/api")
                 .build());
+        when(platformClientFactory.getVendorConfig("haodanku", "activity")).thenReturn(CpsVendorConfig.builder()
+                .vendorCode("haodanku")
+                .platformCode("activity")
+                .appKey("hdk-key")
+                .apiBaseUrl("https://www.haodanku.com/openapi")
+                .build());
         when(platformClientFactory.getVendorConfig("jutuike", "union")).thenReturn(CpsVendorConfig.builder()
                 .vendorCode("jutuike")
                 .platformCode("union")

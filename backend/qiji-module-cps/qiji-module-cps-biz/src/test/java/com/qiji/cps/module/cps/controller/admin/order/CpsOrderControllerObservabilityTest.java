@@ -5,6 +5,7 @@ import com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderAttributionLogPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderAttributionLogRespVO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderBindSpecialIdReqVO;
+import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderClaimReviewReqVO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsFundsTraceReqVO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsPlatformBillDiffHandleReqVO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsPlatformBillDiffPageReqVO;
@@ -23,6 +24,9 @@ import com.qiji.cps.module.cps.service.order.CpsFundsTraceQuery;
 import com.qiji.cps.module.cps.service.order.CpsFundsTraceResult;
 import com.qiji.cps.module.cps.service.order.CpsFundsTraceService;
 import com.qiji.cps.module.cps.service.order.CpsOrderManualBindCommand;
+import com.qiji.cps.module.cps.service.order.CpsOrderClaimResult;
+import com.qiji.cps.module.cps.service.order.CpsOrderClaimReviewCommand;
+import com.qiji.cps.module.cps.service.order.CpsOrderClaimService;
 import com.qiji.cps.module.cps.service.order.CpsOrderObservabilityService;
 import com.qiji.cps.module.cps.service.order.CpsOrderService;
 import com.qiji.cps.module.cps.service.order.CpsOrderSyncFailureRecoveryService;
@@ -50,6 +54,8 @@ class CpsOrderControllerObservabilityTest {
 
     @Mock
     private CpsOrderService orderService;
+    @Mock
+    private CpsOrderClaimService orderClaimService;
     @Mock
     private CpsOrderObservabilityService observabilityService;
     @Mock
@@ -212,5 +218,26 @@ class CpsOrderControllerObservabilityTest {
         assertEquals("TB-91", result.getOrder().getPlatformOrderId());
         assertEquals(true, result.isTraceComplete());
         verify(fundsTraceService).traceFunds(new CpsFundsTraceQuery(91L, null, null, "biz-91", "idem-91"));
+    }
+
+    @Test
+    void reviewClaimUsesLoginOperatorAndRequiredAuditNote() {
+        CpsOrderClaimReviewReqVO request = new CpsOrderClaimReviewReqVO();
+        request.setClaimId(61L);
+        request.setApproved(true);
+        request.setAuditNote("联盟后台订单和会员截图一致");
+        when(orderClaimService.review(new CpsOrderClaimReviewCommand(
+                61L, true, 9001L, "联盟后台订单和会员截图一致")))
+                .thenReturn(new CpsOrderClaimResult(61L, 71L, "taobao", "TB-CLAIM-61",
+                        "APPROVED", "审核通过"));
+
+        try (MockedStatic<SecurityFrameworkUtils> security = mockStatic(SecurityFrameworkUtils.class)) {
+            security.when(SecurityFrameworkUtils::getLoginUserId).thenReturn(9001L);
+
+            assertEquals("APPROVED", controller.reviewClaim(request).getData().status());
+        }
+
+        verify(orderClaimService).review(new CpsOrderClaimReviewCommand(
+                61L, true, 9001L, "联盟后台订单和会员截图一致"));
     }
 }

@@ -570,6 +570,68 @@ class CpsOrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("saveOrUpdateOrder - 闪购 channelCode 仅在唯一有效 sid 映射时绑定会员")
+    void saveOrUpdateOrder_attributesElemeByUniqueTrustedSid() {
+        when(orderMapper.selectByPlatformOrderId("eleme", "ELM-SID-1")).thenReturn(null);
+        when(transferRecordMapper.selectValidAttributionTokenCandidates(
+                eq("haodanku"), eq("eleme"), eq("SID"), eq("Abc_123456789"), any()))
+                .thenReturn(List.of(CpsTransferRecordDO.builder()
+                        .id(20L)
+                        .memberId(1002L)
+                        .vendorCode("haodanku")
+                        .platformCode("eleme")
+                        .attributionType("SID")
+                        .attributionToken("Abc_123456789")
+                        .status(1)
+                        .expireTime(LocalDateTime.now().plusDays(1))
+                        .build()));
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(1002L);
+        member.setNickname("闪购会员");
+        when(memberUserApi.getUser(1002L)).thenReturn(member);
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .vendorCode("haodanku")
+                .platformCode("eleme")
+                .platformOrderId("ELM-SID-1")
+                .externalId("Abc_123456789")
+                .platformStatus(1)
+                .build();
+
+        assertEquals(1, orderService.saveOrUpdateOrder(dto));
+
+        verify(orderMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order -> Long.valueOf(1002L).equals(order.getMemberId())
+                && "sid".equals(order.getAttributionSource())));
+        verify(transferRecordMapper).updatePlatformOrderId(20L, "ELM-SID-1");
+    }
+
+    @Test
+    @DisplayName("saveOrUpdateOrder - 闪购 sid 存在多个候选时拒绝猜测归因")
+    void saveOrUpdateOrder_rejectsAmbiguousElemeSid() {
+        when(orderMapper.selectByPlatformOrderId("eleme", "ELM-SID-2")).thenReturn(null);
+        when(transferRecordMapper.selectValidAttributionTokenCandidates(
+                eq("haodanku"), eq("eleme"), eq("SID"), eq("DuplicateSid12"), any()))
+                .thenReturn(List.of(
+                        CpsTransferRecordDO.builder().id(21L).memberId(1002L).build(),
+                        CpsTransferRecordDO.builder().id(22L).memberId(1003L).build()));
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .vendorCode("haodanku")
+                .platformCode("eleme")
+                .platformOrderId("ELM-SID-2")
+                .externalId("DuplicateSid12")
+                .platformStatus(1)
+                .build();
+
+        assertEquals(1, orderService.saveOrUpdateOrder(dto));
+
+        verify(orderMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order -> order.getMemberId() == null));
+        verify(transferRecordMapper, never()).updatePlatformOrderId(any(), any());
+        verify(attributionLogMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderAttributionLogDO>argThat(log -> "CONFLICT".equals(log.getResult())
+                && log.getAttributedMemberId() == null));
+    }
+
+    @Test
     @DisplayName("bindSpecialIdToMember - 手动绑定 specialId 应写入会员专属推广位并更新订单归因")
     void bindSpecialIdToMember_createsMemberAdzoneAndUpdatesOrderAttribution() {
         when(orderMapper.selectById(7L)).thenReturn(CpsOrderDO.builder()

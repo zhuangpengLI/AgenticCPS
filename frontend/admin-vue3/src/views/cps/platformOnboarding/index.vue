@@ -86,54 +86,56 @@
         />
         <el-table-column label="操作" fixed="right" width="260" align="center">
           <template #default="{ row }">
-            <el-button link type="primary" v-hasPermi="['cps:platform-onboarding:update']" @click="openEdit(row.platformCode)">
-              配置
-            </el-button>
-            <el-button
-              link
-              type="primary"
-              v-hasPermi="['cps:platform-onboarding:test']"
-              @click="openEdit(row.platformCode)"
-            >
-              连接测试
-            </el-button>
-            <el-button
-              v-if="row.runtimeStatus === 1"
-              link
-              type="warning"
-              v-hasPermi="['cps:platform-onboarding:update']"
-              @click="handleDisable(row)"
-            >
-              禁用
-            </el-button>
-            <el-button
-              v-else
-              link
-              type="success"
-              v-hasPermi="['cps:platform-onboarding:publish']"
-              @click="handleEnable(row)"
-            >
-              启用
-            </el-button>
-            <el-dropdown
-              v-if="row.draftStatus || (row.runtimeStatus != null && row.runtimeStatus !== 1)"
-              v-hasPermi="['cps:platform-onboarding:delete']"
-            >
-              <el-button link type="danger">删除<Icon icon="ep:arrow-down" class="ml-1" /></el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item v-if="row.draftStatus" @click="handleDeleteDraft(row)">
-                    删除草稿
-                  </el-dropdown-item>
-                   <el-dropdown-item
-                     v-if="row.runtimeStatus != null && row.runtimeStatus !== 1"
-                     @click="handleDeleteBundle(row)"
-                   >
-                    删除运行配置
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+            <div class="flex flex-nowrap items-center justify-center whitespace-nowrap">
+              <el-button link type="primary" v-hasPermi="['cps:platform-onboarding:update']" @click="openEdit(row.platformCode)">
+                配置
+              </el-button>
+              <el-button
+                link
+                type="primary"
+                v-hasPermi="['cps:platform-onboarding:test']"
+                @click="openEdit(row.platformCode)"
+              >
+                连接测试
+              </el-button>
+              <el-button
+                v-if="row.runtimeStatus === 1"
+                link
+                type="warning"
+                v-hasPermi="['cps:platform-onboarding:update']"
+                @click="handleDisable(row)"
+              >
+                禁用
+              </el-button>
+              <el-button
+                v-else
+                link
+                type="success"
+                v-hasPermi="['cps:platform-onboarding:publish']"
+                @click="handleEnable(row)"
+              >
+                启用
+              </el-button>
+              <el-dropdown
+                v-if="row.draftStatus || (row.runtimeStatus != null && row.runtimeStatus !== 1)"
+                v-hasPermi="['cps:platform-onboarding:delete']"
+              >
+                <el-button link type="danger">删除<Icon icon="ep:arrow-down" class="ml-1" /></el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item v-if="row.draftStatus" @click="handleDeleteDraft(row)">
+                      删除草稿
+                    </el-dropdown-item>
+                    <el-dropdown-item
+                      v-if="row.runtimeStatus != null && row.runtimeStatus !== 1"
+                      @click="handleDeleteBundle(row)"
+                    >
+                      删除运行配置
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
           </template>
         </el-table-column>
       </el-table>

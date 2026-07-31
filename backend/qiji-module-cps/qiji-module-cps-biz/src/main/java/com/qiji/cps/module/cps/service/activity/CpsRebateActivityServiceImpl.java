@@ -1,5 +1,7 @@
 package com.qiji.cps.module.cps.service.activity;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCenterReqVO;
@@ -14,17 +16,24 @@ import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.client.haodanku.activity.HaodankuActivityVendorClient;
+import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityClient;
+import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
+import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.activity.CpsRebateActivityMapper;
+import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
+import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
 import com.qiji.cps.module.cps.service.platform.CpsPlatformService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,6 +46,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.REBATE_ACTIVITY_JUMP_INVALID;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.REBATE_ACTIVITY_NOT_EXISTS;
 
 @Service
@@ -51,10 +61,27 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
     private static final String BILLING_TYPE_CPS_CPA = "CPS+CPA";
     private static final String SOURCE_CONFIGURED = "configured";
     private static final String SOURCE_DATAOKE = "dataoke";
+    private static final String SOURCE_HAODANKU = "haodanku";
     private static final String VENDOR_DATAOKE = "dataoke";
+    private static final String VENDOR_HAODANKU = "haodanku";
     private static final String PLATFORM_TAOBAO = "taobao";
+    private static final String PLATFORM_ELEME = "eleme";
     private static final String DTK_EXTERNAL_PREFIX = "dtk:";
     private static final String LINK_STATUS_SUCCESS = "SUCCESS";
+    private static final String LINK_STATUS_INTERNAL_FALLBACK = "INTERNAL_FALLBACK";
+    private static final String LINK_STATUS_FAILED = "FAILED";
+    private static final String LINK_TYPE_EXTERNAL_PROMOTION = "EXTERNAL_PROMOTION";
+    private static final String LINK_TYPE_INTERNAL_LANDING = "INTERNAL_LANDING";
+    private static final String LINK_TYPE_NONE = "NONE";
+    private static final String GOODS_SQUARE_PATH = "/cps-ops/goods/square";
+    private static final String ATTRIBUTION_MEMBER_TRACKED = "MEMBER_TRACKED";
+    private static final String ATTRIBUTION_CHANNEL_TRACKED = "CHANNEL_TRACKED";
+    private static final String ATTRIBUTION_UNTRACKED = "UNTRACKED";
+    private static final String ATTRIBUTION_TYPE_SID = "SID";
+    private static final String SID_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
+    private static final int SID_LENGTH = 15;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Resource
     private CpsRebateActivityMapper activityMapper;
@@ -68,8 +95,18 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
     @Resource
     private DtkActivityVendorClient dtkActivityVendorClient;
 
+    @Resource
+    private HdkActivityClient hdkActivityClient;
+
+    @Resource
+    private CpsAdzoneService adzoneService;
+
+    @Resource
+    private CpsTransferRecordMapper transferRecordMapper;
+
     @Override
     public Long createActivity(CpsRebateActivitySaveReqVO createReqVO) {
+        validateJumpTarget(createReqVO);
         CpsRebateActivityDO activity = BeanUtils.toBean(createReqVO, CpsRebateActivityDO.class);
         activityMapper.insert(activity);
         return activity.getId();
@@ -78,6 +115,7 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
     @Override
     public void updateActivity(CpsRebateActivitySaveReqVO updateReqVO) {
         validateActivityExists(updateReqVO.getId());
+        validateJumpTarget(updateReqVO);
         CpsRebateActivityDO updateObj = BeanUtils.toBean(updateReqVO, CpsRebateActivityDO.class);
         activityMapper.updateById(updateObj);
     }
@@ -138,38 +176,45 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
 
     @Override
     public CpsRebateActivityPromotionRespVO generatePromotionContent(CpsRebateActivityPromotionReqVO reqVO) {
+        return generatePromotionContent(reqVO, null);
+    }
+
+    @Override
+    public CpsRebateActivityPromotionRespVO generatePromotionContent(CpsRebateActivityPromotionReqVO reqVO,
+                                                                      Long memberId) {
         CpsRebateActivityDO activity = getActivity(reqVO.getActivityId());
         if (activity == null) {
             throw exception(REBATE_ACTIVITY_NOT_EXISTS);
         }
-        CpsRebateActivityPromotionRespVO dtkResult = tryGenerateDtkActivityLink(activity, reqVO);
-        if (dtkResult != null) {
-            return dtkResult;
+        if (SOURCE_DATAOKE.equalsIgnoreCase(firstText(activity.getSourceType(), ""))) {
+            return generateDtkActivityLink(activity, reqVO);
         }
-        String promotionUrl = buildPromotionUrl(activity, reqVO);
-        return CpsRebateActivityPromotionRespVO.builder()
-                .linkStatus(LINK_STATUS_SUCCESS)
-                .linkMessage("活动推广内容已生成")
-                .activityId(activity.getId())
-                .activityName(activity.getActivityName())
-                .platformCode(activity.getPlatformCode())
-                .adzoneId(reqVO.getAdzoneId())
-                .channelTag(reqVO.getChannelTag())
-                .promotionUrl(promotionUrl)
-                .promotionContent(buildPromotionContent(activity, reqVO, promotionUrl, null, reqVO.getAdzoneId()))
-                .build();
+        if (SOURCE_HAODANKU.equalsIgnoreCase(firstText(activity.getSourceType(), ""))) {
+            return generateHaodankuActivityLink(activity, reqVO, memberId);
+        }
+        if ("url".equals(activity.getJumpType())) {
+            String promotionUrl = replaceUrlPlaceholders(activity.getJumpUrl(), reqVO);
+            if (!isSafeExternalUrl(promotionUrl)) {
+                return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(), "活动未配置有效的公网跳转地址");
+            }
+            return buildExternalPromotion(activity, reqVO, reqVO.getAdzoneId(), promotionUrl, null, null,
+                    "活动推广链接已生成");
+        }
+        if ("search".equals(activity.getJumpType())) {
+            return buildInternalPromotion(activity, reqVO, reqVO.getAdzoneId(), "已生成站内商品广场落地页");
+        }
+        return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(), "当前活动没有可用的跳转配置");
     }
 
-    private CpsRebateActivityPromotionRespVO tryGenerateDtkActivityLink(CpsRebateActivityDO activity,
-                                                                        CpsRebateActivityPromotionReqVO reqVO) {
+    private CpsRebateActivityPromotionRespVO generateDtkActivityLink(CpsRebateActivityDO activity,
+                                                                      CpsRebateActivityPromotionReqVO reqVO) {
         String promotionSceneId = parseDtkPromotionSceneId(activity);
         if (!StringUtils.hasText(promotionSceneId)) {
-            return null;
+            return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(), "大淘客活动缺少官方转链场景 ID");
         }
         CpsVendorConfig config = platformClientFactory.getVendorConfig(VENDOR_DATAOKE, PLATFORM_TAOBAO);
         if (config == null) {
-            return buildFallbackPromotion(activity, reqVO, reqVO.getAdzoneId(),
-                    "未配置大淘客淘宝供应商，已生成活动落地页推广文案");
+            return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(), "未配置大淘客淘宝供应商，无法生成官方活动链接");
         }
 
         CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
@@ -179,13 +224,11 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         request.setExternalId(reqVO.getChannelTag());
         CpsPromotionLinkResult linkResult = dtkActivityVendorClient.generateActivityLink(request, config);
         if (linkResult == null) {
-            return buildFallbackPromotion(activity, reqVO, actualAdzoneId,
-                    "大淘客官方活动转链暂不可用，已生成活动落地页推广文案");
+            return buildFailedPromotion(activity, reqVO, actualAdzoneId, "大淘客官方活动转链暂不可用");
         }
         String promotionUrl = firstText(linkResult.getShortUrl(), linkResult.getLongUrl());
-        if (!StringUtils.hasText(promotionUrl)) {
-            return buildFallbackPromotion(activity, reqVO, actualAdzoneId,
-                    "大淘客官方活动转链暂不可用，已生成活动落地页推广文案");
+        if (!isSafeExternalUrl(promotionUrl)) {
+            return buildFailedPromotion(activity, reqVO, actualAdzoneId, "大淘客官方活动转链暂不可用：未返回有效公网链接");
         }
 
         String longTpwd = null;
@@ -193,28 +236,168 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
             Object value = linkResult.getExtraFields().get("longTpwd");
             longTpwd = value == null ? null : String.valueOf(value);
         }
+        return buildExternalPromotion(activity, reqVO, actualAdzoneId, promotionUrl, linkResult.getTpwd(), longTpwd,
+                "大淘客官方活动推广链接已生成");
+    }
+
+    private CpsRebateActivityPromotionRespVO generateHaodankuActivityLink(CpsRebateActivityDO activity,
+                                                                          CpsRebateActivityPromotionReqVO reqVO,
+                                                                          Long memberId) {
+        String platformCode = normalizePlatformCode(activity.getPlatformCode());
+        if (!PLATFORM_TAOBAO.equals(platformCode) && !PLATFORM_ELEME.equals(platformCode)) {
+            return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(),
+                    "当前好单库活动平台尚未接入官方活动转链");
+        }
+        CpsVendorConfig config = platformClientFactory.getVendorConfig(VENDOR_HAODANKU, platformCode);
+        if (config == null && PLATFORM_ELEME.equals(platformCode)) {
+            // 好单库普通活动接口共用同一 apikey；允许闪购复用淘宝账号，平台专属配置仍优先。
+            config = platformClientFactory.getVendorConfig(VENDOR_HAODANKU, PLATFORM_TAOBAO);
+        }
+        if (config == null) {
+            return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(),
+                    "未配置好单库" + (PLATFORM_ELEME.equals(platformCode) ? "淘宝闪购" : "淘宝")
+                            + "供应商，无法生成官方活动链接");
+        }
+        if (PLATFORM_TAOBAO.equals(platformCode)
+                && !StringUtils.hasText(firstText(config.getAuthToken(),
+                config.getExtraConfig() == null ? null : config.getExtraConfig().get("tb_name")))) {
+            return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(),
+                    "好单库淘宝会场转链缺少授权淘宝账号名，请在供应商认证令牌或扩展配置 tb_name 中补齐");
+        }
+        CpsAdzoneDO memberAdzone = memberId == null || !PLATFORM_TAOBAO.equals(platformCode)
+                ? null : adzoneService.getMemberAdzone(platformCode, memberId);
+        boolean trustedTaobaoRelation = memberAdzone != null
+                && memberId.equals(memberAdzone.getRelationId())
+                && StringUtils.hasText(memberAdzone.getExternalRelationId());
+        String actualAdzoneId = memberId == null
+                ? firstText(reqVO.getAdzoneId(), config.getDefaultAdzoneId())
+                : trustedTaobaoRelation ? memberAdzone.getAdzoneId() : config.getDefaultAdzoneId();
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsId(firstText(activity.getPromotionActivityId(), metadataText(activity, "activity_id"),
+                parseLegacyHaodankuPromotionActivityId(activity.getExternalActivityId())));
+        request.setItemLink(firstText(metadataText(activity, "activity_url"), activity.getJumpUrl()));
+        request.setAdzoneId(actualAdzoneId);
+        request.setExternalId(memberId == null ? reqVO.getChannelTag() : null);
+        if (trustedTaobaoRelation) {
+            request.setRelationId(memberAdzone.getExternalRelationId());
+        }
+
+        CpsTransferRecordDO sidRecord = null;
+        String sid = null;
+        CpsPromotionLinkResult linkResult;
+        if (PLATFORM_ELEME.equals(platformCode)) {
+            if (memberId != null) {
+                sidRecord = createPendingSidRecord(activity, memberId, actualAdzoneId);
+                sid = sidRecord == null ? null : sidRecord.getAttributionToken();
+            }
+            linkResult = hdkActivityClient.generateElemeActivityLink(request, config, sid);
+        } else {
+            linkResult = hdkActivityClient.generateConferenceLink(request, config, activity.getActivityName());
+        }
+        String promotionUrl = linkResult == null ? null : firstText(linkResult.getShortUrl(), linkResult.getLongUrl());
+        if (!isSafeExternalUrl(promotionUrl)) {
+            return buildFailedPromotion(activity, reqVO, actualAdzoneId, "好单库官方活动转链暂不可用");
+        }
+        if (sidRecord != null) {
+            transferRecordMapper.updateById(CpsTransferRecordDO.builder()
+                    .id(sidRecord.getId())
+                    .promotionUrl(promotionUrl)
+                    .taoCommand(linkResult.getTpwd())
+                    .status(1)
+                    .build());
+        }
+        String attributionStatus = trustedTaobaoRelation || sidRecord != null
+                ? ATTRIBUTION_MEMBER_TRACKED : memberId == null && StringUtils.hasText(actualAdzoneId)
+                ? ATTRIBUTION_CHANNEL_TRACKED : ATTRIBUTION_UNTRACKED;
+        String attributionMessage = ATTRIBUTION_MEMBER_TRACKED.equals(attributionStatus)
+                ? "已使用可信会员归因标识，订单同步后可自动绑定会员"
+                : ATTRIBUTION_CHANNEL_TRACKED.equals(attributionStatus)
+                ? "当前链接仅支持渠道跟踪，不能自动绑定具体会员"
+                : "当前链接没有可信会员归因标识，下单后可通过订单号申请找回";
+        return buildExternalPromotion(activity, reqVO, actualAdzoneId, promotionUrl, linkResult.getTpwd(), null,
+                "好单库官方活动推广链接已生成", attributionStatus, attributionMessage);
+    }
+
+    private CpsRebateActivityPromotionRespVO buildExternalPromotion(CpsRebateActivityDO activity,
+                                                                     CpsRebateActivityPromotionReqVO reqVO,
+                                                                     String actualAdzoneId, String promotionUrl,
+                                                                     String tpwd, String longTpwd, String message) {
+        return buildExternalPromotion(activity, reqVO, actualAdzoneId, promotionUrl, tpwd, longTpwd, message,
+                ATTRIBUTION_UNTRACKED, "当前链接未建立会员归因，下单后可通过订单号申请找回");
+    }
+
+    private CpsRebateActivityPromotionRespVO buildExternalPromotion(CpsRebateActivityDO activity,
+                                                                     CpsRebateActivityPromotionReqVO reqVO,
+                                                                     String actualAdzoneId, String promotionUrl,
+                                                                     String tpwd, String longTpwd, String message,
+                                                                     String attributionStatus,
+                                                                     String attributionMessage) {
         return CpsRebateActivityPromotionRespVO.builder()
                 .linkStatus(LINK_STATUS_SUCCESS)
-                .linkMessage("大淘客官方活动推广链接已生成")
+                .linkType(LINK_TYPE_EXTERNAL_PROMOTION)
+                .linkMessage(message)
+                .attributionStatus(attributionStatus)
+                .attributionMessage(attributionMessage)
                 .activityId(activity.getId())
                 .activityName(activity.getActivityName())
                 .platformCode(normalizePlatformCode(activity.getPlatformCode()))
                 .adzoneId(actualAdzoneId)
                 .channelTag(reqVO.getChannelTag())
                 .promotionUrl(promotionUrl)
-                .tpwd(linkResult.getTpwd())
+                .tpwd(tpwd)
                 .longTpwd(longTpwd)
-                .promotionContent(buildPromotionContent(activity, reqVO, promotionUrl, linkResult.getTpwd(), actualAdzoneId))
+                .promotionContent(buildPromotionContent(activity, reqVO, promotionUrl, tpwd, actualAdzoneId))
                 .build();
     }
 
-    private CpsRebateActivityPromotionRespVO buildFallbackPromotion(CpsRebateActivityDO activity,
-                                                                    CpsRebateActivityPromotionReqVO reqVO,
-                                                                    String actualAdzoneId,
-                                                                    String message) {
+    private CpsTransferRecordDO createPendingSidRecord(CpsRebateActivityDO activity, Long memberId,
+                                                       String adzoneId) {
+        for (int attempt = 0; attempt < 5; attempt++) {
+            CpsTransferRecordDO record = CpsTransferRecordDO.builder()
+                    .memberId(memberId)
+                    .platformCode(PLATFORM_ELEME)
+                    .vendorCode(VENDOR_HAODANKU)
+                    .activityId(activity.getId())
+                    .attributionType(ATTRIBUTION_TYPE_SID)
+                    .attributionToken(generateSid())
+                    .originalContent(firstText(metadataText(activity, "activity_url"), activity.getJumpUrl()))
+                    .itemId(firstText(activity.getPromotionActivityId(), metadataText(activity, "activity_id")))
+                    .itemTitle(activity.getActivityName())
+                    .adzoneId(adzoneId)
+                    .expireTime(resolveAttributionExpireTime(activity))
+                    .status(0)
+                    .build();
+            try {
+                transferRecordMapper.insert(record);
+                return record;
+            } catch (org.springframework.dao.DuplicateKeyException ignored) {
+                // 极低概率令牌碰撞，重新生成后重试。
+            }
+        }
+        return null;
+    }
+
+    private String generateSid() {
+        StringBuilder sid = new StringBuilder(SID_LENGTH);
+        for (int index = 0; index < SID_LENGTH; index++) {
+            sid.append(SID_ALPHABET.charAt(SECURE_RANDOM.nextInt(SID_ALPHABET.length())));
+        }
+        return sid.toString();
+    }
+
+    private LocalDateTime resolveAttributionExpireTime(CpsRebateActivityDO activity) {
+        LocalDateTime maximum = LocalDateTime.now().plusDays(30);
+        return activity.getEndTime() != null && activity.getEndTime().isBefore(maximum)
+                && activity.getEndTime().isAfter(LocalDateTime.now()) ? activity.getEndTime() : maximum;
+    }
+
+    private CpsRebateActivityPromotionRespVO buildInternalPromotion(CpsRebateActivityDO activity,
+                                                                     CpsRebateActivityPromotionReqVO reqVO,
+                                                                     String actualAdzoneId, String message) {
         String promotionUrl = buildPromotionUrl(activity, reqVO);
         return CpsRebateActivityPromotionRespVO.builder()
-                .linkStatus(LINK_STATUS_SUCCESS)
+                .linkStatus(LINK_STATUS_INTERNAL_FALLBACK)
+                .linkType(LINK_TYPE_INTERNAL_LANDING)
                 .linkMessage(message)
                 .activityId(activity.getId())
                 .activityName(activity.getActivityName())
@@ -226,9 +409,27 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 .build();
     }
 
+    private CpsRebateActivityPromotionRespVO buildFailedPromotion(CpsRebateActivityDO activity,
+                                                                   CpsRebateActivityPromotionReqVO reqVO,
+                                                                   String actualAdzoneId, String message) {
+        return CpsRebateActivityPromotionRespVO.builder()
+                .linkStatus(LINK_STATUS_FAILED)
+                .linkType(LINK_TYPE_NONE)
+                .linkMessage(message)
+                .activityId(activity.getId())
+                .activityName(activity.getActivityName())
+                .platformCode(normalizePlatformCode(activity.getPlatformCode()))
+                .adzoneId(actualAdzoneId)
+                .channelTag(reqVO.getChannelTag())
+                .build();
+    }
+
     private String parseDtkPromotionSceneId(CpsRebateActivityDO activity) {
         if (!SOURCE_DATAOKE.equalsIgnoreCase(firstText(activity.getSourceType(), ""))) {
             return null;
+        }
+        if (StringUtils.hasText(activity.getPromotionActivityId())) {
+            return activity.getPromotionActivityId();
         }
         String externalActivityId = activity.getExternalActivityId();
         if (!StringUtils.hasText(externalActivityId) || !externalActivityId.startsWith(DTK_EXTERNAL_PREFIX)) {
@@ -244,17 +445,31 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         }
     }
 
-    private String buildPromotionUrl(CpsRebateActivityDO activity, CpsRebateActivityPromotionReqVO reqVO) {
-        if ("url".equals(activity.getJumpType()) && StringUtils.hasText(activity.getJumpUrl())) {
-            return replaceUrlPlaceholders(activity.getJumpUrl(), reqVO);
+    private void validateJumpTarget(CpsRebateActivitySaveReqVO reqVO) {
+        if ("url".equals(reqVO.getJumpType())) {
+            if (!isSafeExternalUrl(reqVO.getJumpUrl())) {
+                throw exception(REBATE_ACTIVITY_JUMP_INVALID, "URL 跳转必须配置非本机的 HTTP(S) 地址");
+            }
+            return;
         }
+        if ("search".equals(reqVO.getJumpType())) {
+            if (!StringUtils.hasText(reqVO.getSearchKeyword())) {
+                throw exception(REBATE_ACTIVITY_JUMP_INVALID, "搜索跳转必须配置搜索关键词");
+            }
+            return;
+        }
+        if (!"none".equals(reqVO.getJumpType())) {
+            throw exception(REBATE_ACTIVITY_JUMP_INVALID, "不支持的跳转类型");
+        }
+    }
+
+    private String buildPromotionUrl(CpsRebateActivityDO activity, CpsRebateActivityPromotionReqVO reqVO) {
         String keyword = firstText(activity.getSearchKeyword(), activity.getActivityName());
         String activityTag = firstText(activity.getTagText(), activity.getExternalActivityId(), activity.getActivityName());
-        String path = "/cps/goods/square?platformCode=" + encode(activity.getPlatformCode())
+        String path = GOODS_SQUARE_PATH + "?platformCode=" + encode(normalizePlatformCode(activity.getPlatformCode()))
                 + "&keyword=" + encode(keyword)
                 + "&activityTag=" + encode(activityTag);
-        String baseUrl = trimTrailingSlash(reqVO.getLandingBaseUrl());
-        return StringUtils.hasText(baseUrl) ? baseUrl + path : path;
+        return path;
     }
 
     private String replaceUrlPlaceholders(String url, CpsRebateActivityPromotionReqVO reqVO) {
@@ -304,15 +519,72 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         }
     }
 
-    private String trimTrailingSlash(String value) {
-        if (!StringUtils.hasText(value)) {
+    private String metadataText(CpsRebateActivityDO activity, String fieldName) {
+        if (!StringUtils.hasText(activity.getVendorMetadata())) {
             return null;
         }
-        String trimmed = value.trim();
-        while (trimmed.endsWith("/")) {
-            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        try {
+            JsonNode root = OBJECT_MAPPER.readTree(activity.getVendorMetadata());
+            String value = root.path(fieldName).asText(null);
+            return StringUtils.hasText(value) ? value : null;
+        } catch (Exception ignored) {
+            return null;
         }
-        return trimmed;
+    }
+
+    private String parseLegacyHaodankuPromotionActivityId(String externalActivityId) {
+        if (!StringUtils.hasText(externalActivityId) || !externalActivityId.startsWith("hdk:")) {
+            return null;
+        }
+        String value = externalActivityId.substring("hdk:".length());
+        return StringUtils.hasText(value) && !value.contains(":") ? value : null;
+    }
+
+    private boolean isSafeExternalUrl(String value) {
+        if (!StringUtils.hasText(value)) {
+            return false;
+        }
+        try {
+            String candidate = value.trim()
+                    .replace("{adzoneId}", "adzone")
+                    .replace("{channelTag}", "channel");
+            URI uri = URI.create(candidate);
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+            if (!("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme))
+                    || !StringUtils.hasText(host)) {
+                return false;
+            }
+            String normalizedHost = host.toLowerCase(Locale.ROOT);
+            return !"localhost".equals(normalizedHost)
+                    && !normalizedHost.endsWith(".localhost")
+                    && !normalizedHost.startsWith("127.")
+                    && !normalizedHost.startsWith("10.")
+                    && !normalizedHost.startsWith("192.168.")
+                    && !isPrivate172Host(normalizedHost)
+                    && !normalizedHost.startsWith("169.254.")
+                    && !"0.0.0.0".equals(normalizedHost)
+                    && !"::1".equals(normalizedHost)
+                    && !"[::1]".equals(normalizedHost);
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private boolean isPrivate172Host(String host) {
+        if (!host.startsWith("172.")) {
+            return false;
+        }
+        String[] parts = host.split("\\.");
+        if (parts.length < 2) {
+            return false;
+        }
+        try {
+            int second = Integer.parseInt(parts[1]);
+            return second >= 16 && second <= 31;
+        } catch (NumberFormatException ignored) {
+            return false;
+        }
     }
 
     private String encode(String value) {

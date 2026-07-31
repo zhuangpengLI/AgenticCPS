@@ -49,6 +49,10 @@ public class CpsRebateActivityDO extends TenantBaseDO {
 
     private String externalActivityId;
 
+    private String promotionActivityId;
+
+    private String vendorMetadata;
+
     private String tagText;
 
     private String jumpType;

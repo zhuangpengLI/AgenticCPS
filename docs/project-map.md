@@ -2,8 +2,8 @@
 
 > 资金与归因基线：订单返利、冻结/解冻、退款欠款与 Token 兑换统一通过 `CpsRebateAssetService` 写入账户并追加 `cps_rebate_asset_ledger`；`CpsRebateAssetMigrationService` 只允许在 `migration_ready=false` 且 V2 未启用时回填历史账户期初流水。迁移预检按租户归档重复键、NULL 对账和孤儿资金记录等十类风险，`migration_ready` 必须绑定最新 ready 批次，首次启用还会在同一事务内重检后才能不可逆开启；可信归因审计与固定窗口同步 checkpoint 说明见 [cps-funds-attribution-safety-baseline.md](cps-funds-attribution-safety-baseline.md)。
 
-> 生成日期：2026-05-24
-> 生成方式：只读扫描仓库结构、配置、POM、前端 `package.json`、CPS 核心代码与既有技术债文档后整理；2026-05-24 补充活动中心、返利工具箱与选品库落地信息；2026-05-26 补充 CPS 主导型 CPX 任务/资讯/平台资料库骨架、后台页面、看板骨架与 OpenAPI 签名校验；2026-07-10 补充滴滴联盟 DUnion SDK 子模块、官方适配器和后台诊断接口；2026-07-14 补充 P3 SDK 标准化描述符、能力矩阵、配置 Schema、连接治理策略、结构化不支持能力异常和 official skeleton 启用门禁；2026-07-15 补充 P4 增长分析、风险监控、实验分流、Token 事件对账和 billing 边界校验入口；2026-07-26 补充 CPS 平台配置中心统一入口、草稿检测发布生命周期和验证命令。
+> 生成日期：2026-07-31
+> 生成方式：只读扫描仓库结构、配置、POM、前端 `package.json`、CPS 核心代码与既有技术债文档后整理；2026-05-24 补充活动中心、返利工具箱与选品库落地信息；2026-05-26 补充 CPS 主导型 CPX 任务/资讯/平台资料库骨架、后台页面、看板骨架与 OpenAPI 签名校验；2026-07-10 补充滴滴联盟 DUnion SDK 子模块、官方适配器和后台诊断接口；2026-07-14 补充 P3 SDK 标准化描述符、能力矩阵、配置 Schema、连接治理策略、结构化不支持能力异常和 official skeleton 启用门禁；2026-07-15 补充 P4 增长分析、风险监控、实验分流、Token 事件对账和 billing 边界校验入口；2026-07-26 补充 CPS 平台配置中心统一入口、草稿检测发布生命周期和验证命令；2026-07-31 补充好单库淘宝会场与闪购转链、SID 订单归因、会员活动转链和订单号人工申领审核闭环及真实本地烟测边界。
 > 约束：仓库当前已有多处未提交改动，见“风险与注意事项”。后续编辑需继续区分既有改动和本次改动。
 
 ## 1. 项目入口在哪里
@@ -94,9 +94,9 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 | 包 | 当前职责 |
 |---|---|
 | `controller/admin` | 后台管理：活动中心、返利工具箱、商品广场、平台、推广位、订单、返利配置/记录、冻结、风控、统计、供应商、提现、转账、选品库、滴滴联盟素材/连接测试/归因诊断，以及平台配置中心、CPX 任务/资讯/平台对接中心和 CPX 看板汇总。 |
-| `controller/app` | 用户端：商品搜索/转链、我的订单列表/详情、我的返利账户/记录、返利兑换 Token。 |
+| `controller/app` | 用户端：商品搜索/转链、活动会员转链、我的订单列表/详情与订单号申领、我的返利账户/记录、返利兑换 Token。 |
 | `controller/openapi` | 服务间 OpenAPI：返利余额、冻结、解冻、确认扣减；CPX 曝光、点击、线索、动作/转化事件上报，统一 HMAC 签名与幂等键。 |
-| `client` | CPS 平台与供应商适配器，包含大淘客、好单库、官方 API、淘宝/京东/拼多多/抖音/美团/唯品会适配器，以及 `didi + official` 的 `DidiOfficialVendorClient` 和 `DidiPlatformClientAdapter`。 |
+| `client` | CPS 平台与供应商适配器，包含大淘客、好单库、官方 API、淘宝/京东/拼多多/抖音/美团/饿了么/唯品会适配器，以及 `didi + official` 的 `DidiOfficialVendorClient` 和 `DidiPlatformClientAdapter`。 |
 | `service` | 核心业务：goods、toolbox、activity、order、rebate、freeze、exchange、risk、statistics、withdraw、transfer、vendor、adzone、selection、cpx。 |
 | `dal/dataobject` + `dal/mysql` | CPS 表 DO 与 MyBatis Mapper，包括 `cps_rebate_activity` 活动卡片配置、`cps_selection_theme` 选品主题、`cps_selection_theme_item` 主题商品快照和加密的 `cps_platform_onboarding_draft` 草稿；CPX 新增 `cpx_task`、`cpx_offer`、`cpx_material`、`cpx_article`、`cpx_platform_profile`、`cpx_tracking_link`、`cpx_event`、`cpx_conversion`、`cpx_settlement_record`、`cpx_lead_detail`。 |
 | `job` | 定时任务：订单同步、返利结算、冻结解冻、统计聚合。 |
@@ -188,6 +188,9 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 - `CpsRebateActivityController`：`POST /cps/rebate-activity/sync` 暴露管理端手动同步入口，复用 `cps:rebate-activity:update` 权限，返回新增、更新、跳过数量。
 - `CpsRebateActivitySyncServiceImpl`：统一同步第三方活动并落库；当前支持好单库与大淘客活动源，大淘客通过 `DtkActivityVendorClient` 拉取淘宝活动会场。
 - `CpsRebateActivityServiceImpl`：只返回启用且在有效时间窗口内的活动，支持平台、`CPS` / `CPA` / `CPS+CPA`、关键词、热门/最新排序和分页。
+- `AppCpsRebateActivityController`：提供 `POST /app-api/cps/rebate-activity/promotion`，会员身份只取登录上下文；好单库淘宝会场使用官方支持的 `relation_id + 渠道专属 PID`，并要求供应商认证令牌或扩展配置提供授权淘宝账号名 `tb_name`；好单库闪购/饿了么优先使用平台专属配置，缺失时复用同一好单库淘宝账号，生成 1-15 位随机 SID 并写入有效转链记录。
+- `CpsRebateActivityServiceImpl`：活动推广响应显式区分外部推广成功、站内落地回退和失败；不会把 `localhost` 管理端地址伪装为可分发的活动链接，也不会向好单库淘宝会场发送其接口不支持的 `special_id`。
+- `HdkElemeVendorClient` / `ElemePlatformClientAdapter`：复用好单库 `elm_activity_ratesurl` 和闪购订单接口，解析 H5、淘口令、小程序、Scheme、`trade_id`、`channel_code`、退款与结算字段；随机 SID 不编码会员或租户身份。
 - `cps_rebate_activity`：活动运营配置表，新增 `billing_type`、`promotion_count`、`source_type`、`external_activity_id`、`tag_text`，并补充活动中心查询索引。
 - 前端活动中心页提供同步来源选择、同步页数与同步按钮；同步完成后重新请求活动中心，页面展示仍以落库后的活动卡片为准。
 - 前端活动中心卡片 `search` 跳转到商品广场并带入 `platformCode`、`keyword`、`activityTag`；`url` 新窗口打开；`none` 仅展示。
@@ -371,10 +374,13 @@ Quartz Job
 - `CpsOrderSyncCheckpointDO` / `CpsOrderSyncFailureRecoveryService`: checkpoint records vendor, scene and query type; recovery lists, replays and marks sync failures, while `CpsOrderSyncFailureCompensationJob` handles retry. `CpsPlatformBillReconciliationService` imports platform bills and writes diff records.
 - `CpsOrderServiceImpl.bindSpecialIdToMember(CpsOrderManualBindCommand)`: manual special_id binding records attribution audit logs, detects conflicts, and leaves pending compensation paths when settlement has already been affected.
 - `CpsOrderServiceImpl`：负责新增/更新平台订单，并向 `cps_order_status_event` 追加不可变状态事件；事件包含来源、同步批次、原始状态摘要、映射状态、当前状态、事件时间、状态版本和拒绝降级原因。
+- `CpsOrderServiceImpl`：好单库订单分别保留 `specialId`、`relationId` 与 `externalId/channel_code`；闪购订单只有在租户、供应商、平台、有效期都匹配且 SID 仅有一个有效转链候选时才自动归因，多候选、跨租户或过期记录不会绑定会员。
+- `CpsOrderClaimServiceImpl`：支持会员按平台和订单号申领。订单未同步返回 `PENDING_SYNC`，仅凭订单号进入 `PENDING_REVIEW`，已归属他人返回不泄露身份的 `CONFLICT`，已有返利/冻结/实际返利活动返回 `ASSET_LOCKED`；审核批准使用行锁和 `member_id IS NULL` 条件更新，批准前不产生返利或资产变更。
 - `CpsPlatformOrderStatusMapper`: centralizes Taobao/JD/PDD/Douyin/local-life raw status mapping, refund override handling and legal status migration checks before local order status changes.
 - `CpsFundsTraceService` + `GET /admin-api/cps/order/funds-trace`: read-only admin trace endpoint that aggregates order events, rebate records, freeze records, debt rows, asset ledger entries and platform bill diffs with trace warnings.
 - `CpsRebateSettleServiceImpl`：负责返利记录与账户余额更新。
-- `AppCpsOrderController`：提供 `GET /app-api/cps/order/page` 与 `GET /app-api/cps/order/{id}`，只使用登录会员上下文查询本人订单；非本人订单按不存在处理。
+- `AppCpsOrderController`：提供 `GET /app-api/cps/order/page`、`GET /app-api/cps/order/{id}`、`POST /app-api/cps/order/claim` 与 `GET /app-api/cps/order/claim/list`，只使用登录会员上下文查询和申领；非本人订单按不存在处理。
+- `CpsOrderController`：提供 `GET /admin-api/cps/order/claim/page` 与 `POST /admin-api/cps/order/claim/review`，管理员审核必须填写核验说明，审核决定、操作员和时间追加到归因日志。
 
 ### 3.3 CPS 返利兑换 aitoken Token（P0 闭环）
 
@@ -622,6 +628,9 @@ docker-compose down
 - 滴滴联盟适配器：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/client/didi/`
 - 商品服务：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/goods/CpsGoodsServiceImpl.java`
 - 订单服务：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/order/CpsOrderServiceImpl.java`
+- 订单申领服务：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/order/CpsOrderClaimServiceImpl.java`
+- 会员活动转链 Controller：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/app/activity/AppCpsRebateActivityController.java`
+- 好单库闪购适配器：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/client/haodanku/HdkElemeVendorClient.java`、`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/client/eleme/ElemePlatformClientAdapter.java`
 - 返利结算：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/rebate/CpsRebateSettleServiceImpl.java`
 - 返利兑换 Token：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/exchange/CpsRebateTokenExchangeServiceImpl.java`
 - aitoken 客户端：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/exchange/CpsAitokenExchangeClient.java`
@@ -633,6 +642,7 @@ docker-compose down
 
 - 生态 P0 闭环：`docs/agentic-ecosystem-p0-rebate-token-exchange.md`
 - 大淘客高效转链与订单归因：`docs/dataoke-high-efficiency-link-attribution.md`
+- 好单库活动转链与订单归因设计：`docs/superpowers/specs/2026-07-30-haodanku-activity-order-attribution-design.md`
 - 大淘客搜索页面与商品广场：`docs/dataoke-search-page-implementation.md`
 - 大淘客与好单库配置测试：`docs/大淘客与好单库配置及接口测试指南.md`
 - 滴滴联盟 SDK 集成：`docs/didi-union-sdk-integration.md`
@@ -651,8 +661,8 @@ docker-compose down
 
 ## 本次未做的事
 
-- 未运行全量测试或前端生产构建；活动中心、返利工具箱与选品库均已通过目标后端测试，前端全量类型检查仍受仓库既有无关类型错误影响。
-- 未全面验证数据库脚本是否与所有当前 DO/Mapper 完全一致；活动中心、返利工具箱菜单权限与选品库表字段已按本轮实现静态同步，CPS 新库全量 SQL 集中在 `backend/sql/module/cps-all-in-one.sql`，现有库增量 SQL 集中在 `backend/sql/module/cps-update.sql`。
+- 当前刷新已覆盖好单库活动转链、SID 自动归因和订单申领的目标单元/数据库/控制器/前端契约测试；全量测试、类型检查、Playwright 和本地服务烟测结果以本次任务最终验收记录为准。
+- 本地有效供应商配置已实测大淘客生成 `s.click.taobao.com` 官方链接、好单库闪购生成 `u.ele.me` 官方链接并写入会员 SID 归因记录；好单库淘宝会场仍需在供应商配置补齐已授权的 `tb_name`，会员自动归因还需渠道专属 PID、`relation_id` 和真实联盟测试订单。当前未执行真实下单及上游订单回传验收。
 - 未验证 MCP Server 实际启动后的工具列表是否与配置声明完全一致。
 - 滴滴联盟真实接口尚需使用有效 App-Key、accessKey、活动 ID 和推广位 ID，在专用测试租户完成冒烟验证；模拟订单回调不属于生产验收入口。
 - 本次刷新仅更新文档说明，不改动业务代码。

@@ -44,11 +44,11 @@
 
 调用好单库 `POST https://v2.api.haodanku.com/createConference_code`：
 
-- 必传 `apikey`、`activity_id/activity_url`、`pid` 和标题等上游要求字段。
-- 优先使用会员专属推广位及其官方 `special_id`。
-- 其次使用渠道专属 PID 及官方 `relation_id`。
-- `special_id`、`relation_id` 来源于本地已验证推广位配置，不使用本地会员 ID 直接代替。
-- 没有会员专属或渠道专属配置时仍可生成公共活动链接，但响应明确标记为不可保证会员自动归因。
+- 必传 `apikey`、已授权淘宝账号名 `tb_name`、`activity_id/activity_url`、`pid` 和标题等上游要求字段；缺少 `tb_name` 时直接返回可操作的配置提示，不发送已知无效请求。
+- 好单库淘宝会场接口只支持渠道专属 PID 及官方 `relation_id`，不支持 `special_id`。
+- `relation_id` 来源于本地已验证推广位配置，不使用本地会员 ID 直接代替。
+- 只有该 `relation_id` 已唯一映射到当前会员时才标记为会员可追踪；仅映射到运营渠道时标记为渠道追踪。
+- 没有渠道专属配置时仍可生成公共活动链接，但响应明确标记为不可保证会员自动归因。
 
 ### 4.3 淘宝闪购/饿了么会场
 

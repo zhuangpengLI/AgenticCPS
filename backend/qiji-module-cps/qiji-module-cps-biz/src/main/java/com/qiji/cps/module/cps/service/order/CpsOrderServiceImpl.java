@@ -608,6 +608,10 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         if (relationIdMemberId != null) {
             return AttributionResult.bound(relationIdMemberId, null, "relationId", dto.getRelationId());
         }
+        AttributionResult tokenAttribution = resolveByAttributionToken(dto);
+        if (tokenAttribution != null) {
+            return tokenAttribution;
+        }
         Long adzoneMemberId = resolveMemberIdByAdzone(dto);
         if (adzoneMemberId != null) {
             return AttributionResult.bound(adzoneMemberId, null, "adzone", dto.getAdzoneId());
@@ -648,6 +652,30 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             return AttributionResult.rejected("数字 externalId 未经可信绑定，不得作为会员ID");
         }
         return AttributionResult.unattributed("未找到唯一且有效的可信归因绑定");
+    }
+
+    private AttributionResult resolveByAttributionToken(CpsOrderDTO dto) {
+        if (!"haodanku".equalsIgnoreCase(dto.getVendorCode())
+                || !"eleme".equalsIgnoreCase(dto.getPlatformCode())
+                || isBlank(dto.getExternalId())) {
+            return null;
+        }
+        List<CpsTransferRecordDO> candidates = transferRecordMapper.selectValidAttributionTokenCandidates(
+                "haodanku", "eleme", "SID", dto.getExternalId(), LocalDateTime.now());
+        if (candidates == null || candidates.isEmpty()) {
+            return null;
+        }
+        if (candidates.size() > 1) {
+            log.warn("[resolveByAttributionToken] 闪购 SID 存在多条有效候选，拒绝归因: orderId={}, count={}",
+                    dto.getPlatformOrderId(), candidates.size());
+            return new AttributionResult(null, null, "sid", dto.getExternalId(), "CONFLICT",
+                    "同一闪购 SID 存在多条有效转链记录，拒绝猜测归因");
+        }
+        CpsTransferRecordDO record = candidates.get(0);
+        return record.getMemberId() == null
+                ? new AttributionResult(null, null, "sid", dto.getExternalId(), "REJECTED",
+                "闪购 SID 转链记录未绑定会员")
+                : AttributionResult.bound(record.getMemberId(), record.getId(), "sid", dto.getExternalId());
     }
 
     private Long resolveMemberIdBySpecialId(CpsOrderDTO dto) {

@@ -55,6 +55,37 @@ export interface CpsOrderBindSpecialIdReqVO {
   auditNote?: string
 }
 
+export interface CpsOrderClaimVO {
+  id: number
+  orderId?: number
+  platformCode: string
+  platformOrderId: string
+  candidateMemberId?: number
+  attributedMemberId?: number
+  attributionSource?: string
+  result: string
+  rejectReason?: string
+  reviewStatus?: string
+  reviewAuditNote?: string
+  reviewOperatorId?: number
+  reviewTime?: Date
+  createTime: Date
+}
+
+export interface CpsOrderClaimPageReqVO {
+  pageNo: number
+  pageSize: number
+  platformCode?: string
+  platformOrderId?: string
+  reviewStatus?: string
+}
+
+export interface CpsOrderClaimReviewReqVO {
+  claimId: number
+  approved: boolean
+  auditNote: string
+}
+
 // 查询订单分页列表
 export const getCpsOrderPage = async (params: CpsOrderPageReqVO) => {
   return await request.get({ url: '/cps/order/page', params })
@@ -86,4 +117,12 @@ export const syncCpsOrders = async (platformCode: string, hours = 2, queryType =
 // 手动绑定订单 special_id 到会员
 export const bindSpecialIdToMember = async (data: CpsOrderBindSpecialIdReqVO) => {
   return await request.post({ url: '/cps/order/bind-special-id-member', data })
+}
+
+export const getOrderClaimPage = async (params: CpsOrderClaimPageReqVO) => {
+  return await request.get({ url: '/cps/order/claim/page', params })
+}
+
+export const reviewOrderClaim = async (data: CpsOrderClaimReviewReqVO) => {
+  return await request.post({ url: '/cps/order/claim/review', data })
 }

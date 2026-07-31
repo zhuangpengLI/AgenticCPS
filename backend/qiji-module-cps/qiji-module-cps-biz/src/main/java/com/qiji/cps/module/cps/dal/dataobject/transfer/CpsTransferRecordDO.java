@@ -37,6 +37,22 @@ public class CpsTransferRecordDO extends TenantBaseDO {
      */
     private String platformCode;
     /**
+     * 供应商编码
+     */
+    private String vendorCode;
+    /**
+     * 活动ID
+     */
+    private Long activityId;
+    /**
+     * 归因类型（SID 等）
+     */
+    private String attributionType;
+    /**
+     * 不透明归因令牌
+     */
+    private String attributionToken;
+    /**
      * 原始口令/链接
      */
     private String originalContent;

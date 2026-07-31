@@ -18,7 +18,4 @@ public class CpsRebateActivityPromotionReqVO {
     @Schema(description = "渠道标识，用于文案标记")
     private String channelTag;
 
-    @Schema(description = "落地域名；不传时返回站内相对路径")
-    private String landingBaseUrl;
-
 }

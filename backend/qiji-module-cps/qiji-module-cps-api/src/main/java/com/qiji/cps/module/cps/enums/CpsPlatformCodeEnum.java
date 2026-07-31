@@ -22,6 +22,7 @@ public enum CpsPlatformCodeEnum implements ArrayValuable<String> {
     DIDI("didi", "滴滴联盟"),
     VIP("vip", "唯品会联盟"),
     MEITUAN("meituan", "美团联盟"),
+    ELEME("eleme", "淘宝闪购"),
     ;
 
     public static final String[] ARRAYS = Arrays.stream(values()).map(CpsPlatformCodeEnum::getCode).toArray(String[]::new);

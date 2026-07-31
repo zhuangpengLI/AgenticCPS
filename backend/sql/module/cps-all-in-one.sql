@@ -565,6 +565,10 @@ CREATE TABLE `cps_transfer_record` (
   `id`                 bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `member_id`          bigint       NOT NULL COMMENT '会员ID',
   `platform_code`      varchar(32)  NOT NULL COMMENT '平台编码',
+  `vendor_code`        varchar(32)           DEFAULT NULL COMMENT '供应商编码',
+  `activity_id`        bigint                DEFAULT NULL COMMENT '活动ID',
+  `attribution_type`   varchar(32)           DEFAULT NULL COMMENT '归因令牌类型',
+  `attribution_token`  varchar(64)           DEFAULT NULL COMMENT '不透明归因令牌',
   `original_content`   varchar(500)          DEFAULT NULL COMMENT '原始口令/链接',
   `item_id`            varchar(64)           DEFAULT NULL COMMENT '商品ID',
   `item_title`         varchar(512)          DEFAULT NULL COMMENT '商品标题',
@@ -583,7 +587,9 @@ CREATE TABLE `cps_transfer_record` (
   PRIMARY KEY (`id`),
   KEY `idx_member_id` (`member_id`) USING BTREE,
   KEY `idx_platform_order_id` (`platform_order_id`) USING BTREE,
-  KEY `idx_status` (`status`) USING BTREE
+  KEY `idx_status` (`status`) USING BTREE,
+  UNIQUE KEY `uk_transfer_attribution_token` (`tenant_id`, `vendor_code`, `platform_code`, `attribution_type`, `attribution_token`, `deleted`) USING BTREE,
+  KEY `idx_transfer_attribution_lookup` (`tenant_id`, `vendor_code`, `platform_code`, `attribution_type`, `attribution_token`, `status`, `expire_time`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS转链记录表';
 
 -- ----------------------------
@@ -755,13 +761,13 @@ CREATE TABLE `cps_order_attribution_log` (
   `attribution_source`    varchar(32)           DEFAULT NULL COMMENT '归因来源',
   `binding_type`          varchar(32)           DEFAULT NULL COMMENT '可信绑定类型',
   `binding_id`            varchar(128)          DEFAULT NULL COMMENT '可信绑定标识',
-  `action`                varchar(32)  NOT NULL COMMENT '动作（AUTO/MANUAL/REBIND）',
-  `result`                varchar(16)  NOT NULL COMMENT '结果（BOUND/REJECTED/CONFLICT/UNATTRIBUTED）',
+  `action`                varchar(32)  NOT NULL COMMENT '动作（AUTO/MANUAL/REBIND/CLAIM/APPROVED/REJECTED）',
+  `result`                varchar(16)  NOT NULL COMMENT '结果（BOUND/REJECTED/CONFLICT/UNATTRIBUTED/PENDING_SYNC）',
   `reject_reason`         varchar(512)          DEFAULT NULL COMMENT '拒绝或冲突原因',
   `operator_type`         varchar(32)  NOT NULL COMMENT '操作主体类型',
   `operator_id`           varchar(128)          DEFAULT NULL COMMENT '操作主体ID',
   `idempotency_key`        varchar(128)          DEFAULT NULL COMMENT '幂等键',
-  `review_status`          varchar(32)           DEFAULT NULL COMMENT '复核状态（APPROVED/PENDING_REVIEW/PENDING_COMPENSATION）',
+  `review_status`          varchar(32)           DEFAULT NULL COMMENT '复核状态（PENDING_SYNC/PENDING_REVIEW/APPROVED/REJECTED/CONFLICT/ASSET_LOCKED）',
   `review_audit_note`      varchar(500)          DEFAULT NULL COMMENT '复核说明',
   `review_operator_id`     bigint                DEFAULT NULL COMMENT '复核操作人ID',
   `review_time`            datetime              DEFAULT NULL COMMENT '复核时间',
@@ -775,7 +781,8 @@ CREATE TABLE `cps_order_attribution_log` (
   UNIQUE KEY `uk_attribution_idempotency` (`tenant_id`, `idempotency_key`) USING BTREE,
   KEY `idx_attribution_order` (`tenant_id`, `platform_code`, `platform_order_id`, `create_time`) USING BTREE,
   KEY `idx_attribution_member` (`tenant_id`, `attributed_member_id`, `create_time`) USING BTREE,
-  KEY `idx_attribution_result` (`tenant_id`, `result`, `create_time`) USING BTREE
+  KEY `idx_attribution_result` (`tenant_id`, `result`, `create_time`) USING BTREE,
+  KEY `idx_attribution_claim_review` (`tenant_id`, `action`, `review_status`, `create_time`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单归因审计日志表';
 
 DROP TABLE IF EXISTS `cps_order_sync_checkpoint`;
@@ -1049,6 +1056,8 @@ CREATE TABLE `cps_rebate_activity`  (
   `promotion_count` int NOT NULL DEFAULT 0 COMMENT '推广数',
   `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'configured' COMMENT '来源类型：configured/vendor',
   `external_activity_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '外部活动ID',
+  `promotion_activity_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商活动转链参数ID',
+  `vendor_metadata` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '供应商活动转链元数据JSON',
   `tag_text` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '标签文案',
   `jump_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'none' COMMENT '跳转类型：search/url/none',
   `jump_url` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '跳转地址',
@@ -1073,7 +1082,7 @@ CREATE TABLE `cps_rebate_activity`  (
 -- Records of cps_rebate_activity
 -- ----------------------------
 BEGIN;
-INSERT INTO `cps_rebate_activity` (`id`, `activity_name`, `activity_type`, `platform_code`, `main_pic`, `short_desc`, `rebate_desc`, `billing_type`, `promotion_count`, `source_type`, `external_activity_id`, `tag_text`, `jump_type`, `jump_url`, `search_keyword`, `sort`, `status`, `start_time`, `end_time`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1, '88VIP开通奖励(优酷版)', '会员权益', 'taobao', '', '淘宝 88VIP 会员年卡活动', '最高7元/张', 'CPA', 1405, 'configured', 'taobao-88vip-youku', '热门', 'url', '', '88VIP', 1, 1, '2025-08-30 00:00:00', '2026-12-31 23:59:59', '', '1', '2026-05-23 00:00:00', '1', '2026-05-23 00:00:00', b'0', 1);
+INSERT INTO `cps_rebate_activity` (`id`, `activity_name`, `activity_type`, `platform_code`, `main_pic`, `short_desc`, `rebate_desc`, `billing_type`, `promotion_count`, `source_type`, `external_activity_id`, `tag_text`, `jump_type`, `jump_url`, `search_keyword`, `sort`, `status`, `start_time`, `end_time`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (1, '88VIP开通奖励(优酷版)', '会员权益', 'taobao', '', '淘宝 88VIP 会员年卡活动', '最高7元/张', 'CPA', 1405, 'configured', 'taobao-88vip-youku', '热门', 'search', '', '88VIP', 1, 1, '2025-08-30 00:00:00', '2026-12-31 23:59:59', '', '1', '2026-05-23 00:00:00', '1', '2026-05-23 00:00:00', b'0', 1);
 INSERT INTO `cps_rebate_activity` (`id`, `activity_name`, `activity_type`, `platform_code`, `main_pic`, `short_desc`, `rebate_desc`, `billing_type`, `promotion_count`, `source_type`, `external_activity_id`, `tag_text`, `jump_type`, `jump_url`, `search_keyword`, `sort`, `status`, `start_time`, `end_time`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (2, '闪购品牌日 单单有福利', '本地生活', 'taobao', '', '淘宝闪购品牌福利活动', '--', 'CPS', 1325, 'configured', 'taobao-flash-brand', '最新', 'search', '', '淘宝闪购', 2, 1, '2025-05-20 00:00:00', '2027-05-13 23:59:59', '', '1', '2026-05-23 00:00:00', '1', '2026-05-23 00:00:00', b'0', 1);
 INSERT INTO `cps_rebate_activity` (`id`, `activity_name`, `activity_type`, `platform_code`, `main_pic`, `short_desc`, `rebate_desc`, `billing_type`, `promotion_count`, `source_type`, `external_activity_id`, `tag_text`, `jump_type`, `jump_url`, `search_keyword`, `sort`, `status`, `start_time`, `end_time`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (3, '美团外卖节', '外卖', 'meituan', '', '美团外卖节 帮你吃更好', '预估红包3%、页面：0.1...', 'CPS', 707, 'configured', 'meituan-waimai-festival', '外卖', 'search', '', '美团外卖', 3, 1, '2025-12-23 00:00:00', '2027-12-31 23:59:59', '', '1', '2026-05-23 00:00:00', '1', '2026-05-23 00:00:00', b'0', 1);
 INSERT INTO `cps_rebate_activity` (`id`, `activity_name`, `activity_type`, `platform_code`, `main_pic`, `short_desc`, `rebate_desc`, `billing_type`, `promotion_count`, `source_type`, `external_activity_id`, `tag_text`, `jump_type`, `jump_url`, `search_keyword`, `sort`, `status`, `start_time`, `end_time`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES (4, '淘票票', '电影票', 'taobao', '', '淘票票买券活动', '2元/张', 'CPS+CPA', 606, 'configured', 'taopiaopiao-ticket', '票券', 'search', '', '淘票票', 4, 1, NULL, NULL, '', '1', '2026-05-23 00:00:00', '1', '2026-05-23 00:00:00', b'0', 1);

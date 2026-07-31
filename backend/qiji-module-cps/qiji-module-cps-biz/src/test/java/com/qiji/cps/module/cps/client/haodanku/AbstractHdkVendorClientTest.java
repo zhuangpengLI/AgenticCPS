@@ -105,6 +105,22 @@ class AbstractHdkVendorClientTest {
     }
 
     @Test
+    @DisplayName("淘宝商品转链应传递可信会员运营和渠道关系标识")
+    void taobaoPromotionLinkShouldForwardTrustedAttributionFields() {
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsId("TB-ITEM-1");
+        request.setSpecialId("special-1001");
+        request.setRelationId("relation-2001");
+
+        Map<String, Object> params = new HdkTaobaoVendorClient().buildPromotionLinkParams(request,
+                CpsVendorConfig.builder().defaultAdzoneId("mm_1_2_3").build());
+
+        assertEquals("special-1001", params.get("special_id"));
+        assertEquals("relation-2001", params.get("relation_id"));
+        assertEquals("mm_1_2_3", params.get("pid"));
+    }
+
+    @Test
     @DisplayName("京东搜索参数应匹配好单库 jd_goods_search")
     void testJdSearchParams() {
         HdkJdVendorClient jdClient = new HdkJdVendorClient();
@@ -242,6 +258,8 @@ class AbstractHdkVendorClientTest {
                   "create_time":"2026-07-06 18:02:08",
                   "tk_paid_time":"2026-07-06 18:03:08",
                   "special_id":"1002",
+                  "relation_id":"relation-2002",
+                  "channel_code":"channel-3002",
                   "adzone_id":"mm_1_2_3"
                 }]}
                 """));
@@ -254,7 +272,9 @@ class AbstractHdkVendorClientTest {
         assertEquals(new BigDecimal("4.5"), order.getCommissionRate());
         assertEquals(new BigDecimal("17.96"), order.getCommissionAmount());
         assertEquals(1, order.getPlatformStatus());
-        assertEquals("1002", order.getExternalId());
+        assertEquals("1002", order.getSpecialId());
+        assertEquals("relation-2002", order.getRelationId());
+        assertEquals("channel-3002", order.getExternalId());
         assertEquals("mm_1_2_3", order.getAdzoneId());
         assertEquals("2026-07-06 18:03:08", order.getPayTime());
     }

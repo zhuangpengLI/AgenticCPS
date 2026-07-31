@@ -27,6 +27,12 @@ class CpsRebateActivitySchemaTest {
 
         int length = Integer.parseInt(matcher.group(1));
         assertTrue(length >= 2048, "jump_url should support at least 2048 characters");
+        assertTrue(sql.contains("`promotion_activity_id` varchar(128)"),
+                "activity conversion ID must be stored separately from row identity");
+        assertTrue(sql.contains("`vendor_metadata` text"),
+                "vendor activity conversion metadata must survive synchronization");
+        assertTrue(sql.contains("'taobao-88vip-youku', '热门', 'search', ''"),
+                "the seeded 88VIP card must not use an empty URL target");
     }
 
     private Path findBackendSqlFile() {

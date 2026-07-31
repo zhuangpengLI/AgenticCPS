@@ -208,6 +208,7 @@ public class DtkActivityVendorClient implements CpsThirdPartyActivityVendorClien
         return CpsThirdPartyActivity.builder()
                 .sourceType(SOURCE_DATAOKE)
                 .externalActivityId(EXTERNAL_PREFIX + promotionSceneId)
+                .promotionActivityId(promotionSceneId)
                 .activityName(activityName)
                 .activityType(firstText(activityType, "淘宝会场"))
                 .platformCode(firstText(request.getPlatformCode(), CpsPlatformCodeEnum.TAOBAO.getCode()))

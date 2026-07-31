@@ -4,6 +4,7 @@ import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderBindSpecialIdReqVO;
+import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderClaimReviewReqVO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderAttributionLogPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderAttributionLogRespVO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsFundsTraceReqVO;
@@ -23,6 +24,9 @@ import com.qiji.cps.module.cps.service.order.CpsFundsTraceResult;
 import com.qiji.cps.module.cps.service.order.CpsFundsTraceService;
 import com.qiji.cps.module.cps.service.order.CpsOrderObservabilityService;
 import com.qiji.cps.module.cps.service.order.CpsOrderManualBindCommand;
+import com.qiji.cps.module.cps.service.order.CpsOrderClaimResult;
+import com.qiji.cps.module.cps.service.order.CpsOrderClaimReviewCommand;
+import com.qiji.cps.module.cps.service.order.CpsOrderClaimService;
 import com.qiji.cps.module.cps.service.order.CpsOrderService;
 import com.qiji.cps.module.cps.service.order.CpsOrderSyncFailureRecoveryService;
 import com.qiji.cps.module.cps.service.order.CpsPlatformBillReconciliationService;
@@ -53,6 +57,9 @@ public class CpsOrderController {
 
     @Resource
     private CpsOrderService orderService;
+
+    @Resource
+    private CpsOrderClaimService orderClaimService;
 
     @Resource
     private CpsOrderObservabilityService observabilityService;
@@ -90,6 +97,27 @@ public class CpsOrderController {
             @Valid CpsOrderAttributionLogPageReqVO pageReqVO) {
         return success(BeanUtils.toBean(observabilityService.getAttributionLogPage(pageReqVO),
                 CpsOrderAttributionLogRespVO.class));
+    }
+
+    @GetMapping("/claim/page")
+    @Operation(summary = "获取订单申领审核分页")
+    @PreAuthorize("@ss.hasPermission('cps:order:attribution-bind')")
+    public CommonResult<PageResult<CpsOrderAttributionLogRespVO>> getClaimPage(
+            @Valid CpsOrderAttributionLogPageReqVO pageReqVO) {
+        pageReqVO.setAction("CLAIM");
+        if (pageReqVO.getReviewStatus() == null || pageReqVO.getReviewStatus().isBlank()) {
+            pageReqVO.setReviewStatus("PENDING_REVIEW");
+        }
+        return success(BeanUtils.toBean(observabilityService.getAttributionLogPage(pageReqVO),
+                CpsOrderAttributionLogRespVO.class));
+    }
+
+    @PostMapping("/claim/review")
+    @Operation(summary = "审核订单申领")
+    @PreAuthorize("@ss.hasPermission('cps:order:attribution-bind')")
+    public CommonResult<CpsOrderClaimResult> reviewClaim(@Valid @RequestBody CpsOrderClaimReviewReqVO reqVO) {
+        return success(orderClaimService.review(new CpsOrderClaimReviewCommand(reqVO.getClaimId(),
+                Boolean.TRUE.equals(reqVO.getApproved()), getLoginUserId(), reqVO.getAuditNote())));
     }
 
     @GetMapping("/sync-checkpoint/page")

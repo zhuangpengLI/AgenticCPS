@@ -63,6 +63,11 @@ export interface CpsOrderAttributionLogVO {
   rejectReason?: string
   operatorType?: string
   operatorId?: string
+  idempotencyKey?: string
+  reviewStatus?: string
+  reviewAuditNote?: string
+  reviewOperatorId?: number
+  reviewTime?: Date
   createTime: Date
 }
 

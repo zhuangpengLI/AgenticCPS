@@ -15,6 +15,10 @@
       </view>
     </view>
 
+    <view class="claim-toolbar">
+      <button class="claim-button" @tap="openClaimPopup">找回订单</button>
+    </view>
+
     <su-sticky bgColor="#fff">
       <su-tabs
         :list="tabMaps"
@@ -71,6 +75,73 @@
         @tap="loadMore"
       />
     </view>
+
+    <su-popup
+      :show="state.showClaimPopup"
+      type="bottom"
+      round="20"
+      showClose
+      @close="state.showClaimPopup = false"
+    >
+      <view class="claim-panel">
+        <view class="detail-title">找回订单</view>
+        <view class="claim-field">
+          <text class="claim-label">平台</text>
+          <picker
+            :range="claimPlatforms"
+            range-key="label"
+            :value="state.claimPlatformIndex"
+            @change="onClaimPlatformChange"
+          >
+            <view class="claim-input">{{ claimPlatforms[state.claimPlatformIndex].label }}</view>
+          </picker>
+        </view>
+        <view class="claim-field">
+          <text class="claim-label">平台订单号</text>
+          <input
+            v-model.trim="state.claimForm.platformOrderId"
+            class="claim-input"
+            maxlength="128"
+            placeholder="请输入订单号"
+          />
+        </view>
+        <view class="claim-field">
+          <text class="claim-label">商品名称</text>
+          <input
+            v-model.trim="state.claimForm.itemTitle"
+            class="claim-input"
+            maxlength="512"
+            placeholder="选填"
+          />
+        </view>
+        <button class="claim-submit" :loading="state.claimSubmitting" @tap="submitClaim">
+          提交申领
+        </button>
+
+        <view v-if="state.claimResult" class="claim-result">
+          <view class="claim-result-head">
+            <text>{{ state.claimResult.platformOrderId }}</text>
+            <text :class="['claim-status', `is-${state.claimResult.status.toLowerCase()}`]">
+              {{ claimStatusText(state.claimResult.status) }}
+            </text>
+          </view>
+          <view class="claim-message">{{ state.claimResult.message }}</view>
+        </view>
+
+        <view v-if="state.claims.length" class="claim-history">
+          <view class="claim-history-title">申领记录</view>
+          <view v-for="claim in state.claims" :key="claim.claimId" class="claim-history-item">
+            <view class="claim-result-head">
+              <text class="claim-order-no">{{ claim.platformOrderId }}</text>
+              <text :class="['claim-status', `is-${claim.status.toLowerCase()}`]">
+                {{ claimStatusText(claim.status) }}
+              </text>
+            </view>
+            <view class="claim-message">{{ claim.message }}</view>
+          </view>
+        </view>
+      </view>
+    </su-popup>
 
     <su-popup
       :show="state.showDetailPopup"
@@ -151,6 +222,15 @@
     realTotal: 0,
     showDetailPopup: false,
     currentOrder: null,
+    showClaimPopup: false,
+    claimSubmitting: false,
+    claimPlatformIndex: 0,
+    claimResult: null,
+    claims: [],
+    claimForm: {
+      platformOrderId: '',
+      itemTitle: '',
+    },
     pagination: {
       list: [],
       total: 0,
@@ -165,6 +245,14 @@
     { name: '已结算', value: 'settled' },
     { name: '已到账', value: 'credited' },
     { name: '已退款', value: 'refunded' },
+  ];
+
+  const claimPlatforms = [
+    { label: '淘宝', value: 'taobao' },
+    { label: '淘宝闪购', value: 'eleme' },
+    { label: '京东', value: 'jd' },
+    { label: '拼多多', value: 'pdd' },
+    { label: '抖音', value: 'douyin' },
   ];
 
   function onTabsChange(e) {
@@ -214,6 +302,69 @@
     }
     state.currentOrder = data;
     state.showDetailPopup = true;
+  }
+
+  async function openClaimPopup() {
+    state.showClaimPopup = true;
+    await loadClaims();
+  }
+
+  function onClaimPlatformChange(event) {
+    state.claimPlatformIndex = Number(event.detail.value || 0);
+  }
+
+  async function loadClaims() {
+    const { code, data } = await CpsOrderApi.getClaimList();
+    if (code === 0) {
+      state.claims = data || [];
+    }
+  }
+
+  async function submitClaim() {
+    const platformOrderId = state.claimForm.platformOrderId.trim();
+    if (!platformOrderId) {
+      uni.showToast({ title: '请输入订单号', icon: 'none' });
+      return;
+    }
+    const platformCode = claimPlatforms[state.claimPlatformIndex].value;
+    state.claimSubmitting = true;
+    try {
+      const { code, data } = await CpsOrderApi.claimOrder({
+        platformCode,
+        platformOrderId,
+        itemTitle: state.claimForm.itemTitle.trim() || undefined,
+        idempotencyKey: createClaimIdempotencyKey(platformCode, platformOrderId),
+      });
+      if (code !== 0) {
+        return;
+      }
+      state.claimResult = data;
+      await loadClaims();
+      if (data?.status === 'APPROVED') {
+        resetPagination(state.pagination);
+        state.estimateTotal = 0;
+        state.realTotal = 0;
+        await getOrderList();
+      }
+    } finally {
+      state.claimSubmitting = false;
+    }
+  }
+
+  function createClaimIdempotencyKey(platformCode, platformOrderId) {
+    return `claim:${platformCode}:${platformOrderId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  function claimStatusText(status) {
+    const map = {
+      PENDING_SYNC: '等待同步',
+      PENDING_REVIEW: '等待审核',
+      APPROVED: '已找回',
+      REJECTED: '未通过',
+      CONFLICT: '归属冲突',
+      ASSET_LOCKED: '资金锁定',
+    };
+    return map[status] || status || '处理中';
   }
 
   function loadMore() {
@@ -281,6 +432,7 @@
 
   onLoad(() => {
     getOrderList();
+    loadClaims();
   });
 
   onReachBottom(() => {
@@ -322,6 +474,121 @@
   .summary-value.money {
     color: var(--ui-BG-Main);
     font-size: 28rpx;
+  }
+
+  .claim-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 24rpx 20rpx;
+    background: $bg-page;
+  }
+
+  .claim-button,
+  .claim-submit {
+    min-width: 176rpx;
+    height: 72rpx;
+    margin: 0;
+    padding: 0 28rpx;
+    border-radius: 8rpx;
+    background: var(--ui-BG-Main);
+    color: #ffffff;
+    font-size: 26rpx;
+    line-height: 72rpx;
+  }
+
+  .claim-button::after,
+  .claim-submit::after {
+    border: 0;
+  }
+
+  .claim-panel {
+    max-height: 82vh;
+    padding: 32rpx 28rpx 48rpx;
+    overflow-y: auto;
+    background: #ffffff;
+  }
+
+  .claim-field {
+    margin-bottom: 24rpx;
+  }
+
+  .claim-label {
+    display: block;
+    margin-bottom: 12rpx;
+    color: #555555;
+    font-size: 24rpx;
+  }
+
+  .claim-input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 76rpx;
+    padding: 18rpx 20rpx;
+    border: 1rpx solid #dddddd;
+    border-radius: 8rpx;
+    color: #222222;
+    font-size: 26rpx;
+    line-height: 40rpx;
+  }
+
+  .claim-submit {
+    width: 100%;
+    margin-top: 12rpx;
+  }
+
+  .claim-result,
+  .claim-history-item {
+    margin-top: 24rpx;
+    padding: 20rpx;
+    border: 1rpx solid #eeeeee;
+    border-radius: 8rpx;
+  }
+
+  .claim-result-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
+    color: #222222;
+    font-size: 25rpx;
+  }
+
+  .claim-order-no {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .claim-status {
+    flex: 0 0 auto;
+    color: #666666;
+  }
+
+  .claim-status.is-approved {
+    color: #19be6b;
+  }
+
+  .claim-status.is-rejected,
+  .claim-status.is-conflict,
+  .claim-status.is-asset_locked {
+    color: #fa3534;
+  }
+
+  .claim-message {
+    margin-top: 12rpx;
+    color: #777777;
+    font-size: 23rpx;
+    line-height: 34rpx;
+    overflow-wrap: anywhere;
+  }
+
+  .claim-history {
+    margin-top: 30rpx;
+  }
+
+  .claim-history-title {
+    color: #222222;
+    font-size: 28rpx;
+    font-weight: 600;
   }
 
   .order-list {

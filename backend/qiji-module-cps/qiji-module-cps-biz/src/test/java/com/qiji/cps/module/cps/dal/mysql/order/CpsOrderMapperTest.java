@@ -16,6 +16,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.doReturn;
@@ -111,5 +112,21 @@ class CpsOrderMapperTest {
                 .getSqlSet().contains("rebate_freeze_status"));
         assertTrue(wrapper.getParamNameValuePairs().containsValue(4));
         assertTrue(wrapper.getParamNameValuePairs().containsValue(5));
+    }
+
+    @Test
+    void bindMemberIfUnattributedUsesNullGuardAndWritesAttributionSource() {
+        CpsOrderMapper mapper = mock(CpsOrderMapper.class, CALLS_REAL_METHODS);
+        when(mapper.update(isNull(), any(Wrapper.class))).thenReturn(1);
+
+        assertEquals(1, mapper.bindMemberIfUnattributed(8L, 1001L, "申领会员", "manualClaim"));
+
+        ArgumentCaptor<Wrapper<CpsOrderDO>> wrapperCaptor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(mapper).update(isNull(), wrapperCaptor.capture());
+        LambdaUpdateWrapper<CpsOrderDO> wrapper = (LambdaUpdateWrapper<CpsOrderDO>) wrapperCaptor.getValue();
+        assertTrue(wrapper.getSqlSegment().contains("member_id IS NULL"));
+        assertTrue(wrapper.getSqlSet().contains("member_id"));
+        assertTrue(wrapper.getSqlSet().contains("member_nickname"));
+        assertTrue(wrapper.getSqlSet().contains("attribution_source"));
     }
 }

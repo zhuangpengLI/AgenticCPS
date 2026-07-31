@@ -30,4 +30,7 @@ public interface CpsRebateActivityService {
 
     CpsRebateActivityPromotionRespVO generatePromotionContent(@Valid CpsRebateActivityPromotionReqVO reqVO);
 
+    CpsRebateActivityPromotionRespVO generatePromotionContent(@Valid CpsRebateActivityPromotionReqVO reqVO,
+                                                               Long memberId);
+
 }

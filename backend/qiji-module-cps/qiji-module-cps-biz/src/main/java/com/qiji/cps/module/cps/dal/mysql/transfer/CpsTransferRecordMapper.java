@@ -71,6 +71,23 @@ public interface CpsTransferRecordMapper extends BaseMapperX<CpsTransferRecordDO
                 .build());
     }
 
+    default List<CpsTransferRecordDO> selectValidAttributionTokenCandidates(String vendorCode,
+                                                                            String platformCode,
+                                                                            String attributionType,
+                                                                            String attributionToken,
+                                                                            LocalDateTime now) {
+        return selectList(new LambdaQueryWrapperX<CpsTransferRecordDO>()
+                .eq(CpsTransferRecordDO::getVendorCode, vendorCode)
+                .eq(CpsTransferRecordDO::getPlatformCode, platformCode)
+                .eq(CpsTransferRecordDO::getAttributionType, attributionType)
+                .eq(CpsTransferRecordDO::getAttributionToken, attributionToken)
+                .eq(CpsTransferRecordDO::getStatus, 1)
+                .and(wrapper -> wrapper.isNull(CpsTransferRecordDO::getExpireTime)
+                        .or().gt(CpsTransferRecordDO::getExpireTime, now))
+                .orderByDesc(CpsTransferRecordDO::getId)
+                .last("LIMIT 2"));
+    }
+
     default List<CpsTransferRecordDO> selectListForMarketingFunnel(CpsMarketingFunnelReqVO reqVO) {
         return selectList(new LambdaQueryWrapperX<CpsTransferRecordDO>()
                 .eqIfPresent(CpsTransferRecordDO::getPlatformCode, reqVO.getPlatformCode())

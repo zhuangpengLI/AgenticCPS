@@ -104,6 +104,65 @@
     </el-form>
   </ContentWrap>
 
+  <ContentWrap v-hasPermi="['cps:order:attribution-bind']">
+    <div class="claim-review-toolbar">
+      <el-select v-model="claimQuery.reviewStatus" class="claim-status-select" @change="getClaimList">
+        <el-option label="待审核" value="PENDING_REVIEW" />
+        <el-option label="已通过" value="APPROVED" />
+        <el-option label="已拒绝" value="REJECTED" />
+        <el-option label="冲突" value="CONFLICT" />
+      </el-select>
+      <el-input
+        v-model="claimQuery.platformOrderId"
+        clearable
+        class="claim-order-search"
+        placeholder="平台订单号"
+        @keyup.enter="getClaimList"
+      />
+      <el-button type="primary" @click="getClaimList">
+        <Icon icon="ep:search" class="mr-1" />查询
+      </el-button>
+    </div>
+
+    <el-table v-loading="claimLoading" :data="claimList">
+      <el-table-column label="申领ID" prop="id" width="90" />
+      <el-table-column label="平台" width="100">
+        <template #default="scope">{{ platformLabel(scope.row.platformCode) }}</template>
+      </el-table-column>
+      <el-table-column label="平台订单号" prop="platformOrderId" min-width="190" show-overflow-tooltip />
+      <el-table-column label="申领会员" prop="candidateMemberId" width="110" />
+      <el-table-column label="状态" width="110">
+        <template #default="scope">
+          <el-tag :type="claimStatusTagType(scope.row.reviewStatus)" size="small">
+            {{ claimStatusLabel(scope.row.reviewStatus) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="申领原因" prop="rejectReason" min-width="220" show-overflow-tooltip />
+      <el-table-column
+        label="申领时间"
+        prop="createTime"
+        width="165"
+        :formatter="dateFormatter"
+      />
+      <el-table-column label="操作" fixed="right" width="150">
+        <template #default="scope">
+          <template v-if="scope.row.reviewStatus === 'PENDING_REVIEW'">
+            <el-button type="success" link @click="openClaimReview(scope.row, true)">通过</el-button>
+            <el-button type="danger" link @click="openClaimReview(scope.row, false)">拒绝</el-button>
+          </template>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+    </el-table>
+    <Pagination
+      :total="claimTotal"
+      v-model:page="claimQuery.pageNo"
+      v-model:limit="claimQuery.pageSize"
+      @pagination="getClaimList"
+    />
+  </ContentWrap>
+
   <!-- 列表 -->
   <ContentWrap>
     <el-table
@@ -446,12 +505,53 @@
       </el-button>
     </template>
   </el-dialog>
+
+  <el-dialog
+    v-model="claimReviewVisible"
+    :title="claimReviewForm.approved ? '通过订单申领' : '拒绝订单申领'"
+    width="460px"
+    destroy-on-close
+  >
+    <el-form label-width="88px">
+      <el-form-item label="平台单号">
+        <el-input :model-value="claimReviewForm.platformOrderId" disabled />
+      </el-form-item>
+      <el-form-item label="申领会员">
+        <el-input :model-value="claimReviewForm.candidateMemberId" disabled />
+      </el-form-item>
+      <el-form-item label="审核说明" required>
+        <el-input
+          v-model="claimReviewForm.auditNote"
+          type="textarea"
+          :rows="4"
+          maxlength="500"
+          show-word-limit
+          placeholder="请输入联盟后台核验依据"
+        />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="claimReviewVisible = false">取消</el-button>
+      <el-button
+        :type="claimReviewForm.approved ? 'success' : 'danger'"
+        :loading="claimReviewLoading"
+        @click="submitClaimReview"
+      >
+        确认{{ claimReviewForm.approved ? '通过' : '拒绝' }}
+      </el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { dateFormatter } from '@/utils/formatTime'
 import * as OrderApi from '@/api/cps/order'
-import type { CpsOrderVO, CpsOrderPageReqVO } from '@/api/cps/order'
+import type {
+  CpsOrderClaimPageReqVO,
+  CpsOrderClaimVO,
+  CpsOrderPageReqVO,
+  CpsOrderVO
+} from '@/api/cps/order'
 import { getUserPage, type UserVO } from '@/api/member/user/index'
 
 defineOptions({ name: 'CpsOrder' })
@@ -465,6 +565,27 @@ const total = ref(0)
 const list = ref<CpsOrderVO[]>([])
 const selectedOrderIds = ref<number[]>([])
 const queryFormRef = ref()
+const claimLoading = ref(false)
+const claimTotal = ref(0)
+const claimList = ref<CpsOrderClaimVO[]>([])
+const claimReviewVisible = ref(false)
+const claimReviewLoading = ref(false)
+const claimQuery = reactive<CpsOrderClaimPageReqVO>({
+  pageNo: 1,
+  pageSize: 10,
+  reviewStatus: 'PENDING_REVIEW',
+  platformOrderId: undefined
+})
+const claimReviewForm = reactive<{
+  claimId?: number
+  platformOrderId?: string
+  candidateMemberId?: number
+  approved: boolean
+  auditNote: string
+}>({
+  approved: true,
+  auditNote: ''
+})
 
 const queryParams = reactive<CpsOrderPageReqVO>({
   pageNo: 1,
@@ -483,12 +604,19 @@ const platformTagType = (code: string): ElTagType => {
     taobao: 'danger',
     jd: 'primary',
     pdd: 'warning',
-    douyin: 'info'
+    douyin: 'info',
+    eleme: 'success'
   }
   return map[code] || 'info'
 }
 const platformLabel = (code: string) => {
-  const map: Record<string, string> = { taobao: '淘宝', jd: '京东', pdd: '拼多多', douyin: '抖音' }
+  const map: Record<string, string> = {
+    taobao: '淘宝',
+    jd: '京东',
+    pdd: '拼多多',
+    douyin: '抖音',
+    eleme: '淘宝闪购'
+  }
   return map[code] || code
 }
 
@@ -558,13 +686,78 @@ const resetQuery = () => {
   handleQuery()
 }
 
+const getClaimList = async () => {
+  claimLoading.value = true
+  try {
+    const data = await OrderApi.getOrderClaimPage(claimQuery)
+    claimList.value = data.list
+    claimTotal.value = data.total
+  } finally {
+    claimLoading.value = false
+  }
+}
+
+const claimStatusLabel = (status?: string) => {
+  const map: Record<string, string> = {
+    PENDING_REVIEW: '待审核',
+    APPROVED: '已通过',
+    REJECTED: '已拒绝',
+    CONFLICT: '冲突',
+    PENDING_SYNC: '等待同步',
+    ASSET_LOCKED: '资金锁定'
+  }
+  return status ? map[status] || status : '-'
+}
+
+const claimStatusTagType = (status?: string): ElTagType => {
+  const map: Record<string, ElTagType> = {
+    PENDING_REVIEW: 'warning',
+    APPROVED: 'success',
+    REJECTED: 'danger',
+    CONFLICT: 'danger',
+    PENDING_SYNC: 'info',
+    ASSET_LOCKED: 'danger'
+  }
+  return status ? map[status] || 'info' : 'info'
+}
+
+const openClaimReview = (claim: CpsOrderClaimVO, approved: boolean) => {
+  claimReviewForm.claimId = claim.id
+  claimReviewForm.platformOrderId = claim.platformOrderId
+  claimReviewForm.candidateMemberId = claim.candidateMemberId
+  claimReviewForm.approved = approved
+  claimReviewForm.auditNote = ''
+  claimReviewVisible.value = true
+}
+
+const submitClaimReview = async () => {
+  if (!claimReviewForm.claimId || !claimReviewForm.auditNote.trim()) {
+    message.warning('请输入审核说明')
+    return
+  }
+  claimReviewLoading.value = true
+  try {
+    const result = await OrderApi.reviewOrderClaim({
+      claimId: claimReviewForm.claimId,
+      approved: claimReviewForm.approved,
+      auditNote: claimReviewForm.auditNote.trim()
+    })
+    message.success(result.message || '审核完成')
+    claimReviewVisible.value = false
+    await Promise.all([getClaimList(), getList()])
+  } finally {
+    claimReviewLoading.value = false
+  }
+}
+
 const attributionSourceLabel = (source?: string) => {
   const map: Record<string, string> = {
     specialId: '会员运营ID',
     relationId: '渠道ID',
     externalId: '外部追踪',
     adzone: '专属PID',
-    transferRecord: '转链记录'
+    transferRecord: '转链记录',
+    sid: '闪购SID'
   }
   return source ? map[source] || source : '-'
 }
@@ -737,7 +930,10 @@ const createManualBindIdempotencyKey = (orderId: number) => {
   return `manual-bind:${orderId}:${randomId}`
 }
 
-onMounted(getList)
+onMounted(() => {
+  getList()
+  getClaimList()
+})
 </script>
 
 <style scoped>
@@ -774,6 +970,21 @@ onMounted(getList)
 .attribution-field span {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.claim-review-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.claim-status-select {
+  width: 140px;
+}
+
+.claim-order-search {
+  width: min(320px, 100%);
 }
 
 @media (max-width: 768px) {

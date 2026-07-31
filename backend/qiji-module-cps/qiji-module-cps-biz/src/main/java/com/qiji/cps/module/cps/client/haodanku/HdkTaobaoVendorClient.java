@@ -143,6 +143,12 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient implements Cp
         if (config.getAuthToken() != null) {
             params.put("tb_name", config.getAuthToken());
         }
+        if (request.getSpecialId() != null && !request.getSpecialId().isBlank()) {
+            params.put("special_id", request.getSpecialId());
+        }
+        if (request.getRelationId() != null && !request.getRelationId().isBlank()) {
+            params.put("relation_id", request.getRelationId());
+        }
         // 默认返回淘口令
         params.put("get_taoword", 1);
         return params;
@@ -239,8 +245,9 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient implements Cp
                         .receiveTime(firstText(item, "receive_time", "confirm_receipt_time", "tk_deposit_time", "tb_deposit_time"))
                         .settleTime(firstText(item, "earning_time", "settle_time", "settled_at", "tk_earning_time"))
                         .adzoneId(firstText(item, "adzone_id", "adzoneId", "pid", "position_id"))
-                        .externalId(firstText(item, "special_id", "specialId", "relation_id", "relationId",
-                                "channel_code", "external_id", "externalId", "sid"))
+                        .specialId(firstText(item, "special_id", "specialId"))
+                        .relationId(firstText(item, "relation_id", "relationId"))
+                        .externalId(firstText(item, "channel_code", "external_id", "externalId", "sid"))
                         .extraFields(selectedFields(item, "order_status", "tk_status", "settled_status", "special_id",
                                 "relation_id", "channel_code", "sub_union_id", "refund_time", "fail_reason"))
                         .rawPayload(item.toString())

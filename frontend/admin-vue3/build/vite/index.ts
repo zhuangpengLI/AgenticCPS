@@ -65,7 +65,16 @@ export function createVitePlugins() {
       dts: 'src/types/auto-components.d.ts',
       // 自定义组件的解析器
       resolvers: [ElementPlusResolver()],
-      globs: ["src/components/**/**.{vue, md}", '!src/components/DiyEditor/components/mobile/**']
+      // Keep every watcher glob positive. This plugin version treats a negated glob as
+      // matching every unrelated file added by Playwright reports and other tooling.
+      globs: [
+        'src/components/*.{vue,md}',
+        'src/components/!(DiyEditor)/**/*.{vue,md}',
+        'src/components/DiyEditor/*.{vue,md}',
+        'src/components/DiyEditor/!(components)/**/*.{vue,md}',
+        'src/components/DiyEditor/components/*.{vue,md}',
+        'src/components/DiyEditor/components/!(mobile)/**/*.{vue,md}'
+      ]
     }),
     !isE2E &&
       EslintPlugin({
@@ -79,7 +88,7 @@ export function createVitePlugins() {
     }),
     createSvgIconsPlugin({
       iconDirs: [pathResolve('src/assets/svgs')],
-      symbolId: 'icon-[dir]-[name]',
+      symbolId: 'icon-[dir]-[name]'
     }),
     viteCompression({
       verbose: true, // 是否在控制台输出压缩结果

@@ -17,6 +17,9 @@ public class CpsThirdPartyActivity {
 
     private String externalActivityId;
 
+    /** Vendor parameter used by the activity conversion endpoint. */
+    private String promotionActivityId;
+
     private String activityName;
 
     private String activityType;
@@ -48,6 +51,9 @@ public class CpsThirdPartyActivity {
     private LocalDateTime endTime;
 
     private Map<String, Object> extraFields;
+
+    /** JSON snapshot of the minimal vendor fields needed after synchronization. */
+    private String vendorMetadata;
 
     private String rawPayload;
 

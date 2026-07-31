@@ -1,5 +1,7 @@
 package com.qiji.cps.module.cps.service.activity;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.CpsThirdPartyActivityVendorClient;
 import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
@@ -27,6 +29,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,6 +42,7 @@ public class CpsRebateActivitySyncServiceImpl {
     private static final String VENDOR_ALL = "all";
     private static final int DEFAULT_MAX_SYNC_PAGES = 100;
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Resource
     private HdkActivityClient hdkActivityClient;
@@ -192,15 +196,19 @@ public class CpsRebateActivitySyncServiceImpl {
     private void upsertActivity(CpsRebateActivitySyncRequest request, CpsRebateActivitySyncResult result,
                                 HdkActivityCategory category, HdkSecondaryCategory secondaryCategory,
                                 HdkActivityItem item) {
-        String externalIdValue = firstText(item.getActivityId(), item.getId());
-        if (!StringUtils.hasText(externalIdValue)) {
+        String platformCode = HaodankuActivityVendorClient.normalizeActivityPlatformCode(item.getPlatform());
+        if (!StringUtils.hasText(item.getId()) || !StringUtils.hasText(platformCode)) {
             result.setSkippedCount(result.getSkippedCount() + 1);
             return;
         }
-        String externalActivityId = HDK_EXTERNAL_PREFIX + externalIdValue;
+        String externalActivityId = HDK_EXTERNAL_PREFIX + platformCode + ":" + item.getId();
         CpsRebateActivityDO activity = toActivity(request, category, secondaryCategory, item, externalActivityId);
         CpsRebateActivityDO existing = activityMapper.selectBySourceTypeAndExternalActivityId(SOURCE_HAODANKU,
                 externalActivityId);
+        if (existing == null && StringUtils.hasText(item.getActivityId())) {
+            existing = activityMapper.selectBySourceTypeAndExternalActivityId(SOURCE_HAODANKU,
+                    HDK_EXTERNAL_PREFIX + item.getActivityId());
+        }
         if (existing == null) {
             activityMapper.insert(activity);
             result.setInsertedCount(result.getInsertedCount() + 1);
@@ -272,6 +280,8 @@ public class CpsRebateActivitySyncServiceImpl {
                 .promotionCount(parseInt(item.getPromotionNum()))
                 .sourceType(SOURCE_HAODANKU)
                 .externalActivityId(externalActivityId)
+                .promotionActivityId(item.getActivityId())
+                .vendorMetadata(toJson(buildHaodankuMetadata(item)))
                 .tagText(firstText(item.getActivityLabel(), activityType))
                 .jumpType(StringUtils.hasText(item.getActivityUrl()) ? "url" : "search")
                 .jumpUrl(item.getActivityUrl())
@@ -296,6 +306,8 @@ public class CpsRebateActivitySyncServiceImpl {
                 .sourceType(firstText(item.getSourceType(), request.getVendorCode(),
                         CpsVendorCodeEnum.HAODANKU.getCode()))
                 .externalActivityId(item.getExternalActivityId())
+                .promotionActivityId(item.getPromotionActivityId())
+                .vendorMetadata(firstText(item.getVendorMetadata(), toJson(item.getExtraFields())))
                 .tagText(firstText(item.getTagText(), item.getActivityType()))
                 .jumpType(firstText(item.getJumpType(), StringUtils.hasText(item.getJumpUrl()) ? "url" : "search"))
                 .jumpUrl(item.getJumpUrl())
@@ -305,6 +317,28 @@ public class CpsRebateActivitySyncServiceImpl {
                 .sort(0)
                 .status(1)
                 .build();
+    }
+
+    private Map<String, Object> buildHaodankuMetadata(HdkActivityItem item) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("row_id", item.getId());
+        metadata.put("activity_id", item.getActivityId());
+        metadata.put("activity_url", item.getActivityUrl());
+        metadata.put("platform", item.getPlatform());
+        metadata.put("is_channel", item.getIsChannel());
+        return metadata;
+    }
+
+    private String toJson(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return OBJECT_MAPPER.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            log.warn("[CpsRebateActivitySyncService] 活动供应商元数据序列化失败", e);
+            return null;
+        }
     }
 
     private String resolveBillingType(String promotionType) {

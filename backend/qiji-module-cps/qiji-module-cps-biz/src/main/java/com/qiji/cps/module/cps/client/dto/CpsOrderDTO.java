@@ -31,6 +31,11 @@ public class CpsOrderDTO {
     private String platformCode;
 
     /**
+     * 订单来源供应商编码，用于校验供应商专属归因令牌。
+     */
+    private String vendorCode;
+
+    /**
      * 商品ID
      */
     private String itemId;

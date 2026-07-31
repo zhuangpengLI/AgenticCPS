@@ -1358,4 +1358,181 @@ PREPARE cps_platform_vendor_routing_stmt FROM @cps_platform_vendor_routing_sql;
 EXECUTE cps_platform_vendor_routing_stmt;
 DEALLOCATE PREPARE cps_platform_vendor_routing_stmt;
 
+-- ============================================================
+-- 修改时间：2026-07-30 16:00:00
+-- 目的：分离第三方活动记录ID与转链参数，保留活动转链元数据，并修正无效的88VIP空链接种子。
+-- 说明：字段变更通过 information_schema 判断，可安全重复执行。
+-- ============================================================
+SET @cps_rebate_activity_metadata_sql = IF(
+  EXISTS (
+    SELECT 1 FROM `information_schema`.`columns`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_rebate_activity'
+      AND `column_name` = 'promotion_activity_id'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_rebate_activity` ADD COLUMN `promotion_activity_id` varchar(128) DEFAULT NULL COMMENT ''供应商活动转链参数ID'' AFTER `external_activity_id`'
+);
+PREPARE cps_rebate_activity_metadata_stmt FROM @cps_rebate_activity_metadata_sql;
+EXECUTE cps_rebate_activity_metadata_stmt;
+DEALLOCATE PREPARE cps_rebate_activity_metadata_stmt;
+
+SET @cps_rebate_activity_metadata_sql = IF(
+  EXISTS (
+    SELECT 1 FROM `information_schema`.`columns`
+    WHERE `table_schema` = DATABASE()
+      AND `table_name` = 'cps_rebate_activity'
+      AND `column_name` = 'vendor_metadata'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `cps_rebate_activity` ADD COLUMN `vendor_metadata` text DEFAULT NULL COMMENT ''供应商活动转链元数据JSON'' AFTER `promotion_activity_id`'
+);
+PREPARE cps_rebate_activity_metadata_stmt FROM @cps_rebate_activity_metadata_sql;
+EXECUTE cps_rebate_activity_metadata_stmt;
+DEALLOCATE PREPARE cps_rebate_activity_metadata_stmt;
+
+UPDATE `cps_rebate_activity`
+SET `jump_type` = 'search',
+    `search_keyword` = '88VIP',
+    `updater` = 'activity-link-reliability',
+    `update_time` = '2026-07-30 16:00:00'
+WHERE `source_type` = 'configured'
+  AND `external_activity_id` = 'taobao-88vip-youku'
+  AND (`jump_url` IS NULL OR `jump_url` = '');
+
+-- ============================================================
+-- 修改时间：2026-07-30 22:20:00
+-- 目的：好单库闪购活动转链增加安全 SID 映射，并补齐订单申领审核字段与查询索引。
+-- 说明：字段和索引均通过 information_schema 判断，可安全重复执行。
+-- ============================================================
+SET @cps_transfer_attribution_sql = IF(
+  EXISTS (SELECT 1 FROM `information_schema`.`columns`
+          WHERE `table_schema` = DATABASE() AND `table_name` = 'cps_transfer_record' AND `column_name` = 'vendor_code'),
+  'SELECT 1',
+  'ALTER TABLE `cps_transfer_record` ADD COLUMN `vendor_code` varchar(32) DEFAULT NULL COMMENT ''供应商编码'' AFTER `platform_code`'
+);
+PREPARE cps_transfer_attribution_stmt FROM @cps_transfer_attribution_sql;
+EXECUTE cps_transfer_attribution_stmt;
+DEALLOCATE PREPARE cps_transfer_attribution_stmt;
+
+SET @cps_transfer_attribution_sql = IF(
+  EXISTS (SELECT 1 FROM `information_schema`.`columns`
+          WHERE `table_schema` = DATABASE() AND `table_name` = 'cps_transfer_record' AND `column_name` = 'activity_id'),
+  'SELECT 1',
+  'ALTER TABLE `cps_transfer_record` ADD COLUMN `activity_id` bigint DEFAULT NULL COMMENT ''活动ID'' AFTER `vendor_code`'
+);
+PREPARE cps_transfer_attribution_stmt FROM @cps_transfer_attribution_sql;
+EXECUTE cps_transfer_attribution_stmt;
+DEALLOCATE PREPARE cps_transfer_attribution_stmt;
+
+SET @cps_transfer_attribution_sql = IF(
+  EXISTS (SELECT 1 FROM `information_schema`.`columns`
+          WHERE `table_schema` = DATABASE() AND `table_name` = 'cps_transfer_record' AND `column_name` = 'attribution_type'),
+  'SELECT 1',
+  'ALTER TABLE `cps_transfer_record` ADD COLUMN `attribution_type` varchar(32) DEFAULT NULL COMMENT ''归因令牌类型'' AFTER `activity_id`'
+);
+PREPARE cps_transfer_attribution_stmt FROM @cps_transfer_attribution_sql;
+EXECUTE cps_transfer_attribution_stmt;
+DEALLOCATE PREPARE cps_transfer_attribution_stmt;
+
+SET @cps_transfer_attribution_sql = IF(
+  EXISTS (SELECT 1 FROM `information_schema`.`columns`
+          WHERE `table_schema` = DATABASE() AND `table_name` = 'cps_transfer_record' AND `column_name` = 'attribution_token'),
+  'SELECT 1',
+  'ALTER TABLE `cps_transfer_record` ADD COLUMN `attribution_token` varchar(64) DEFAULT NULL COMMENT ''不透明归因令牌'' AFTER `attribution_type`'
+);
+PREPARE cps_transfer_attribution_stmt FROM @cps_transfer_attribution_sql;
+EXECUTE cps_transfer_attribution_stmt;
+DEALLOCATE PREPARE cps_transfer_attribution_stmt;
+
+SET @cps_transfer_attribution_sql = IF(
+  EXISTS (SELECT 1 FROM `information_schema`.`statistics`
+          WHERE `table_schema` = DATABASE() AND `table_name` = 'cps_transfer_record' AND `index_name` = 'uk_transfer_attribution_token'),
+  'SELECT 1',
+  'ALTER TABLE `cps_transfer_record` ADD UNIQUE KEY `uk_transfer_attribution_token` (`tenant_id`, `vendor_code`, `platform_code`, `attribution_type`, `attribution_token`, `deleted`) USING BTREE'
+);
+PREPARE cps_transfer_attribution_stmt FROM @cps_transfer_attribution_sql;
+EXECUTE cps_transfer_attribution_stmt;
+DEALLOCATE PREPARE cps_transfer_attribution_stmt;
+
+SET @cps_transfer_attribution_sql = IF(
+  EXISTS (SELECT 1 FROM `information_schema`.`statistics`
+          WHERE `table_schema` = DATABASE() AND `table_name` = 'cps_transfer_record' AND `index_name` = 'idx_transfer_attribution_lookup'),
+  'SELECT 1',
+  'ALTER TABLE `cps_transfer_record` ADD KEY `idx_transfer_attribution_lookup` (`tenant_id`, `vendor_code`, `platform_code`, `attribution_type`, `attribution_token`, `status`, `expire_time`) USING BTREE'
+);
+PREPARE cps_transfer_attribution_stmt FROM @cps_transfer_attribution_sql;
+EXECUTE cps_transfer_attribution_stmt;
+DEALLOCATE PREPARE cps_transfer_attribution_stmt;
+
+SET @cps_order_claim_sql = IF(
+  EXISTS (SELECT 1 FROM `information_schema`.`columns`
+          WHERE `table_schema` = DATABASE() AND `table_name` = 'cps_order_attribution_log' AND `column_name` = 'idempotency_key'),
+  'SELECT 1',
+  'ALTER TABLE `cps_order_attribution_log` ADD COLUMN `idempotency_key` varchar(128) DEFAULT NULL COMMENT ''幂等键'' AFTER `operator_id`'
+);
+PREPARE cps_order_claim_stmt FROM @cps_order_claim_sql;
+EXECUTE cps_order_claim_stmt;
+DEALLOCATE PREPARE cps_order_claim_stmt;
+
+SET @cps_order_claim_sql = IF(
+  EXISTS (SELECT 1 FROM `information_schema`.`columns`
+          WHERE `table_schema` = DATABASE() AND `table_name` = 'cps_order_attribution_log' AND `column_name` = 'review_status'),
+  'SELECT 1',
+  'ALTER TABLE `cps_order_attribution_log` ADD COLUMN `review_status` varchar(32) DEFAULT NULL COMMENT ''申领审核状态'' AFTER `idempotency_key`'
+);
+PREPARE cps_order_claim_stmt FROM @cps_order_claim_sql;
+EXECUTE cps_order_claim_stmt;
+DEALLOCATE PREPARE cps_order_claim_stmt;
+
+SET @cps_order_claim_sql = IF(
+  EXISTS (SELECT 1 FROM `information_schema`.`columns`
+          WHERE `table_schema` = DATABASE() AND `table_name` = 'cps_order_attribution_log' AND `column_name` = 'review_audit_note'),
+  'SELECT 1',
+  'ALTER TABLE `cps_order_attribution_log` ADD COLUMN `review_audit_note` varchar(500) DEFAULT NULL COMMENT ''审核说明'' AFTER `review_status`'
+);
+PREPARE cps_order_claim_stmt FROM @cps_order_claim_sql;
+EXECUTE cps_order_claim_stmt;
+DEALLOCATE PREPARE cps_order_claim_stmt;
+
+SET @cps_order_claim_sql = IF(
+  EXISTS (SELECT 1 FROM `information_schema`.`columns`
+          WHERE `table_schema` = DATABASE() AND `table_name` = 'cps_order_attribution_log' AND `column_name` = 'review_operator_id'),
+  'SELECT 1',
+  'ALTER TABLE `cps_order_attribution_log` ADD COLUMN `review_operator_id` bigint DEFAULT NULL COMMENT ''审核操作人ID'' AFTER `review_audit_note`'
+);
+PREPARE cps_order_claim_stmt FROM @cps_order_claim_sql;
+EXECUTE cps_order_claim_stmt;
+DEALLOCATE PREPARE cps_order_claim_stmt;
+
+SET @cps_order_claim_sql = IF(
+  EXISTS (SELECT 1 FROM `information_schema`.`columns`
+          WHERE `table_schema` = DATABASE() AND `table_name` = 'cps_order_attribution_log' AND `column_name` = 'review_time'),
+  'SELECT 1',
+  'ALTER TABLE `cps_order_attribution_log` ADD COLUMN `review_time` datetime DEFAULT NULL COMMENT ''审核时间'' AFTER `review_operator_id`'
+);
+PREPARE cps_order_claim_stmt FROM @cps_order_claim_sql;
+EXECUTE cps_order_claim_stmt;
+DEALLOCATE PREPARE cps_order_claim_stmt;
+
+SET @cps_order_claim_sql = IF(
+  EXISTS (SELECT 1 FROM `information_schema`.`statistics`
+          WHERE `table_schema` = DATABASE() AND `table_name` = 'cps_order_attribution_log' AND `index_name` = 'uk_attribution_idempotency'),
+  'SELECT 1',
+  'ALTER TABLE `cps_order_attribution_log` ADD UNIQUE KEY `uk_attribution_idempotency` (`tenant_id`, `idempotency_key`) USING BTREE'
+);
+PREPARE cps_order_claim_stmt FROM @cps_order_claim_sql;
+EXECUTE cps_order_claim_stmt;
+DEALLOCATE PREPARE cps_order_claim_stmt;
+
+SET @cps_order_claim_sql = IF(
+  EXISTS (SELECT 1 FROM `information_schema`.`statistics`
+          WHERE `table_schema` = DATABASE() AND `table_name` = 'cps_order_attribution_log' AND `index_name` = 'idx_attribution_claim_review'),
+  'SELECT 1',
+  'ALTER TABLE `cps_order_attribution_log` ADD KEY `idx_attribution_claim_review` (`tenant_id`, `action`, `review_status`, `create_time`) USING BTREE'
+);
+PREPARE cps_order_claim_stmt FROM @cps_order_claim_sql;
+EXECUTE cps_order_claim_stmt;
+DEALLOCATE PREPARE cps_order_claim_stmt;
+
 SET FOREIGN_KEY_CHECKS = 1;

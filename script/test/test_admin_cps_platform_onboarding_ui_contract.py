@@ -105,6 +105,25 @@ def test_platform_and_vendor_options_are_not_hard_coded_in_the_local_model():
         assert forbidden not in source
 
 
+def test_platform_code_select_uses_chinese_labels_for_local_life_platforms():
+    options_source = read_utf8("frontend/admin-vue3/src/api/cps/apiVendor.ts")
+    step_source = read_utf8(
+        "frontend/admin-vue3/src/views/cps/platformOnboarding/components/PlatformStep.vue"
+    )
+
+    for option in [
+        "{ label: '美团联盟', value: 'meituan' }",
+        "{ label: '抖音联盟', value: 'douyin' }",
+        "{ label: '滴滴联盟', value: 'didi' }",
+        "{ label: '唯品会', value: 'vip' }",
+    ]:
+        assert option in options_source
+
+    assert "getPlatformLabel" in options_source
+    assert "getPlatformLabel" in step_source
+    assert ":value=\"item.platformCode\"" in step_source
+
+
 def test_rebate_amounts_follow_the_current_backend_yuan_contract_and_mask_extra_config():
     api_source = read_utf8("frontend/admin-vue3/src/api/cps/platformOnboarding.ts")
     model_source = read_utf8("frontend/admin-vue3/src/views/cps/platformOnboarding/model.ts")
@@ -146,6 +165,17 @@ def test_platform_center_exposes_required_actions_and_permissions():
 
     assert "runtimeStatus !== 1" in source or "runtimeStatus === 1" in source
     assert "handleSuccess" in source or "await reload" in source or "await getList" in source
+    assert ':formatter="dateFormatter"' in source
+    assert "import { dateFormatter } from '@/utils/formatTime'" in source
+
+    api_source = read_utf8("frontend/admin-vue3/src/api/cps/platformOnboarding.ts")
+    assert "updateTime?: string | number" in api_source
+
+
+def test_platform_center_keeps_row_actions_on_one_line():
+    source = read_utf8("frontend/admin-vue3/src/views/cps/platformOnboarding/index.vue")
+
+    assert 'class="flex flex-nowrap items-center justify-center whitespace-nowrap"' in source
 
 
 def test_workspace_has_five_steps_and_draft_publish_actions():
@@ -165,6 +195,27 @@ def test_each_step_exposes_validate():
         source = read_utf8(f"frontend/admin-vue3/src/views/cps/platformOnboarding/components/{name}.vue")
         assert "defineExpose" in source
         assert "validate" in source
+
+
+def test_rebate_priority_is_visible_required_and_defaulted():
+    dialog = read_utf8(
+        "frontend/admin-vue3/src/views/cps/platformOnboarding/components/RebateRuleDialog.vue"
+    )
+    step = read_utf8(
+        "frontend/admin-vue3/src/views/cps/platformOnboarding/components/RebateStep.vue"
+    )
+
+    priority_field = '<el-form-item label="优先级" required>'
+    assert priority_field in dialog
+    assert dialog.index(priority_field) < dialog.index("<el-collapse")
+    assert "priority: 0" in dialog
+    assert "请输入非负整数优先级" in dialog
+    assert "row.priority == null" in step
+    assert "row.priority < 0" in step
+
+    model = read_utf8("frontend/admin-vue3/src/views/cps/platformOnboarding/model.ts")
+    assert "status: rule.status ?? 1" in model
+    assert "priority: rule.priority ?? 0" in model
 
 
 def test_workspace_uses_safe_draft_and_never_legacy_partial_batch_api():
@@ -198,6 +249,42 @@ def test_workspace_preserves_runtime_invariants_before_publish():
     assert "只在故障切换时使用" not in vendor_step
     assert "item.isDefault =" in adzone and "row.status === 1" in adzone
     assert "title=\"高级设置\"" in rebate and "status: 1" in rebate
+
+
+def test_vendor_step_runs_a_real_single_vendor_backend_test():
+    api = read_utf8("frontend/admin-vue3/src/api/cps/platformOnboarding.ts")
+    workspace = read_utf8("frontend/admin-vue3/src/views/cps/platformOnboarding/workspace.vue")
+    vendor_step = read_utf8(
+        "frontend/admin-vue3/src/views/cps/platformOnboarding/components/VendorStep.vue"
+    )
+
+    assert "/cps/platform-onboarding/test-vendor" in api
+    assert "testVendor:" in api
+    assert "PlatformOnboardingApi.testVendor" in workspace
+    assert "@test-vendor=\"runVendorTest\"" in workspace
+    assert "emit('test-vendor', row)" in vendor_step
+    assert "VENDOR_PREFLIGHT" not in vendor_step
+
+
+def test_vendor_editor_uses_selects_for_enumerated_vendor_fields():
+    source = read_utf8(
+        "frontend/admin-vue3/src/views/cps/platformOnboarding/components/VendorEditorDialog.vue"
+    )
+
+    assert 'v-model="form.vendorCode" filterable @change="applyDescriptor"' in source
+    assert 'v-model="form.vendorName" filterable @change="applyVendorName"' in source
+    assert source.count(':disabled="editing"') >= 2
+    assert 'v-model="form.vendorType"' in source
+    assert "VENDOR_CODE_OPTIONS" in source
+    assert "VENDOR_TYPE_OPTIONS" in source
+
+    active_descriptor = source[
+        source.index("const activeDescriptor") : source.index("const fields")
+    ]
+    assert active_descriptor.index("props.descriptors?.find") < active_descriptor.index(
+        "props.descriptor?.vendorCode"
+    )
+
 
 def test_unified_menu_replaces_four_visible_entries():
     all_sql = read_utf8("backend/sql/module/cps-all-in-one.sql")

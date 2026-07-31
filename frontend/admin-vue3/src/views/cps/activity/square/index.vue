@@ -39,12 +39,7 @@
           :class="{ active: queryParams.platformCode === item.platformCode }"
           @click="selectPlatform(item.platformCode)"
         >
-          <el-avatar
-            v-if="item.platformLogo"
-            :src="item.platformLogo"
-            :size="22"
-            shape="square"
-          />
+          <el-avatar v-if="item.platformLogo" :src="item.platformLogo" :size="22" shape="square" />
           <Icon v-else :icon="platformIcon(item.platformCode)" />
           <span>{{ item.platformName }}</span>
           <em v-if="item.activityCount">{{ item.activityCount }}</em>
@@ -59,11 +54,7 @@
           :options="billingSegmentOptions"
           @change="handleQuery"
         />
-        <el-segmented
-          v-model="queryParams.sortMode"
-          :options="sortOptions"
-          @change="handleQuery"
-        />
+        <el-segmented v-model="queryParams.sortMode" :options="sortOptions" @change="handleQuery" />
         <div class="filter-search">
           <el-input
             v-model="queryParams.keyword"
@@ -103,7 +94,9 @@
           <div class="card-cover" :class="`theme-${platformTheme(item.platformCode)}`">
             <el-image v-if="item.mainPic" :src="item.mainPic" fit="cover" lazy />
             <div v-else class="cover-fallback">
-              <div class="cover-platform">{{ item.platformName || platformLabel(item.platformCode) }}</div>
+              <div class="cover-platform">{{
+                item.platformName || platformLabel(item.platformCode)
+              }}</div>
               <div class="cover-title">{{ item.activityName }}</div>
             </div>
             <el-tag class="billing-badge" effect="plain">{{ item.billingType || 'CPS' }}</el-tag>
@@ -135,9 +128,7 @@
                 <el-button link type="primary" @click.stop="openPromotionDialog(item)">
                   推广
                 </el-button>
-                <el-button link type="danger" @click.stop="handleDelete(item.id)">
-                  删除
-                </el-button>
+                <el-button link type="danger" @click.stop="handleDelete(item.id)"> 删除 </el-button>
               </div>
             </div>
           </div>
@@ -246,13 +237,13 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="跳转地址">
-              <el-input v-model="formData.jumpUrl" placeholder="外部链接或内部落地页地址" />
+          <el-col v-if="formData.jumpType === 'url'" :span="24">
+            <el-form-item label="跳转地址" prop="jumpUrl">
+              <el-input v-model="formData.jumpUrl" placeholder="https://..." />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="搜索关键词">
+          <el-col v-if="formData.jumpType === 'search'" :span="24">
+            <el-form-item label="搜索关键词" prop="searchKeyword">
               <el-input v-model="formData.searchKeyword" placeholder="用于跳转商品广场搜索" />
             </el-form-item>
           </el-col>
@@ -326,20 +317,30 @@
           </el-select>
         </el-form-item>
         <el-form-item label="渠道标识">
-          <el-input v-model="promotionForm.channelTag" clearable placeholder="可选，如 wechat_group_a" />
+          <el-input
+            v-model="promotionForm.channelTag"
+            clearable
+            placeholder="可选，如 wechat_group_a"
+          />
         </el-form-item>
       </el-form>
 
       <el-alert
         v-if="promotionResult"
         class="mt-16px"
-        :type="promotionResult.linkStatus === 'SUCCESS' ? 'success' : 'warning'"
+        :type="
+          promotionResult.linkStatus === 'SUCCESS'
+            ? 'success'
+            : promotionResult.linkStatus === 'FAILED'
+              ? 'error'
+              : 'warning'
+        "
         :title="promotionResult.linkMessage || promotionResult.linkStatus"
         show-icon
         :closable="false"
       />
       <el-table
-        v-if="promotionResult?.linkStatus === 'SUCCESS'"
+        v-if="promotionResult && promotionResult.linkStatus !== 'FAILED'"
         :data="promotionRows"
         class="mt-16px"
         border
@@ -362,6 +363,12 @@
       </el-table>
       <template #footer>
         <el-button @click="promotionVisible = false">关闭</el-button>
+        <el-button
+          v-if="promotionResult?.linkType === 'INTERNAL_LANDING' && promotionResult.promotionUrl"
+          @click="handleOpenInternalLanding"
+        >
+          <Icon icon="ep:position" class="mr-5px" /> 打开站内落地页
+        </el-button>
         <el-button
           v-if="promotionResult?.promotionContent"
           @click="handleCopy(promotionResult.promotionContent)"
@@ -438,8 +445,7 @@ const adzoneOptions = ref<CpsAdzoneVO[]>([])
 const promotionForm = reactive<CpsRebateActivityPromotionReqVO>({
   activityId: undefined as unknown as number,
   adzoneId: undefined,
-  channelTag: '',
-  landingBaseUrl: ''
+  channelTag: ''
 })
 const sortOptions = [
   { label: '热门', value: 'hot' },
@@ -468,21 +474,57 @@ const legacyPlatformCodeMap: Record<string, string[]> = {
   local_life: ['8', '10', '12', '13', '99'],
   fliggy: ['16']
 }
-const normalizedPlatformCodeMap = Object.entries(legacyPlatformCodeMap).reduce<Record<string, string>>(
-  (map, [platformCode, legacyCodes]) => {
-    legacyCodes.forEach((legacyCode) => {
-      map[legacyCode] = platformCode
-    })
-    return map
-  },
-  {}
-)
+const normalizedPlatformCodeMap = Object.entries(legacyPlatformCodeMap).reduce<
+  Record<string, string>
+>((map, [platformCode, legacyCodes]) => {
+  legacyCodes.forEach((legacyCode) => {
+    map[legacyCode] = platformCode
+  })
+  return map
+}, {})
+const isSafePublicHttpUrl = (value?: string) => {
+  if (!value) return false
+  try {
+    const url = new URL(value)
+    const host = url.hostname.toLowerCase()
+    return (
+      ['http:', 'https:'].includes(url.protocol) &&
+      host !== 'localhost' &&
+      !host.endsWith('.localhost') &&
+      !host.startsWith('127.') &&
+      host !== '0.0.0.0' &&
+      host !== '::1'
+    )
+  } catch {
+    return false
+  }
+}
+const validateJumpUrl = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
+  if (formData.jumpType === 'url' && !isSafePublicHttpUrl(value)) {
+    callback(new Error('请输入有效的公网 HTTP(S) 活动地址'))
+    return
+  }
+  callback()
+}
+const validateSearchKeyword = (
+  _rule: unknown,
+  value: string,
+  callback: (error?: Error) => void
+) => {
+  if (formData.jumpType === 'search' && !value?.trim()) {
+    callback(new Error('请输入商品广场搜索关键词'))
+    return
+  }
+  callback()
+}
 const formRules = reactive<FormRules>({
   activityName: [{ required: true, message: '请输入活动名称', trigger: 'blur' }],
   activityType: [{ required: true, message: '请选择专题类型', trigger: 'change' }],
   platformCode: [{ required: true, message: '请输入平台编码', trigger: 'blur' }],
   billingType: [{ required: true, message: '请选择计费类型', trigger: 'change' }],
   jumpType: [{ required: true, message: '请选择跳转类型', trigger: 'change' }],
+  jumpUrl: [{ validator: validateJumpUrl, trigger: 'blur' }],
+  searchKeyword: [{ validator: validateSearchKeyword, trigger: 'blur' }],
   sort: [{ required: true, message: '请输入排序', trigger: 'change' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 })
@@ -503,11 +545,12 @@ const billingSegmentOptions = computed(() => {
 })
 
 const pageCount = computed(() => Math.max(1, Math.ceil(centerData.total / queryParams.pageSize)))
-const visiblePlatformTabs = computed(() =>
-  normalizePlatformTabs(centerData.tabs || [])
-)
+const visiblePlatformTabs = computed(() => normalizePlatformTabs(centerData.tabs || []))
 const promotionRows = computed(() => [
-  { label: '活动链接', value: promotionResult.value?.promotionUrl || '' },
+  {
+    label: promotionResult.value?.linkType === 'EXTERNAL_PROMOTION' ? '活动链接' : '站内落地页',
+    value: promotionResult.value?.promotionUrl || ''
+  },
   { label: '淘口令', value: promotionResult.value?.tpwd || '' },
   { label: '长淘口令', value: promotionResult.value?.longTpwd || '' },
   { label: '推广位', value: promotionResult.value?.adzoneId || '' },
@@ -521,7 +564,7 @@ const getCenter = async () => {
     let data = await CpsRebateActivityApi.getActivityCenter({ ...queryParams })
     if (shouldFallbackLegacyPlatform(data)) {
       const legacyData = await getLegacyPlatformCenter()
-      if ((legacyData?.total || 0) > 0 || (legacyData?.cards || []).length > 0) {
+      if (legacyData && ((legacyData.total || 0) > 0 || (legacyData.cards || []).length > 0)) {
         data = {
           ...data,
           cards: legacyData.cards || [],
@@ -670,8 +713,7 @@ const openPromotionDialog = async (item: CpsRebateActivityCenterCardVO) => {
   Object.assign(promotionForm, {
     activityId: item.id,
     adzoneId: undefined,
-    channelTag: '',
-    landingBaseUrl: window.location.origin
+    channelTag: ''
   })
   promotionVisible.value = true
   await loadAdzoneOptions(item.platformCode)
@@ -684,22 +726,35 @@ const handleGeneratePromotion = async () => {
     try {
       promotionResult.value = await CpsRebateActivityApi.generatePromotion({ ...promotionForm })
     } catch (error) {
-      if (!isPromotionApiMissing(error)) {
-        throw error
+      promotionResult.value = {
+        linkStatus: 'FAILED',
+        linkType: 'NONE',
+        linkMessage:
+          error instanceof Error ? error.message : '活动转链失败，请检查供应商配置后重试',
+        activityId: promotionForm.activityId,
+        activityName: selectedActivity.value?.activityName || '',
+        platformCode: selectedActivity.value?.platformCode || ''
       }
-      promotionResult.value = buildLocalPromotionResult()
     }
     if (promotionResult.value?.linkStatus === 'SUCCESS') {
       message.success('推广内容已生成')
+    } else if (promotionResult.value?.linkStatus === 'INTERNAL_FALLBACK') {
+      message.warning('已生成站内落地页，该地址不是联盟推广链接')
     }
   } finally {
     promotionLoading.value = false
   }
 }
 
-const isPromotionApiMissing = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error || '')
-  return message === 'error' || message.includes('请求地址不存在') || message.includes('404')
+const handleOpenInternalLanding = () => {
+  if (
+    promotionResult.value?.linkType !== 'INTERNAL_LANDING' ||
+    !promotionResult.value.promotionUrl
+  ) {
+    return
+  }
+  promotionVisible.value = false
+  router.push(promotionResult.value.promotionUrl)
 }
 
 const shouldFallbackLegacyPlatform = (data: CpsRebateActivityCenterRespVO) => {
@@ -727,52 +782,6 @@ const getLegacyPlatformCenter = async () => {
     }
   }
   return undefined
-}
-
-const buildLocalPromotionResult = (): CpsRebateActivityPromotionRespVO => {
-  const activity = selectedActivity.value
-  const promotionUrl = buildPromotionUrl(activity)
-  return {
-    linkStatus: 'SUCCESS',
-    linkMessage: '活动推广内容已生成',
-    activityId: promotionForm.activityId,
-    activityName: activity?.activityName || '',
-    platformCode: activity?.platformCode || '',
-    adzoneId: promotionForm.adzoneId || undefined,
-    channelTag: promotionForm.channelTag || undefined,
-    promotionUrl,
-    tpwd: undefined,
-    longTpwd: undefined,
-    promotionContent: buildPromotionContent(activity, promotionUrl)
-  }
-}
-
-const buildPromotionUrl = (activity?: CpsRebateActivityCenterCardVO) => {
-  if (activity?.jumpType === 'url' && activity.jumpUrl) {
-    return activity.jumpUrl
-      .replace('{adzoneId}', encodeURIComponent(promotionForm.adzoneId || ''))
-      .replace('{channelTag}', encodeURIComponent(promotionForm.channelTag || ''))
-  }
-  const params = new URLSearchParams({
-    platformCode: activity?.platformCode || '',
-    keyword: activity?.searchKeyword || activity?.activityName || '',
-    activityTag: activity?.tagText || activity?.externalActivityId || activity?.activityName || ''
-  })
-  return `${window.location.origin}/cps-ops/goods/square?${params.toString()}`
-}
-
-const buildPromotionContent = (activity: CpsRebateActivityCenterCardVO | undefined, promotionUrl: string) => {
-  const lines = [
-    activity?.activityName,
-    activity?.shortDesc,
-    activity?.rebateDesc,
-    activity?.jumpType === 'search' && activity.searchKeyword ? `搜索词：${activity.searchKeyword}` : undefined,
-    `活动时间：${activity ? formatWindow(activity) : '长期'}`,
-    promotionUrl,
-    promotionForm.adzoneId ? `推广位：${promotionForm.adzoneId}` : undefined,
-    promotionForm.channelTag ? `渠道：${promotionForm.channelTag}` : undefined
-  ]
-  return lines.filter(Boolean).join('\n')
 }
 
 const handleCardClick = (item: CpsRebateActivityCenterCardVO) => {
@@ -910,10 +919,16 @@ onMounted(getCenter)
   justify-content: space-between;
   padding: 34px 48px;
   color: #fff;
-  background:
-    linear-gradient(115deg, rgba(37, 99, 235, 0.96), rgba(30, 64, 175, 0.88)),
-    linear-gradient(45deg, transparent 0 48%, rgba(255, 255, 255, 0.12) 49% 51%, transparent 52% 100%);
-  background-size: auto, 42px 42px;
+  background: linear-gradient(115deg, rgba(37, 99, 235, 0.96), rgba(30, 64, 175, 0.88)),
+    linear-gradient(
+      45deg,
+      transparent 0 48%,
+      rgba(255, 255, 255, 0.12) 49% 51%,
+      transparent 52% 100%
+    );
+  background-size:
+    auto,
+    42px 42px;
 }
 
 .hero-title {
@@ -1043,7 +1058,10 @@ onMounted(getCenter)
   border-radius: 8px;
   background: #fff;
   cursor: pointer;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
 .activity-card:hover {

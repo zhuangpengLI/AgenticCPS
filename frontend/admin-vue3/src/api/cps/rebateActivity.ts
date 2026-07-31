@@ -149,11 +149,11 @@ export interface CpsRebateActivityPromotionReqVO {
   activityId: number
   adzoneId?: string
   channelTag?: string
-  landingBaseUrl?: string
 }
 
 export interface CpsRebateActivityPromotionRespVO {
-  linkStatus: string
+  linkStatus: 'SUCCESS' | 'INTERNAL_FALLBACK' | 'FAILED'
+  linkType: 'EXTERNAL_PROMOTION' | 'INTERNAL_LANDING' | 'NONE'
   linkMessage?: string
   activityId: number
   activityName: string
