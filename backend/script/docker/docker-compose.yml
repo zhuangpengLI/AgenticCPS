@@ -7,71 +7,80 @@ services:
     restart: unless-stopped
     tty: true
     ports:
-      - "3306:3306"
+      - "${MYSQL_HOST_PORT:-3306}:3306"
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-ruoyi-vue-pro}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Shanghai
     volumes:
       - mysql:/var/lib/mysql/
-      - ../../sql/mysql/ruoyi-vue-pro.sql:/docker-entrypoint-initdb.d/ruoyi-vue-pro.sql:ro
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
 
   redis:
     container_name: qiji-redis
     image: redis:6-alpine
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
     volumes:
       - redis:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a $${REDIS_PASSWORD} ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   server:
     container_name: qiji-server
     build:
-      context: ../../qiji-server/
-    image: qiji-server
+      context: ./backend
+    image: qiji-server:local
     restart: unless-stopped
     ports:
-      - "48080:48080"
+      - "${SERVER_HOST_PORT:-48080}:48080"
     environment:
-      # https://github.com/polovyivan/docker-pass-configs-to-container
-      SPRING_PROFILES_ACTIVE: local
-      JAVA_OPTS:
-        ${JAVA_OPTS:-
-          -Xms512m
-          -Xmx512m
-          -Djava.security.egd=file:/dev/./urandom
-        }
-      ARGS:
-        --spring.datasource.dynamic.datasource.master.url=${MASTER_DATASOURCE_URL:-jdbc:mysql://qiji-mysql:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true}
-        --spring.datasource.dynamic.datasource.master.username=${MASTER_DATASOURCE_USERNAME:-root}
-        --spring.datasource.dynamic.datasource.master.password=${MASTER_DATASOURCE_PASSWORD:-123456}
-        --spring.datasource.dynamic.datasource.slave.url=${SLAVE_DATASOURCE_URL:-jdbc:mysql://qiji-mysql:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true}
-        --spring.datasource.dynamic.datasource.slave.username=${SLAVE_DATASOURCE_USERNAME:-root}
-        --spring.datasource.dynamic.datasource.slave.password=${SLAVE_DATASOURCE_PASSWORD:-123456}
-        --spring.data.redis.host=${REDIS_HOST:-qiji-redis}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      JAVA_OPTS: ${JAVA_OPTS:--Xms512m -Xmx512m -Djava.security.egd=file:/dev/./urandom}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MASTER_DATASOURCE_URL: ${MASTER_DATASOURCE_URL}
+      MASTER_DATASOURCE_USERNAME: ${MYSQL_USER}
+      MASTER_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SLAVE_DATASOURCE_URL: ${SLAVE_DATASOURCE_URL:-${MASTER_DATASOURCE_URL}}
+      SLAVE_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SLAVE_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_HOST: qiji-redis
+      REDIS_PORT: 6379
+      REDIS_DATABASE: ${REDIS_DATABASE:-0}
+      REDIS_USERNAME: ${REDIS_USERNAME:-default}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      ARGS: ${JAVA_ARGS:-}
+    volumes:
+      - server-logs:/opt/qiji-server/logs
     depends_on:
-      - mysql
-      - redis
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   admin:
     container_name: qiji-admin
     build:
-      context: ../../..
-      dockerfile: backend/script/docker/qiji-ui-admin/Dockerfile
-      args:
-        VITE_APP_TITLE: ${VITE_APP_TITLE:-AgenticCPS管理系统}
-        VITE_BASE_URL: ${VITE_BASE_URL:-}
-        VITE_API_URL: ${VITE_API_URL:-/admin-api}
-        VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
-        VITE_OUT_DIR: ${VITE_OUT_DIR:-dist-prod}
-        VITE_APP_TENANT_ENABLE: ${VITE_APP_TENANT_ENABLE:-true}
-        VITE_APP_CAPTCHA_ENABLE: ${VITE_APP_CAPTCHA_ENABLE:-true}
-        VITE_APP_DOCALERT_ENABLE: ${VITE_APP_DOCALERT_ENABLE:-true}
-        VITE_APP_BAIDU_CODE: ${VITE_APP_BAIDU_CODE:-}
-    image: qiji-admin
+      context: ./frontend
+    image: qiji-admin:local
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "${ADMIN_HOST_PORT:-8080}:80"
     depends_on:
       - server
 
@@ -79,4 +88,6 @@ volumes:
   mysql:
     driver: local
   redis:
+    driver: local
+  server-logs:
     driver: local

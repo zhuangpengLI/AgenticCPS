@@ -1,0 +1,142 @@
+server:
+  port: ${SERVER_PORT:48080}
+  shutdown: graceful
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.vectorstore.qdrant.autoconfigure.QdrantVectorStoreAutoConfiguration
+      - org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusVectorStoreAutoConfiguration
+      - org.springframework.ai.vectorstore.redis.autoconfigure.RedisVectorStoreAutoConfiguration
+  datasource:
+    druid:
+      web-stat-filter:
+        enabled: false
+      stat-view-servlet:
+        enabled: false
+      filter:
+        stat:
+          enabled: true
+          log-slow-sql: true
+          slow-sql-millis: 1000
+          merge-sql: true
+        wall:
+          config:
+            multi-statement-allow: true
+    dynamic:
+      druid:
+        initial-size: 5
+        min-idle: 5
+        max-active: 20
+        max-wait: 60000
+        time-between-eviction-runs-millis: 60000
+        min-evictable-idle-time-millis: 600000
+        max-evictable-idle-time-millis: 1800000
+        validation-query: SELECT 1 FROM DUAL
+        test-while-idle: true
+        test-on-borrow: false
+        test-on-return: false
+        pool-prepared-statements: true
+        max-pool-prepared-statement-per-connection-size: 20
+      primary: master
+      datasource:
+        master:
+          name: ${MYSQL_DATABASE}
+          url: ${MASTER_DATASOURCE_URL}
+          username: ${MASTER_DATASOURCE_USERNAME}
+          password: ${MASTER_DATASOURCE_PASSWORD}
+        slave:
+          lazy: true
+          name: ${MYSQL_DATABASE}
+          url: ${SLAVE_DATASOURCE_URL:${MASTER_DATASOURCE_URL}}
+          username: ${SLAVE_DATASOURCE_USERNAME:${MASTER_DATASOURCE_USERNAME}}
+          password: ${SLAVE_DATASOURCE_PASSWORD:${MASTER_DATASOURCE_PASSWORD}}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
+      username: ${REDIS_USERNAME:default}
+      password: ${REDIS_PASSWORD}
+      timeout: 5s
+  quartz:
+    auto-startup: true
+    scheduler-name: schedulerName
+    job-store-type: jdbc
+    wait-for-jobs-to-complete-on-shutdown: true
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: schedulerName
+            instanceId: AUTO
+          jobStore:
+            class: org.springframework.scheduling.quartz.LocalDataSourceJobStore
+            isClustered: true
+            clusterCheckinInterval: 15000
+            misfireThreshold: 60000
+          threadPool:
+            threadCount: ${QUARTZ_THREAD_COUNT:10}
+            threadPriority: 5
+            class: org.quartz.simpl.SimpleThreadPool
+    jdbc:
+      initialize-schema: NEVER
+  boot:
+    admin:
+      context-path: /admin
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
+
+knife4j:
+  enable: ${SWAGGER_ENABLED:false}
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  file:
+    name: ${LOG_FILE:/opt/qiji-server/logs/qiji-server.log}
+
+qiji:
+  captcha:
+    enable: ${CAPTCHA_ENABLE:true}
+  security:
+    mock-enable: false
+  access-log:
+    enable: true
+  demo: false
+  ai:
+    gemini:
+      enable: false
+    doubao:
+      enable: false
+    hunyuan:
+      enable: false
+    siliconflow:
+      enable: false
+    xinghuo:
+      enable: false
+    baichuan:
+      enable: false
+    midjourney:
+      enable: false
+    suno:
+      enable: false
+    web-search:
+      enable: false
+
+debug: false

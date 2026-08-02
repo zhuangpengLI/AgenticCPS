@@ -55,6 +55,9 @@
 
 - `backend/script/docker/docker-compose.yml`
   - 启动 MySQL 8、Redis 6、`qiji-server`、`qiji-admin`。
+  - `build-package.sh` / `build-package.ps1` 将 JAR、前端页面和初始化 SQL 归集到该目录，整目录可复制部署。
+  - 部署服务器在目录内执行 `bash deploy.sh` 一键校验、构建并启动。
+  - Java 容器使用 `application-prod.yaml`；MySQL 应用账号和 Redis 鉴权由 `docker.env` 同时注入基础服务与后端，避免凭据漂移。
   - 后端端口映射：`48080:48080`。
   - 管理前端端口映射：`8080:80`。
 
@@ -555,12 +558,18 @@ pnpm build:prod
 
 ### Docker
 
-在 `backend/script/docker` 执行：
+在源码机器的 `backend/script/docker` 生成部署包：
 
 ```bash
-docker-compose up -d
-docker-compose logs -f server
-docker-compose down
+bash build-package.sh
+```
+
+将整个目录复制到部署服务器后执行：
+
+```bash
+bash deploy.sh
+bash deploy.sh logs server
+bash deploy.sh down
 ```
 
 ## 6. 哪些地方看起来风险高

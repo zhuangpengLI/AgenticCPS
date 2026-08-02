@@ -497,17 +497,22 @@ mvn clean compile
 ```bash
 cd backend/script/docker
 
-# 拉起所有服务（MySQL 8, Redis 6, 后端服务, 前端面板）
-docker-compose up -d
+# 源码机器：构建并归集 JAR、前端页面和初始化 SQL
+bash build-package.sh
 
-# 查看服务日志
-docker-compose logs -f server
+# 将整个 docker 目录复制到部署服务器后，一键启动
+bash deploy.sh
 
-# 停止所有服务
-docker-compose down
+# 查看状态、日志或停止服务
+bash deploy.sh status
+bash deploy.sh logs server
+bash deploy.sh down
 ```
 
 端口映射：后端 48080 → 48080，MySQL 3306 → 3306，Redis 6379 → 6379，前端 80 → 8080
+完整说明见 `backend/script/docker/Docker-HOWTO.md`。
+
+Docker 后端使用 `application-prod.yaml`，MySQL 应用账号和 Redis 密码均从 `docker.env` 统一传入容器与 Java 配置；首次生产部署前请修改其中所有 `ChangeMe_` 默认密码。
 
 ### 前端启动
 
