@@ -58,7 +58,8 @@ public class CpsGoodsRebateQueryServiceImpl implements CpsGoodsRebateQueryServic
                 parseResult.getGoodsSign(),
                 reqVO.getMemberId(),
                 usedAdzoneId,
-                reqVO.getVendorCode());
+                reqVO.getVendorCode(),
+                reqVO.getOriginalContent());
         if (linkResult == null) {
             return buildFailure("LINK_FAILED", "商品不可转链或供应商暂不可用，请稍后重试");
         }

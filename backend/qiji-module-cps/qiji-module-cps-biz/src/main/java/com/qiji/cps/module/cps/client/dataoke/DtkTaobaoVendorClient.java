@@ -207,6 +207,70 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
     }
 
     @Override
+    public CpsPromotionLinkResult generatePromotionLink(CpsPromotionLinkRequest request, CpsVendorConfig config) {
+        if (!hasText(request.getOriginalContent())) {
+            return super.generatePromotionLink(request, config);
+        }
+        try {
+            Map<String, Object> params = buildUniversalTransferParams(request);
+            JsonNode response = executeRequest(PARSE_CONTENT_PATH, params, config);
+            if (response == null || !isSuccessResponse(response)) {
+                // 大淘客文档注明万能解析偶发失败时可重试一次；仅做一次有界重试。
+                response = executeRequest(PARSE_CONTENT_PATH, params, config);
+            }
+            if (response == null || !isSuccessResponse(response)) {
+                log.warn("[dataoke:taobao] 万能转链失败: upstreamStatus=REJECTED");
+                return null;
+            }
+            CpsPromotionLinkResult result = parseUniversalPromotionLinkResponse(response);
+            if (!hasPromotionMaterial(result)) {
+                log.warn("[dataoke:taobao] 万能转链未返回推广素材: goodsId={}", request.getGoodsId());
+                return null;
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("[dataoke:taobao] 万能转链异常: type={}", e.getClass().getSimpleName());
+            return null;
+        }
+    }
+
+    private Map<String, Object> buildUniversalTransferParams(CpsPromotionLinkRequest request) {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("version", "v1.0.0");
+        params.put("content", request.getOriginalContent());
+        if (hasText(request.getAdzoneId())) {
+            params.put("pid", request.getAdzoneId());
+        }
+        if (hasText(request.getChannelId())) {
+            params.put("channelId", request.getChannelId());
+        }
+        if (hasText(request.getSpecialId())) {
+            params.put("specialId", request.getSpecialId());
+        }
+        return params;
+    }
+
+    private CpsPromotionLinkResult parseUniversalPromotionLinkResponse(JsonNode response) {
+        JsonNode data = response.path("data");
+        return CpsPromotionLinkResult.builder()
+                .shortUrl(firstText(data, "shortUrl", "couponShortUrl", "cpsShortUrl", "cpsSuperedShortUrl"))
+                .longUrl(firstText(data, "cpsLongUrl", "couponLongUrl", "cpsSuperedLongUrl", "originUrl"))
+                .tpwd(firstText(data, "shortTpwd", "cpsFullTpwd", "cpsShortTpwd",
+                        "couponShortTpwd", "couponLongTpwd"))
+                .commissionRate(parseDecimal(data, "commissionRate", "maxCommissionRate"))
+                .commissionAmount(parseDecimal(data, "commissionAmount"))
+                .actualPrice(parseDecimal(data, "actualPrice", "price"))
+                .couponInfo(firstText(data, "couponInfo"))
+                .rawPayload(response.toString())
+                .build();
+    }
+
+    private boolean hasPromotionMaterial(CpsPromotionLinkResult result) {
+        return result != null && (hasText(result.getShortUrl()) || hasText(result.getLongUrl())
+                || hasText(result.getTpwd()));
+    }
+
+    @Override
     protected CpsPromotionLinkResult parsePromotionLinkResponse(JsonNode response) {
         JsonNode data = response.path("data");
         return CpsPromotionLinkResult.builder()

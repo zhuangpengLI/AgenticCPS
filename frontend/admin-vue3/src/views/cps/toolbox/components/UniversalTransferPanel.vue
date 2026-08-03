@@ -182,13 +182,17 @@
       </div>
     </el-form>
 
-    <section v-if="successRows.length" class="transfer-detail">
+    <section v-if="visibleResultRows.length" class="transfer-detail">
       <div class="detail-title-row">
         <div>
           <div class="detail-title">转链明细</div>
-          <div class="detail-subtitle">
-            转链成功 {{ successRows.length }} 条；成功商品已加入转链记录。
+          <div v-if="successRows.length" class="detail-subtitle">
+            转链成功 {{ successRows.length }} 条<span v-if="failureRows.length">，转链失败 {{ failureRows.length }} 条</span>；成功商品已去重并加入转链记录。
           </div>
+          <div v-else-if="allRowsParseFailed" class="detail-subtitle">
+            全部内容均解析失败；请查看原文和失败原因。
+          </div>
+          <div v-else class="detail-subtitle">转链失败 {{ failureRows.length }} 条；请查看失败原因。</div>
         </div>
         <el-button type="primary" plain :disabled="successRows.length === 0" @click="copyAllSuccess">
           <Icon icon="ep:copy-document" class="mr-5px" /> 一键复制
@@ -205,7 +209,7 @@
       </div>
 
       <div
-        v-for="row in successRows"
+        v-for="row in visibleResultRows"
         :key="`${row.inputIndex}:${row.originalContent}`"
         class="transfer-detail-row"
       >
@@ -287,6 +291,7 @@ import {
   CpsRebateToolboxApi,
   type CpsGoodsBatchTransferItemVO
 } from '@/api/cps/rebateToolbox'
+import { selectVisibleTransferRows } from './transferResultRows.mjs'
 import { getUserPage, type UserVO } from '@/api/member/user/index'
 
 interface TransferDraft {
@@ -350,7 +355,12 @@ const contentLines = computed(() =>
 )
 const enabledVendorOptions = computed(() => vendorOptions.value.filter((item) => item.status === 1))
 const enabledAdzoneOptions = computed(() => adzoneOptions.value.filter((item) => item.status === 1))
-const successRows = computed(() => resultRows.value.filter((item) => item.status === 'SUCCESS'))
+const visibleResultRows = computed(() => selectVisibleTransferRows(resultRows.value))
+const successRows = computed(() => visibleResultRows.value.filter((item) => item.status === 'SUCCESS'))
+const failureRows = computed(() => visibleResultRows.value.filter((item) => item.status !== 'SUCCESS'))
+const allRowsParseFailed = computed(
+  () => resultRows.value.length > 0 && resultRows.value.every((item) => item.status === 'PARSE_FAILED')
+)
 const resultOutput = computed(() => successRows.value.map((item) => buildOutputText(item)).filter(Boolean).join('\n\n'))
 const selectedVendor = computed(() =>
   enabledVendorOptions.value.find((item) => item.vendorCode === formData.vendorCode)
@@ -422,11 +432,15 @@ const handleSubmit = async () => {
       originalContents: contentLines.value
     })
     resultRows.value = data.items || []
-    const firstSuccess = resultRows.value.find((item) => item.status === 'SUCCESS')
+    const firstSuccess = successRows.value[0]
     if (firstSuccess) {
       emit('promotion', buildOutputText(firstSuccess))
+      message.success(`转链完成：成功 ${successRows.value.length} 条`)
+    } else if (allRowsParseFailed.value) {
+      message.warning(`解析失败：${failureRows.value.length} 条内容均未识别到商品`)
+    } else {
+      message.warning(`转链失败：${failureRows.value.length} 条`)
     }
-    message.success(`转链完成：成功 ${data.successCount} 条，失败 ${data.failureCount} 条`)
   } finally {
     loading.value = false
   }

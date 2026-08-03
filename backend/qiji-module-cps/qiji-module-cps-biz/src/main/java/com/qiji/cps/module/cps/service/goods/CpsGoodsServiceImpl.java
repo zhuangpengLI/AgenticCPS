@@ -116,19 +116,28 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
     @Override
     public CpsPromotionLinkResult generatePromotionLink(String platformCode, String goodsId,
                                                          String goodsSign, Long memberId, String adzoneId) {
-        return generatePromotionLink(platformCode, goodsId, goodsSign, memberId, adzoneId, null);
+        return generatePromotionLink(platformCode, goodsId, goodsSign, memberId, adzoneId, null, null);
     }
 
     @Override
     public CpsPromotionLinkResult generatePromotionLink(String platformCode, String goodsId,
                                                          String goodsSign, Long memberId, String adzoneId,
                                                          String vendorCode) {
+        return generatePromotionLink(platformCode, goodsId, goodsSign, memberId, adzoneId, vendorCode, null);
+    }
+
+    @Override
+    public CpsPromotionLinkResult generatePromotionLink(String platformCode, String goodsId,
+                                                         String goodsSign, Long memberId, String adzoneId,
+                                                         String vendorCode, String originalContent) {
         return platformClientFactory.withVendorCode(vendorCode,
-                () -> doGeneratePromotionLink(platformCode, goodsId, goodsSign, memberId, adzoneId));
+                () -> doGeneratePromotionLink(platformCode, goodsId, goodsSign, memberId, adzoneId,
+                        originalContent));
     }
 
     private CpsPromotionLinkResult doGeneratePromotionLink(String platformCode, String goodsId,
-                                                            String goodsSign, Long memberId, String adzoneId) {
+                                                            String goodsSign, Long memberId, String adzoneId,
+                                                            String originalContent) {
         // 校验平台
         CpsPlatformDO platform = validatePlatform(platformCode);
         CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
@@ -141,6 +150,7 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
         linkRequest.setGoodsId(goodsId);
         linkRequest.setGoodsSign(goodsSign);
         linkRequest.setAdzoneId(adzoneContext.adzoneId());
+        linkRequest.setOriginalContent(originalContent);
         // 将 memberId 作为外部用户标识，用于订单归因
         if (memberId != null) {
             String attributionId = String.valueOf(memberId);

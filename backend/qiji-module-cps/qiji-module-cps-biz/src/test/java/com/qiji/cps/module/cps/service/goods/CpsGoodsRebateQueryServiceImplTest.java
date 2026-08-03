@@ -57,7 +57,8 @@ class CpsGoodsRebateQueryServiceImplTest {
         reqVO.setMemberId(100L);
 
         when(goodsService.resolvePromotionAdzoneId("jd", 100L, null)).thenReturn("jd-default-pid");
-        when(goodsService.generatePromotionLink("jd", "100012043978", null, 100L, "jd-default-pid", null))
+        when(goodsService.generatePromotionLink("jd", "100012043978", null, 100L, "jd-default-pid", null,
+                "https://item.jd.com/100012043978.html"))
                 .thenReturn(CpsPromotionLinkResult.builder()
                         .shortUrl("https://u.jd.com/short")
                         .longUrl("https://union.jd.com/long")
@@ -85,7 +86,8 @@ class CpsGoodsRebateQueryServiceImplTest {
         assertEquals("dataoke", response.getRebate().getUsedVendorCode());
         assertEquals("https://u.jd.com/short", response.getLinks().getShortUrl());
 
-        verify(goodsService).generatePromotionLink("jd", "100012043978", null, 100L, "jd-default-pid", null);
+        verify(goodsService).generatePromotionLink("jd", "100012043978", null, 100L, "jd-default-pid", null,
+                "https://item.jd.com/100012043978.html");
         ArgumentCaptor<CpsTransferRecordDO> recordCaptor = ArgumentCaptor.forClass(CpsTransferRecordDO.class);
         verify(transferRecordMapper).insert(recordCaptor.capture());
         CpsTransferRecordDO record = recordCaptor.getValue();
@@ -109,7 +111,8 @@ class CpsGoodsRebateQueryServiceImplTest {
         reqVO.setAdzoneId("mm_1_2_3");
 
         when(goodsService.resolvePromotionAdzoneId("taobao", 100L, "mm_1_2_3")).thenReturn("mm_1_2_3");
-        when(goodsService.generatePromotionLink("taobao", "123456", null, 100L, "mm_1_2_3", "haodanku"))
+        when(goodsService.generatePromotionLink("taobao", "123456", null, 100L, "mm_1_2_3", "haodanku",
+                "https://item.taobao.com/item.htm?id=123456"))
                 .thenReturn(CpsPromotionLinkResult.builder()
                         .shortUrl("https://cps.example/s")
                         .commissionAmount(new BigDecimal("3.20"))
@@ -123,7 +126,8 @@ class CpsGoodsRebateQueryServiceImplTest {
         assertEquals("mm_1_2_3", response.getRebate().getUsedAdzoneId());
         assertEquals("haodanku", response.getRebate().getUsedVendorCode());
         verify(platformClientFactory).withVendorCode(eq("haodanku"), any());
-        verify(goodsService).generatePromotionLink("taobao", "123456", null, 100L, "mm_1_2_3", "haodanku");
+        verify(goodsService).generatePromotionLink("taobao", "123456", null, 100L, "mm_1_2_3", "haodanku",
+                "https://item.taobao.com/item.htm?id=123456");
     }
 
     @Test
@@ -143,7 +147,8 @@ class CpsGoodsRebateQueryServiceImplTest {
                 .title("平台解析商品")
                 .build());
         when(goodsService.resolvePromotionAdzoneId("taobao", 100L, "mm_1_2_3")).thenReturn("mm_1_2_3");
-        when(goodsService.generatePromotionLink("taobao", "123456", null, 100L, "mm_1_2_3", null))
+        when(goodsService.generatePromotionLink("taobao", "123456", null, 100L, "mm_1_2_3", null,
+                "￥abc123￥复制打开淘宝"))
                 .thenReturn(CpsPromotionLinkResult.builder()
                         .tpwd("￥newcmd￥")
                         .commissionAmount(new BigDecimal("3.20"))
@@ -157,6 +162,40 @@ class CpsGoodsRebateQueryServiceImplTest {
         verify(platformClient).parseContent(argThat(request ->
                 "taobao".equals(request.getPlatformCode())
                         && "￥abc123￥复制打开淘宝".equals(request.getOriginalContent())));
+    }
+
+    @Test
+    @DisplayName("queryRebate - 淘宝短链由平台解析后应保留完整原文执行万能转链")
+    void queryRebate_preservesOriginalContentForTaobaoUniversalTransfer() {
+        String originalContent = "https://e.tb.cn/h.84VUo3aSGRvlgaM?tk=9aINgxwNAdO HU293 「活力28衣物柔顺剂官方旗舰店正品柔软防静电持久留香护理衣物家用」";
+        CpsGoodsRebateQueryReqVO reqVO = new CpsGoodsRebateQueryReqVO();
+        reqVO.setPlatformCode("taobao");
+        reqVO.setOriginalContent(originalContent);
+        reqVO.setMemberId(285L);
+        reqVO.setAdzoneId("mm_4480323_46012675_116291900443");
+
+        when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);
+        when(platformClient.parseContent(any())).thenReturn(CpsContentParseResult.builder()
+                .supported(true)
+                .goodsId("839586501738")
+                .itemLink("https://item.taobao.com/item.htm?id=839586501738")
+                .title("活力28衣物柔顺剂")
+                .build());
+        when(goodsService.resolvePromotionAdzoneId("taobao", 285L, "mm_4480323_46012675_116291900443"))
+                .thenReturn("mm_4480323_46012675_116291900443");
+        when(goodsService.generatePromotionLink("taobao", "839586501738", null, 285L,
+                "mm_4480323_46012675_116291900443", null, originalContent))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .shortUrl("https://s.click.taobao.com/short")
+                        .tpwd("9￥ newTpwd￥")
+                        .build());
+
+        var response = service.queryRebate(reqVO);
+
+        assertEquals("SUCCESS", response.getParseStatus());
+        assertEquals("https://s.click.taobao.com/short", response.getLinks().getShortUrl());
+        verify(goodsService).generatePromotionLink("taobao", "839586501738", null, 285L,
+                "mm_4480323_46012675_116291900443", null, originalContent);
     }
 
     @Test
@@ -178,6 +217,7 @@ class CpsGoodsRebateQueryServiceImplTest {
         assertNull(response.getLinks());
         verify(goodsService, never()).generatePromotionLink(anyString(), any(), any(), any(), any());
         verify(goodsService, never()).generatePromotionLink(anyString(), any(), any(), any(), any(), any());
+        verify(goodsService, never()).generatePromotionLink(anyString(), any(), any(), any(), any(), any(), any());
         verify(transferRecordMapper, never()).insert(org.mockito.ArgumentMatchers.<CpsTransferRecordDO>any());
     }
 }

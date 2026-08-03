@@ -150,6 +150,22 @@ class CpsGoodsServiceImplTest {
     }
 
     @Test
+    @DisplayName("generatePromotionLink - 万能转链原文应透传给供应商客户端")
+    void generatePromotionLink_passesOriginalContentToVendorClient() {
+        mockEnabledPlatform("taobao", "platform-default-pid");
+        when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);
+        when(platformClient.generatePromotionLink(any())).thenReturn(CpsPromotionLinkResult.builder().build());
+        String originalContent = "https://e.tb.cn/h.84VUo3aSGRvlgaM?tk=9aINgxwNAdO HU293 「活力28衣物柔顺剂官方旗舰店正品柔软防静电持久留香护理衣物家用」";
+
+        service.generatePromotionLink("taobao", "839586501738", null, 285L,
+                "mm_4480323_46012675_116291900443", "dataoke", originalContent);
+
+        ArgumentCaptor<CpsPromotionLinkRequest> captor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
+        verify(platformClient).generatePromotionLink(captor.capture());
+        assertEquals(originalContent, captor.getValue().getOriginalContent());
+    }
+
+    @Test
     @DisplayName("generatePromotionLink - 会员ID同时写入 externalId 和 channelId 用于各平台订单归因")
     void generatePromotionLink_setsExternalIdAndChannelIdForAttribution() {
         mockEnabledPlatform("jd", "platform-default-pid");

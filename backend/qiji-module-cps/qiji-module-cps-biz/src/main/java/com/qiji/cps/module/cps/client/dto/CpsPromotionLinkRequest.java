@@ -55,4 +55,11 @@ public class CpsPromotionLinkRequest {
      */
     private String itemLink;
 
+    /**
+     * 用户提交的完整原始内容（链接、淘口令及分享文案）。
+     *
+     * <p>万能转链供应商可直接消费原文，避免先降级为数字商品 ID 后触发平台限制。</p>
+     */
+    private String originalContent;
+
 }

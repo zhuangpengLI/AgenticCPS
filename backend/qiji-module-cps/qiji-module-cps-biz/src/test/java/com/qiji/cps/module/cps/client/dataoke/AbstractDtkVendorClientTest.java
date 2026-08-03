@@ -358,6 +358,61 @@ class AbstractDtkVendorClientTest {
     }
 
     @Test
+    @DisplayName("淘宝万能转链应携带原文和 PID 调用 parse-content 并直接映射推广素材")
+    void testTaobaoPromotionLinkUsesParseContentForOriginalContent() throws Exception {
+        class CapturingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {
+            private String requestedPath;
+            private Map<String, Object> requestedParams;
+
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                this.requestedPath = path;
+                this.requestedParams = params;
+                try {
+                    return new ObjectMapper().readTree("""
+                            {
+                              "code": 0,
+                              "msg": "成功",
+                              "data": {
+                                "goodsId": "839586501738",
+                                "shortUrl": "https://s.click.taobao.com/short",
+                                "cpsLongUrl": "https://s.click.taobao.com/long",
+                                "shortTpwd": "9￥ newTpwd￥",
+                                "commissionRate": 2.25,
+                                "actualPrice": 9.9
+                              }
+                            }
+                            """);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        String originalContent = "https://e.tb.cn/h.84VUo3aSGRvlgaM?tk=9aINgxwNAdO HU293 「活力28衣物柔顺剂官方旗舰店正品柔软防静电持久留香护理衣物家用」";
+        CapturingDtkTaobaoVendorClient client = new CapturingDtkTaobaoVendorClient();
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsId("839586501738");
+        request.setOriginalContent(originalContent);
+        request.setAdzoneId("mm_4480323_46012675_116291900443");
+        request.setChannelId("REL-285");
+        request.setSpecialId("SPECIAL-285");
+
+        var result = client.generatePromotionLink(request, CpsVendorConfig.builder().build());
+
+        assertEquals("/tb-service/parse-content", client.requestedPath);
+        assertEquals("v1.0.0", client.requestedParams.get("version"));
+        assertEquals(originalContent, client.requestedParams.get("content"));
+        assertEquals("mm_4480323_46012675_116291900443", client.requestedParams.get("pid"));
+        assertEquals("REL-285", client.requestedParams.get("channelId"));
+        assertEquals("SPECIAL-285", client.requestedParams.get("specialId"));
+        assertEquals("https://s.click.taobao.com/short", result.getShortUrl());
+        assertEquals("https://s.click.taobao.com/long", result.getLongUrl());
+        assertEquals("9￥ newTpwd￥", result.getTpwd());
+        assertEquals(new BigDecimal("2.25"), result.getCommissionRate());
+        assertEquals(new BigDecimal("9.9"), result.getActualPrice());
+    }
+
+    @Test
     @DisplayName("Taobao Dataoke link should send member specialId separately from channelId")
     void testTaobaoPromotionLinkSendsSpecialIdAndChannelIdSeparately() throws Exception {
         class CapturingDtkTaobaoVendorClient extends DtkTaobaoVendorClient {

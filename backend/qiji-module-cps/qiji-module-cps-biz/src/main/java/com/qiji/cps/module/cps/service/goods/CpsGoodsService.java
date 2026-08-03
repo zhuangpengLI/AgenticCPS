@@ -71,6 +71,13 @@ public interface CpsGoodsService {
                                                   String vendorCode);
 
     /**
+     * 生成推广链接，并向支持万能转链的供应商保留用户提交的完整原文.
+     */
+    CpsPromotionLinkResult generatePromotionLink(String platformCode, String goodsId,
+                                                  String goodsSign, Long memberId, String adzoneId,
+                                                  String vendorCode, String originalContent);
+
+    /**
      * 解析最终使用的推广位 ID.
      *
      * @param platformCode 平台编码
