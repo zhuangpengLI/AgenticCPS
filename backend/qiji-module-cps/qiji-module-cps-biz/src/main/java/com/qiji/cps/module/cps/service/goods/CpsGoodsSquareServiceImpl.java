@@ -20,7 +20,11 @@ import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareMetaItemR
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareMetaRespVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
+import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
+import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeItemDO;
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
+import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeItemMapper;
+import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeMapper;
 import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
 import com.qiji.cps.module.cps.service.selection.CpsSelectionRule;
 import jakarta.annotation.Resource;
@@ -55,6 +59,12 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
 
     @Resource
     private DtkSelectionLibraryClient dtkSelectionLibraryClient;
+
+    @Resource
+    private CpsSelectionThemeMapper selectionThemeMapper;
+
+    @Resource
+    private CpsSelectionThemeItemMapper selectionThemeItemMapper;
 
     @Override
     public CpsGoodsSquareMetaRespVO getMeta(String platformCode, String vendorCode) {
@@ -168,12 +178,57 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
     }
 
     @Override
+    public CpsGoodsSquareSearchRespVO getSelectionThemeGoods(String themeCode, Integer pageNo, Integer pageSize) {
+        int effectivePageNo = pageNo == null ? 1 : Math.max(pageNo, 1);
+        int effectivePageSize = pageSize == null ? 20 : Math.max(1, Math.min(pageSize, 100));
+        CpsSelectionThemeDO theme = selectionThemeMapper.selectPublishedGoodsSquareByThemeCode(themeCode);
+        if (theme == null) {
+            return emptySearchResult(effectivePageNo, effectivePageSize);
+        }
+        List<CpsSelectionThemeItemDO> items = selectionThemeItemMapper.selectEnabledListByThemeId(theme.getId());
+        if (items == null || items.isEmpty()) {
+            return emptySearchResult(effectivePageNo, effectivePageSize);
+        }
+        long offset = (long) (effectivePageNo - 1) * effectivePageSize;
+        int fromIndex = (int) Math.min(offset, items.size());
+        int toIndex = Math.min(fromIndex + effectivePageSize, items.size());
+        List<CpsGoodsSquareGoodsRespVO> list = items.subList(fromIndex, toIndex).stream()
+                .map(item -> toSelectionThemeGoodsResp(item, theme))
+                .toList();
+        return CpsGoodsSquareSearchRespVO.builder()
+                .list(list)
+                .total((long) items.size())
+                .pageNo(effectivePageNo)
+                .pageSize(effectivePageSize)
+                .build();
+    }
+
+    @Override
     public CpsGoodsSquareSearchRespVO searchByImage(CpsGoodsSquareSearchReqVO reqVO) {
         reqVO.setPlatformCode(PLATFORM_TAOBAO);
         reqVO.setVendorCode(StringUtils.hasText(reqVO.getVendorCode()) ? reqVO.getVendorCode() : DEFAULT_VENDOR_CODE);
         reqVO.setSearchMode(SEARCH_MODE_IMAGE);
         reqVO.setImageBase64(normalizeImageBase64(reqVO.getImageBase64()));
         return searchGoods(reqVO);
+    }
+
+    private CpsGoodsSquareSearchRespVO emptySearchResult(int pageNo, int pageSize) {
+        return CpsGoodsSquareSearchRespVO.builder()
+                .list(Collections.emptyList())
+                .total(0L)
+                .pageNo(pageNo)
+                .pageSize(pageSize)
+                .build();
+    }
+
+    private CpsGoodsSquareGoodsRespVO toSelectionThemeGoodsResp(CpsSelectionThemeItemDO item,
+                                                                CpsSelectionThemeDO theme) {
+        CpsGoodsSquareGoodsRespVO respVO = BeanUtils.toBean(item, CpsGoodsSquareGoodsRespVO.class);
+        if (!StringUtils.hasText(respVO.getVendorCode())) {
+            respVO.setVendorCode(theme.getVendorCode());
+        }
+        respVO.setSource("selection-theme:" + theme.getThemeCode());
+        return respVO;
     }
 
     @Override

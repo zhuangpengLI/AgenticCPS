@@ -20,6 +20,8 @@ public interface CpsGoodsSquareService {
 
     CpsGoodsSquareSearchRespVO getVendorGoods(String sourceCode, String platformCode, String vendorCode, Integer pageSize);
 
+    CpsGoodsSquareSearchRespVO getSelectionThemeGoods(String themeCode, Integer pageNo, Integer pageSize);
+
     CpsGoodsSquareSearchRespVO searchGoods(@Valid CpsGoodsSquareSearchReqVO reqVO);
 
     CpsGoodsSquareSearchRespVO searchByImage(@Valid CpsGoodsSquareSearchReqVO reqVO);

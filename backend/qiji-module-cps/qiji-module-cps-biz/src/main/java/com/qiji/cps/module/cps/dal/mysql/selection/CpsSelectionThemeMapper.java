@@ -45,6 +45,16 @@ public interface CpsSelectionThemeMapper extends BaseMapperX<CpsSelectionThemeDO
         return selectOne(CpsSelectionThemeDO::getThemeCode, themeCode);
     }
 
+    default CpsSelectionThemeDO selectPublishedGoodsSquareByThemeCode(String themeCode) {
+        LocalDateTime now = LocalDateTime.now();
+        return selectOne(new LambdaQueryWrapperX<CpsSelectionThemeDO>()
+                .eq(CpsSelectionThemeDO::getThemeCode, themeCode)
+                .eq(CpsSelectionThemeDO::getStatus, CpsSelectionConstants.ThemeStatus.PUBLISHED)
+                .eq(CpsSelectionThemeDO::getGoodsSquareVisible, 1)
+                .and(w -> w.isNull(CpsSelectionThemeDO::getStartTime).or().le(CpsSelectionThemeDO::getStartTime, now))
+                .and(w -> w.isNull(CpsSelectionThemeDO::getEndTime).or().ge(CpsSelectionThemeDO::getEndTime, now)));
+    }
+
     default List<CpsSelectionThemeDO> selectPublishedList(String keyword, String promotionEvent) {
         LocalDateTime now = LocalDateTime.now();
         LambdaQueryWrapperX<CpsSelectionThemeDO> wrapper = new LambdaQueryWrapperX<CpsSelectionThemeDO>();

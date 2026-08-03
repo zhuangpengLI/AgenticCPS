@@ -14,7 +14,11 @@ import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchReq
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.CpsApiVendorClient;
 import com.qiji.cps.module.cps.client.selection.CpsSearchAssistVendorClient;
+import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
+import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeItemDO;
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
+import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeItemMapper;
+import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeMapper;
 import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
 import com.qiji.cps.module.cps.service.selection.CpsSelectionRule;
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +57,12 @@ class CpsGoodsSquareServiceImplTest {
 
     @Mock
     private DtkSelectionLibraryClient dtkSelectionLibraryClient;
+
+    @Mock
+    private CpsSelectionThemeMapper selectionThemeMapper;
+
+    @Mock
+    private CpsSelectionThemeItemMapper selectionThemeItemMapper;
 
     @Test
     @DisplayName("getMeta - 淘宝选品元数据优先使用供应商真实接口")
@@ -234,6 +244,37 @@ class CpsGoodsSquareServiceImplTest {
         assertEquals("/api/goods/get-ranking-list", captor.getValue().getGoodsListUrl());
         assertEquals(1, captor.getValue().getGoodsListParams().get("rankType"));
         assertEquals(1L, result.getTotal());
+    }
+
+    @Test
+    @DisplayName("getSelectionThemeGoods - 商品广场主题应读取已启用的选品快照")
+    void getSelectionThemeGoods_readsEnabledSelectionSnapshots() {
+        CpsSelectionThemeDO theme = CpsSelectionThemeDO.builder()
+                .id(107L)
+                .themeCode("DTK_SCENE_PALLET_107")
+                .themeName("爆品商品_团长主推")
+                .vendorCode("dataoke")
+                .build();
+        CpsSelectionThemeItemDO item = CpsSelectionThemeItemDO.builder()
+                .themeId(107L)
+                .platformCode("taobao")
+                .goodsId("goods-107")
+                .title("斐思妮眼霜组合装")
+                .actualPrice(new BigDecimal("68.00"))
+                .commissionRate(new BigDecimal("20.00"))
+                .status("ENABLED")
+                .build();
+        when(selectionThemeMapper.selectPublishedGoodsSquareByThemeCode("DTK_SCENE_PALLET_107"))
+                .thenReturn(theme);
+        when(selectionThemeItemMapper.selectEnabledListByThemeId(107L)).thenReturn(List.of(item));
+
+        var result = service.getSelectionThemeGoods("DTK_SCENE_PALLET_107", 1, 20);
+
+        assertEquals(1L, result.getTotal());
+        assertEquals("goods-107", result.getList().get(0).getGoodsId());
+        assertEquals("dataoke", result.getList().get(0).getVendorCode());
+        assertEquals("selection-theme:DTK_SCENE_PALLET_107", result.getList().get(0).getSource());
+        verify(goodsService, never()).searchGoods(any(), any(), any());
     }
 
     @Test

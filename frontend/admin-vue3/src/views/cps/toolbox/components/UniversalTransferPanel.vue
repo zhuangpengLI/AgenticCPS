@@ -182,12 +182,12 @@
       </div>
     </el-form>
 
-    <section v-if="resultRows.length" class="transfer-detail">
+    <section v-if="successRows.length" class="transfer-detail">
       <div class="detail-title-row">
         <div>
           <div class="detail-title">转链明细</div>
           <div class="detail-subtitle">
-            转链成功 {{ successRows.length }} 条，失败 {{ failureRows.length }} 条；成功商品已加入转链记录。
+            转链成功 {{ successRows.length }} 条；成功商品已加入转链记录。
           </div>
         </div>
         <el-button type="primary" plain :disabled="successRows.length === 0" @click="copyAllSuccess">
@@ -204,7 +204,11 @@
         <span>操作</span>
       </div>
 
-      <div v-for="row in resultRows" :key="`${row.inputIndex}:${row.originalContent}`" class="transfer-detail-row">
+      <div
+        v-for="row in successRows"
+        :key="`${row.inputIndex}:${row.originalContent}`"
+        class="transfer-detail-row"
+      >
         <div class="goods-summary">
           <el-image
             v-if="row.goods?.mainPic"
@@ -347,7 +351,6 @@ const contentLines = computed(() =>
 const enabledVendorOptions = computed(() => vendorOptions.value.filter((item) => item.status === 1))
 const enabledAdzoneOptions = computed(() => adzoneOptions.value.filter((item) => item.status === 1))
 const successRows = computed(() => resultRows.value.filter((item) => item.status === 'SUCCESS'))
-const failureRows = computed(() => resultRows.value.filter((item) => item.status !== 'SUCCESS'))
 const resultOutput = computed(() => successRows.value.map((item) => buildOutputText(item)).filter(Boolean).join('\n\n'))
 const selectedVendor = computed(() =>
   enabledVendorOptions.value.find((item) => item.vendorCode === formData.vendorCode)

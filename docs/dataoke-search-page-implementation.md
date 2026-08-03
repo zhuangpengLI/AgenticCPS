@@ -48,6 +48,7 @@
 | 搜索联想词 | `GET /admin-api/cps/goods-square/suggestions` | `CpsGoodsSquareServiceImpl.suggestKeywords()` -> `CpsSearchAssistVendorClient` | `DtkTaobaoVendorClient` 调 `/goods/search-suggestion`，版本 `v1.0.2`。 |
 | 关键词搜索 | `GET /admin-api/cps/goods-square/search` | `CpsGoodsSquareServiceImpl.searchGoods()` -> `CpsGoodsService` -> `CpsPlatformClientFactory` | 淘宝 dataoke 默认走 `/goods/get-dtk-search-goods`，版本 `v2.1.2`。 |
 | 图片搜索 | `POST /admin-api/cps/goods-square/search-by-image` | `CpsGoodsSquareServiceImpl.searchByImage()` | `DtkTaobaoVendorClient` 调 `https://openapiv2.dataoke.com/open-api/goods/search-by-image`，版本 `v1.0.0`。 |
+| 选品主题商品 | `GET /admin-api/cps/goods-square/selection-theme-goods` | `CpsGoodsSquareServiceImpl.getSelectionThemeGoods()` | 读取已发布、允许商品广场展示且在有效期内的主题商品快照，不把主题编码当作第三方搜索频道。 |
 | 商品转链 | `POST /admin-api/cps/goods-square/link` | `CpsGoodsSquareServiceImpl.generateLink()` -> `CpsGoodsService.generatePromotionLink()` | 淘宝 dataoke 走 `/tb-service/get-privilege-link`，归因规则见 `docs/dataoke-high-efficiency-link-attribution.md`。 |
 
 相关代码入口：

@@ -140,3 +140,116 @@ qiji:
       enable: false
 
 debug: false
+
+
+--- #################### 微信公众号、小程序相关配置 ####################
+wx:
+  mp: # 公众号配置（必填），参见 https://github.com/Wechat-Group/WxJava/blob/develop/spring-boot-starters/wx-java-mp-spring-boot-starter/README.md 文档
+    #    app-id: wx041349c6f39b268b # 测试号（牛希尧提供的）
+    #    secret: 5abee519483bc9f8cb37ce280e814bd0
+    #    app-id: wx5b23ba7a5589ecbb # 测试号（自己的）
+    #    secret: 2a7b3b20c537e52e74afd395eb85f61f
+    app-id: wxf56b1542b9e85f8a # 测试号（Kongdy 提供的）
+    secret: 496379dcef1ba869e9234de8d598cfd3
+    # 存储配置，解决 AccessToken 的跨节点的共享
+    config-storage:
+      type: RedisTemplate # 采用 RedisTemplate 操作 Redis，会自动从 Spring 中获取
+      key-prefix: wx # Redis Key 的前缀
+      http-client-type: HttpClient # 采用 HttpClient 请求微信公众号平台
+  miniapp: # 小程序配置（必填），参见 https://github.com/Wechat-Group/WxJava/blob/develop/spring-boot-starters/wx-java-miniapp-spring-boot-starter/README.md 文档
+    #    appid: wx62056c0d5e8db250 # 测试号（牛希尧提供的）
+    #    secret: 333ae72f41552af1e998fe1f54e1584a
+    #    appid: wx63c280fe3248a3e7 # wenhualian的接口测试号
+    #    secret: 6f270509224a7ae1296bbf1c8cb97aed
+    appid: wxc4598c446f8a9cb3 # 测试号（Kongdy 提供的）
+    secret: 4a1a04e07f6a4a0751b39c3064a92c8b
+    #    appid: wx66186af0759f47c9 # 测试号（puhui 提供的）
+    #    secret: 3218bcbd112cbc614c7264ceb20144ac
+    config-storage:
+      type: RedisTemplate # 采用 RedisTemplate 操作 Redis，会自动从 Spring 中获取
+      key-prefix: wa # Redis Key 的前缀
+      http-client-type: HttpClient # 采用 HttpClient 请求微信公众号平台
+
+--- #################### AgenticCPS相关配置 ####################
+
+# AgenticCPS配置项，设置当前项目所有自定义的配置
+qiji:
+  captcha:
+    enable: false # 本地环境，暂时关闭图片验证码，方便登录等接口的测试；
+  security:
+    mock-enable: true
+  ai:
+    mcp:
+      loopback-client:
+        enabled: true
+        connection-name: cps
+      self-test:
+        enabled: ${AI_MCP_SELF_TEST_ENABLED:false}
+        client-name: ${AI_MCP_SELF_TEST_CLIENT_NAME:}
+        base-url: ${AI_MCP_SELF_TEST_BASE_URL:http://127.0.0.1:48080}
+        endpoint: ${AI_MCP_SELF_TEST_ENDPOINT:/mcp/cps}
+        connect-timeout: ${AI_MCP_SELF_TEST_CONNECT_TIMEOUT:5s}
+        read-timeout: ${AI_MCP_SELF_TEST_READ_TIMEOUT:30s}
+        ttl: ${AI_MCP_SELF_TEST_TTL:60s}
+        secret: ${AI_MCP_SELF_TEST_SECRET:}
+  pay:
+    order-notify-url: https://yutou.mynatapp.cc/admin-api/pay/notify/order # 支付渠道的【支付】回调地址
+    refund-notify-url: https://yutou.mynatapp.cc/admin-api/pay/notify/refund # 支付渠道的【退款】回调地址
+    transfer-notify-url: https://yutou.mynatapp.cc/admin-api/pay/notify/transfer # 支付渠道的【转账】回调地址
+  access-log: # 访问日志的配置项
+    enable: false
+  demo: false # 关闭演示模式
+  cps:
+    taobao:
+      app-key: your_taobao_app_key
+      app-secret: your_taobao_app_secret
+      default-adzone-id: your_taobao_adzone_id
+    jingdong:
+      app-key: your_jd_app_key
+      app-secret: your_jd_app_secret
+      default-adzone-id: your_jd_adzone_id
+    pinduoduo:
+      client-id: your_pdd_client_id
+      client-secret: your_pdd_client_secret
+      default-pid: your_pdd_pid
+    search:
+      parallel-timeout: 5
+      default-page-size: 20
+  wxa-code:
+    env-version: develop # 小程序版本: 正式版为 "release"；体验版为 "trial"；开发版为 "develop"
+  wxa-subscribe-message:
+    miniprogram-state: developer # 跳转小程序类型：开发版为 “developer”；体验版为 “trial”为；正式版为 “formal”
+  tencent-lbs-key: TVDBZ-TDILD-4ON4B-PFDZA-RNLKH-VVF6E # QQ 地图的密钥 https://lbs.qq.com/service/staticV2/staticGuide/staticDoc
+
+justauth:
+  enabled: true
+  type:
+    DINGTALK: # 钉钉
+      client-id: dingvrnreaje3yqvzhxg
+      client-secret: i8E6iZyDvZj51JIb0tYsYfVQYOks9Cq1lgryEjFRqC79P3iJcrxEwT6Qk2QvLrLI
+      ignore-check-redirect-uri: true
+    WECHAT_ENTERPRISE: # 企业微信
+      client-id: wwd411c69a39ad2e54
+      client-secret: 1wTb7hYxnpT2TUbIeHGXGo7T0odav1ic10mLdyyATOw
+      agent-id: 1000004
+      ignore-check-redirect-uri: true
+    # noinspection SpringBootApplicationYaml
+    WECHAT_MINI_PROGRAM: # 微信小程序
+      client-id: ${wx.miniapp.appid}
+      client-secret: ${wx.miniapp.secret}
+      ignore-check-redirect-uri: true
+      ignore-check-state: true # 微信小程序，不会使用到 state，所以不进行校验
+    WECHAT_MP: # 微信公众号
+      client-id: ${wx.mp.app-id}
+      client-secret: ${wx.mp.secret}
+      ignore-check-redirect-uri: true
+    ALIPAY: # 支付宝小程序
+      client-id: xx
+      client-secret: xx
+      alipay-public-key: xx
+      ignore-check-redirect-uri: true
+      ignore-check-state: true
+  cache:
+    type: REDIS
+    prefix: 'social_auth_state:' # 缓存前缀，目前只对 Redis 缓存生效，默认 JUSTAUTH::STATE::
+    timeout: 24h # 超时时长，目前只对 Redis 缓存生效，默认 3 分钟

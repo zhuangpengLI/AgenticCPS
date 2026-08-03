@@ -659,6 +659,8 @@ const resultSummaryText = computed(() => {
   if (total.value > 0) return `找到 ${total.value} 个商品`
   return goodsList.value.length > 0 ? `展示 ${goodsList.value.length} 个商品` : '暂无商品结果'
 })
+const isSelectionThemeCode = (value?: string) =>
+  Boolean(value && goodsSquareThemeOptions.value.some((item) => item.value === value))
 const activeFilterChips = computed(() => {
   const chips: Array<{ key: string; label: string }> = []
   if (queryParams.keyword) {
@@ -722,7 +724,13 @@ const activeFilterChips = computed(() => {
 const getGoodsList = async () => {
   loading.value = true
   try {
-    const data = await CpsGoodsSquareApi.searchGoods({ ...queryParams })
+    const data = isSelectionThemeCode(queryParams.activityTag)
+      ? await CpsGoodsSquareApi.getSelectionThemeGoods({
+          themeCode: queryParams.activityTag!,
+          pageNo: queryParams.pageNo,
+          pageSize: queryParams.pageSize
+        })
+      : await CpsGoodsSquareApi.searchGoods({ ...queryParams })
     goodsList.value = data.list || []
     total.value = data.total || 0
   } finally {
@@ -766,6 +774,10 @@ const loadGoodsSquareThemes = async () => {
 }
 
 const handleSearch = () => {
+  if (isSelectionThemeCode(queryParams.activityTag)) {
+    queryParams.activityTag = undefined
+    queryParams.channelCode = undefined
+  }
   queryParams.pageNo = 1
   getGoodsList()
 }
@@ -974,10 +986,12 @@ const selectKeyword = (keyword: string) => {
 }
 
 const selectTopic = (value: string, label: string) => {
-  queryParams.activityTag = queryParams.activityTag === value ? undefined : value
-  queryParams.channelCode = queryParams.activityTag
-  queryParams.keyword = label
-  handleSearch()
+  const selecting = queryParams.activityTag !== value
+  queryParams.activityTag = selecting ? value : undefined
+  queryParams.channelCode = undefined
+  queryParams.keyword = selecting ? label : '今日精选'
+  queryParams.pageNo = 1
+  getGoodsList()
 }
 
 const selectRanking = (item: {

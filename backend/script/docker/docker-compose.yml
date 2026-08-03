@@ -64,6 +64,10 @@ services:
       REDIS_DATABASE: ${REDIS_DATABASE:-0}
       REDIS_USERNAME: ${REDIS_USERNAME:-default}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      WX_MP_APP_ID: ${WX_MP_APP_ID:?WX_MP_APP_ID must be set}
+      WX_MP_SECRET: ${WX_MP_SECRET:?WX_MP_SECRET must be set}
+      WX_MINIAPP_APPID: ${WX_MINIAPP_APPID:?WX_MINIAPP_APPID must be set}
+      WX_MINIAPP_SECRET: ${WX_MINIAPP_SECRET:?WX_MINIAPP_SECRET must be set}
       ARGS: ${JAVA_ARGS:-}
     volumes:
       - server-logs:/opt/qiji-server/logs

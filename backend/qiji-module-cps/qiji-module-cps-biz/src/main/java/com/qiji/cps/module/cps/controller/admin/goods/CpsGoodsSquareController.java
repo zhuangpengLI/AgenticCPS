@@ -75,6 +75,16 @@ public class CpsGoodsSquareController {
         return success(goodsSquareService.getVendorGoods(sourceCode, platformCode, vendorCode, pageSize));
     }
 
+    @GetMapping("/selection-theme-goods")
+    @Operation(summary = "获取选品库主题商品")
+    @PreAuthorize("@ss.hasPermission('cps:goods-square:query')")
+    public CommonResult<CpsGoodsSquareSearchRespVO> getSelectionThemeGoods(
+            @RequestParam("themeCode") String themeCode,
+            @RequestParam(value = "pageNo", required = false, defaultValue = "1") Integer pageNo,
+            @RequestParam(value = "pageSize", required = false, defaultValue = "20") Integer pageSize) {
+        return success(goodsSquareService.getSelectionThemeGoods(themeCode, pageNo, pageSize));
+    }
+
     @GetMapping("/search")
     @Operation(summary = "搜索返利商品广场")
     @PreAuthorize("@ss.hasPermission('cps:goods-square:query')")
