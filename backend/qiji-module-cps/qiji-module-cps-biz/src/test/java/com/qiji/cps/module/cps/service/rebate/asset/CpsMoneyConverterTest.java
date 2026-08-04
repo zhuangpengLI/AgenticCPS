@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class CpsMoneyConverterTest {
 
@@ -15,5 +16,10 @@ class CpsMoneyConverterTest {
         assertEquals(1235L, converter.yuanToCent(new BigDecimal("12.345")));
         assertEquals(new BigDecimal("12.35"), converter.centToYuan(1235L));
         assertEquals(0L, converter.yuanToCent(null));
+    }
+
+    @Test
+    void preservesNullOptionalCentAmount() {
+        assertNull(converter.centToYuan(null));
     }
 }

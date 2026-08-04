@@ -1535,4 +1535,37 @@ PREPARE cps_order_claim_stmt FROM @cps_order_claim_sql;
 EXECUTE cps_order_claim_stmt;
 DEALLOCATE PREPARE cps_order_claim_stmt;
 
+-- ============================================================
+-- 修改时间：2026-08-04 00:00:00
+-- 目的：新增会员 CPS 商品足迹与收藏展示快照，支持租户隔离、软删除与幂等操作。
+-- 说明：快照金额以分存储且允许为空；本表严禁用于订单归因、返利结算或资产变更。
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `cps_member_goods_record` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '记录ID',
+  `member_id` bigint NOT NULL COMMENT '会员ID',
+  `record_type` varchar(16) NOT NULL COMMENT '记录类型：BROWSE/FAVORITE',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `goods_id` varchar(128) NOT NULL DEFAULT '' COMMENT '平台商品ID',
+  `goods_sign` varchar(512) NOT NULL DEFAULT '' COMMENT '平台商品签名',
+  `identity_key` char(64) NOT NULL COMMENT '标准化商品身份SHA-256摘要',
+  `title` varchar(512) DEFAULT NULL COMMENT '商品标题展示快照',
+  `main_pic` varchar(1024) DEFAULT NULL COMMENT '商品主图展示快照',
+  `original_price_cent` bigint DEFAULT NULL COMMENT '商品原价展示快照（分）',
+  `actual_price_cent` bigint DEFAULT NULL COMMENT '券后价展示快照（分）',
+  `coupon_price_cent` bigint DEFAULT NULL COMMENT '优惠券金额展示快照（分）',
+  `estimate_rebate_amount_cent` bigint DEFAULT NULL COMMENT '预估返利金额展示快照（分）',
+  `month_sales` bigint DEFAULT NULL COMMENT '近30天销量展示快照',
+  `shop_name` varchar(255) DEFAULT NULL COMMENT '店铺名称展示快照',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  `active_unique_key` char(64) GENERATED ALWAYS AS (IF(`deleted` = b'0', `identity_key`, NULL)) STORED COMMENT '未删除记录商品身份唯一键',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cps_member_goods_record_active` (`tenant_id`, `member_id`, `record_type`, `active_unique_key`) USING BTREE,
+  KEY `idx_cps_member_goods_record_page` (`tenant_id`, `member_id`, `record_type`, `deleted`, `update_time`) USING BTREE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPS会员商品浏览收藏展示快照表';
+
 SET FOREIGN_KEY_CHECKS = 1;

@@ -11,6 +11,7 @@ import com.qiji.cps.module.cps.service.marketing.AppCpsMarketingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.annotation.security.PermitAll;
 import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +32,7 @@ public class AppCpsMarketingController {
     @Resource
     private AppCpsMarketingService marketingService;
 
+    @PermitAll
     @GetMapping("/activity-center")
     @Operation(summary = "查询营销活动中心")
     public CommonResult<List<AppCpsMarketingActivityRespVO>> getActivityCenter(
@@ -38,6 +40,7 @@ public class AppCpsMarketingController {
         return success(marketingService.getActivityCenter(getMemberId(), reqVO));
     }
 
+    @PermitAll
     @GetMapping("/selection-themes")
     @Operation(summary = "查询已发布选品主题")
     public CommonResult<List<AppCpsMarketingSelectionThemeRespVO>> getSelectionThemes(
@@ -45,6 +48,7 @@ public class AppCpsMarketingController {
         return success(marketingService.getSelectionThemes(getMemberId(), reqVO));
     }
 
+    @PermitAll
     @GetMapping("/selection-theme-items")
     @Operation(summary = "查询选品主题商品")
     public CommonResult<List<AppCpsMarketingSelectionThemeItemRespVO>> getSelectionThemeItems(

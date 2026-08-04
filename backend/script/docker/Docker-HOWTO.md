@@ -87,3 +87,12 @@ bash deploy.sh down
 MySQL 初始化 SQL 和应用账号只会在首次创建数据卷时生效。已有数据库升级应执行 `backend/sql/module/cps-update.sql` 对应发布区块；如果已有数据卷曾使用不同账号密码，还需要在数据库内同步修改账号，不能只修改 `docker.env`。
 
 部署服务器需要 Docker Engine、Docker Compose v2，并能拉取 MySQL、Redis、Eclipse Temurin 和 Nginx 基础镜像。
+
+
+
+
+$env:JAVA_HOME = 'C:\Users\zhuangpengli\.jdks\ms-21.0.11'
+$env:MAVEN_HOME = 'D:\soft\IntelliJ IDEA 2025.3.3\plugins\maven\lib\maven3'
+$env:Path = "$env:JAVA_HOME\bin;$env:MAVEN_HOME\bin;$env:Path"
+
+.\build-package.ps1

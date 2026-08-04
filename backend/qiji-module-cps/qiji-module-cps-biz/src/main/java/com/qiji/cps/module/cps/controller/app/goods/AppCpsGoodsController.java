@@ -15,6 +15,7 @@ import com.qiji.cps.module.cps.service.goods.CpsGoodsService;
 import com.qiji.cps.module.cps.service.goods.CpsGoodsToolboxService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import org.springframework.util.StringUtils;
@@ -46,6 +47,7 @@ public class AppCpsGoodsController {
     private CpsTransferRecordMapper transferRecordMapper;
 
     @GetMapping("/search")
+    @PermitAll
     @Operation(summary = "搜索商品（单平台）")
     public CommonResult<AppCpsGoodsSearchResult> searchGoods(@Valid AppCpsGoodsSearchReqVO reqVO) {
         if (reqVO.getPlatformCode() == null) {
@@ -77,6 +79,7 @@ public class AppCpsGoodsController {
     }
 
     @GetMapping("/compare")
+    @PermitAll
     @Operation(summary = "跨平台比价")
     public CommonResult<AppCpsGoodsCompareRespVO> compareGoods(@Valid AppCpsGoodsCompareReqVO reqVO) {
         CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
@@ -114,6 +117,7 @@ public class AppCpsGoodsController {
     }
 
     @GetMapping("/detail")
+    @PermitAll
     @Operation(summary = "查询商品详情")
     public CommonResult<AppCpsGoodsRespVO> getDetail(@Valid AppCpsGoodsDetailReqVO reqVO) {
         CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
@@ -128,6 +132,7 @@ public class AppCpsGoodsController {
     }
 
     @PostMapping("/parse")
+    @PermitAll
     @Operation(summary = "解析商品链接、商品ID或口令")
     public CommonResult<AppCpsGoodsParseRespVO> parseContent(@Valid @RequestBody AppCpsGoodsParseReqVO reqVO) {
         CpsGoodsParseReqVO toolboxReqVO = new CpsGoodsParseReqVO();

@@ -20,7 +20,10 @@ public class CpsMoneyConverter {
         return amountYuan.multiply(CENTS_PER_YUAN).setScale(0, RoundingMode.HALF_UP).longValueExact();
     }
 
-    public BigDecimal centToYuan(long amountCent) {
+    public BigDecimal centToYuan(Long amountCent) {
+        if (amountCent == null) {
+            return null;
+        }
         return BigDecimal.valueOf(amountCent).divide(CENTS_PER_YUAN, 2, RoundingMode.UNNECESSARY);
     }
 }
