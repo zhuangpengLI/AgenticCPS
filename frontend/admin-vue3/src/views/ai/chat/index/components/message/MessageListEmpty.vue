@@ -4,9 +4,9 @@
     <!-- title -->
     <div class="flex flex-col justify-center">
       <div class="text-28px font-bold text-center">AgenticCPS 联盟助手</div>
-      <div class="flex flex-row flex-wrap items-center justify-center w-460px mt-20px">
+      <div class="grid grid-cols-2 gap-12px w-760px max-w-[calc(100vw-360px)] mt-20px">
         <div
-          class="flex justify-center w-180px leading-50px border border-solid border-[#e4e4e4] rounded-10px m-10px cursor-pointer hover:bg-[rgba(243,243,243,0.73)]"
+          class="flex items-center min-h-64px px-14px leading-22px border border-solid border-[#e4e4e4] rounded-10px cursor-pointer hover:bg-[rgba(243,243,243,0.73)]"
           v-for="prompt in promptList"
           :key="prompt.prompt"
           @click="handlerPromptClick(prompt)"
@@ -18,25 +18,16 @@
   </div>
 </template>
 <script setup lang="ts">
-const promptList = [
-  {
-    prompt: '帮我搜索高性价比商品'
-  },
-  {
-    prompt: '比较这款商品在各平台的价格和返利'
-  },
-  {
-    prompt: '查询我的订单和返利进度'
-  },
-  {
-    prompt: '推荐一个热门选品主题'
-  }
-] // prompt 列表
+import { RECOMMENDED_PROMPTS, type RecommendedPrompt } from '../../toolActions'
 
-const emits = defineEmits(['onPrompt'])
+const promptList = RECOMMENDED_PROMPTS
+
+const emits = defineEmits<{
+  (e: 'onPrompt', value: RecommendedPrompt): void
+}>()
 
 /** 选中 prompt 点击 */
-const handlerPromptClick = async ({ prompt }) => {
-  emits('onPrompt', prompt)
+const handlerPromptClick = (recommendedPrompt: RecommendedPrompt) => {
+  emits('onPrompt', recommendedPrompt)
 }
 </script>

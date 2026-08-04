@@ -56,6 +56,7 @@ public class AiUtils {
             case TONG_YI:
                 return DashScopeChatOptions.builder().withModel(model).withTemperature(temperature).withMaxToken(maxTokens)
                         .withEnableThinking(true) // TODO 芋艿：默认都开启 thinking 模式，后续可以让用户配置
+                        .withMultiModel(true)
                         .withToolCallbacks(toolCallbacks).withToolContext(toolContext).build();
             case YI_YAN:
                 return QianFanChatOptions.builder().model(model).temperature(temperature).maxTokens(maxTokens).build();

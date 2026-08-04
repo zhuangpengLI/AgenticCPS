@@ -6,7 +6,7 @@ export interface CpsOrderVO {
   platformCode: string
   platformOrderId: string
   parentOrderId?: string
-  memberId: number
+  memberId?: number
   memberNickname?: string
   itemId?: string
   itemTitle?: string

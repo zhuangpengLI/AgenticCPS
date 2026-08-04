@@ -11,6 +11,12 @@ import java.util.List;
 @Data
 public class AiChatMessageSendRespVO {
 
+    @Schema(description = "流式事件类型", example = "MESSAGE_DELTA")
+    private String eventType;
+
+    @Schema(description = "工具执行状态，仅工具事件返回")
+    private ToolExecution toolExecution;
+
     @Schema(description = "发送消息", requiredMode = Schema.RequiredMode.REQUIRED)
     private Message send;
 
@@ -45,6 +51,16 @@ public class AiChatMessageSendRespVO {
         @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
         private LocalDateTime createTime;
 
+    }
+
+    @Schema(description = "用户友好的工具执行信息")
+    @Data
+    public static class ToolExecution {
+        private String executionId;
+        private String intent;
+        private String label;
+        private String status;
+        private String message;
     }
 
 }

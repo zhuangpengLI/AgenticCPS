@@ -75,6 +75,21 @@ class AppAiChatMessageControllerTest extends com.qiji.cps.framework.test.core.ut
     }
 
     @Test
+    void streamFiltersAdminOnlyToolLifecycleEvents() {
+        AppAiChatMessageSendReqVO req = new AppAiChatMessageSendReqVO().setConversationId(7L).setContent("hi");
+        AiChatMessageSendRespVO toolEvent = new AiChatMessageSendRespVO().setEventType("TOOL_STARTED");
+        AiChatMessageSendRespVO messageEvent = new AiChatMessageSendRespVO().setEventType("MESSAGE_DELTA");
+        when(messageService.sendChatMessageStream(any(), eq("MEMBER"), eq(42L))).thenReturn(Flux.just(
+                CommonResult.success(toolEvent), CommonResult.success(messageEvent)));
+
+        try (MockedStatic<SecurityFrameworkUtils> security = mockStatic(SecurityFrameworkUtils.class)) {
+            security.when(SecurityFrameworkUtils::getLoginUserId).thenReturn(42L);
+            var events = controller.sendChatMessageStream(req).collectList().block();
+            assertEquals(1, events.size());
+        }
+    }
+
+    @Test
     void listRejectsConversationOwnedByAnotherMemberBeforeReadingMessages() {
         when(conversationService.getOwnedConversation(7L, "MEMBER", 42L))
                 .thenThrow(new IllegalStateException("not owned"));

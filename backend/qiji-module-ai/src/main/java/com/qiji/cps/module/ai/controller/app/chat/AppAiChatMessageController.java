@@ -53,7 +53,11 @@ public class AppAiChatMessageController {
     public Flux<CommonResult<AppAiChatMessageSendRespVO>> sendChatMessageStream(
             @Valid @RequestBody AppAiChatMessageSendReqVO reqVO) {
         return chatMessageService.sendChatMessageStream(toAdminReq(reqVO),
-                AiChatOwnerTypeEnum.MEMBER.name(), getLoginUserId()).map(result -> {
+                AiChatOwnerTypeEnum.MEMBER.name(), getLoginUserId())
+                .filter(result -> !result.isSuccess() || result.getData() == null
+                        || result.getData().getEventType() == null
+                        || "MESSAGE_DELTA".equals(result.getData().getEventType()))
+                .map(result -> {
             if (!result.isSuccess()) {
                 return CommonResult.error(result);
             }

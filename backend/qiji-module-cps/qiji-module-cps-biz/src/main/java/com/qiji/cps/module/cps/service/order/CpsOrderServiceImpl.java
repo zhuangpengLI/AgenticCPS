@@ -233,6 +233,8 @@ public class CpsOrderServiceImpl implements CpsOrderService {
                 .memberId(memberId)
                 .memberNickname(member.getNickname())
                 .attributionSource("specialId")
+                .estimateRebate(calculateEstimateRebate(
+                        order.getCommissionAmount(), order.getPlatformCode(), memberId, member))
                 .build());
         appendManualAttributionLog(order, memberId,
                 order.getMemberId() == null || Objects.equals(order.getMemberId(), memberId) ? "MANUAL" : "REBIND",
@@ -1051,14 +1053,20 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             return BigDecimal.ZERO;
         }
         MemberUserRespDTO member = memberUserApi.getUser(memberId);
-        if (member == null) {
+        return calculateEstimateRebate(
+                dto.getCommissionAmount(), dto.getPlatformCode(), memberId, member);
+    }
+
+    private BigDecimal calculateEstimateRebate(BigDecimal commissionAmount, String platformCode,
+                                                Long memberId, MemberUserRespDTO member) {
+        if (commissionAmount == null || memberId == null || member == null) {
             return BigDecimal.ZERO;
         }
-        CpsRebateConfigDO config = rebateConfigService.matchRebateConfig(memberId, member.getLevelId(), dto.getPlatformCode());
+        CpsRebateConfigDO config = rebateConfigService.matchRebateConfig(memberId, member.getLevelId(), platformCode);
         if (config == null || config.getRebateRate() == null) {
             return BigDecimal.ZERO;
         }
-        BigDecimal estimate = dto.getCommissionAmount().multiply(config.getRebateRate())
+        BigDecimal estimate = commissionAmount.multiply(config.getRebateRate())
                 .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
         if (config.getMinRebateAmount() != null && config.getMinRebateAmount().signum() > 0
                 && estimate.compareTo(config.getMinRebateAmount()) < 0) {

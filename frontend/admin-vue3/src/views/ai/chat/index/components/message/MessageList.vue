@@ -14,6 +14,7 @@
             class="relative flex flex-col break-words bg-[var(--el-fill-color-light)] shadow-[0_0_0_1px_var(--el-border-color-light)] rounded-10px pt-10px px-10px pb-5px"
             ref="markdownViewRef"
           >
+            <MessageToolExecutions :executions="item.toolExecutions" />
             <MessageReasoning
               :reasoning-content="item.reasoningContent || ''"
               :content="item.content || ''"
@@ -117,6 +118,7 @@ import MessageKnowledge from './MessageKnowledge.vue'
 import MessageReasoning from './MessageReasoning.vue'
 import MessageFiles from './MessageFiles.vue'
 import MessageWebSearch from './MessageWebSearch.vue'
+import MessageToolExecutions from './MessageToolExecutions.vue'
 import { useClipboard } from '@vueuse/core'
 import { ArrowDownBold, Edit, RefreshRight } from '@element-plus/icons-vue'
 import { ChatMessageApi, ChatMessageVO } from '@/api/ai/chat/message'

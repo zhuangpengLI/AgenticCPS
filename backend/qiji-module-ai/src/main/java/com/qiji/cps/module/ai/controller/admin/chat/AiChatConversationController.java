@@ -9,9 +9,12 @@ import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConver
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationPageReqVO;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationRespVO;
 import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatConversationUpdateMyReqVO;
+import com.qiji.cps.module.ai.controller.admin.chat.vo.conversation.AiChatToolActionRespVO;
 import com.qiji.cps.module.ai.dal.dataobject.chat.AiChatConversationDO;
 import com.qiji.cps.module.ai.service.chat.AiChatConversationService;
 import com.qiji.cps.module.ai.service.chat.AiChatMessageService;
+import com.qiji.cps.module.ai.service.chat.tool.AiChatToolAction;
+import com.qiji.cps.module.ai.service.chat.tool.AiChatToolActionService;
 import com.fhs.core.trans.anno.TransMethodResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -40,6 +43,8 @@ public class AiChatConversationController {
     private AiChatConversationService chatConversationService;
     @Resource
     private AiChatMessageService chatMessageService;
+    @Resource
+    private AiChatToolActionService chatToolActionService;
 
     @PostMapping("/create-my")
     @Operation(summary = "创建【我的】聊天对话")
@@ -76,6 +81,22 @@ public class AiChatConversationController {
     public CommonResult<AiChatConversationRespVO> getChatConversationMy(@RequestParam("id") Long id) {
         AiChatConversationDO conversation = chatConversationService.getOwnedConversation(id, ADMIN.name(), getLoginUserId());
         return success(BeanUtils.toBean(conversation, AiChatConversationRespVO.class));
+    }
+
+    @GetMapping("/tool-actions")
+    @Operation(summary = "获得当前对话可用的业务快捷操作")
+    public CommonResult<List<AiChatToolActionRespVO>> getToolActions(
+            @RequestParam("conversationId") Long conversationId) {
+        AiChatConversationDO conversation = chatConversationService.getOwnedConversation(
+                conversationId, ADMIN.name(), getLoginUserId());
+        return success(convertList(chatToolActionService.getAvailableActions(conversation), this::toToolActionRespVO));
+    }
+
+    private AiChatToolActionRespVO toToolActionRespVO(AiChatToolAction action) {
+        AiChatToolActionRespVO response = BeanUtils.toBean(action, AiChatToolActionRespVO.class)
+                .setRiskLevel(action.getRiskLevel().name()).setInteractionType(action.getInteractionType().name());
+        response.setFields(BeanUtils.toBean(action.getFields(), AiChatToolActionRespVO.Field.class));
+        return response;
     }
 
     @DeleteMapping("/delete-my")

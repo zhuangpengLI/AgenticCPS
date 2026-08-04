@@ -220,7 +220,8 @@ spring:
         sse-endpoint: /sse             # SSE 连接端点
         sse-message-endpoint: /mcp/message  # Streamable HTTP 消息端点
       client:
-        enabled: false
+        enabled: ${AI_MCP_CLIENT_ENABLED:true}
+        initialized: false             # 各 MCP 按需初始化；单个外部服务不可用时不阻断应用启动
         name: mcp
         sse:
           connections:
@@ -228,16 +229,17 @@ spring:
               url: http://127.0.0.1:8089
               sse-endpoint: /sse
             haina:
-              url: http://127.0.0.1:8090
-              sse-endpoint: /sse
+              url: https://sse-gw-openapi.zhidemai.com
+              sse-endpoint: /mcp-servers/ai-mcp/sse
         annotation-scanner:
           enabled: false # TODO @芋艿：有 bug https://github.com/spring-projects/spring-ai/issues/4917 需要官方修复
 
 qiji:
   cps:
     haina:
-      enabled: false
+      enabled: ${HAINA_MCP_ENABLED:true}
       client-name: haina
+      api-key: ${HAINA_MCP_API_KEY:ca1ccb2d3211270a99e6b668a3454045} # 请替换为海纳控制台 API Key；生产环境建议使用环境变量
       max-results: 10
   ai:
     gemini: # 谷歌 Gemini

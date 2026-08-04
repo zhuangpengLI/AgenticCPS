@@ -34,6 +34,30 @@ export interface ChatMessageVO {
   createTime: Date // 创建时间
   roleAvatar: string // 角色头像
   userAvatar: string // 用户头像
+  toolExecutions?: ToolExecutionVO[] // 当前回答的工具执行状态（仅当前页面保留）
+  toolIntent?: string // 仅发送时使用的隐藏路由意图
+  intentRequestId?: string // 仅发送时使用的幂等请求编号
+}
+
+export type ChatStreamEventType =
+  | 'MESSAGE_DELTA'
+  | 'TOOL_STARTED'
+  | 'TOOL_SUCCEEDED'
+  | 'TOOL_FAILED'
+
+export interface ToolExecutionVO {
+  executionId: string
+  intent: string
+  label: string
+  status: string
+  message: string
+}
+
+export interface ChatMessageStreamData {
+  eventType?: ChatStreamEventType
+  send?: ChatMessageVO
+  receive?: ChatMessageVO
+  toolExecution?: ToolExecutionVO
 }
 
 // AI chat 聊天
@@ -56,7 +80,9 @@ export const ChatMessageApi = {
     onMessage,
     onError,
     onClose,
-    attachmentUrls?: string[]
+    attachmentUrls?: string[],
+    toolIntent?: string,
+    intentRequestId?: string
   ) => {
     const token = getAccessToken()
     return fetchEventSource(`${config.base_url}/ai/chat/message/send-stream`, {
@@ -71,7 +97,9 @@ export const ChatMessageApi = {
         content,
         useContext: enableContext,
         useSearch: enableWebSearch,
-        attachmentUrls: attachmentUrls || []
+        attachmentUrls: attachmentUrls || [],
+        toolIntent,
+        intentRequestId
       }),
       onmessage: onMessage,
       onerror: onError,

@@ -224,7 +224,9 @@
       </el-table-column>
       <el-table-column label="预估返利" align="center" width="90">
         <template #default="scope">
-          <span class="text-green-600">¥{{ formatAmount(scope.row.estimateRebate) }}</span>
+          <span :class="scope.row.memberId ? 'text-green-600' : 'text-gray-500'">
+            {{ formatEstimateRebate(scope.row) }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column label="实际返利" align="center" width="90">
@@ -411,7 +413,7 @@
             </el-tooltip>
           </span>
         </template>
-        ¥{{ formatAmount(detailData.estimateRebate) }}
+        {{ formatEstimateRebate(detailData) }}
       </el-descriptions-item>
       <el-descriptions-item>
         <template #label>
@@ -654,6 +656,12 @@ const orderStatusLabel = (status: string) => {
 const formatAmount = (val?: number) => {
   if (val == null) return '0.00'
   return Number(val).toFixed(2)
+}
+
+/** 未完成可信会员归因时，预计返利金额尚不能确定。 */
+const formatEstimateRebate = (order?: CpsOrderVO | null) => {
+  if (!order?.memberId) return '待归因'
+  return `¥${formatAmount(order.estimateRebate)}`
 }
 
 /** 日期格式化 */

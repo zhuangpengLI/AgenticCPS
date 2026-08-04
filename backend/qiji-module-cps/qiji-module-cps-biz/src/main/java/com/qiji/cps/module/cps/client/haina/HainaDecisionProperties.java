@@ -9,9 +9,11 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "qiji.cps.haina")
 public class HainaDecisionProperties {
 
-    private boolean enabled = false;
+    private boolean enabled = true;
 
     private String clientName = "haina";
+
+    private String apiKey;
 
     private int maxResults = 10;
 }

@@ -52,7 +52,7 @@
             <!-- 情况三：消息列表为空 -->
             <MessageListEmpty
               v-if="!activeMessageListLoading && messageList.length === 0 && activeConversation"
-              @on-prompt="doSendMessage"
+              @on-prompt="handleRecommendedPrompt"
             />
             <!-- 情况四：消息列表不为空 -->
             <MessageList
@@ -70,11 +70,21 @@
 
       <!-- 底部 -->
       <el-footer class="flex flex-col !h-auto !p-0">
+        <CpsToolActionBar
+          :actions="toolActions"
+          :disabled="conversationInProgress"
+          @submit="handleToolActionSubmit"
+        />
         <!-- TODO @芋艿：这块要想办法迁移下！ -->
         <form
           class="mt-10px mx-20px mb-20px py-9px px-10px flex flex-col h-auto rounded-10px"
           style="border: 1px solid var(--el-border-color)"
         >
+          <div v-if="selectedToolAction" class="mb-8px flex items-center">
+            <el-tag closable type="primary" @close="clearSelectedToolAction">
+              优先使用：{{ friendlyToolText(selectedToolAction.label, '已选业务能力') }}
+            </el-tag>
+          </div>
           <textarea
             class="h-80px border-none box-border resize-none py-0 px-2px overflow-auto focus:outline-none"
             v-model="prompt"
@@ -124,8 +134,14 @@
 </template>
 
 <script setup lang="ts">
-import { ChatMessageApi, ChatMessageVO } from '@/api/ai/chat/message'
+import {
+  ChatMessageApi,
+  type ChatMessageStreamData,
+  type ChatMessageVO,
+  type ToolExecutionVO
+} from '@/api/ai/chat/message'
 import { ChatConversationApi, ChatConversationVO } from '@/api/ai/chat/conversation'
+import { ChatToolActionApi, type ToolActionVO } from '@/api/ai/chat/toolAction'
 import ConversationList from './components/conversation/ConversationList.vue'
 import ConversationUpdateForm from './components/conversation/ConversationUpdateForm.vue'
 import MessageList from './components/message/MessageList.vue'
@@ -133,6 +149,13 @@ import MessageListEmpty from './components/message/MessageListEmpty.vue'
 import MessageLoading from './components/message/MessageLoading.vue'
 import MessageNewConversation from './components/message/MessageNewConversation.vue'
 import MessageFileUpload from './components/message/MessageFileUpload.vue'
+import CpsToolActionBar from './components/tool/CpsToolActionBar.vue'
+import {
+  createIntentRequestId,
+  type RecommendedPrompt,
+  toFriendlyToolText,
+  upsertToolExecution
+} from './toolActions'
 
 /** AI 聊天对话 列表 */
 defineOptions({ name: 'AiChat' })
@@ -145,6 +168,9 @@ const conversationListRef = ref()
 const activeConversationId = ref<number | null>(null) // 选中的对话编号
 const activeConversation = ref<ChatConversationVO | null>(null) // 选中的 Conversation
 const conversationInProgress = ref(false) // 对话是否正在进行中。目前只有【发送】消息时，会更新为 true，避免切换对话、删除对话等操作
+const toolActions = ref<ToolActionVO[]>([]) // 当前角色实际可用的业务工具入口
+const selectedToolAction = ref<ToolActionVO>() // 输入框携带的隐藏路由意图
+const selectedIntentRequestId = ref<string>() // 写操作重试所需的稳定请求编号
 
 // 消息列表
 const messageRef = ref()
@@ -169,6 +195,23 @@ const receiveMessageDisplayedText = ref('')
 
 // =========== 【聊天对话】相关 ===========
 
+/** 加载当前会话实际绑定的快捷能力；失败时保持普通聊天体验。 */
+const loadToolActions = async (conversationId: number | null) => {
+  toolActions.value = []
+  selectedToolAction.value = undefined
+  selectedIntentRequestId.value = undefined
+  if (!conversationId) return
+  try {
+    const actions = await ChatToolActionApi.getToolActions(conversationId)
+    if (activeConversationId.value === conversationId) {
+      toolActions.value = Array.isArray(actions) ? actions : []
+    }
+  } catch {
+    // 能力接口是渐进增强，失败时不打断普通聊天。
+    toolActions.value = []
+  }
+}
+
 /** 获取对话信息 */
 const getConversation = async (id: number | null) => {
   if (!id) {
@@ -180,6 +223,7 @@ const getConversation = async (id: number | null) => {
   }
   activeConversation.value = conversation
   activeConversationId.value = conversation.id
+  await loadToolActions(conversation.id)
 }
 
 /**
@@ -198,6 +242,7 @@ const handleConversationClick = async (conversation: ChatConversationVO) => {
   // 更新选中的对话 id
   activeConversationId.value = conversation.id
   activeConversation.value = conversation
+  await loadToolActions(conversation.id)
   // 刷新 message 列表
   await getMessageList()
   // 滚动底部
@@ -226,6 +271,9 @@ const handleConversationClear = async () => {
   activeConversationId.value = null
   activeConversation.value = null
   activeMessageList.value = []
+  toolActions.value = []
+  selectedToolAction.value = undefined
+  selectedIntentRequestId.value = undefined
 }
 
 /** 修改聊天对话 */
@@ -249,6 +297,8 @@ const handleConversationCreateSuccess = async () => {
   prompt.value = ''
   // 清空文件列表
   uploadFiles.value = []
+  selectedToolAction.value = undefined
+  selectedIntentRequestId.value = undefined
 }
 
 // =========== 【消息列表】相关 ===========
@@ -345,6 +395,43 @@ const handleGoTopMessage = () => {
 
 // =========== 【发送消息】相关 ===========
 
+const friendlyToolText = (value?: string, fallback?: string) =>
+  toFriendlyToolText(value, fallback)
+
+const clearSelectedToolAction = () => {
+  selectedToolAction.value = undefined
+  selectedIntentRequestId.value = undefined
+}
+
+/** 推荐问题只预填输入框，不自动发送。 */
+const handleRecommendedPrompt = (recommendedPrompt: RecommendedPrompt) => {
+  prompt.value = recommendedPrompt.prompt
+  selectedToolAction.value = toolActions.value.find(
+    (action) => action.intent === recommendedPrompt.toolIntent
+  )
+  selectedIntentRequestId.value = selectedToolAction.value ? createIntentRequestId() : undefined
+}
+
+/** 处理快捷入口生成的自然语言；表单只读操作先回填，直接/写操作按风险确认后发送。 */
+const handleToolActionSubmit = async ({
+  action,
+  prompt: generatedPrompt,
+  intentRequestId,
+  autoSend
+}: {
+  action: ToolActionVO
+  prompt: string
+  intentRequestId: string
+  autoSend: boolean
+}) => {
+  selectedToolAction.value = action
+  selectedIntentRequestId.value = intentRequestId
+  prompt.value = generatedPrompt
+  if (autoSend) {
+    await doSendMessage(generatedPrompt)
+  }
+}
+
 /** 处理来自 keydown 的发送消息 */
 const handleSendByKeydown = async (event) => {
   // 判断用户是否在输入
@@ -418,17 +505,50 @@ const doSendMessage = async (content: string) => {
 
   // 准备附件 URL 数组
   const attachmentUrls = [...uploadFiles.value]
+  const toolIntent = selectedToolAction.value?.intent
+  const intentRequestId = selectedIntentRequestId.value
 
   // 清空输入框和文件列表
   prompt.value = ''
   uploadFiles.value = []
+  clearSelectedToolAction()
 
   // 执行发送
   await doSendMessageStream({
     conversationId: activeConversationId.value,
     content: content,
-    attachmentUrls: attachmentUrls
+    attachmentUrls: attachmentUrls,
+    toolIntent,
+    intentRequestId
   } as ChatMessageVO)
+}
+
+const updateToolExecution = (
+  execution: ToolExecutionVO,
+  eventType: Exclude<NonNullable<ChatMessageStreamData['eventType']>, 'MESSAGE_DELTA'>
+) => {
+  const assistantMessage = [...activeMessageList.value]
+    .reverse()
+    .find((item) => item.type === 'assistant')
+  if (!assistantMessage) return
+  const statusByEvent = {
+    TOOL_STARTED: 'RUNNING',
+    TOOL_SUCCEEDED: 'SUCCEEDED',
+    TOOL_FAILED: 'FAILED'
+  } as const
+  const fallbackByEvent = {
+    TOOL_STARTED: `正在${friendlyToolText(execution.label, '处理业务请求')}`,
+    TOOL_SUCCEEDED: `${friendlyToolText(execution.label, '业务处理')}已完成`,
+    TOOL_FAILED: `${friendlyToolText(execution.label, '业务处理')}未完成，请稍后重试`
+  } as const
+  assistantMessage.toolExecutions = upsertToolExecution(assistantMessage.toolExecutions || [], {
+    ...execution,
+    status: execution.status || statusByEvent[eventType],
+    message: friendlyToolText(execution.message, fallbackByEvent[eventType])
+  })
+  if (assistantMessage.content === '正在理解需求…') {
+    assistantMessage.content = ''
+  }
 }
 
 /** 真正执行【发送】消息操作 */
@@ -454,8 +574,9 @@ const doSendMessageStream = async (userMessage: ChatMessageVO) => {
       id: -2,
       conversationId: activeConversationId.value,
       type: 'assistant',
-      content: '思考中...',
+      content: '正在理解需求…',
       reasoningContent: '',
+      toolExecutions: [],
       createTime: new Date()
     } as ChatMessageVO)
     // 1.2 滚动到最下面
@@ -473,13 +594,28 @@ const doSendMessageStream = async (userMessage: ChatMessageVO) => {
       enableContext.value,
       enableWebSearch.value,
       async (res) => {
-        const { code, data, msg } = JSON.parse(res.data)
+        const { code, data, msg } = JSON.parse(res.data) as {
+          code: number
+          data: ChatMessageStreamData
+          msg?: string
+        }
         if (code !== 0) {
           message.alert(`对话异常! ${msg}`)
           // 如果未接收到消息，则进行删除
           if (receiveMessageFullText.value === '') {
             activeMessageList.value.pop()
           }
+          return
+        }
+
+        const eventType = data.eventType || 'MESSAGE_DELTA'
+        if (eventType !== 'MESSAGE_DELTA' && data.toolExecution) {
+          updateToolExecution(data.toolExecution, eventType)
+          await scrollToBottom()
+          return
+        }
+
+        if (!data.send || !data.receive) {
           return
         }
 
@@ -491,12 +627,15 @@ const doSendMessageStream = async (userMessage: ChatMessageVO) => {
         // 首次返回需要添加一个 message 到页面，后面的都是更新
         if (isFirstChunk) {
           isFirstChunk = false
+          const pendingAssistant = activeMessageList.value[activeMessageList.value.length - 1]
+          const toolExecutions = pendingAssistant?.toolExecutions || []
           // 弹出两个假数据
           activeMessageList.value.pop()
           activeMessageList.value.pop()
           // 更新返回的数据
           activeMessageList.value.push(data.send)
           data.send.attachmentUrls = userMessage.attachmentUrls
+          data.receive.toolExecutions = toolExecutions
           activeMessageList.value.push(data.receive)
         }
 
@@ -524,7 +663,9 @@ const doSendMessageStream = async (userMessage: ChatMessageVO) => {
       () => {
         stopStream()
       },
-      userMessage.attachmentUrls
+      userMessage.attachmentUrls,
+      userMessage.toolIntent,
+      userMessage.intentRequestId
     )
   } catch {}
 }

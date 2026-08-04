@@ -11,6 +11,7 @@ import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderAttributionLogDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderStatusEventDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderSyncLogDO;
+import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateConfigDO;
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.adzone.CpsAdzoneMapper;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderMapper;
@@ -794,6 +795,40 @@ class CpsOrderServiceImplTest {
         assertEquals("平台截图与会员申诉单一致", log.getReviewAuditNote());
         assertEquals(Long.valueOf(9001L), log.getReviewOperatorId());
         assertEquals("9001", log.getOperatorId());
+    }
+
+    @Test
+    @DisplayName("bindSpecialIdToMember - 绑定成功后应立即按会员规则重算预计返利")
+    void bindSpecialIdToMember_recalculatesEstimateRebateImmediately() {
+        when(orderMapper.selectById(11L)).thenReturn(CpsOrderDO.builder()
+                .id(11L)
+                .platformCode("taobao")
+                .platformOrderId("TB-BIND-REBATE")
+                .adzoneId("116291900443")
+                .specialId("3362084501")
+                .commissionAmount(new BigDecimal("0.21"))
+                .estimateRebate(BigDecimal.ZERO)
+                .build());
+        when(adzoneMapper.selectBySpecialId("taobao", "3362084501")).thenReturn(null);
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(1001L);
+        member.setNickname("绑定会员");
+        member.setLevelId(2L);
+        when(memberUserApi.getUser(1001L)).thenReturn(member);
+        when(rebateConfigService.matchRebateConfig(1001L, 2L, "taobao"))
+                .thenReturn(CpsRebateConfigDO.builder()
+                        .rebateRate(new BigDecimal("90.0000"))
+                        .minRebateAmount(BigDecimal.ZERO)
+                        .maxRebateAmount(BigDecimal.ZERO)
+                        .build());
+
+        orderService.bindSpecialIdToMember(new CpsOrderManualBindCommand(
+                11L, 1001L, 9001L, "manual-bind-rebate", "补录会员归因"));
+
+        verify(orderMapper).updateById(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
+                Long.valueOf(1001L).equals(order.getMemberId())
+                        && "specialId".equals(order.getAttributionSource())
+                        && new BigDecimal("0.19").compareTo(order.getEstimateRebate()) == 0));
     }
 
     @Test

@@ -31,6 +31,11 @@ import com.qiji.cps.module.ai.service.knowledge.bo.AiKnowledgeSegmentSearchReqBO
 import com.qiji.cps.module.ai.service.knowledge.bo.AiKnowledgeSegmentSearchRespBO;
 import com.qiji.cps.module.ai.service.model.AiChatRoleService;
 import com.qiji.cps.module.ai.service.model.AiModelService;
+import com.qiji.cps.module.ai.service.chat.tool.AiChatToolAction;
+import com.qiji.cps.module.ai.service.chat.tool.AiChatToolActionService;
+import com.qiji.cps.module.ai.service.chat.tool.AiChatToolExecutionEvent;
+import com.qiji.cps.module.ai.service.chat.tool.AiChatToolExecutionListener;
+import com.qiji.cps.module.ai.service.chat.tool.AiChatToolRiskLevel;
 import com.qiji.cps.module.ai.util.AiUtils;
 import com.qiji.cps.module.ai.util.FileTypeUtils;
 import com.google.common.collect.Maps;
@@ -50,6 +55,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -63,6 +69,7 @@ import static com.qiji.cps.framework.common.pojo.CommonResult.success;
 import static com.qiji.cps.framework.common.util.collection.CollectionUtils.convertList;
 import static com.qiji.cps.framework.common.util.collection.CollectionUtils.convertSet;
 import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.CHAT_MESSAGE_NOT_EXIST;
+import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.CHAT_TOOL_INTENT_REQUEST_ID_REQUIRED;
 
 /**
  * AI 聊天消息 Service 实现类
@@ -116,6 +123,8 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
     private AiChatIdentityContextService identityContextService;
     @Resource
     private AiChatToolCallbackService toolCallbackService;
+    @Resource
+    private AiChatToolActionService toolActionService;
     @Autowired(required = false)
     private AiWebSearchClient webSearchClient;
 
@@ -124,6 +133,8 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         // 1.1 校验对话存在
         AiChatConversationDO conversation = chatConversationService
                 .getOwnedConversation(sendReqVO.getConversationId(), ownerUserType, userId);
+        AiChatToolAction requestedAction = toolActionService.requireAllowedAction(conversation, sendReqVO.getToolIntent());
+        validateIntentRequestId(requestedAction, sendReqVO);
         List<AiChatMessageDO> historyMessages = chatMessageMapper.selectListByConversationId(conversation.getId());
         // 1.2 校验模型
         AiModelDO model = modalService.validateModel(conversation.getModelId());
@@ -149,7 +160,8 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                 knowledgeSegments, null, webSearchResponse);
 
         // 4.2 创建 chat 需要的 Prompt
-        Prompt prompt = buildPrompt(conversation, historyMessages, knowledgeSegments, webSearchResponse, model, sendReqVO);
+        Prompt prompt = buildPrompt(conversation, historyMessages, knowledgeSegments, webSearchResponse, model, sendReqVO,
+                requestedAction, AiChatToolExecutionListener.NOOP);
         ChatResponse chatResponse = chatModel.call(prompt);
 
         // 4.3 更新响应内容
@@ -166,6 +178,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                     segment.setDocumentName(document != null ? document.getName() : null);
                 });
         return new AiChatMessageSendRespVO()
+                .setEventType("MESSAGE_DELTA")
                 .setSend(BeanUtils.toBean(userMessage, AiChatMessageSendRespVO.Message.class))
                 .setReceive(BeanUtils.toBean(assistantMessage, AiChatMessageSendRespVO.Message.class)
                         .setContent(newContent).setSegments(segments)
@@ -178,6 +191,8 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         // 1.1 校验对话存在
         AiChatConversationDO conversation = chatConversationService
                 .getOwnedConversation(sendReqVO.getConversationId(), ownerUserType, userId);
+        AiChatToolAction requestedAction = toolActionService.requireAllowedAction(conversation, sendReqVO.getToolIntent());
+        validateIntentRequestId(requestedAction, sendReqVO);
         List<AiChatMessageDO> historyMessages = chatMessageMapper.selectListByConversationId(conversation.getId());
         // 1.2 校验模型
         AiModelDO model = modalService.validateModel(conversation.getModelId());
@@ -203,7 +218,15 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                 knowledgeSegments, null, webSearchResponse);
 
         // 4.2 构建 Prompt，并进行调用
-        Prompt prompt = buildPrompt(conversation, historyMessages, knowledgeSegments, webSearchResponse, model, sendReqVO);
+        Sinks.Many<AiChatToolExecutionEvent> toolEventSink = Sinks.many().unicast().onBackpressureBuffer();
+        Object toolEventLock = new Object();
+        AiChatToolExecutionListener toolExecutionListener = event -> {
+            synchronized (toolEventLock) {
+                toolEventSink.tryEmitNext(event);
+            }
+        };
+        Prompt prompt = buildPrompt(conversation, historyMessages, knowledgeSegments, webSearchResponse, model, sendReqVO,
+                requestedAction, toolExecutionListener);
         Flux<ChatResponse> streamResponse = chatModel.stream(prompt);
 
         // 4.3 流式返回
@@ -214,7 +237,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         AtomicBoolean firstExecuteFlag = new AtomicBoolean(true);
         AtomicReference<List<AiChatMessageRespVO.KnowledgeSegment>> cacheSegments = new AtomicReference<>();
         AtomicReference<List<AiWebSearchResponse.WebPage>> cacheWebSearchPages = new AtomicReference<>();
-        return streamResponse.map(chunk -> {
+        Flux<CommonResult<AiChatMessageSendRespVO>> messageFlux = streamResponse.map(chunk -> {
             // 仅首次：返回知识库、联网搜索
             if (StrUtil.isEmpty(contentBuffer)) {
                 if (firstExecuteFlag.compareAndSet(true, false)) { // CAS 操作，确保仅执行一次
@@ -239,6 +262,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                 reasoningContentBuffer.append(newReasoningContent);
             }
             return success(new AiChatMessageSendRespVO()
+                    .setEventType("MESSAGE_DELTA")
                     .setSend(BeanUtils.toBean(userMessage, AiChatMessageSendRespVO.Message.class))
                     .setReceive(BeanUtils.toBean(assistantMessage, AiChatMessageSendRespVO.Message.class)
                             .setContent(StrUtil.nullToDefault(newContent, "")) // 避免 null 的 情况
@@ -275,7 +299,16 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                     chatMessageMapper.deleteById(assistantMessage.getId());
                 }
             });
-        }).onErrorResume(error -> Flux.just(error(ErrorCodeConstants.CHAT_STREAM_ERROR)));
+        }).onErrorResume(error -> Flux.just(error(ErrorCodeConstants.CHAT_STREAM_ERROR)))
+                .doFinally(signalType -> {
+                    synchronized (toolEventLock) {
+                        toolEventSink.tryEmitComplete();
+                    }
+                });
+        Flux<CommonResult<AiChatMessageSendRespVO>> toolEventFlux = toolEventSink.asFlux()
+                .map(event -> success(toToolExecutionResponse(event)));
+        // Subscribe to the event sink before the single model stream subscription starts emitting tool callbacks.
+        return Flux.merge(toolEventFlux, messageFlux);
     }
 
     private List<AiKnowledgeSegmentSearchRespBO> recallKnowledgeSegment(String content,
@@ -301,11 +334,16 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
     private Prompt buildPrompt(AiChatConversationDO conversation, List<AiChatMessageDO> messages,
                                List<AiKnowledgeSegmentSearchRespBO> knowledgeSegments,
                                AiWebSearchResponse webSearchResponse,
-                               AiModelDO model, AiChatMessageSendReqVO sendReqVO) {
+                               AiModelDO model, AiChatMessageSendReqVO sendReqVO,
+                               AiChatToolAction requestedAction,
+                               AiChatToolExecutionListener toolExecutionListener) {
         List<Message> chatMessages = new ArrayList<>();
         // 1.1 System Context 角色设定
         if (StrUtil.isNotBlank(conversation.getSystemMessage())) {
             chatMessages.add(new SystemMessage(conversation.getSystemMessage()));
+        }
+        if (requestedAction != null) {
+            chatMessages.add(new SystemMessage(buildToolIntentMessage(requestedAction, sendReqVO.getIntentRequestId())));
         }
 
         // 1.2 历史 history message 历史消息
@@ -352,7 +390,8 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         }
 
         // 2.1 查询 tool 工具
-        List<ToolCallback> toolCallbacks = toolCallbackService.getToolCallbacks(conversation);
+        List<ToolCallback> toolCallbacks = toolCallbackService.getToolCallbacks(conversation,
+                toolActionService.getAvailableActionsByToolName(conversation), toolExecutionListener);
         Map<String,Object> toolContext = CollUtil.isNotEmpty(toolCallbacks) ? identityContextService.buildToolContext(conversation)
                 : Map.of();
         // 2.2 构建 ChatOptions 对象
@@ -361,6 +400,33 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                 conversation.getTemperature(), conversation.getMaxTokens(),
                 toolCallbacks, toolContext);
         return new Prompt(chatMessages, chatOptions);
+    }
+
+    private String buildToolIntentMessage(AiChatToolAction action, UUID intentRequestId) {
+        StringBuilder message = new StringBuilder("[TrustedToolIntent]\n")
+                .append("用户通过可信快捷入口选择了「").append(action.getLabel()).append("」。")
+                .append("请优先考虑调用 ").append(action.getToolName())
+                .append("，但如果该工具不适合，可以改用其他已授权工具或追问缺失参数。")
+                .append("不要向用户暴露内部工具名。");
+        if (intentRequestId != null) {
+            message.append("本次请求的可信标识为 ").append(intentRequestId)
+                    .append("；如工具支持幂等键，必须将该标识作为幂等键。");
+        }
+        return message.append("\n[/TrustedToolIntent]").toString();
+    }
+
+    private void validateIntentRequestId(AiChatToolAction action, AiChatMessageSendReqVO sendReqVO) {
+        if (action != null && action.getRiskLevel() == AiChatToolRiskLevel.ASSET_WRITE
+                && sendReqVO.getIntentRequestId() == null) {
+            throw exception(CHAT_TOOL_INTENT_REQUEST_ID_REQUIRED);
+        }
+    }
+
+    private AiChatMessageSendRespVO toToolExecutionResponse(AiChatToolExecutionEvent event) {
+        return new AiChatMessageSendRespVO().setEventType(event.getEventType())
+                .setToolExecution(new AiChatMessageSendRespVO.ToolExecution()
+                        .setExecutionId(event.getExecutionId()).setIntent(event.getIntent()).setLabel(event.getLabel())
+                        .setStatus(event.getStatus()).setMessage(event.getMessage()));
     }
 
     /**

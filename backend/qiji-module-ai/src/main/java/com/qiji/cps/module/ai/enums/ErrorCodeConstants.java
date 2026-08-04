@@ -36,6 +36,8 @@ public interface ErrorCodeConstants {
     // ========== API 聊天消息 1-040-004-000 ==========
     ErrorCode CHAT_MESSAGE_NOT_EXIST = new ErrorCode(1_040_004_000, "消息不存在!");
     ErrorCode CHAT_STREAM_ERROR = new ErrorCode(1_040_004_001, "对话生成异常!");
+    ErrorCode CHAT_TOOL_INTENT_NOT_ALLOWED = new ErrorCode(1_040_004_002, "当前对话不支持快捷操作({})");
+    ErrorCode CHAT_TOOL_INTENT_REQUEST_ID_REQUIRED = new ErrorCode(1_040_004_003, "资产操作缺少请求标识");
 
     // ========== API 绘画 1-040-005-000 ==========
     ErrorCode IMAGE_NOT_EXISTS = new ErrorCode(1_040_005_000, "图片不存在!");
