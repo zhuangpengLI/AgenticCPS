@@ -18,6 +18,9 @@ const CpsWithdrawApi = {
         withdrawAccountName,
         idempotencyKey,
       },
+      custom: {
+        auth: true,
+      },
     });
   },
   getWithdrawPage: (params) => {
@@ -27,6 +30,7 @@ const CpsWithdrawApi = {
       params,
       custom: {
         showLoading: false,
+        auth: true,
       },
     });
   },
@@ -36,6 +40,7 @@ const CpsWithdrawApi = {
       method: 'GET',
       custom: {
         showLoading: false,
+        auth: true,
       },
     });
   },

@@ -70,6 +70,9 @@ const CpsGoodsApi = {
         goodsSign,
         adzoneId,
       },
+      custom: {
+        auth: true,
+      },
     });
   },
 };

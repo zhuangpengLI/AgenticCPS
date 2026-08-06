@@ -7,6 +7,7 @@ const CpsRebateApi = {
       method: 'GET',
       custom: {
         showLoading: false,
+        auth: true,
       },
     });
   },
@@ -17,6 +18,7 @@ const CpsRebateApi = {
       params,
       custom: {
         showLoading: false,
+        auth: true,
       },
     });
   },
@@ -26,6 +28,7 @@ const CpsRebateApi = {
       method: 'GET',
       custom: {
         showLoading: false,
+        auth: true,
       },
     });
   },
@@ -36,6 +39,7 @@ const CpsRebateApi = {
       params,
       custom: {
         showLoading: false,
+        auth: true,
       },
     });
   },

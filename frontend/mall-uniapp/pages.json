@@ -379,25 +379,25 @@
         {
           "path": "wallet",
           "style": {
-            "navigationBarTitleText": "我的佣金"
+            "navigationBarTitleText": "我的返利"
           },
           "meta": {
             "auth": true,
             "sync": true,
-            "title": "用户佣金",
-            "group": "分销中心"
+            "title": "返利钱包",
+            "group": "返利中心"
           }
         },
         {
           "path": "goods",
           "style": {
-            "navigationBarTitleText": "推广商品"
+            "navigationBarTitleText": "查券返利"
           },
           "meta": {
-            "auth": true,
+            "auth": false,
             "sync": true,
-            "title": "推广商品",
-            "group": "分销商城"
+            "title": "查券返利",
+            "group": "返利中心"
           }
         },
         {
@@ -406,22 +406,22 @@
             "navigationBarTitleText": "商品详情"
           },
           "meta": {
-            "auth": true,
+            "auth": false,
             "sync": true,
             "title": "商品详情",
-            "group": "分销商城"
+            "group": "返利中心"
           }
         },
         {
           "path": "order",
           "style": {
-            "navigationBarTitleText": "分销订单"
+            "navigationBarTitleText": "返利订单"
           },
           "meta": {
             "auth": true,
             "sync": true,
-            "title": "分销订单",
-            "group": "分销商城"
+            "title": "返利订单",
+            "group": "返利中心"
           }
         },
         {
@@ -469,7 +469,146 @@
             "auth": true,
             "sync": true,
             "title": "申请提现",
-            "group": "分销商城"
+            "group": "返利中心"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/cps",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "返利中心"
+          },
+          "meta": {
+            "auth": false,
+            "sync": true,
+            "title": "返利中心",
+            "group": "返利中心"
+          }
+        },
+        {
+          "path": "goods",
+          "style": {
+            "navigationBarTitleText": "查券返利"
+          },
+          "meta": {
+            "auth": false,
+            "sync": true,
+            "title": "查券返利",
+            "group": "返利中心"
+          }
+        },
+        {
+          "path": "goods-detail",
+          "style": {
+            "navigationBarTitleText": "商品详情"
+          },
+          "meta": {
+            "auth": false,
+            "sync": true,
+            "title": "商品详情",
+            "group": "返利中心"
+          }
+        },
+        {
+          "path": "order",
+          "style": {
+            "navigationBarTitleText": "返利订单"
+          },
+          "meta": {
+            "auth": true,
+            "sync": true,
+            "title": "返利订单",
+            "group": "返利中心"
+          }
+        },
+        {
+          "path": "wallet",
+          "style": {
+            "navigationBarTitleText": "返利钱包"
+          },
+          "meta": {
+            "auth": true,
+            "sync": true,
+            "title": "返利钱包",
+            "group": "返利中心"
+          }
+        },
+        {
+          "path": "withdraw",
+          "style": {
+            "navigationBarTitleText": "申请提现"
+          },
+          "meta": {
+            "auth": true,
+            "sync": true,
+            "title": "申请提现",
+            "group": "返利中心"
+          }
+        },
+        {
+          "path": "activity",
+          "style": {
+            "navigationBarTitleText": "返利活动"
+          },
+          "meta": {
+            "auth": false,
+            "sync": true,
+            "title": "返利活动",
+            "group": "返利中心"
+          }
+        },
+        {
+          "path": "deals",
+          "style": {
+            "navigationBarTitleText": "主题好价"
+          },
+          "meta": {
+            "auth": false,
+            "sync": true,
+            "title": "主题好价",
+            "group": "返利中心"
+          }
+        },
+        {
+          "path": "history",
+          "style": {
+            "navigationBarTitleText": "返利足迹",
+            "enablePullDownRefresh": true
+          },
+          "meta": {
+            "auth": true,
+            "sync": true,
+            "title": "返利足迹",
+            "group": "返利中心"
+          }
+        },
+        {
+          "path": "favorites",
+          "style": {
+            "navigationBarTitleText": "返利收藏",
+            "enablePullDownRefresh": true
+          },
+          "meta": {
+            "auth": true,
+            "sync": true,
+            "title": "返利收藏",
+            "group": "返利中心"
+          }
+        },
+        {
+          "path": "exchange",
+          "style": {
+            "navigationBarTitleText": "返利兑换 Token"
+          },
+          "meta": {
+            "auth": true,
+            "sync": true,
+            "title": "返利兑换 Token",
+            "group": "返利中心"
           }
         }
       ]

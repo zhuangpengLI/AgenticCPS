@@ -8,6 +8,7 @@ const CpsOrderApi = {
       params,
       custom: {
         showLoading: false,
+        auth: true,
       },
     });
   },
@@ -17,6 +18,7 @@ const CpsOrderApi = {
       method: 'GET',
       custom: {
         showLoading: false,
+        auth: true,
       },
     });
   },
@@ -25,6 +27,9 @@ const CpsOrderApi = {
       url: '/cps/order/claim',
       method: 'POST',
       data,
+      custom: {
+        auth: true,
+      },
     });
   },
   getClaimList: () => {
@@ -33,6 +38,7 @@ const CpsOrderApi = {
       method: 'GET',
       custom: {
         showLoading: false,
+        auth: true,
       },
     });
   },

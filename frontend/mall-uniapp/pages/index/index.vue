@@ -9,6 +9,13 @@
       :navbarStyle="template.navigationBar"
       onShareAppMessage
     >
+      <view class="cps-entry ss-flex ss-row-between" @tap="sheep.$router.go('/pages/cps/index')">
+        <view>
+          <view class="cps-entry__title">查券返利</view>
+          <view class="cps-entry__desc">搜商品、领优惠，购买后赚返利</view>
+        </view>
+        <view class="cps-entry__action">去看看</view>
+      </view>
       <s-block
         v-for="(item, index) in template.components"
         :key="index"
@@ -79,7 +86,7 @@
     }
   });
 
-  onShow(async() => {
+  onShow(async () => {
     // #ifdef APP-PLUS
     // ios首次授权网络，需要重新加载一次应用初始化
     // 可能需要考虑上uni.onNetworkStatusChange，uni.offNetworkStatusChange组合拳以及主动主动唤起权限申请
@@ -104,4 +111,35 @@
   onPageScroll(() => {});
 </script>
 
-<style></style>
+<style lang="scss" scoped>
+  .cps-entry {
+    box-sizing: border-box;
+    margin: 20rpx;
+    padding: 28rpx 32rpx;
+    border-radius: 20rpx;
+    color: #fff;
+    background: linear-gradient(135deg, #ff7a45 0%, #ff4d4f 100%);
+    box-shadow: 0 10rpx 24rpx rgba(255, 77, 79, 0.18);
+  }
+
+  .cps-entry__title {
+    font-size: 32rpx;
+    font-weight: 600;
+  }
+
+  .cps-entry__desc {
+    margin-top: 8rpx;
+    font-size: 24rpx;
+    opacity: 0.88;
+  }
+
+  .cps-entry__action {
+    flex-shrink: 0;
+    margin-left: 20rpx;
+    padding: 12rpx 22rpx;
+    border-radius: 28rpx;
+    color: #ff4d4f;
+    background: #fff;
+    font-size: 24rpx;
+  }
+</style>
