@@ -8,6 +8,8 @@ import com.qiji.cps.module.ai.dal.dataobject.model.AiChatRoleDO;
 import com.qiji.cps.module.ai.dal.dataobject.model.AiToolDO;
 import com.qiji.cps.module.ai.service.model.AiChatRoleService;
 import com.qiji.cps.module.ai.service.model.AiToolService;
+import com.qiji.cps.module.ai.service.mcp.AiMcpIdentitySigner;
+import com.qiji.cps.module.ai.service.mcp.AiSelfMcpIdentityTransport;
 import com.qiji.cps.module.ai.service.chat.tool.AiChatToolAction;
 import com.qiji.cps.module.ai.service.chat.tool.AiChatToolExecutionEvent;
 import com.qiji.cps.module.ai.service.chat.tool.AiChatToolExecutionListener;
@@ -45,6 +47,8 @@ public class AiChatToolCallbackService {
     private AiToolService toolService;
     @Resource
     private ToolCallbackResolver toolCallbackResolver;
+    @Resource
+    private AiMcpIdentitySigner identitySigner;
 
     @Autowired(required = false)
     private List<McpSyncClient> mcpClients;
@@ -66,8 +70,12 @@ public class AiChatToolCallbackService {
             return Collections.emptyList();
         }
         List<ToolCallback> toolCallbacks = new ArrayList<>();
-        addLocalCallbacks(chatRole, toolCallbacks);
-        addExternalMcpCallbacks(chatRole, toolCallbacks);
+        if ("SELF_MCP_TEST".equals(conversation.getChatMode())) {
+            addSelfMcpCallbacks(conversation, toolCallbacks);
+        } else {
+            addLocalCallbacks(chatRole, toolCallbacks);
+            addExternalMcpCallbacks(chatRole, toolCallbacks);
+        }
         if (CollUtil.isEmpty(actionsByToolName)) {
             return toolCallbacks;
         }
@@ -97,24 +105,75 @@ public class AiChatToolCallbackService {
         }
         chatRole.getMcpClientNames().forEach(mcpClientName -> {
             String configuredClientName = mcpClientCommonProperties.getName() + " - " + mcpClientName;
-            mcpClients.forEach(client -> addExternalMcpCallbacks(client, configuredClientName, toolCallbacks));
+            mcpClients.forEach(client -> addExternalMcpCallbacks(client, configuredClientName,
+                    ToolContextToMcpMetaConverter.noOp(), null, toolCallbacks));
         });
     }
 
+    private void addSelfMcpCallbacks(AiChatConversationDO conversation, List<ToolCallback> toolCallbacks) {
+        if (CollUtil.isEmpty(mcpClients) || mcpClientCommonProperties == null
+                || conversation.getMcpClientName() == null || conversation.getMcpClientName().isBlank()) {
+            log.warn("[addSelfMcpCallbacks] 自测会话 [{}] 未配置可用的 MCP Client", conversation.getId());
+            return;
+        }
+        String configuredClientName = mcpClientCommonProperties.getName() + " - " + conversation.getMcpClientName();
+        AiSelfMcpIdentityTransport identityTransport = new AiSelfMcpIdentityTransport(identitySigner);
+        mcpClients.forEach(client -> addExternalMcpCallbacks(client, configuredClientName,
+                identityTransport, identityTransport, toolCallbacks));
+    }
+
     private void addExternalMcpCallbacks(McpSyncClient client, String configuredClientName,
+                                         ToolContextToMcpMetaConverter metaConverter,
+                                         AiSelfMcpIdentityTransport identityTransport,
                                          List<ToolCallback> toolCallbacks) {
         try {
             if (!ObjUtil.equal(client.getClientInfo().name(), configuredClientName)) {
                 return;
             }
-            CollUtil.addAll(toolCallbacks, SyncMcpToolCallbackProvider.builder()
+            List<ToolCallback> callbacks = List.of(SyncMcpToolCallbackProvider.builder()
                     .mcpClients(client)
-                    // External MCP servers never receive AgenticCPS internal identity metadata by default.
-                    .toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.noOp())
+                    .toolContextToMcpMetaConverter(metaConverter)
                     .build().getToolCallbacks());
+            if (identityTransport == null) {
+                CollUtil.addAll(toolCallbacks, callbacks);
+            } else {
+                callbacks.stream().map(callback -> new SelfMcpToolCallback(callback, identityTransport))
+                        .forEach(toolCallbacks::add);
+            }
         } catch (RuntimeException ex) {
-            log.warn("[addExternalMcpCallbacks] MCP Client [{}] 暂不可用，已保留本地对话工具: {}",
+            log.warn("[addExternalMcpCallbacks] MCP Client [{}] 暂不可用: {}",
                     configuredClientName, ex.getMessage());
+        }
+    }
+
+    private static final class SelfMcpToolCallback implements ToolCallback {
+
+        private final ToolCallback delegate;
+        private final AiSelfMcpIdentityTransport identityTransport;
+
+        private SelfMcpToolCallback(ToolCallback delegate, AiSelfMcpIdentityTransport identityTransport) {
+            this.delegate = delegate;
+            this.identityTransport = identityTransport;
+        }
+
+        @Override
+        public ToolDefinition getToolDefinition() {
+            return delegate.getToolDefinition();
+        }
+
+        @Override
+        public ToolMetadata getToolMetadata() {
+            return delegate.getToolMetadata();
+        }
+
+        @Override
+        public String call(String toolInput) {
+            return call(toolInput, new ToolContext(Map.of()));
+        }
+
+        @Override
+        public String call(String toolInput, ToolContext toolContext) {
+            return delegate.call(identityTransport.addCompatibilityArguments(toolInput, toolContext), toolContext);
         }
     }
 

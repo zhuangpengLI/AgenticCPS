@@ -38,6 +38,8 @@ public class AiUtils {
     public static final String TOOL_CONTEXT_ACTOR_USER_TYPE = "ACTOR_USER_TYPE";
     public static final String TOOL_CONTEXT_CONVERSATION_ID = "CONVERSATION_ID";
     public static final String TOOL_CONTEXT_CHAT_MODE = "CHAT_MODE";
+    public static final String TOOL_CONTEXT_MCP_CLIENT_NAME = "MCP_CLIENT_NAME";
+    public static final String TOOL_CONTEXT_ALLOW_MUTATION = "ALLOW_MUTATION";
     public static final String TOOL_CONTEXT_TRACE_ID = "TRACE_ID";
 
     public static ChatOptions buildChatOptions(AiPlatformEnum platform, String model, Double temperature, Integer maxTokens) {

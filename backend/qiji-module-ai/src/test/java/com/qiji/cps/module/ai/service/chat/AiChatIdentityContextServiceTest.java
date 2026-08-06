@@ -62,6 +62,19 @@ class AiChatIdentityContextServiceTest {
     }
 
     @Test
+    void buildToolContext_addsBoundClientPolicyForSelfMcpTest() {
+        TenantContextHolder.setTenantId(7L);
+        AiChatConversationDO conversation = new AiChatConversationDO().setId(99L)
+                .setUserId(5L).setOwnerUserType("ADMIN").setMemberId(42L)
+                .setChatMode("SELF_MCP_TEST").setMcpClientName("cps").setAllowMutation(false);
+
+        Map<String, Object> context = identityContextService.buildToolContext(conversation);
+
+        assertEquals("cps", context.get(AiUtils.TOOL_CONTEXT_MCP_CLIENT_NAME));
+        assertEquals(false, context.get(AiUtils.TOOL_CONTEXT_ALLOW_MUTATION));
+    }
+
+    @Test
     void isTrustedLocalToolContext_rejectsCallerSuppliedMarkerText() {
         assertFalse(AiChatIdentityContextService.isTrustedLocalToolContext(new ToolContext(Map.of(
                 AiChatIdentityContextService.TRUSTED_LOCAL_CONTEXT_MARKER, "true"))));

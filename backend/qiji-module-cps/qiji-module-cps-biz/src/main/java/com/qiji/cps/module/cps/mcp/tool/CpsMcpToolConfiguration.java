@@ -1,5 +1,11 @@
 package com.qiji.cps.module.cps.mcp.tool;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.qiji.cps.framework.common.mcp.McpIdentityEnvelope;
+import com.qiji.cps.framework.common.mcp.McpIdentityTransportKeys;
+import com.qiji.cps.framework.common.util.json.JsonUtils;
+import com.qiji.cps.framework.tenant.core.util.TenantUtils;
+import com.qiji.cps.module.ai.service.chat.AiChatIdentityContextService;
 import com.qiji.cps.module.cps.mcp.security.CpsMcpAuthorizationService;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
@@ -10,7 +16,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Registers CPS/CPX function beans as Spring AI tool callbacks for MCP exposure.
@@ -156,8 +165,63 @@ public class CpsMcpToolConfiguration {
 
         @Override
         public String call(String toolInput, ToolContext toolContext) {
-            ToolContext trustedContext = authorizationService.authorize(getToolDefinition().name(), toolContext);
-            return delegate.call(toolInput, trustedContext);
+            TransportInput transportInput = extractTransportInput(toolInput, toolContext);
+            ToolContext trustedContext = authorizationService.authorize(
+                    getToolDefinition().name(), transportInput.toolContext());
+            if (!AiChatIdentityContextService.isTrustedLocalToolContext(trustedContext)
+                    && !CpsMcpAuthorizationService.isTrustedSelfTestContext(trustedContext)) {
+                return delegate.call(transportInput.toolInput(), trustedContext);
+            }
+            Long tenantId = requiredTenantId(trustedContext);
+            String[] result = new String[1];
+            TenantUtils.execute(tenantId,
+                    () -> result[0] = delegate.call(transportInput.toolInput(), trustedContext));
+            return result[0];
+        }
+
+        private static TransportInput extractTransportInput(String toolInput, ToolContext toolContext) {
+            Map<String, Object> arguments = JsonUtils.parseObject(toolInput,
+                    new TypeReference<LinkedHashMap<String, Object>>() { });
+            if (arguments == null) {
+                arguments = new LinkedHashMap<>();
+            }
+            boolean attemptedSelfTest = arguments.containsKey(McpIdentityTransportKeys.ARG_SELF_TEST_INVOCATION)
+                    || arguments.containsKey(McpIdentityTransportKeys.ARG_IDENTITY_PAYLOAD)
+                    || arguments.containsKey(McpIdentityTransportKeys.ARG_IDENTITY_SIGNATURE);
+            Object invocationMarker = arguments.remove(McpIdentityTransportKeys.ARG_SELF_TEST_INVOCATION);
+            Object payload = arguments.remove(McpIdentityTransportKeys.ARG_IDENTITY_PAYLOAD);
+            Object signature = arguments.remove(McpIdentityTransportKeys.ARG_IDENTITY_SIGNATURE);
+            if (!attemptedSelfTest) {
+                return new TransportInput(toolInput, toolContext);
+            }
+            Map<String, Object> context = new HashMap<>();
+            if (toolContext != null && toolContext.getContext() != null) {
+                context.putAll(toolContext.getContext());
+            }
+            context.put(McpIdentityTransportKeys.META_SELF_TEST_INVOCATION,
+                    Boolean.TRUE.equals(invocationMarker) || "true".equalsIgnoreCase(String.valueOf(invocationMarker)));
+            if (payload instanceof String payloadText && signature instanceof String signatureText) {
+                context.put(McpIdentityTransportKeys.META_IDENTITY_ENVELOPE,
+                        new McpIdentityEnvelope(payloadText, signatureText));
+            }
+            return new TransportInput(JsonUtils.toJsonString(arguments), new ToolContext(context));
+        }
+
+        private static Long requiredTenantId(ToolContext toolContext) {
+            Object value = toolContext.getContext().get(CpsMcpAuthorizationService.TOOL_CONTEXT_TENANT_ID);
+            long tenantId;
+            try {
+                tenantId = value instanceof Number number ? number.longValue() : Long.parseLong(String.valueOf(value));
+            } catch (RuntimeException exception) {
+                throw new SecurityException("Trusted tool context tenant is invalid", exception);
+            }
+            if (tenantId <= 0) {
+                throw new SecurityException("Trusted tool context tenant is invalid");
+            }
+            return tenantId;
+        }
+
+        private record TransportInput(String toolInput, ToolContext toolContext) {
         }
     }
 }

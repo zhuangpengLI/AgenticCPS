@@ -248,14 +248,14 @@ qiji:
         enabled: true
         connection-name: cps
       self-test:
-        enabled: ${AI_MCP_SELF_TEST_ENABLED:false}
-        client-name: ${AI_MCP_SELF_TEST_CLIENT_NAME:}
+        enabled: ${AI_MCP_SELF_TEST_ENABLED:true}
+        client-name: ${AI_MCP_SELF_TEST_CLIENT_NAME:cps}
         base-url: ${AI_MCP_SELF_TEST_BASE_URL:http://127.0.0.1:48080}
         endpoint: ${AI_MCP_SELF_TEST_ENDPOINT:/mcp/cps}
         connect-timeout: ${AI_MCP_SELF_TEST_CONNECT_TIMEOUT:5s}
         read-timeout: ${AI_MCP_SELF_TEST_READ_TIMEOUT:30s}
         ttl: ${AI_MCP_SELF_TEST_TTL:60s}
-        secret: ${AI_MCP_SELF_TEST_SECRET:}
+        secret: ${AI_MCP_SELF_TEST_SECRET:${random.uuid}}
   pay:
     order-notify-url: https://yutou.mynatapp.cc/admin-api/pay/notify/order # 支付渠道的【支付】回调地址
     refund-notify-url: https://yutou.mynatapp.cc/admin-api/pay/notify/refund # 支付渠道的【退款】回调地址

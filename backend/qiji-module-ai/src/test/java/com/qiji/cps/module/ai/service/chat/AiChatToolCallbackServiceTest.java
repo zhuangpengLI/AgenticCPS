@@ -1,14 +1,19 @@
 package com.qiji.cps.module.ai.service.chat;
 
 import com.qiji.cps.framework.test.core.ut.BaseMockitoUnitTest;
+import com.qiji.cps.framework.common.mcp.McpIdentityClaims;
+import com.qiji.cps.framework.common.mcp.McpIdentityEnvelope;
+import com.qiji.cps.framework.tenant.core.context.TenantContextHolder;
 import com.qiji.cps.module.ai.dal.dataobject.chat.AiChatConversationDO;
 import com.qiji.cps.module.ai.dal.dataobject.model.AiChatRoleDO;
 import com.qiji.cps.module.ai.dal.dataobject.model.AiToolDO;
 import com.qiji.cps.module.ai.service.model.AiChatRoleService;
 import com.qiji.cps.module.ai.service.model.AiToolService;
+import com.qiji.cps.module.ai.service.mcp.AiMcpIdentitySigner;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -30,8 +35,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
 
 class AiChatToolCallbackServiceTest extends BaseMockitoUnitTest {
 
@@ -48,6 +55,8 @@ class AiChatToolCallbackServiceTest extends BaseMockitoUnitTest {
     private McpSyncClient externalMcpClient;
     @Mock
     private ToolCallback localCallback;
+    @Mock
+    private AiMcpIdentitySigner identitySigner;
 
     @BeforeEach
     void setUpMcpClient() {
@@ -61,6 +70,11 @@ class AiChatToolCallbackServiceTest extends BaseMockitoUnitTest {
                         .inputSchema(new McpSchema.JsonSchema("object", Map.of(), List.of(), false, Map.of(), Map.of()))
                         .build()), null));
         lenient().when(externalMcpClient.callTool(any())).thenReturn(new McpSchema.CallToolResult("ok", false));
+    }
+
+    @AfterEach
+    void clearTenantContext() {
+        TenantContextHolder.clear();
     }
 
     @Test
@@ -98,6 +112,45 @@ class AiChatToolCallbackServiceTest extends BaseMockitoUnitTest {
                 new AiChatConversationDO().setRoleId(10L).setChatMode("STANDARD"));
 
         assertEquals(List.of(localCallback), callbacks);
+    }
+
+    @Test
+    void getToolCallbacks_selfMcpTestUsesConversationClientAndSendsSignedIdentity() {
+        AiChatRoleDO role = new AiChatRoleDO().setToolIds(List.of(1L));
+        when(chatRoleService.getChatRole(10L)).thenReturn(role);
+        when(identitySigner.sign(any(McpIdentityClaims.class)))
+                .thenReturn(new McpIdentityEnvelope("signed-payload", "signed-signature"));
+        AiChatConversationDO conversation = new AiChatConversationDO().setId(99L).setRoleId(10L)
+                .setUserId(5L).setMemberId(42L).setOwnerUserType("ADMIN")
+                .setChatMode("SELF_MCP_TEST").setMcpClientName("external").setAllowMutation(false);
+        TenantContextHolder.setTenantId(7L);
+        ToolContext trustedContext = new ToolContext(new AiChatIdentityContextService().buildToolContext(conversation));
+        TenantContextHolder.clear();
+
+        List<ToolCallback> callbacks = toolCallbackService.getToolCallbacks(conversation);
+
+        assertEquals(1, callbacks.size());
+        callbacks.get(0).call("{\"keyword\":\"test\"}", trustedContext);
+
+        ArgumentCaptor<McpSchema.CallToolRequest> requestCaptor = ArgumentCaptor.forClass(McpSchema.CallToolRequest.class);
+        verify(externalMcpClient).callTool(requestCaptor.capture());
+        McpSchema.CallToolRequest request = requestCaptor.getValue();
+        assertEquals(Boolean.TRUE, request.meta().get("CPS_MCP_SELF_TEST_INVOCATION"));
+        assertEquals(new McpIdentityEnvelope("signed-payload", "signed-signature"),
+                request.meta().get("CPS_MCP_IDENTITY_ENVELOPE"));
+        assertEquals("signed-payload", request.arguments().get("_cps_mcp_identity_payload"));
+        assertEquals("signed-signature", request.arguments().get("_cps_mcp_identity_signature"));
+        assertEquals(Boolean.TRUE, request.arguments().get("_cps_mcp_self_test"));
+        ArgumentCaptor<McpIdentityClaims> claimsCaptor = ArgumentCaptor.forClass(McpIdentityClaims.class);
+        verify(identitySigner, times(2)).sign(claimsCaptor.capture());
+        McpIdentityClaims claims = claimsCaptor.getAllValues().get(0);
+        assertEquals(42L, claims.memberId());
+        assertEquals(7L, claims.tenantId());
+        assertEquals(5L, claims.actorUserId());
+        assertEquals(99L, claims.conversationId());
+        assertEquals("external", claims.clientName());
+        assertEquals(false, claims.allowMutation());
+        verifyNoInteractions(toolService, toolCallbackResolver);
     }
 
     @Test

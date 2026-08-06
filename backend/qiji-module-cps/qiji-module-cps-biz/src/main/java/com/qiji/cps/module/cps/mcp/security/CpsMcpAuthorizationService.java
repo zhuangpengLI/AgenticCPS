@@ -2,6 +2,7 @@ package com.qiji.cps.module.cps.mcp.security;
 
 import com.qiji.cps.framework.common.mcp.McpIdentityClaims;
 import com.qiji.cps.framework.common.mcp.McpIdentityEnvelope;
+import com.qiji.cps.framework.common.mcp.McpIdentityTransportKeys;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.stereotype.Service;
 
@@ -15,9 +16,9 @@ import java.util.Map;
 public class CpsMcpAuthorizationService {
 
     /** Key populated only by the dedicated self-MCP metadata converter. */
-    public static final String IDENTITY_ENVELOPE_CONTEXT_KEY = "CPS_MCP_IDENTITY_ENVELOPE";
+    public static final String IDENTITY_ENVELOPE_CONTEXT_KEY = McpIdentityTransportKeys.META_IDENTITY_ENVELOPE;
     /** Marker accompanying the envelope so a malformed self-test request cannot fall back to a regular MCP call. */
-    public static final String SELF_TEST_INVOCATION_CONTEXT_KEY = "CPS_MCP_SELF_TEST_INVOCATION";
+    public static final String SELF_TEST_INVOCATION_CONTEXT_KEY = McpIdentityTransportKeys.META_SELF_TEST_INVOCATION;
     public static final String TOOL_CONTEXT_LOGIN_USER_ID = "LOGIN_USER_ID";
     public static final String TOOL_CONTEXT_TENANT_ID = "TENANT_ID";
     public static final String TOOL_CONTEXT_ACTOR_USER_ID = "ACTOR_USER_ID";
@@ -89,10 +90,17 @@ public class CpsMcpAuthorizationService {
         if (envelope == null) {
             return null;
         }
-        if (!(envelope instanceof McpIdentityEnvelope identityEnvelope)) {
-            throw new SecurityException("MCP self-test identity is invalid");
+        if (envelope instanceof McpIdentityEnvelope identityEnvelope) {
+            return identityEnvelope;
         }
-        return identityEnvelope;
+        if (envelope instanceof Map<?, ?> values) {
+            Object payload = values.get("payload");
+            Object signature = values.get("signature");
+            if (payload instanceof String payloadText && signature instanceof String signatureText) {
+                return new McpIdentityEnvelope(payloadText, signatureText);
+            }
+        }
+        throw new SecurityException("MCP self-test identity is invalid");
     }
 
     private static Map<String, Object> buildTrustedContext(McpIdentityClaims claims) {

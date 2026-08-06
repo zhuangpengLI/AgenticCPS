@@ -1,6 +1,5 @@
 package com.qiji.cps.module.cps.service.platform;
 
-import com.qiji.cps.framework.common.enums.CommonStatusEnum;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.cps.config.CpsCacheConfig;
@@ -100,7 +99,7 @@ public class CpsPlatformServiceImpl implements CpsPlatformService {
 
     @Override
     public List<CpsPlatformDO> getEnabledPlatformList() {
-        return platformMapper.selectListByStatus(CommonStatusEnum.ENABLE.getStatus());
+        return platformMapper.selectListByStatus(CPS_ENABLE_STATUS);
     }
 
     @Override

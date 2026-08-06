@@ -63,7 +63,7 @@ public class CpsMcpIdentityVerifier {
                 throw denied();
             }
             Long currentTenantId = TenantContextHolder.getTenantId();
-            if (currentTenantId == null || !currentTenantId.equals(claims.tenantId())) {
+            if (currentTenantId != null && !currentTenantId.equals(claims.tenantId())) {
                 throw denied();
             }
             Instant now = clock.instant();

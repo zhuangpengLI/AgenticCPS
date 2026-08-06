@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -40,6 +41,19 @@ class CpsPlatformServiceImplTest {
 
     @Mock
     private CpsPlatformOnboardingCacheInvalidator cacheInvalidator;
+
+    @Test
+    @DisplayName("getEnabledPlatformList - CPS status=1 表示启用")
+    void getEnabledPlatformList_usesCpsEnabledStatus() {
+        List<CpsPlatformDO> platforms = List.of(
+                CpsPlatformDO.builder().platformCode("pdd").status(1).build());
+        when(platformMapper.selectListByStatus(1)).thenReturn(platforms);
+
+        List<CpsPlatformDO> result = service.getEnabledPlatformList();
+
+        assertEquals(platforms, result);
+        verify(platformMapper).selectListByStatus(1);
+    }
 
     @Test
     @DisplayName("createPlatform - activeVendorCode 必须属于当前平台启用供应商")

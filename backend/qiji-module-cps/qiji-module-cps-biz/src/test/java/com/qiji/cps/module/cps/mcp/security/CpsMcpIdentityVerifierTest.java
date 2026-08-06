@@ -61,6 +61,16 @@ class CpsMcpIdentityVerifierTest {
     }
 
     @Test
+    void verify_acceptsValidEnvelopeWithoutAmbientTenantContext() {
+        CpsMcpIdentityVerifier verifier = verifier(new InMemoryNonceStore());
+        McpIdentityClaims claims = claims(20L, "nonce-no-http-tenant", NOW.minusSeconds(1), NOW.plusSeconds(30));
+
+        McpIdentityClaims verified = verifier.verify(envelope(claims));
+
+        assertEquals(20L, verified.tenantId());
+    }
+
+    @Test
     void verify_rejectsTamperingAndInvalidTemporalAudienceTenantOrSecretInputs() {
         TenantContextHolder.setTenantId(20L);
         CpsMcpIdentityVerifier verifier = verifier(new InMemoryNonceStore());

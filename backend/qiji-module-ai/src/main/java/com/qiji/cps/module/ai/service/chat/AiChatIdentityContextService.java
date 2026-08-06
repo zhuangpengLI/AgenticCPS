@@ -41,6 +41,10 @@ public class AiChatIdentityContextService {
         context.put(AiUtils.TOOL_CONTEXT_ACTOR_USER_TYPE, ownerUserType);
         context.put(AiUtils.TOOL_CONTEXT_CONVERSATION_ID, conversation.getId());
         context.put(AiUtils.TOOL_CONTEXT_CHAT_MODE, chatMode);
+        if (AiChatModeEnum.SELF_MCP_TEST.name().equals(chatMode)) {
+            context.put(AiUtils.TOOL_CONTEXT_MCP_CLIENT_NAME, conversation.getMcpClientName());
+            context.put(AiUtils.TOOL_CONTEXT_ALLOW_MUTATION, Boolean.TRUE.equals(conversation.getAllowMutation()));
+        }
         context.put(AiUtils.TOOL_CONTEXT_TRACE_ID,
                 StrUtil.blankToDefault(TracerUtils.getTraceId(), UUID.randomUUID().toString()));
         context.put(TRUSTED_LOCAL_CONTEXT_MARKER, TRUSTED_LOCAL_CONTEXT_VALUE);
