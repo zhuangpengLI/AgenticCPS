@@ -2950,8 +2950,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://v2.api.haodanku.com/pdd_goods_search?apikey=%7B%7Bapikey%7D%7D&keyword=%2525E5%25258D%252597%2525E6%252596%2525B9%2525E9%2525BB%252591%2525E8%25258A%25259D%2525E9%2525BA%2525BB%2525E7%2525B3%25258A&min_id=1&limit=10&sort=2&is_coupon=0&start_price=0&end_price=0&start_rate=0&end_rate=0&start_commission=0&end_commission=0&start_coupon=0&end_coupon=0&start_sale=0&end_sale=0&activity_id=&list_id=7b540440-f06d-487c-ab06-dc767bd48ea3&owner_id=123456&pid=xxx-xxx",
-              "protocol": "http",
+              "raw": "https://v2.api.haodanku.com/pdd_goods_search?apikey=%7B%7Bapikey%7D%7D&keyword=%2525E5%25258D%252597%2525E6%252596%2525B9%2525E9%2525BB%252591%2525E8%25258A%25259D%2525E9%2525BA%2525BB%2525E7%2525B3%25258A&min_id=1&limit=10&sort=2&is_coupon=0&start_price=0&end_price=0&start_rate=0&end_rate=0&start_commission=0&end_commission=0&start_coupon=0&end_coupon=0&start_sale=0&end_sale=0&activity_id=&list_id=7b540440-f06d-487c-ab06-dc767bd48ea3&owner_id=123456&pid=xxx-xxx",
+              "protocol": "https",
               "host": [
                 "v2",
                 "api",

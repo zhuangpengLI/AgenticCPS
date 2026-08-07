@@ -348,6 +348,21 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
     }
 
     @Test
+    void publishSameVersionWithEnableRequested_shouldEnableDisabledRuntimePlatform() {
+        CpsPlatformOnboardingPublishReqVO request =
+                saveReadyDraft(bundle("pdd", "haodanku", "pdd-pid", "30", true));
+        request.setEnableAfterPublish(false);
+        service.publish(request);
+        assertEquals(0, platformMapper.selectByPlatformCode("pdd").getStatus());
+
+        request.setEnableAfterPublish(true);
+        CpsPlatformOnboardingDetailRespVO response = service.publish(request);
+
+        assertEquals(1, platformMapper.selectByPlatformCode("pdd").getStatus());
+        assertEquals(1, response.getPayload().getPlatform().getStatus());
+    }
+
+    @Test
     void publishWithDifferentVersion_shouldRejectBeforeRuntimeWrites() {
         CpsPlatformOnboardingPublishReqVO request =
                 saveReadyDraft(bundle("jd", "jdunion", "jd-pid", "30", true));

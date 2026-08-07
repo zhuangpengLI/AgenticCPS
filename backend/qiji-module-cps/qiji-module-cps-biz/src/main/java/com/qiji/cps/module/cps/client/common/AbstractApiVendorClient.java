@@ -218,7 +218,7 @@ public abstract class AbstractApiVendorClient implements CpsApiVendorClient {
                                                         List<CpsOrderDTO> orders) {
         String nextCursor = firstText(response,
                 "/data/positionIndex", "/data/position_index", "/data/nextCursor", "/data/next_cursor",
-                "/positionIndex", "/position_index", "/nextCursor", "/next_cursor", "/data/min_id");
+                "/positionIndex", "/position_index", "/nextCursor", "/next_cursor", "/data/min_id", "/min_id");
         if (nextCursor != null && !nextCursor.isBlank()) {
             return CpsOrderPageResult.cursor(orders, nextCursor, true);
         }

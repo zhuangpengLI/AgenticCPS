@@ -23,10 +23,19 @@ const setDefault = (row: AdzoneForm) => {
   props.draft.adzones.forEach((item) => (item.isDefault = item.adzoneId === row.adzoneId ? 1 : 0))
   props.draft.runtimeDefaultAdzoneId = row.adzoneId
 }
+const clearDefault = () => {
+  props.draft.runtimeDefaultAdzoneId = ''
+  props.draft.adzones.forEach((item) => (item.isDefault = 0))
+}
 const saveRow = (row: AdzoneForm) => {
+  const previousRow = props.draft.adzones[editingIndex.value]
+  const wasRuntimeDefault = previousRow?.adzoneId === props.draft.runtimeDefaultAdzoneId
+  const canBeRuntimeDefault = row.status === 1 && normalizeAdzoneType(row.adzoneType) === 'GENERAL'
   if (editingIndex.value >= 0) props.draft.adzones.splice(editingIndex.value, 1, row)
   else props.draft.adzones.push(row)
-  if (!props.draft.runtimeDefaultAdzoneId && row.status === 1 && normalizeAdzoneType(row.adzoneType) === 'GENERAL') setDefault(row)
+  if (wasRuntimeDefault && canBeRuntimeDefault) setDefault(row)
+  else if (wasRuntimeDefault) clearDefault()
+  else if (!props.draft.runtimeDefaultAdzoneId && canBeRuntimeDefault) setDefault(row)
 }
 const saveBatch = (rows: AdzoneForm[]) => {
   const candidate = rows.find((row) => row.status === 1 && normalizeAdzoneType(row.adzoneType) === 'GENERAL')
@@ -38,7 +47,7 @@ const saveBatch = (rows: AdzoneForm[]) => {
   props.draft.adzones.push(...rows)
   if (!props.draft.runtimeDefaultAdzoneId && defaultId) setDefault(props.draft.adzones.find((row) => row.adzoneId === defaultId)!)
 }
-const remove = (index: number) => { const row = props.draft.adzones.splice(index, 1)[0]; if (row?.adzoneId === props.draft.runtimeDefaultAdzoneId) { props.draft.runtimeDefaultAdzoneId = ''; props.draft.adzones.forEach((item) => (item.isDefault = 0)) } }
+const remove = (index: number) => { const row = props.draft.adzones.splice(index, 1)[0]; if (row?.adzoneId === props.draft.runtimeDefaultAdzoneId) clearDefault() }
 const validate = async () => validateAdzoneDraft(props.draft.adzones, props.draft.runtimeDefaultAdzoneId).length === 0
 defineExpose({ validate })
 </script>

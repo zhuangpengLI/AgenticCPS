@@ -219,7 +219,7 @@ class AbstractHdkVendorClientTest {
     }
 
     @Test
-    @DisplayName("拼多多搜索和转链参数应匹配好单库 unify 接口")
+    @DisplayName("拼多多搜索应使用好单库 v2 超级搜索，转链保持独立 unify 接口")
     void testPddParams() {
         HdkPddVendorClient pddClient = new HdkPddVendorClient();
         CpsGoodsSearchRequest searchRequest = new CpsGoodsSearchRequest();
@@ -239,6 +239,8 @@ class AbstractHdkVendorClientTest {
         assertEquals(3, searchParams.get("min_id"));
         assertEquals(20, searchParams.get("limit"));
         assertEquals(2, searchParams.get("sort"));
+        assertEquals("/pdd_goods_search", pddClient.getSearchApiPath());
+        assertEquals("/pdd_goods_search", pddClient.getTestConnectionApiPath());
         assertEquals("/unify_pdditems_link", pddClient.getPromotionLinkApiPath());
         assertEquals("pdd-goods-sign", linkParams.get("itemid"));
         assertEquals("user_1", linkParams.get("channel"));

@@ -93,6 +93,10 @@ CREATE TABLE `cps_platform` (
   UNIQUE KEY `uk_cps_platform_active` (`active_unique_key`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS平台配置表';
 
+-- 唯品会由好单库供应商接入；初始保持禁用，待管理员配置供应商凭证后启用。
+INSERT INTO `cps_platform` (`platform_code`, `platform_name`, `platform_logo`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `platform_service_rate`, `sort`, `status`, `extra_config`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`, `active_vendor_code`, `supported_vendors`) VALUES
+('vip', '唯品会', NULL, NULL, NULL, NULL, NULL, NULL, 0.0000, 70, 0, NULL, '请先配置好单库唯品会供应商凭证，确认账号已开通唯品会权限后再启用', 'system', '2026-08-07 17:30:00', 'system', '2026-08-07 17:30:00', b'0', 1, 'haodanku', 'haodanku');
+
 -- ----------------------------
 -- 2. 推广位（PID）管理表
 -- ----------------------------
@@ -1004,6 +1008,10 @@ CREATE TABLE `cps_api_vendor` (
   INDEX `idx_platform_code` (`platform_code`) USING BTREE,
   INDEX `idx_vendor_code` (`vendor_code`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS API供应商配置表';
+
+-- 好单库唯品会配置占位：不内置真实凭证，管理员填写 apikey 后再启用。
+INSERT INTO `cps_api_vendor` (`vendor_code`, `vendor_name`, `vendor_type`, `platform_code`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `extra_config`, `priority`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES
+('haodanku', '好单库', 'aggregator', 'vip', '', '', 'https://v3.api.haodanku.com', NULL, NULL, '{"searchPath":"/unify_vip_item_query","convertPath":"/unify_vip_item_convert"}', 100, 0, '请配置好单库 apikey 并确认已开通唯品会官方账号权限', 'system', '2026-08-07 17:30:00', 'system', '2026-08-07 17:30:00', b'0', 1);
 
 -- ----------------------------
 -- 31. CPS平台接入草稿表

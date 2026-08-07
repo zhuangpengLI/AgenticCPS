@@ -60,6 +60,15 @@ public abstract class AbstractAggregatorVendorClient extends AbstractApiVendorCl
         return config.getApiBaseUrl();
     }
 
+    /**
+     * Resolve the base URL for a concrete GET endpoint. Most vendors use one
+     * host for every GET request; adapters with legacy endpoint splits can
+     * override this hook without affecting their other operations.
+     */
+    protected String resolveApiBaseUrl(String path, CpsVendorConfig config) {
+        return resolveApiBaseUrl(config);
+    }
+
     @Override
     protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
         // 1. 复制参数，避免修改原始参数
@@ -73,7 +82,7 @@ public abstract class AbstractAggregatorVendorClient extends AbstractApiVendorCl
         allParams.entrySet().removeIf(entry -> entry.getValue() == null);
 
         // 4. 构建 URL
-        String url = resolveApiBaseUrl(config) + path;
+        String url = resolveApiBaseUrl(path, config) + path;
         String fullUrl = buildUrlWithParams(url, allParams);
 
         // 5. 发起 HTTP GET 请求

@@ -1568,4 +1568,31 @@ CREATE TABLE IF NOT EXISTS `cps_member_goods_record` (
   KEY `idx_cps_member_goods_record_page` (`tenant_id`, `member_id`, `record_type`, `deleted`, `update_time`) USING BTREE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPS会员商品浏览收藏展示快照表';
 
+-- ============================================================
+-- 修改时间：2026-08-07 17:30:00
+-- 目的：声明唯品会支持好单库供应商，并提供无真实凭证的可配置占位记录。
+-- 说明：已有平台仅补充支持列表；已有供应商配置、凭证、授权状态和启停状态均不覆盖，可安全重复执行。
+-- ============================================================
+INSERT INTO `cps_platform` (`platform_code`, `platform_name`, `platform_logo`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `platform_service_rate`, `sort`, `status`, `extra_config`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`, `active_vendor_code`, `supported_vendors`)
+SELECT 'vip', '唯品会', NULL, NULL, NULL, NULL, NULL, NULL, 0.0000, 70, 0, NULL, '请先配置好单库唯品会供应商凭证，确认账号已开通唯品会权限后再启用', 'system', '2026-08-07 17:30:00', 'system', '2026-08-07 17:30:00', b'0', 1, 'haodanku', 'haodanku'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `cps_platform`
+  WHERE `tenant_id` = 1 AND `platform_code` = 'vip' AND `deleted` = b'0'
+);
+
+UPDATE `cps_platform`
+ SET `supported_vendors` = CONCAT_WS(',', NULLIF(TRIM(BOTH ',' FROM COALESCE(`supported_vendors`, '')), ''), 'haodanku'),
+     `update_time` = '2026-08-07 17:30:00'
+ WHERE `tenant_id` = 1
+   AND `platform_code` = 'vip'
+   AND `deleted` = b'0'
+   AND FIND_IN_SET('haodanku', REPLACE(COALESCE(`supported_vendors`, ''), ' ', '')) = 0;
+
+INSERT INTO `cps_api_vendor` (`vendor_code`, `vendor_name`, `vendor_type`, `platform_code`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `extra_config`, `priority`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT 'haodanku', '好单库', 'aggregator', 'vip', '', '', 'https://v3.api.haodanku.com', NULL, NULL, '{"searchPath":"/unify_vip_item_query","convertPath":"/unify_vip_item_convert"}', 100, 0, '请配置好单库 apikey 并确认已开通唯品会官方账号权限', 'system', '2026-08-07 17:30:00', 'system', '2026-08-07 17:30:00', b'0', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM `cps_api_vendor`
+  WHERE `tenant_id` = 1 AND `vendor_code` = 'haodanku' AND `platform_code` = 'vip' AND `deleted` = b'0'
+);
+
 SET FOREIGN_KEY_CHECKS = 1;

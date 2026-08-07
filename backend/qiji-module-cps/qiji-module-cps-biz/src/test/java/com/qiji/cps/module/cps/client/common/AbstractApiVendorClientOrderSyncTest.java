@@ -6,6 +6,7 @@ import com.qiji.cps.module.cps.client.CpsVendorException;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchResult;
 import com.qiji.cps.module.cps.client.dto.CpsOrderDTO;
+import com.qiji.cps.module.cps.client.dto.CpsOrderPageResult;
 import com.qiji.cps.module.cps.client.dto.CpsOrderQueryRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
@@ -15,7 +16,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AbstractApiVendorClientOrderSyncTest {
 
@@ -33,6 +36,18 @@ class AbstractApiVendorClientOrderSyncTest {
 
         assertThrows(CpsVendorException.class,
                 () -> client.queryOrders(new CpsOrderQueryRequest(), CpsVendorConfig.builder().build()));
+    }
+
+    @Test
+    void rootMinIdIsUsedAsOrderPageCursor() throws Exception {
+        TestVendorClient client = new TestVendorClient(
+                new ObjectMapper().readTree("{\"code\":0,\"min_id\":\"9\",\"data\":[]}"), false);
+
+        CpsOrderPageResult result = client.queryOrderPage(
+                new CpsOrderQueryRequest(), CpsVendorConfig.builder().build());
+
+        assertEquals("9", result.getNextCursor());
+        assertTrue(result.isHasMore());
     }
 
     private static final class TestVendorClient extends AbstractApiVendorClient {

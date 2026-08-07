@@ -7,6 +7,7 @@ import com.qiji.cps.module.cps.controller.admin.onboarding.vo.CpsPlatformOnboard
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformSaveReqVO;
 import com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateConfigSaveReqVO;
 import com.qiji.cps.module.cps.controller.admin.vendor.vo.CpsApiVendorSaveReqVO;
+import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import com.qiji.cps.module.cps.enums.onboarding.CpsPlatformOnboardingStatusEnum;
 import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingAdzone;
@@ -60,6 +61,9 @@ public class CpsPlatformOnboardingServiceImpl implements CpsPlatformOnboardingSe
         String recalculatedFingerprint = fingerprint.calculate(draft.payload());
         requireMatchingFingerprints(draft, request, recalculatedFingerprint);
         if (CpsPlatformOnboardingStatusEnum.PUBLISHED.getCode().equals(draft.status())) {
+            if (Boolean.TRUE.equals(request.getEnableAfterPublish())) {
+                enablePublishedPlatform(platformCode);
+            }
             return draftService.getRuntimeDetail(platformCode);
         }
         if (!CpsPlatformOnboardingStatusEnum.READY.getCode().equals(draft.status())) {
@@ -94,6 +98,29 @@ public class CpsPlatformOnboardingServiceImpl implements CpsPlatformOnboardingSe
                 recalculatedFingerprint, LocalDateTime.now());
         cacheInvalidator.evictAfterCommit(platformCode);
         return draftService.getRuntimeDetail(platformCode);
+    }
+
+    private void enablePublishedPlatform(String platformCode) {
+        CpsPlatformDO platform = platformService.getPlatformByCode(platformCode);
+        if (platform == null) {
+            throw exception(ONBOARDING_PUBLISH_CONFLICT);
+        }
+        if (Integer.valueOf(1).equals(platform.getStatus())) {
+            return;
+        }
+        CpsPlatformSaveReqVO request = new CpsPlatformSaveReqVO();
+        request.setId(platform.getId());
+        request.setPlatformCode(platform.getPlatformCode());
+        request.setPlatformName(platform.getPlatformName());
+        request.setPlatformLogo(platform.getPlatformLogo());
+        request.setDefaultAdzoneId(platform.getDefaultAdzoneId());
+        request.setPlatformServiceRate(platform.getPlatformServiceRate());
+        request.setSort(platform.getSort());
+        request.setStatus(1);
+        request.setExtraConfig(platform.getExtraConfig());
+        request.setRemark(platform.getRemark());
+        request.setActiveVendorCode(platform.getActiveVendorCode());
+        platformService.updatePlatform(request);
     }
 
     private CpsPlatformOnboardingDraftService.DraftSnapshot getPublishSnapshot(

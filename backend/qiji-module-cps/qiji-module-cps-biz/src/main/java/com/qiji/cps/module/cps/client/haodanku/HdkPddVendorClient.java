@@ -20,6 +20,10 @@ import java.util.*;
 @Component
 public class HdkPddVendorClient extends AbstractHdkVendorClient {
 
+    private static final String SEARCH_API_PATH = "/pdd_goods_search";
+    private static final String V2_API_HOST = "v2.api.haodanku.com";
+    private static final String V3_API_HOST = "v3.api.haodanku.com";
+
     @Override
     public String getPlatformCode() {
         return CpsPlatformCodeEnum.PDD.getCode();
@@ -27,17 +31,25 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getSearchApiPath() {
-        // 好单库拼多多搜索接口：/pdd_goods_search (GET, v2)
-        // 注意：该接口需要在好单库平台进行多多进宝授权，未授权时返回 code=0 错误
-        return "/pdd_goods_search";
+        // 好单库拼多多超级搜索统一使用 v2 接口；v3 统一接口需要额外的官方授权。
+        return SEARCH_API_PATH;
+    }
+
+    @Override
+    protected String resolveApiBaseUrl(String path, CpsVendorConfig config) {
+        String baseUrl = super.resolveApiBaseUrl(path, config);
+        if (SEARCH_API_PATH.equals(path) && baseUrl != null) {
+            return baseUrl.replace(V3_API_HOST, V2_API_HOST);
+        }
+        return baseUrl;
     }
 
     @Override
     protected Map<String, Object> buildSearchParams(CpsGoodsSearchRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("keyword", request.getKeyword());
-        params.put("min_id", request.getPageNo());
-        params.put("limit", request.getPageSize());
+        params.put("min_id", request.getPageNo() == null ? 1 : request.getPageNo());
+        params.put("limit", request.getPageSize() == null ? 20 : request.getPageSize());
         params.put("sort", convertSortType(request.getSortType()));
         params.put("is_coupon", request.getHasCoupon() == null ? 0 : request.getHasCoupon());
         if (request.getPriceLowerLimit() != null) {
@@ -58,31 +70,42 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
         List<CpsGoodsItem> goodsList = new ArrayList<>();
         if (data.isArray()) {
             for (JsonNode item : data) {
-                BigDecimal price = parseDecimal(item, "min_normal_price");
-                BigDecimal groupPrice = parseDecimal(item, "min_group_price");
-                // PDD 价格单位为分
-                BigDecimal priceYuan = price != null ? price.divide(BigDecimal.valueOf(100)) : null;
-                BigDecimal groupPriceYuan = groupPrice != null ? groupPrice.divide(BigDecimal.valueOf(100)) : null;
+                // 好单库 v2 的 itemprice/itemendprice 已经是元；兼容旧版 PDD 原生分字段。
+                BigDecimal originalPrice = parseDecimal(item, "itemprice");
+                if (originalPrice == null) {
+                    BigDecimal priceInCent = parseDecimal(item, "min_normal_price");
+                    originalPrice = priceInCent == null ? null : priceInCent.movePointLeft(2);
+                }
+                BigDecimal actualPrice = parseDecimal(item, "itemendprice");
+                if (actualPrice == null) {
+                    BigDecimal groupPriceInCent = parseDecimal(item, "min_group_price");
+                    actualPrice = groupPriceInCent == null ? null : groupPriceInCent.movePointLeft(2);
+                }
 
                 goodsList.add(CpsGoodsItem.builder()
                         .goodsId(item.path("goods_sign").asText(null))
                         .goodsSign(item.path("goods_sign").asText(null))
                         .platformCode(getPlatformCode())
-                        .title(item.path("goods_name").asText(null))
-                        .mainPic(item.path("goods_image_url").asText(null))
-                        .originalPrice(priceYuan)
-                        .actualPrice(groupPriceYuan)
+                        .title(firstText(item, "goodsname", "goods_name"))
+                        .mainPic(firstText(item, "itempic", "goods_image_url"))
+                        .originalPrice(originalPrice)
+                        .actualPrice(actualPrice)
+                        .couponPrice(parseDecimal(item, "couponmoney"))
                         .commissionRate(parseDecimal(item, "promotion_rate"))
-                        .shopName(item.path("mall_name").asText(null))
+                        .commissionAmount(parseDecimal(item, "commission"))
+                        .monthSales(item.path("itemsale").asLong(0))
+                        .shopName(firstText(item, "shopname", "mall_name"))
+                        .vendorCode(getVendorCode())
                         .build());
             }
         }
-        long total = response.path("total").asLong(-1);
+        long total = response.hasNonNull("total") ? response.path("total").asLong(goodsList.size()) : goodsList.size();
         return CpsGoodsSearchResult.builder()
                 .list(goodsList)
                 .total(total)
-                .pageNo(request.getPageNo())
-                .pageSize(request.getPageSize())
+                .nextPageId(firstText(response, "min_id"))
+                .pageNo(request.getPageNo() == null ? 1 : request.getPageNo())
+                .pageSize(request.getPageSize() == null ? 20 : request.getPageSize())
                 .build();
     }
 
@@ -163,7 +186,7 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getTestConnectionApiPath() {
-        return "/pdd_goods_search";
+        return SEARCH_API_PATH;
     }
 
     @Override
