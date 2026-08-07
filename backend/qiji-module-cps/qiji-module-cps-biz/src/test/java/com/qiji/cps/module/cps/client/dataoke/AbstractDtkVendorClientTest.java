@@ -8,6 +8,8 @@ import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qiji.cps.module.cps.client.CpsVendorCapability;
+import com.qiji.cps.module.cps.client.CpsVendorException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -656,6 +658,93 @@ class AbstractDtkVendorClientTest {
         assertEquals("1001", orders.get(0).getExternalId());
         assertEquals("SPECIAL-999", orders.get(0).getSpecialId());
         assertEquals("REL-888", orders.get(0).getRelationId());
+    }
+
+    @Test
+    @DisplayName("拼多多搜索应按大淘客聚合接口的元单位保留价格")
+    void testPddSearchKeepsDataokeYuanPrices() {
+        class CapturingDtkPddVendorClient extends DtkPddVendorClient {
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                try {
+                    return new ObjectMapper().readTree("""
+                            {
+                              "code": 0,
+                              "msg": "success",
+                              "data": {
+                                "totalCount": 1,
+                                "goodsList": [
+                                  {
+                                    "goodsSign": "PDD-TOWEL-1",
+                                    "goodsName": "纯棉毛巾",
+                                    "minNormalPrice": 5.35,
+                                    "minGroupPrice": 3.35,
+                                    "couponDiscount": 2.00,
+                                    "promotionRate": 60
+                                  }
+                                ]
+                              }
+                            }
+                            """);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
+        request.setKeyword("毛巾");
+        request.setPageNo(1);
+        request.setPageSize(5);
+
+        var result = new CapturingDtkPddVendorClient().searchGoods(request, CpsVendorConfig.builder().build());
+
+        assertEquals(1, result.getList().size());
+        assertEquals(new BigDecimal("5.35"), result.getList().get(0).getOriginalPrice());
+        assertEquals(new BigDecimal("3.35"), result.getList().get(0).getActualPrice());
+        assertEquals(0, new BigDecimal("2.00").compareTo(result.getList().get(0).getCouponPrice()));
+        assertEquals(new BigDecimal("6"), result.getList().get(0).getCommissionRate());
+    }
+
+    @Test
+    @DisplayName("拼多多转链应把会员归因写成 customParameters JSON")
+    void testPddPromotionLinkSerializesMemberAttributionAsJson() throws Exception {
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsSign("PDD-GOODS-SIGN");
+        request.setAdzoneId("8248392_314766559");
+        request.setExternalId("285");
+
+        Map<String, Object> params = new DtkPddVendorClient().buildPromotionLinkParams(
+                request, CpsVendorConfig.builder().build());
+
+        JsonNode customParameters = new ObjectMapper().readTree((String) params.get("customParameters"));
+        assertEquals("285", customParameters.path("uid").asText());
+    }
+
+    @Test
+    @DisplayName("大淘客详细转链模式应保留上游错误码和文案")
+    void promotionLinkDetailModePreservesUpstreamRejection() throws Exception {
+        JsonNode rejection = new ObjectMapper().readTree("""
+                {"code":400,"msg":"pid未授权"}
+                """);
+        TestDtkVendorClient client = new TestDtkVendorClient() {
+            @Override
+            protected JsonNode executeRequest(String path, Map<String, Object> params, CpsVendorConfig config) {
+                return rejection;
+            }
+        };
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsId("goods-1");
+        request.setPropagateVendorError(true);
+
+        CpsVendorException exception = assertThrows(CpsVendorException.class,
+                () -> client.generatePromotionLink(request, CpsVendorConfig.builder().build()));
+
+        assertEquals("UPSTREAM_REJECTED", exception.getCode());
+        assertEquals("400", exception.getUpstreamCode());
+        assertEquals("pid未授权", exception.getUpstreamMessage());
+        assertEquals("dataoke", exception.getVendorCode());
+        assertEquals("taobao", exception.getPlatformCode());
+        assertEquals(CpsVendorCapability.PROMOTION_LINK, exception.getCapability());
     }
 
     @Test

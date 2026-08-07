@@ -78,6 +78,13 @@ public interface CpsGoodsService {
                                                   String vendorCode, String originalContent);
 
     /**
+     * 生成推广链接，并向内部工具调用方传播经过清理的供应商拒绝详情。
+     */
+    CpsPromotionLinkResult generatePromotionLinkWithFailureDetail(String platformCode, String goodsId,
+                                                                  String goodsSign, Long memberId,
+                                                                  String adzoneId, String vendorCode);
+
+    /**
      * 解析最终使用的推广位 ID.
      *
      * @param platformCode 平台编码

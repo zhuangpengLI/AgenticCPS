@@ -59,6 +59,49 @@ onMounted(async () => {
   text-align: left;
   color: #3b3e55;
   max-width: 100%;
+  overflow-x: auto;
+
+  table {
+    width: 100%;
+    min-width: 720px;
+    margin: 12px 0 16px;
+    overflow-x: auto;
+    border: 1px solid #e5e7eb;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  th,
+  td {
+    padding: 10px 12px;
+    border-right: 1px solid #eef0f4;
+    border-bottom: 1px solid #eef0f4;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    color: #30334a;
+    background: #f7f8fa;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  tbody tr:nth-child(even) {
+    background: #fafbfc;
+  }
+
+  tr:last-child td {
+    border-bottom: 0;
+  }
+
+  th:last-child,
+  td:last-child {
+    border-right: 0;
+  }
 
   pre {
     position: relative;

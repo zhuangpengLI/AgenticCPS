@@ -51,9 +51,14 @@ public class CpsPromotionLinkRequest {
     private Integer orderScene;
 
     /**
-     * 商品原始URL（京东转链必填的materialId）
+     * 商品原始URL（仅在没有平台商品 ID 时作为转链素材兜底）
      */
     private String itemLink;
+
+    /**
+     * 优惠券领取链接（好单库京东商品转链的 coupon_url）
+     */
+    private String couponUrl;
 
     /**
      * 用户提交的完整原始内容（链接、淘口令及分享文案）。
@@ -61,5 +66,10 @@ public class CpsPromotionLinkRequest {
      * <p>万能转链供应商可直接消费原文，避免先降级为数字商品 ID 后触发平台限制。</p>
      */
     private String originalContent;
+
+    /**
+     * 是否向调用方传播供应商拒绝详情。仅用于需要可诊断错误的内部调用链，默认保持兼容的空结果语义。
+     */
+    private boolean propagateVendorError;
 
 }

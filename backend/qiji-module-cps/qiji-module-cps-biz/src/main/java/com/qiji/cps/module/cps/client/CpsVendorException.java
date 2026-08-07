@@ -9,6 +9,8 @@ public class CpsVendorException extends RuntimeException {
     private final String vendorCode;
     private final String platformCode;
     private final CpsVendorCapability capability;
+    private final String upstreamCode;
+    private final String upstreamMessage;
 
     public CpsVendorException(String message) {
         super(message);
@@ -16,6 +18,8 @@ public class CpsVendorException extends RuntimeException {
         this.vendorCode = null;
         this.platformCode = null;
         this.capability = null;
+        this.upstreamCode = null;
+        this.upstreamMessage = null;
     }
 
     public CpsVendorException(String message, Throwable cause) {
@@ -24,15 +28,25 @@ public class CpsVendorException extends RuntimeException {
         this.vendorCode = null;
         this.platformCode = null;
         this.capability = null;
+        this.upstreamCode = null;
+        this.upstreamMessage = null;
     }
 
     private CpsVendorException(String code, String vendorCode, String platformCode,
                                CpsVendorCapability capability, String message) {
+        this(code, vendorCode, platformCode, capability, null, null, message);
+    }
+
+    private CpsVendorException(String code, String vendorCode, String platformCode,
+                               CpsVendorCapability capability, String upstreamCode,
+                               String upstreamMessage, String message) {
         super(message);
         this.code = code;
         this.vendorCode = vendorCode;
         this.platformCode = platformCode;
         this.capability = capability;
+        this.upstreamCode = upstreamCode;
+        this.upstreamMessage = upstreamMessage;
     }
 
     public static CpsVendorException unavailable(String platformCode) {
@@ -45,6 +59,15 @@ public class CpsVendorException extends RuntimeException {
                 "CPS vendor capability unsupported [vendor=" + vendorCode
                         + ", platform=" + platformCode
                         + ", capability=" + capability + "]");
+    }
+
+    public static CpsVendorException upstreamRejected(String vendorCode, String platformCode,
+                                                      CpsVendorCapability capability,
+                                                      String upstreamCode, String upstreamMessage) {
+        String message = upstreamMessage == null || upstreamMessage.isBlank()
+                ? "上游供应商拒绝了请求" : upstreamMessage;
+        return new CpsVendorException("UPSTREAM_REJECTED", vendorCode, platformCode, capability,
+                upstreamCode, message, message);
     }
 
     public String getCode() {
@@ -61,5 +84,13 @@ public class CpsVendorException extends RuntimeException {
 
     public CpsVendorCapability getCapability() {
         return capability;
+    }
+
+    public String getUpstreamCode() {
+        return upstreamCode;
+    }
+
+    public String getUpstreamMessage() {
+        return upstreamMessage;
     }
 }

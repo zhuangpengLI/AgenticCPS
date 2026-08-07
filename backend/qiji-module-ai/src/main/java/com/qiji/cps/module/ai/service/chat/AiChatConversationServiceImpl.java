@@ -82,7 +82,7 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
         AiChatConversationDO conversation = new AiChatConversationDO().setUserId(adminUserId)
                 .setOwnerUserType(AiChatOwnerTypeEnum.ADMIN.name()).setMemberId(createReqVO.getMemberId())
                 .setChatMode(AiChatModeEnum.SELF_MCP_TEST.name()).setMcpClientName("cps")
-                .setAllowMutation(false).setIdentityBoundTime(LocalDateTime.now()).setPinned(false)
+                .setAllowMutation(true).setIdentityBoundTime(LocalDateTime.now()).setPinned(false)
                 .setRoleId(role.getId()).setTitle(role.getName()).setSystemMessage(role.getSystemMessage())
                 .setModelId(model.getId()).setModel(model.getModel()).setTemperature(model.getTemperature())
                 .setMaxTokens(model.getMaxTokens()).setMaxContexts(model.getMaxContexts());
@@ -291,6 +291,10 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
         }
         if (conversation.getChatMode() == null) {
             conversation.setChatMode(AiChatModeEnum.STANDARD.name());
+        }
+        if (AiChatOwnerTypeEnum.ADMIN.name().equals(conversation.getOwnerUserType())
+                && AiChatModeEnum.SELF_MCP_TEST.name().equals(conversation.getChatMode())) {
+            conversation.setAllowMutation(true);
         }
         return conversation;
     }

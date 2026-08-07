@@ -3,6 +3,8 @@ package com.qiji.cps.module.cps.client.haodanku;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qiji.cps.module.cps.client.dto.*;
+import com.qiji.cps.module.cps.client.CpsVendorCapability;
+import com.qiji.cps.module.cps.client.CpsVendorException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -51,6 +53,32 @@ class AbstractHdkVendorClientTest {
     }
 
     private final TestHdkVendorClient client = new TestHdkVendorClient();
+
+    @Test
+    @DisplayName("好单库详细转链模式应返回京东账号未授权原因")
+    void promotionLinkDetailModePreservesAuthorizationFailure() throws Exception {
+        JsonNode rejection = OBJECT_MAPPER.readTree("""
+                {"code":500,"msg":"未开通京东官方账号"}
+                """);
+        TestHdkVendorClient failingClient = new TestHdkVendorClient() {
+            @Override
+            protected JsonNode executePostRequest(String fullUrl, Map<String, Object> params,
+                                                  CpsVendorConfig config) {
+                return rejection;
+            }
+        };
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsId("encrypted-item");
+        request.setPropagateVendorError(true);
+
+        CpsVendorException exception = assertThrows(CpsVendorException.class,
+                () -> failingClient.generatePromotionLink(request, CpsVendorConfig.builder().build()));
+
+        assertEquals("500", exception.getUpstreamCode());
+        assertEquals("未开通京东官方账号", exception.getUpstreamMessage());
+        assertEquals("haodanku", exception.getVendorCode());
+        assertEquals(CpsVendorCapability.PROMOTION_LINK, exception.getCapability());
+    }
 
     @Test
     @DisplayName("供应商编码应返回 haodanku")
@@ -143,22 +171,51 @@ class AbstractHdkVendorClientTest {
     }
 
     @Test
-    @DisplayName("京东转链应使用 unify_jditems_link 并解析根节点返回字段")
+    @DisplayName("京东商品转链应使用 v2 get_jditems_link 并解析 data.short_url")
     void testJdPromotionLink() throws Exception {
         HdkJdVendorClient jdClient = new HdkJdVendorClient();
         CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
         request.setGoodsId("encrypted_item");
+        request.setItemLink("https://item.jd.com/100012043978.html");
+        request.setCouponUrl("https://coupon.m.jd.com/coupons/show.action?key=test");
         request.setChannelId("channel_1");
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .apiBaseUrl("https://v2.api.haodanku.com")
+                .authToken("union_1")
+                .defaultAdzoneId("123_456_789")
+                .extraConfig(Map.of("proType", "5", "scene_id", "1"))
+                .build();
 
-        Map<String, Object> params = jdClient.buildPromotionLinkParams(request, CpsVendorConfig.builder().build());
+        Map<String, Object> params = jdClient.buildPromotionLinkParams(request, config);
         CpsPromotionLinkResult result = jdClient.parsePromotionLinkResponse(
-                OBJECT_MAPPER.readTree("{\"code\":200,\"shortURL\":\"https://u.jd.com/a\",\"clickURL\":\"https://union-click.jd.com/b\"}"));
+                OBJECT_MAPPER.readTree("{\"code\":200,\"msg\":\"success\",\"data\":{\"short_url\":\"https://u.jd.com/a\"}}"));
 
-        assertEquals("/unify_jditems_link", jdClient.getPromotionLinkApiPath());
+        assertEquals("/get_jditems_link", jdClient.getPromotionLinkApiPath());
+        assertEquals("https://v2.api.haodanku.com", jdClient.getPromotionLinkBaseUrl(config));
         assertEquals("encrypted_item", params.get("material_id"));
+        assertEquals("union_1", params.get("union_id"));
+        assertEquals("https://coupon.m.jd.com/coupons/show.action?key=test", params.get("coupon_url"));
+        assertEquals("123_456_789", params.get("pid"));
         assertEquals("channel_1", params.get("subUnionId"));
+        assertEquals("5", params.get("proType"));
+        assertEquals("1", params.get("scene_id"));
+        assertFalse(params.containsKey("weChatType"));
         assertEquals("https://u.jd.com/a", result.getShortUrl());
-        assertEquals("https://union-click.jd.com/b", result.getLongUrl());
+        assertNull(result.getLongUrl());
+    }
+
+    @Test
+    @DisplayName("京东商品转链应忽略无效的占位 PID")
+    void jdPromotionLinkShouldIgnorePlaceholderPid() {
+        HdkJdVendorClient jdClient = new HdkJdVendorClient();
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsId("encrypted_item");
+        request.setAdzoneId("test");
+
+        Map<String, Object> params = jdClient.buildPromotionLinkParams(request,
+                CpsVendorConfig.builder().defaultAdzoneId("test").build());
+
+        assertFalse(params.containsKey("pid"));
     }
 
     @Test

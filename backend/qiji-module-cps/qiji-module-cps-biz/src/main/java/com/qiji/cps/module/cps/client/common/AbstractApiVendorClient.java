@@ -136,17 +136,54 @@ public abstract class AbstractApiVendorClient implements CpsApiVendorClient {
             Map<String, Object> params = buildPromotionLinkParams(request, config);
             JsonNode response = executeRequest(path, params, config);
             if (response == null || !isSuccessResponse(response)) {
-                log.warn("[{}:{}] 转链失败: goodsId={}, upstreamStatus=REJECTED",
-                        getVendorCode(), getPlatformCode(), request.getGoodsId());
-                return null;
+                return rejectPromotionLink(request, response);
             }
             return parsePromotionLinkResponse(response);
+        } catch (CpsVendorException e) {
+            throw e;
         } catch (Exception e) {
             log.error("[{}:{}] 转链异常: goodsId={}, type={}",
                     getVendorCode(), getPlatformCode(), request.getGoodsId(),
                     e.getClass().getSimpleName());
             return null;
         }
+    }
+
+    protected CpsPromotionLinkResult rejectPromotionLink(CpsPromotionLinkRequest request, JsonNode response) {
+        String upstreamCode = response == null ? null : textOrNull(response.path("code"));
+        String upstreamMessage = response == null ? null
+                : sanitizeUpstreamMessage(firstNonBlankText(response.path("msg"), response.path("message")));
+        log.warn("[{}:{}] 转链失败: goodsId={}, upstreamStatus=REJECTED, upstreamCode={}",
+                getVendorCode(), getPlatformCode(), request.getGoodsId(), upstreamCode);
+        if (request.isPropagateVendorError()) {
+            throw CpsVendorException.upstreamRejected(getVendorCode(), getPlatformCode(),
+                    com.qiji.cps.module.cps.client.CpsVendorCapability.PROMOTION_LINK,
+                    upstreamCode, upstreamMessage);
+        }
+        return null;
+    }
+
+    private String firstNonBlankText(JsonNode... nodes) {
+        for (JsonNode node : nodes) {
+            String value = textOrNull(node);
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String textOrNull(JsonNode node) {
+        return node == null || node.isMissingNode() || node.isNull() ? null : node.asText(null);
+    }
+
+    private String sanitizeUpstreamMessage(String message) {
+        if (message == null) {
+            return null;
+        }
+        String sanitized = message.replaceAll("[\\p{Cntrl}&&[^\\r\\n\\t]]", " ")
+                .replaceAll("[\\r\\n\\t]+", " ").trim();
+        return sanitized.length() <= 500 ? sanitized : sanitized.substring(0, 500);
     }
 
     @Override

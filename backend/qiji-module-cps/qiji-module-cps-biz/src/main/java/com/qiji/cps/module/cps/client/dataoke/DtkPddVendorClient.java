@@ -14,7 +14,7 @@ import java.util.*;
  *
  * <p>通过大淘客开放平台聚合 API 对接拼多多联盟，迁移自 PddPlatformClientAdapter 的业务逻辑。</p>
  *
- * <p>拼多多特殊处理：价格单位为分（需除以100转为元），佣金率需除以10。</p>
+ * <p>大淘客拼多多聚合接口的价格字段单位为元；佣金率仍按千分比除以10转为百分比。</p>
  *
  * @author CPS System
  */
@@ -88,7 +88,12 @@ public class DtkPddVendorClient extends AbstractDtkVendorClient {
         params.put("pid", request.getAdzoneId() != null ? request.getAdzoneId() : config.getDefaultAdzoneId());
         params.put("version", "1.0.0");
         if (request.getExternalId() != null) {
-            params.put("customParameters", request.getExternalId());
+            try {
+                params.put("customParameters", objectMapper.writeValueAsString(
+                        Map.of("uid", request.getExternalId())));
+            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                throw new IllegalStateException("拼多多归因参数序列化失败", e);
+            }
         }
         return params;
     }
@@ -161,13 +166,9 @@ public class DtkPddVendorClient extends AbstractDtkVendorClient {
         String minGroupPriceStr = item.path("minGroupPrice").asText("0");
         BigDecimal normalPrice = parseSafeDecimal(minNormalPriceStr);
         BigDecimal groupPrice = parseSafeDecimal(minGroupPriceStr);
-        // PDD价格单位为分
-        BigDecimal normalPriceYuan = normalPrice != null ? normalPrice.divide(BigDecimal.valueOf(100)) : null;
-        BigDecimal groupPriceYuan = groupPrice != null ? groupPrice.divide(BigDecimal.valueOf(100)) : null;
 
         String couponDiscountStr = item.path("couponDiscount").asText("0");
         BigDecimal couponAmount = parseSafeDecimal(couponDiscountStr);
-        BigDecimal couponAmountYuan = couponAmount != null ? couponAmount.divide(BigDecimal.valueOf(100)) : null;
 
         BigDecimal commissionRate = parseSafeDecimal(item.path("promotionRate").asText("0"));
         BigDecimal commissionRatePct = commissionRate != null ? commissionRate.divide(BigDecimal.valueOf(10)) : null;
@@ -178,9 +179,9 @@ public class DtkPddVendorClient extends AbstractDtkVendorClient {
                 .platformCode(getPlatformCode())
                 .title(item.path("goodsName").asText(null))
                 .mainPic(item.path("goodsImageUrl").asText(null))
-                .originalPrice(normalPriceYuan)
-                .actualPrice(groupPriceYuan)
-                .couponPrice(couponAmountYuan)
+                .originalPrice(normalPrice)
+                .actualPrice(groupPrice)
+                .couponPrice(couponAmount)
                 .commissionRate(commissionRatePct)
                 .shopName(item.path("mallName").asText(null))
                 .brandName(item.path("brandName").asText(null))

@@ -96,16 +96,33 @@ public class HdkJdVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getPromotionLinkApiPath() {
-        return "/unify_jditems_link";
+        return "/get_jditems_link";
+    }
+
+    @Override
+    protected String getPromotionLinkBaseUrl(CpsVendorConfig config) {
+        String baseUrl = resolveApiBaseUrl(config);
+        if (baseUrl != null && baseUrl.contains("v3.api.haodanku.com")) {
+            return baseUrl.replace("v3.api.haodanku.com", "v2.api.haodanku.com");
+        }
+        return baseUrl;
     }
 
     @Override
     protected Map<String, Object> buildPromotionLinkParams(CpsPromotionLinkRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("material_id", firstNonBlank(request.getItemLink(), request.getGoodsId()));
+        // 京东自 2024-12-03 起要求完整的京东联盟商品 ID，优先使用搜索接口返回的 goodsId。
+        params.put("material_id", firstNonBlank(request.getGoodsId(), request.getItemLink()));
+        params.put("union_id", firstNonBlank(config.getAuthToken(), getExtraConfig(config, "union_id"),
+                getExtraConfig(config, "jd_union_id")));
+        params.put("coupon_url", request.getCouponUrl());
+        String pid = firstNonBlank(request.getAdzoneId(), config.getDefaultAdzoneId(),
+                getExtraConfig(config, "pid"));
+        if (isValidJdPid(pid)) {
+            params.put("pid", pid);
+        }
         params.put("subUnionId", firstNonBlank(request.getChannelId(), request.getExternalId()));
         params.put("proType", getExtraConfig(config, "proType"));
-        params.put("weChatType", getExtraConfig(config, "weChatType"));
         params.put("scene_id", getExtraConfig(config, "scene_id"));
         return params;
     }
@@ -114,8 +131,7 @@ public class HdkJdVendorClient extends AbstractHdkVendorClient {
     protected CpsPromotionLinkResult parsePromotionLinkResponse(JsonNode response) {
         JsonNode data = hdkPayload(response);
         return CpsPromotionLinkResult.builder()
-                .shortUrl(data.path("shortURL").asText(null))
-                .longUrl(data.path("clickURL").asText(null))
+                .shortUrl(data.path("short_url").asText(null))
                 .build();
     }
 
@@ -197,6 +213,10 @@ public class HdkJdVendorClient extends AbstractHdkVendorClient {
             case 4 -> 6;
             default -> 0;
         };
+    }
+
+    private boolean isValidJdPid(String pid) {
+        return pid != null && pid.matches("\\d+_\\d+_\\d+");
     }
 
 }

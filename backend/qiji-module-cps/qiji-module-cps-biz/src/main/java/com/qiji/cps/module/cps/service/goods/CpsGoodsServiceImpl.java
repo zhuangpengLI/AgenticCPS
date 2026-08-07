@@ -6,6 +6,7 @@ import com.qiji.cps.module.cps.client.dto.*;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
+import com.qiji.cps.module.cps.service.adzone.CpsAdzoneAttributionValidator;
 import com.qiji.cps.module.cps.service.platform.CpsPlatformService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.PLATFORM_IS_DISABLE;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.PLATFORM_CAPABILITY_UNSUPPORTED;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.PLATFORM_NOT_EXISTS;
+import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.ADZONE_CONFIG_INVALID;
 
 /**
  * CPS 商品搜索与转链 Service 实现类
@@ -79,7 +81,8 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
 
         List<Callable<CpsGoodsSearchResult>> searchTasks = searchableClients.stream()
                 .<Callable<CpsGoodsSearchResult>>map(client -> {
-                    CpsGoodsSearchRequest platformRequest = request.copyForPage(1, 10);
+                    int requestedPageSize = request.getPageSize() != null ? request.getPageSize() : 10;
+                    CpsGoodsSearchRequest platformRequest = request.copyForPage(1, requestedPageSize);
                     return () -> client.searchGoods(platformRequest);
                 })
                 .toList();
@@ -132,12 +135,21 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
                                                          String vendorCode, String originalContent) {
         return platformClientFactory.withVendorCode(vendorCode,
                 () -> doGeneratePromotionLink(platformCode, goodsId, goodsSign, memberId, adzoneId,
-                        originalContent));
+                        originalContent, false));
+    }
+
+    @Override
+    public CpsPromotionLinkResult generatePromotionLinkWithFailureDetail(String platformCode, String goodsId,
+                                                                         String goodsSign, Long memberId,
+                                                                         String adzoneId, String vendorCode) {
+        return platformClientFactory.withVendorCode(vendorCode,
+                () -> doGeneratePromotionLink(platformCode, goodsId, goodsSign, memberId, adzoneId,
+                        null, true));
     }
 
     private CpsPromotionLinkResult doGeneratePromotionLink(String platformCode, String goodsId,
                                                             String goodsSign, Long memberId, String adzoneId,
-                                                            String originalContent) {
+                                                            String originalContent, boolean propagateVendorError) {
         // 校验平台
         CpsPlatformDO platform = validatePlatform(platformCode);
         CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
@@ -151,6 +163,7 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
         linkRequest.setGoodsSign(goodsSign);
         linkRequest.setAdzoneId(adzoneContext.adzoneId());
         linkRequest.setOriginalContent(originalContent);
+        linkRequest.setPropagateVendorError(propagateVendorError);
         // 将 memberId 作为外部用户标识，用于订单归因
         if (memberId != null) {
             String attributionId = String.valueOf(memberId);
@@ -175,10 +188,20 @@ public class CpsGoodsServiceImpl implements CpsGoodsService {
         if (memberId != null) {
             CpsAdzoneDO memberAdzone = adzoneService.getMemberAdzone(platformCode, memberId);
             if (memberAdzone != null && StringUtils.hasText(memberAdzone.getAdzoneId())) {
+                validateStoredMemberAdzone(memberAdzone);
                 return new PromotionAdzoneContext(memberAdzone.getAdzoneId(), memberAdzone);
             }
         }
         return new PromotionAdzoneContext(platform.getDefaultAdzoneId(), null);
+    }
+
+    private void validateStoredMemberAdzone(CpsAdzoneDO adzone) {
+        List<CpsAdzoneAttributionValidator.Violation> violations = CpsAdzoneAttributionValidator.validate(
+                adzone.getPlatformCode(), adzone.getAdzoneType(), adzone.getRelationType(), adzone.getRelationId(),
+                adzone.getAdzoneId(), adzone.getExternalRelationId(), adzone.getExternalSpecialId());
+        if (!violations.isEmpty()) {
+            throw exception(ADZONE_CONFIG_INVALID, violations.get(0).message());
+        }
     }
 
     private void applyAttributionParams(String platformCode, CpsAdzoneDO adzone,

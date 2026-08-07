@@ -53,7 +53,7 @@ public class AiChatConversationController {
     }
 
     @PostMapping("/create-mcp-test")
-    @Operation(summary = "创建 CPS MCP 只读自测会话")
+    @Operation(summary = "创建 CPS MCP 管理员自测会话")
     @PreAuthorize("@ss.hasPermission('ai:chat:mcp-test')")
     public CommonResult<Long> createMcpTestConversation(@RequestBody @Valid AiChatConversationCreateMcpTestReqVO createReqVO) {
         return success(chatConversationService.createMcpTestConversation(createReqVO, getLoginUserId()));

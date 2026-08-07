@@ -122,7 +122,7 @@ class AiChatToolCallbackServiceTest extends BaseMockitoUnitTest {
                 .thenReturn(new McpIdentityEnvelope("signed-payload", "signed-signature"));
         AiChatConversationDO conversation = new AiChatConversationDO().setId(99L).setRoleId(10L)
                 .setUserId(5L).setMemberId(42L).setOwnerUserType("ADMIN")
-                .setChatMode("SELF_MCP_TEST").setMcpClientName("external").setAllowMutation(false);
+                .setChatMode("SELF_MCP_TEST").setMcpClientName("external").setAllowMutation(true);
         TenantContextHolder.setTenantId(7L);
         ToolContext trustedContext = new ToolContext(new AiChatIdentityContextService().buildToolContext(conversation));
         TenantContextHolder.clear();
@@ -149,7 +149,7 @@ class AiChatToolCallbackServiceTest extends BaseMockitoUnitTest {
         assertEquals(5L, claims.actorUserId());
         assertEquals(99L, claims.conversationId());
         assertEquals("external", claims.clientName());
-        assertEquals(false, claims.allowMutation());
+        assertEquals(true, claims.allowMutation());
         verifyNoInteractions(toolService, toolCallbackResolver);
     }
 

@@ -27,7 +27,7 @@ public class CpsAiChatToolActionProvider implements AiChatToolActionProvider {
             action("SEARCH_GOODS", "cps_search_goods", "搜商品", GROUP_GOODS,
                     AiChatToolRiskLevel.READ_ONLY, AiChatToolInteractionType.SIMPLE_FORM,
                     "正在搜索商品", "商品搜索完成",
-                    "帮我在全平台找{{keyword}}，预算 {{budget}} 元以内，返回 {{limit}} 件，按{{sort}}排序。",
+                    "帮我在全平台找{{keyword}}，预算 {{budget}} 元以内，返回 {{limit}} 件；覆盖有结果的平台并按{{sort}}排序，同时给出返利链接和平台真实返回的口令。",
                     text("keyword", "商品关键词", true, "例如：无线降噪耳机", null),
                     number("budget", "预算上限（元）", false, "500"),
                     number("limit", "返回数量", true, "5"),

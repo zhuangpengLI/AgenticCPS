@@ -3,6 +3,7 @@ package com.qiji.cps.module.cps.client.haodanku;
 import com.qiji.cps.module.cps.client.common.AbstractAggregatorVendorClient;
 import com.qiji.cps.module.cps.client.CpsVendorConfigField;
 import com.qiji.cps.module.cps.client.CpsVendorConfigSchema;
+import com.qiji.cps.module.cps.client.CpsVendorException;
 import com.qiji.cps.module.cps.client.dto.*;
 import com.qiji.cps.module.cps.enums.CpsVendorCodeEnum;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -41,6 +42,7 @@ public abstract class AbstractHdkVendorClient extends AbstractAggregatorVendorCl
         return new CpsVendorConfigSchema(List.of(
                 CpsVendorConfigField.required("appKey", true),
                 CpsVendorConfigField.required("apiBaseUrl", false),
+                CpsVendorConfigField.optional("authToken", true),
                 CpsVendorConfigField.optional("defaultAdzoneId", false),
                 CpsVendorConfigField.optional("timeoutMs", false),
                 CpsVendorConfigField.optional("rateLimitPerMinute", false),
@@ -242,11 +244,11 @@ public abstract class AbstractHdkVendorClient extends AbstractAggregatorVendorCl
             String fullUrl = getPromotionLinkBaseUrl(config) + path;
             JsonNode response = executePostRequest(fullUrl, params, config);
             if (response == null || !isSuccessResponse(response)) {
-                log.warn("[{}:{}] 转链失败: goodsId={}, response={}", getVendorCode(), getPlatformCode(),
-                        request.getGoodsId(), response);
-                return null;
+                return rejectPromotionLink(request, response);
             }
             return parsePromotionLinkResponse(response);
+        } catch (CpsVendorException e) {
+            throw e;
         } catch (Exception e) {
             log.error("[{}:{}] 转链异常: goodsId={}", getVendorCode(), getPlatformCode(),
                     request.getGoodsId(), e);

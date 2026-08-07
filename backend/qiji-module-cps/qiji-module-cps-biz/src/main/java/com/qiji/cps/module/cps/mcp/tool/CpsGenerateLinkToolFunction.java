@@ -1,5 +1,6 @@
 package com.qiji.cps.module.cps.mcp.tool;
 
+import com.qiji.cps.module.cps.client.CpsVendorException;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.dal.mysql.mcp.CpsMcpAccessLogMapper;
 import com.qiji.cps.module.cps.service.goods.CpsGoodsService;
@@ -97,6 +98,18 @@ public class CpsGenerateLinkToolFunction
         /** 券信息描述 */
         private String couponInfo;
 
+        /** 推荐直接展示给用户的推广链接，按短链、移动链接、长链优先级选择 */
+        private String promotionUrl;
+
+        /** 平台口令名称，例如淘口令 */
+        private String commandLabel;
+
+        /** 平台真实返回的口令；无口令时为null */
+        private String command;
+
+        /** 上游错误码（成功时为null） */
+        private String errorCode;
+
         /** 错误信息 */
         private String error;
 
@@ -106,7 +119,8 @@ public class CpsGenerateLinkToolFunction
     public Response apply(Request request, ToolContext toolContext) {
         long startedAt = System.currentTimeMillis();
         if (request.getPlatformCode() == null || request.getGoodsId() == null) {
-            Response response = new Response(null, null, null, null, null, null, null, null, "platform_code 和 goods_id 不能为空");
+            Response response = new Response(null, null, null, null, null, null, null, null,
+                    null, null, null, "INVALID_ARGUMENT", "platform_code 和 goods_id 不能为空");
             CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response,
                     new IllegalArgumentException("platform_code/goods_id required"), toolContext, startedAt);
             return response;
@@ -123,7 +137,7 @@ public class CpsGenerateLinkToolFunction
                     memberId = ((Number) userId).longValue();
                 }
             }
-            CpsPromotionLinkResult result = goodsService.generatePromotionLink(
+            CpsPromotionLinkResult result = goodsService.generatePromotionLinkWithFailureDetail(
                     request.getPlatformCode(),
                     request.getGoodsId(),
                     request.getGoodsSign(),
@@ -132,7 +146,8 @@ public class CpsGenerateLinkToolFunction
                     request.getVendorCode());
 
             if (result == null) {
-                Response response = new Response(null, null, null, null, null, null, null, null, "转链失败，请检查商品ID是否正确");
+                Response response = new Response(null, null, null, null, null, null, null, null,
+                        null, null, null, "EMPTY_PROMOTION_LINK", "上游未返回推广链接，请检查平台推广权限和推广位配置");
                 CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response,
                         new IllegalStateException("empty promotion link result"), toolContext, startedAt);
                 return response;
@@ -147,14 +162,47 @@ public class CpsGenerateLinkToolFunction
                     result.getCommissionRate(),
                     result.getCommissionAmount(),
                     result.getCouponInfo(),
+                    firstNotBlank(result.getShortUrl(), result.getMobileUrl(), result.getLongUrl()),
+                    firstNotBlank(result.getTpwd()) == null ? null : commandLabel(request.getPlatformCode()),
+                    firstNotBlank(result.getTpwd()),
+                    null,
                     null);
             CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response, null, toolContext, startedAt);
             return response;
+        } catch (CpsVendorException e) {
+            Response response = new Response(null, null, null, null, null, null, null, null,
+                    null, null, null, firstNotBlank(e.getUpstreamCode(), e.getCode()),
+                    sanitizeVendorMessage(e.getUpstreamMessage()));
+            CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response, e, toolContext, startedAt);
+            return response;
         } catch (Exception e) {
-            Response response = new Response(null, null, null, null, null, null, null, null, "转链失败，请稍后重试");
+            Response response = new Response(null, null, null, null, null, null, null, null,
+                    null, null, null, "INTERNAL_ERROR", "转链失败，请稍后重试");
             CpsMcpToolAuditSupport.record(accessLogMapper, "cps_generate_link", request, response, e, toolContext, startedAt);
             return response;
         }
+    }
+
+    private String firstNotBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String commandLabel(String platformCode) {
+        return "taobao".equalsIgnoreCase(platformCode) ? "淘口令" : "平台口令";
+    }
+
+    private String sanitizeVendorMessage(String message) {
+        if (message == null || message.isBlank()) {
+            return "上游供应商拒绝了转链请求，请检查平台推广权限和推广位配置";
+        }
+        String sanitized = message.replaceAll("[\\p{Cntrl}&&[^\\r\\n\\t]]", " ")
+                .replaceAll("[\\r\\n\\t]+", " ").trim();
+        return sanitized.length() <= 500 ? sanitized : sanitized.substring(0, 500);
     }
 
 }

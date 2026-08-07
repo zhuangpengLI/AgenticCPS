@@ -7,6 +7,7 @@ import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchResult;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
+import com.qiji.cps.framework.common.exception.ServiceException;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
@@ -113,15 +114,16 @@ class CpsGoodsServiceImplTest {
     @Test
     @DisplayName("generatePromotionLink - 未传推广位且存在会员专属推广位时使用会员专属推广位")
     void generatePromotionLink_usesMemberAdzoneWhenAvailable() {
-        mockEnabledPlatform("taobao", "platform-default-pid");
+        mockEnabledPlatform("taobao", "mm_111_222_333");
         when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);
         when(platformClient.generatePromotionLink(any())).thenReturn(CpsPromotionLinkResult.builder().build());
         when(adzoneService.getMemberAdzone("taobao", 100L)).thenReturn(CpsAdzoneDO.builder()
                 .platformCode("taobao")
-                .adzoneId("member-taobao-pid")
+                .adzoneType("member")
+                .adzoneId("mm_111_222_444")
                 .relationType("member")
                 .relationId(100L)
-                .externalSpecialId("SPECIAL-100")
+                .externalSpecialId("3362084501")
                 .status(1)
                 .build());
 
@@ -129,9 +131,9 @@ class CpsGoodsServiceImplTest {
 
         ArgumentCaptor<CpsPromotionLinkRequest> captor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
         verify(platformClient).generatePromotionLink(captor.capture());
-        assertEquals("member-taobao-pid", captor.getValue().getAdzoneId());
+        assertEquals("mm_111_222_444", captor.getValue().getAdzoneId());
         assertEquals("100", captor.getValue().getExternalId());
-        assertEquals("SPECIAL-100", captor.getValue().getSpecialId());
+        assertEquals("3362084501", captor.getValue().getSpecialId());
         assertEquals(3, captor.getValue().getOrderScene());
         assertEquals(null, captor.getValue().getChannelId());
     }
@@ -147,6 +149,42 @@ class CpsGoodsServiceImplTest {
 
         verify(platformClientFactory).withVendorCode(eq("haodanku"), any());
         verify(platformClient).generatePromotionLink(any());
+    }
+
+    @Test
+    @DisplayName("generatePromotionLink - 历史残缺淘宝会员 PID 应明确拒绝且不调用供应商")
+    void generatePromotionLink_rejectsMalformedStoredTaobaoMemberPid() {
+        mockEnabledPlatform("taobao", "mm_111_222_333");
+        when(adzoneService.getMemberAdzone("taobao", 100L)).thenReturn(CpsAdzoneDO.builder()
+                .platformCode("taobao")
+                .adzoneType("member")
+                .adzoneId("116291900443")
+                .relationType("member")
+                .relationId(100L)
+                .externalSpecialId("3362084501")
+                .status(1)
+                .build());
+
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.generatePromotionLink("taobao", "goods-1", null, 100L, null));
+
+        assertEquals(1_100_002_002, exception.getCode());
+        assertTrue(exception.getMessage().contains("淘宝会员 PID 必须使用 mm_数字_数字_数字 格式"));
+        verifyNoInteractions(platformClient);
+    }
+
+    @Test
+    @DisplayName("generatePromotionLinkWithFailureDetail - 仅详细模式传播供应商错误")
+    void generatePromotionLinkWithFailureDetail_marksRequestForPropagation() {
+        mockEnabledPlatform("jd", "platform-default-pid");
+        when(platformClientFactory.getRequiredClient("jd")).thenReturn(platformClient);
+        when(platformClient.generatePromotionLink(any())).thenReturn(CpsPromotionLinkResult.builder().build());
+
+        service.generatePromotionLinkWithFailureDetail("jd", "goods-1", null, null, null, "haodanku");
+
+        ArgumentCaptor<CpsPromotionLinkRequest> captor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
+        verify(platformClient).generatePromotionLink(captor.capture());
+        assertTrue(captor.getValue().isPropagateVendorError());
     }
 
     @Test
@@ -226,6 +264,26 @@ class CpsGoodsServiceImplTest {
         assertEquals(java.util.List.of(), service.searchGoodsAllPlatforms(
                 new com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest()));
         verify(platformClient, never()).searchGoods(any());
+    }
+
+    @Test
+    void searchGoodsAllPlatforms_preservesRequestedPerPlatformPageSize() {
+        CpsPlatformClient pdd = searchableClient("pdd");
+        when(platformClientFactory.getEnabledClients()).thenReturn(List.of(pdd));
+        when(pdd.searchGoods(any())).thenReturn(CpsGoodsSearchResult.builder().list(List.of()).build());
+        CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
+        request.setKeyword("毛巾");
+        request.setPageSize(5);
+
+        try (CpsGoodsAggregationExecutor executor = new CpsGoodsAggregationExecutor(1, 2, Duration.ofSeconds(1))) {
+            CpsGoodsServiceImpl concurrentService = new CpsGoodsServiceImpl(
+                    platformClientFactory, platformService, adzoneService, executor);
+            concurrentService.searchGoodsAllPlatforms(request);
+        }
+
+        ArgumentCaptor<CpsGoodsSearchRequest> requestCaptor = ArgumentCaptor.forClass(CpsGoodsSearchRequest.class);
+        verify(pdd).searchGoods(requestCaptor.capture());
+        assertEquals(5, requestCaptor.getValue().getPageSize());
     }
 
     @Test

@@ -1,7 +1,7 @@
 <template>
   <el-dialog v-model="visible" title="创建 CPS 自测会话" width="520px" append-to-body>
     <el-alert
-      title="仅开放商品搜索、比价和返利查询等只读能力；会员身份创建后不可更改。"
+      title="管理员自测会话可使用完整 CPS 工具能力；会员身份创建后不可更改。"
       type="info"
       :closable="false"
       class="mb-16px"
@@ -20,7 +20,7 @@
         </el-select>
       </el-form-item>
     </el-form>
-    <template #footer><el-button @click="visible = false">取消</el-button><el-button type="primary" :loading="submitting" @click="submit">创建只读自测会话</el-button></template>
+    <template #footer><el-button @click="visible = false">取消</el-button><el-button type="primary" :loading="submitting" @click="submit">创建管理员自测会话</el-button></template>
   </el-dialog>
 </template>
 <script setup lang="ts">

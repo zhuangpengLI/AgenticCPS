@@ -92,7 +92,7 @@ class AiChatConversationServiceImplTest extends BaseMockitoUnitTest {
     }
 
     @Test
-    void createMcpTestConversation_bindsMemberAndDisablesMutation() {
+    void createMcpTestConversation_bindsMemberAndEnablesAdminTestingOperations() {
         AiModelDO model = model();
         when(chatRoleService.validateChatRole(7L)).thenReturn(
                 new com.qiji.cps.module.ai.dal.dataobject.model.AiChatRoleDO().setId(7L).setName("CPS").setModelId(model.getId()));
@@ -113,7 +113,30 @@ class AiChatConversationServiceImplTest extends BaseMockitoUnitTest {
         assertEquals("ADMIN", captor.getValue().getOwnerUserType());
         assertEquals(99L, captor.getValue().getMemberId());
         assertEquals("SELF_MCP_TEST", captor.getValue().getChatMode());
-        assertEquals(Boolean.FALSE, captor.getValue().getAllowMutation());
+        assertEquals(Boolean.TRUE, captor.getValue().getAllowMutation());
+    }
+
+    @Test
+    void getOwnedConversation_upgradesOnlyHistoricalAdminMcpTestPermission() {
+        AiChatConversationDO adminSelfTest = new AiChatConversationDO().setId(1L).setUserId(42L)
+                .setOwnerUserType("ADMIN").setMemberId(99L).setChatMode("SELF_MCP_TEST")
+                .setAllowMutation(false);
+        when(conversationMapper.selectByIdAndOwnerUserTypeAndUserId(1L, "ADMIN", 42L))
+                .thenReturn(adminSelfTest);
+
+        AiChatConversationDO normalized = conversationService.getOwnedConversation(1L, "ADMIN", 42L);
+
+        assertEquals(Boolean.TRUE, normalized.getAllowMutation());
+
+        AiChatConversationDO memberConversation = new AiChatConversationDO().setId(2L).setUserId(99L)
+                .setOwnerUserType("MEMBER").setMemberId(99L).setChatMode("SELF_MCP_TEST")
+                .setAllowMutation(false);
+        when(conversationMapper.selectByIdAndOwnerUserTypeAndUserId(2L, "MEMBER", 99L))
+                .thenReturn(memberConversation);
+
+        AiChatConversationDO memberResult = conversationService.getOwnedConversation(2L, "MEMBER", 99L);
+
+        assertEquals(Boolean.FALSE, memberResult.getAllowMutation());
     }
 
     @Test

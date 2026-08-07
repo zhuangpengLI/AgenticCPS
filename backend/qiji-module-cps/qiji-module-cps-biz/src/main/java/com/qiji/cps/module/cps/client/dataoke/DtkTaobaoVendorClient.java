@@ -219,8 +219,7 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
                 response = executeRequest(PARSE_CONTENT_PATH, params, config);
             }
             if (response == null || !isSuccessResponse(response)) {
-                log.warn("[dataoke:taobao] 万能转链失败: upstreamStatus=REJECTED");
-                return null;
+                return rejectPromotionLink(request, response);
             }
             CpsPromotionLinkResult result = parseUniversalPromotionLinkResponse(response);
             if (!hasPromotionMaterial(result)) {
@@ -228,6 +227,8 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
                 return null;
             }
             return result;
+        } catch (com.qiji.cps.module.cps.client.CpsVendorException e) {
+            throw e;
         } catch (Exception e) {
             log.error("[dataoke:taobao] 万能转链异常: type={}", e.getClass().getSimpleName());
             return null;

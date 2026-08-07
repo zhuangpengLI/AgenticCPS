@@ -1,5 +1,7 @@
 package com.qiji.cps.module.cps.mcp.tool;
 
+import com.qiji.cps.module.cps.client.CpsVendorCapability;
+import com.qiji.cps.module.cps.client.CpsVendorException;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.dal.dataobject.mcp.CpsMcpAccessLogDO;
 import com.qiji.cps.module.cps.dal.mysql.mcp.CpsMcpAccessLogMapper;
@@ -44,7 +46,7 @@ class CpsGenerateLinkToolFunctionTest {
         request.setMemberId(200L);
         request.setVendorCode("haodanku");
 
-        when(goodsService.generatePromotionLink(eq("jd"), eq("goods-1"), eq("sign-1"), eq(100L), isNull(), eq("haodanku")))
+        when(goodsService.generatePromotionLinkWithFailureDetail(eq("jd"), eq("goods-1"), eq("sign-1"), eq(100L), isNull(), eq("haodanku")))
                 .thenReturn(CpsPromotionLinkResult.builder()
                         .shortUrl("https://cps.example/s")
                         .actualPrice(new BigDecimal("88.00"))
@@ -55,11 +57,34 @@ class CpsGenerateLinkToolFunctionTest {
 
         assertNull(response.getError());
         assertEquals("https://cps.example/s", response.getShortUrl());
-        verify(goodsService).generatePromotionLink("jd", "goods-1", "sign-1", 100L, null, "haodanku");
+        assertEquals("https://cps.example/s", response.getPromotionUrl());
+        assertNull(response.getCommand());
+        assertNull(response.getCommandLabel());
+        verify(goodsService).generatePromotionLinkWithFailureDetail("jd", "goods-1", "sign-1", 100L, null, "haodanku");
         ArgumentCaptor<CpsMcpAccessLogDO> logCaptor = ArgumentCaptor.forClass(CpsMcpAccessLogDO.class);
         verify(accessLogMapper).insert(logCaptor.capture());
         assertEquals("cps_generate_link", logCaptor.getValue().getToolName());
         assertEquals(1, logCaptor.getValue().getStatus());
+    }
+
+    @Test
+    @DisplayName("apply - 淘宝转链同时返回优先链接和淘口令")
+    void apply_returnsNormalizedPromotionUrlAndTaobaoCommandTogether() {
+        CpsGenerateLinkToolFunction.Request request = new CpsGenerateLinkToolFunction.Request();
+        request.setPlatformCode("taobao");
+        request.setGoodsId("tb-1");
+        when(goodsService.generatePromotionLinkWithFailureDetail(eq("taobao"), eq("tb-1"), isNull(), eq(100L), isNull(), isNull()))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .shortUrl("https://cps.example/tb")
+                        .tpwd("￥测试淘口令￥")
+                        .build());
+
+        var response = toolFunction.apply(request, new ToolContext(Map.of("LOGIN_USER_ID", 100L)));
+
+        assertNull(response.getError());
+        assertEquals("https://cps.example/tb", response.getPromotionUrl());
+        assertEquals("￥测试淘口令￥", response.getCommand());
+        assertEquals("淘口令", response.getCommandLabel());
     }
 
     @Test
@@ -69,13 +94,13 @@ class CpsGenerateLinkToolFunctionTest {
         request.setPlatformCode("jd");
         request.setGoodsId("goods-1");
         request.setMemberId(999L);
-        when(goodsService.generatePromotionLink(eq("jd"), eq("goods-1"), isNull(), isNull(), isNull(), isNull()))
+        when(goodsService.generatePromotionLinkWithFailureDetail(eq("jd"), eq("goods-1"), isNull(), isNull(), isNull(), isNull()))
                 .thenReturn(CpsPromotionLinkResult.builder().shortUrl("https://cps.example/anonymous").build());
 
         var response = toolFunction.apply(request, null);
 
         assertNull(response.getError());
-        verify(goodsService).generatePromotionLink("jd", "goods-1", null, null, null, null);
+        verify(goodsService).generatePromotionLinkWithFailureDetail("jd", "goods-1", null, null, null, null);
     }
 
     @Test
@@ -84,16 +109,37 @@ class CpsGenerateLinkToolFunctionTest {
         CpsGenerateLinkToolFunction.Request request = new CpsGenerateLinkToolFunction.Request();
         request.setPlatformCode("jd");
         request.setGoodsId("goods-1");
-        when(goodsService.generatePromotionLink(anyString(), anyString(), any(), any(), any(), any()))
+        when(goodsService.generatePromotionLinkWithFailureDetail(anyString(), anyString(), any(), any(), any(), any()))
                 .thenThrow(new IllegalStateException("SQL signature secret leaked"));
 
         var response = toolFunction.apply(request, new ToolContext(Map.of("LOGIN_USER_ID", 100L)));
 
         assertEquals("转链失败，请稍后重试", response.getError());
+        assertEquals("INTERNAL_ERROR", response.getErrorCode());
         ArgumentCaptor<CpsMcpAccessLogDO> logCaptor = ArgumentCaptor.forClass(CpsMcpAccessLogDO.class);
         verify(accessLogMapper).insert(logCaptor.capture());
         assertEquals("cps_generate_link", logCaptor.getValue().getToolName());
         assertEquals(0, logCaptor.getValue().getStatus());
         assertEquals("IllegalStateException", logCaptor.getValue().getErrorMessage());
+    }
+
+    @Test
+    @DisplayName("apply - 供应商拒绝时返回经过清理的真实错误")
+    void apply_returnsStructuredVendorRejection() {
+        CpsGenerateLinkToolFunction.Request request = new CpsGenerateLinkToolFunction.Request();
+        request.setPlatformCode("jd");
+        request.setGoodsId("goods-1");
+        when(goodsService.generatePromotionLinkWithFailureDetail(anyString(), anyString(), any(), any(), any(), any()))
+                .thenThrow(CpsVendorException.upstreamRejected("haodanku", "jd",
+                        CpsVendorCapability.PROMOTION_LINK, "500", "未开通京东官方账号\n请先授权"));
+
+        var response = toolFunction.apply(request, new ToolContext(Map.of("LOGIN_USER_ID", 100L)));
+
+        assertEquals("500", response.getErrorCode());
+        assertEquals("未开通京东官方账号 请先授权", response.getError());
+        ArgumentCaptor<CpsMcpAccessLogDO> logCaptor = ArgumentCaptor.forClass(CpsMcpAccessLogDO.class);
+        verify(accessLogMapper).insert(logCaptor.capture());
+        assertEquals(0, logCaptor.getValue().getStatus());
+        assertEquals("CpsVendorException", logCaptor.getValue().getErrorMessage());
     }
 }
