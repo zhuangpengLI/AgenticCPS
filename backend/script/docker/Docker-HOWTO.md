@@ -68,6 +68,13 @@ bash deploy.sh down
 
 `deploy.sh` 会先检查 JAR、前端首页和初始化 SQL 是否齐全，然后构建轻量运行镜像并启动 MySQL、Redis、后端和管理前端。
 
+后端 JAR 和前端静态目录使用部署目录的只读挂载：
+
+- `backend/qiji-server.jar` -> `/opt/qiji-server/app.jar`
+- `frontend/dist/` -> `/usr/share/nginx/html`
+
+发布新版本时，只需覆盖这两个路径下的制品，再执行 `bash deploy.sh redeploy`。该命令只强制重建 `server` 和 `admin`，不会删除或重建 MySQL、Redis 数据卷。
+
 ## 3. 访问地址与配置
 
 - 管理后台：`http://服务器地址:8080`

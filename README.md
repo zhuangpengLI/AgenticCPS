@@ -507,6 +507,9 @@ bash deploy.sh
 bash deploy.sh status
 bash deploy.sh logs server
 bash deploy.sh down
+
+# 替换 backend/qiji-server.jar 或 frontend/dist 后重新发布
+bash deploy.sh redeploy
 ```
 
 端口映射：后端 48080 → 48080，MySQL 3306 → 3306，Redis 6379 → 6379，前端 80 → 8080

@@ -171,6 +171,9 @@ spring:
     mcp:
       client:
         enabled: true
+        toolcallback:
+          # 工具列表按需加载，避免远程 SSE 不可用时阻塞 Java 应用启动
+          enabled: false
         name: external-agent
         sse:
           connections:

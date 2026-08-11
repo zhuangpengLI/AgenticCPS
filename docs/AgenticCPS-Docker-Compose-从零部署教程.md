@@ -121,6 +121,9 @@ bash deploy.sh logs server
 # 重建并重启
 bash deploy.sh restart
 
+# 替换 backend/qiji-server.jar 或 frontend/dist 后发布
+bash deploy.sh redeploy
+
 # 停止服务，保留数据库和 Redis 数据卷
 bash deploy.sh down
 ```
@@ -135,6 +138,8 @@ bash deploy.sh down
 ## 6. 数据库初始化与升级
 
 `mysql/init/` 下的 SQL、`MYSQL_USER` 和 `MYSQL_PASSWORD` 只会在 MySQL 数据卷首次创建时生效。首次启动后，后续重启不会重复初始化或自动修改已有数据库账号。
+
+后端 JAR 和前端页面是部署目录的只读挂载：`backend/qiji-server.jar` 映射到容器 `/opt/qiji-server/app.jar`，`frontend/dist/` 映射到 `/usr/share/nginx/html`。重新上传制品后执行 `bash deploy.sh redeploy`，无需手工进入容器或删除数据卷。
 
 已有数据库升级不能通过替换 `10-cps-all-in-one.sql` 完成，应按发布说明执行源码中的 `backend/sql/module/cps-update.sql` 对应增量区块，并在操作前备份数据库。
 
@@ -153,6 +158,17 @@ bash deploy.sh down
 ### 后端等待数据库
 
 Compose 已为 MySQL 和 Redis 配置健康检查，只有依赖服务健康后才启动后端。可通过 `bash deploy.sh logs mysql` 和 `bash deploy.sh logs server` 定位问题。
+
+### 外部 MCP 不可用导致后端启动失败
+
+生产配置默认关闭启动阶段的 MCP ToolCallback 聚合：外部 MCP 会在应用就绪后异步连接，远程 SSE 不可用不会阻塞 Java 包启动。可在 `docker.env` 中调整：
+
+```dotenv
+AI_MCP_CLIENT_TOOLCALLBACK_ENABLED=false
+HAINA_MCP_ENABLED=true
+```
+
+修改后执行 `bash deploy.sh redeploy`。海纳 API Key 应通过服务器环境变量或安全配置注入，不要提交到仓库。
 
 ### 前端打开后接口失败
 

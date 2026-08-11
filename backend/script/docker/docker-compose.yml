@@ -64,12 +64,14 @@ services:
       REDIS_DATABASE: ${REDIS_DATABASE:-0}
       REDIS_USERNAME: ${REDIS_USERNAME:-default}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      WX_MP_APP_ID: ${WX_MP_APP_ID:?WX_MP_APP_ID must be set}
-      WX_MP_SECRET: ${WX_MP_SECRET:?WX_MP_SECRET must be set}
-      WX_MINIAPP_APPID: ${WX_MINIAPP_APPID:?WX_MINIAPP_APPID must be set}
-      WX_MINIAPP_SECRET: ${WX_MINIAPP_SECRET:?WX_MINIAPP_SECRET must be set}
+      # 外部 MCP 只在应用就绪后异步初始化，避免远程 SSE 阻塞 Java 包启动。
+      AI_MCP_CLIENT_ENABLED: ${AI_MCP_CLIENT_ENABLED:-true}
+      AI_MCP_CLIENT_TOOLCALLBACK_ENABLED: ${AI_MCP_CLIENT_TOOLCALLBACK_ENABLED:-false}
+      HAINA_MCP_ENABLED: ${HAINA_MCP_ENABLED:-true}
       ARGS: ${JAVA_ARGS:-}
     volumes:
+      # 制品从部署目录直接挂载，替换 JAR 后无需重新上传镜像。
+      - ./backend/qiji-server.jar:/opt/qiji-server/app.jar:ro
       - server-logs:/opt/qiji-server/logs
     depends_on:
       mysql:
@@ -85,6 +87,9 @@ services:
     restart: unless-stopped
     ports:
       - "${ADMIN_HOST_PORT:-8080}:80"
+    volumes:
+      # 前端构建目录从部署目录直接挂载，上传新页面后重建容器即可生效。
+      - ./frontend/dist:/usr/share/nginx/html:ro
     depends_on:
       - server
 

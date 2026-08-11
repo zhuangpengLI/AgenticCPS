@@ -42,6 +42,13 @@ case "${action}" in
     compose up -d --build
     compose ps
     ;;
+  redeploy|refresh)
+    validate_artifacts
+    compose config --quiet
+    # JAR 和 dist 通过 bind mount 注入容器，只重建应用服务，保留数据库/Redis 数据卷。
+    compose up -d --build --force-recreate server admin
+    compose ps
+    ;;
   down|stop)
     compose down
     ;;
@@ -53,7 +60,7 @@ case "${action}" in
     compose logs -f "$@"
     ;;
   *)
-    echo "用法: bash deploy.sh [up|restart|down|status|logs [service]]" >&2
+    echo "用法: bash deploy.sh [up|redeploy|restart|down|status|logs [service]]" >&2
     exit 2
     ;;
 esac

@@ -222,6 +222,9 @@ spring:
       client:
         enabled: ${AI_MCP_CLIENT_ENABLED:true}
         initialized: false             # 各 MCP 按需初始化；单个外部服务不可用时不阻断应用启动
+        toolcallback:
+          # 外部 MCP 的工具列表按需加载，避免启动阶段同步 listTools 阻塞或拖垮应用启动
+          enabled: ${AI_MCP_CLIENT_TOOLCALLBACK_ENABLED:false}
         name: mcp
         sse:
           connections:
