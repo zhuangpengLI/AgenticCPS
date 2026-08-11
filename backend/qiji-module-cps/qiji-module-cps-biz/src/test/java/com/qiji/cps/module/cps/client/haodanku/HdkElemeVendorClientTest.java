@@ -12,10 +12,27 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HdkElemeVendorClientTest {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    @Test
+    @DisplayName("淘宝闪购连接测试应使用可 GET 调用的 v3 订单接口")
+    void connectionTestShouldUseV3OrderEndpoint() {
+        HdkElemeVendorClient client = new HdkElemeVendorClient();
+
+        Map<String, Object> params = client.buildTestConnectionParams();
+
+        assertEquals("/elm_order_list", client.getTestConnectionApiPath());
+        assertEquals("https://v3.api.haodanku.com", client.resolveApiBaseUrl(
+                client.getTestConnectionApiPath(),
+                CpsVendorConfig.builder().apiBaseUrl("https://v2.api.haodanku.com").build()));
+        assertEquals(1, params.get("min_id"));
+        assertEquals(10, params.get("back"));
+        assertTrue((long) params.get("end_date") > (long) params.get("start_date"));
+    }
 
     @Test
     @DisplayName("淘宝闪购订单请求应使用好单库 elm_order_list 契约")

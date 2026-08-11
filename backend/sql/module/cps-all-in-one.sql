@@ -1011,7 +1011,7 @@ CREATE TABLE `cps_api_vendor` (
 
 -- 好单库唯品会配置占位：不内置真实凭证，管理员填写 apikey 后再启用。
 INSERT INTO `cps_api_vendor` (`vendor_code`, `vendor_name`, `vendor_type`, `platform_code`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `extra_config`, `priority`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES
-('haodanku', '好单库', 'aggregator', 'vip', '', '', 'https://v3.api.haodanku.com', NULL, NULL, '{"searchPath":"/unify_vip_item_query","convertPath":"/unify_vip_item_convert"}', 100, 0, '请配置好单库 apikey 并确认已开通唯品会官方账号权限', 'system', '2026-08-07 17:30:00', 'system', '2026-08-07 17:30:00', b'0', 1);
+('haodanku', '好单库', 'aggregator', 'vip', '', '', 'https://v2.api.haodanku.com', NULL, NULL, '{"searchPath":"/vip_goods_search","convertPath":"/vip_ratesurl"}', 100, 0, '请配置好单库 apikey 和唯品会 PID；普通账号使用 v2 搜索与转链，v3 订单能力按官方权限开通', 'system', '2026-08-07 17:30:00', 'system', '2026-08-11 16:15:00', b'0', 1);
 
 -- ----------------------------
 -- 31. CPS平台接入草稿表

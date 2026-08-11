@@ -7,10 +7,11 @@
       <el-table-column prop="vendorName" label="供应商" />
       <el-table-column prop="vendorCode" label="编码" />
       <el-table-column label="角色"><template #default="{ row }">{{ row.vendorCode === draft.primaryVendorCode ? '主供应商' : '备用供应商' }}</template></el-table-column>
+      <el-table-column label="状态"><template #default="{ row }"><el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '已启用' : '未启用' }}</el-tag></template></el-table-column>
       <el-table-column label="凭证"><template #default="{ row }">{{ credentialsConfigured(row) ? '已配置（已脱敏）' : '未配置' }}</template></el-table-column>
       <el-table-column label="操作" width="220"><template #default="{ row, $index }"><el-button link @click="openEditor(row, $index)">编辑</el-button><el-button link type="danger" @click="remove($index)">移除</el-button><el-button link :loading="testingVendorCode === row.vendorCode" @click="emit('test-vendor', row)">测试</el-button></template></el-table-column>
     </el-table>
-    <el-form-item label="主供应商" class="mt-16px" required><el-select v-model="draft.primaryVendorCode"><el-option v-for="row in draft.vendors" :key="row.vendorCode" :label="row.vendorName || row.vendorCode" :value="row.vendorCode" /></el-select></el-form-item>
+    <el-form-item label="主供应商" class="mt-16px" required><el-select v-model="draft.primaryVendorCode"><el-option v-for="row in draft.vendors" :key="row.vendorCode" :label="`${row.vendorName || row.vendorCode}${row.status === 1 ? '' : '（未启用）'}`" :value="row.vendorCode" /></el-select></el-form-item>
     <CheckResultPanel :result="testResult" />
     <VendorEditorDialog v-model="dialogVisible" :vendor="editingVendor" :descriptor="editingDescriptor" :descriptors="availableDescriptors" :platform-code="draft.platform.platformCode || draft.platformCode" @save="saveVendor" />
   </div>

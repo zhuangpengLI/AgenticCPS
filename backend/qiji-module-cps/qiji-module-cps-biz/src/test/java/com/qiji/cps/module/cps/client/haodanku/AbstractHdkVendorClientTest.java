@@ -113,23 +113,59 @@ class AbstractHdkVendorClientTest {
     }
 
     @Test
-    @DisplayName("好单库成功码应兼容 code=1 和 code=200")
+    @DisplayName("好单库成功码应兼容 code=1、code=200 和明确的暂无数据响应")
     void testIsSuccessResponse() throws Exception {
         assertTrue(client.isSuccessResponse(OBJECT_MAPPER.readTree("{\"code\":1}")));
         assertTrue(client.isSuccessResponse(OBJECT_MAPPER.readTree("{\"code\":200}")));
-        assertFalse(client.isSuccessResponse(OBJECT_MAPPER.readTree("{\"code\":0}")));
+        assertTrue(client.isSuccessResponse(OBJECT_MAPPER.readTree("{\"code\":0,\"msg\":\"暂无数据\"}")));
+        assertFalse(client.isSuccessResponse(OBJECT_MAPPER.readTree("{\"code\":0,\"msg\":\"缺少必要参数\"}")));
         assertFalse(client.isSuccessResponse(null));
     }
 
     @Test
-    @DisplayName("转链域名应从 v2 自动切换到 v3")
+    @DisplayName("好单库各接口应按官方文档选择 v2 或 v3 域名")
+    void officialEndpointHostsShouldNotDependOnPersistedBaseUrl() {
+        CpsVendorConfig v2Config = CpsVendorConfig.builder()
+                .apiBaseUrl("http://v2.api.haodanku.com")
+                .build();
+
+        var taobao = new HdkTaobaoVendorClient() {
+            String resolved(String path, CpsVendorConfig config) {
+                return resolveApiBaseUrl(path, config);
+            }
+        };
+        var jd = new HdkJdVendorClient() {
+            String resolved(String path, CpsVendorConfig config) {
+                return resolveApiBaseUrl(path, config);
+            }
+        };
+        var pdd = new HdkPddVendorClient() {
+            String resolved(String path, CpsVendorConfig config) {
+                return resolveApiBaseUrl(path, config);
+            }
+        };
+
+        assertEquals("https://v3.api.haodanku.com",
+                taobao.resolved("/supersearch", v2Config));
+        assertEquals("https://v2.api.haodanku.com",
+                taobao.resolved("/column", v2Config));
+        assertEquals("https://v3.api.haodanku.com",
+                jd.resolved("/jd_goods_search", v2Config));
+        assertEquals("https://v3.api.haodanku.com",
+                jd.resolved("/unify_jd_order_list", v2Config));
+        assertEquals("https://v3.api.haodanku.com",
+                pdd.resolved("/unify_pdd_order_list", v2Config));
+    }
+
+    @Test
+    @DisplayName("转链域名应由具体接口决定而不是全局切换到 v3")
     void testPromotionLinkBaseUrl() {
         CpsVendorConfig config = CpsVendorConfig.builder()
                 .apiBaseUrl("http://v2.api.haodanku.com")
                 .build();
 
         assertEquals("https://v2.api.haodanku.com", client.resolveApiBaseUrl(config));
-        assertEquals("https://v3.api.haodanku.com", client.getPromotionLinkBaseUrl(config));
+        assertEquals("https://v2.api.haodanku.com", client.getPromotionLinkBaseUrl(config));
     }
 
     @Test
@@ -137,6 +173,7 @@ class AbstractHdkVendorClientTest {
     void taobaoPromotionLinkShouldForwardTrustedAttributionFields() {
         CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
         request.setGoodsId("TB-ITEM-1");
+        request.setTitle("测试商品标题");
         request.setSpecialId("special-1001");
         request.setRelationId("relation-2001");
 
@@ -146,6 +183,7 @@ class AbstractHdkVendorClientTest {
         assertEquals("special-1001", params.get("special_id"));
         assertEquals("relation-2001", params.get("relation_id"));
         assertEquals("mm_1_2_3", params.get("pid"));
+        assertEquals("测试商品标题", params.get("title"));
     }
 
     @Test
@@ -219,7 +257,7 @@ class AbstractHdkVendorClientTest {
     }
 
     @Test
-    @DisplayName("拼多多搜索应使用好单库 v2 超级搜索，转链保持独立 unify 接口")
+    @DisplayName("拼多多搜索和普通账号转链应使用好单库 v2 接口")
     void testPddParams() {
         HdkPddVendorClient pddClient = new HdkPddVendorClient();
         CpsGoodsSearchRequest searchRequest = new CpsGoodsSearchRequest();
@@ -233,7 +271,10 @@ class AbstractHdkVendorClientTest {
         CpsPromotionLinkRequest linkRequest = new CpsPromotionLinkRequest();
         linkRequest.setGoodsSign("pdd-goods-sign");
         linkRequest.setExternalId("user_1");
-        Map<String, Object> linkParams = pddClient.buildPromotionLinkParams(linkRequest, CpsVendorConfig.builder().build());
+        CpsVendorConfig linkConfig = CpsVendorConfig.builder()
+                .defaultAdzoneId("123_456")
+                .build();
+        Map<String, Object> linkParams = pddClient.buildPromotionLinkParams(linkRequest, linkConfig);
 
         assertEquals("芝麻糊", searchParams.get("keyword"));
         assertEquals(3, searchParams.get("min_id"));
@@ -241,9 +282,11 @@ class AbstractHdkVendorClientTest {
         assertEquals(2, searchParams.get("sort"));
         assertEquals("/pdd_goods_search", pddClient.getSearchApiPath());
         assertEquals("/pdd_goods_search", pddClient.getTestConnectionApiPath());
-        assertEquals("/unify_pdditems_link", pddClient.getPromotionLinkApiPath());
-        assertEquals("pdd-goods-sign", linkParams.get("itemid"));
-        assertEquals("user_1", linkParams.get("channel"));
+        assertEquals("/get_pdditems_link", pddClient.getPromotionLinkApiPath());
+        assertEquals("pdd-goods-sign", linkParams.get("goods_sign"));
+        assertEquals("123_456", linkParams.get("pid"));
+        assertEquals("user_1", linkParams.get("subUnionId"));
+        assertFalse(linkParams.containsKey("itemid"));
     }
 
     @Test
@@ -440,13 +483,55 @@ class AbstractHdkVendorClientTest {
     void testTaobaoKeywordSearchKeepsSuperSearch() {
         CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
         request.setKeyword("牙刷");
+        request.setPageNo(2);
+        request.setPageSize(30);
         request.setHasCoupon(1);
+        request.setPriceLowerLimit(new BigDecimal("10"));
+        request.setPriceUpperLimit(new BigDecimal("99"));
 
         HdkTaobaoVendorClient client = new HdkTaobaoVendorClient();
         Map<String, Object> params = client.buildSearchParams(request, CpsVendorConfig.builder().build());
 
         assertEquals("/supersearch", client.getSearchApiPath());
+        assertEquals("3.7.12", params.get("v"));
+        assertEquals(2, params.get("min_id"));
+        assertEquals(30, params.get("back"));
+        assertEquals(new BigDecimal("10"), params.get("startprice"));
+        assertEquals(new BigDecimal("99"), params.get("endprice"));
         assertEquals(1, params.get("is_coupon"));
+        assertFalse(params.containsKey("page"));
+        assertFalse(params.containsKey("pagesize"));
         assertFalse(params.containsKey("type"));
+    }
+
+    @Test
+    @DisplayName("淘宝 v3 REST 订单接口应使用 application/json 传输")
+    void taobaoOrderShouldUseJsonPostTransport() throws Exception {
+        HdkTaobaoVendorClient taobao = new HdkTaobaoVendorClient() {
+            @Override
+            protected JsonNode executePostRequest(String fullUrl, Map<String, Object> params,
+                                                  CpsVendorConfig config) {
+                fail("v3 REST must not use form transport");
+                return null;
+            }
+
+            @Override
+            protected JsonNode executeJsonPostRequest(String fullUrl, Map<String, Object> params,
+                                                      CpsVendorConfig config) {
+                return OBJECT_MAPPER.createObjectNode()
+                        .put("code", 200)
+                        .put("position_index", "next")
+                        .set("data", OBJECT_MAPPER.createArrayNode());
+            }
+        };
+        CpsOrderQueryRequest request = new CpsOrderQueryRequest();
+        request.setPageNo(1);
+        request.setPageSize(10);
+        request.setStartTime("2026-08-11 10:00:00");
+        request.setEndTime("2026-08-11 10:05:00");
+
+        assertDoesNotThrow(() -> taobao.queryOrderPage(request, CpsVendorConfig.builder()
+                .apiBaseUrl("https://v2.api.haodanku.com")
+                .build()));
     }
 }

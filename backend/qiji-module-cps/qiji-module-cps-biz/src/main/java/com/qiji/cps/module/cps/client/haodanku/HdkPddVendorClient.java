@@ -23,6 +23,10 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
     private static final String SEARCH_API_PATH = "/pdd_goods_search";
     private static final String V2_API_HOST = "v2.api.haodanku.com";
     private static final String V3_API_HOST = "v3.api.haodanku.com";
+    private static final int DEFAULT_SEARCH_PAGE_SIZE = 20;
+    private static final int MIN_SEARCH_LIMIT = 10;
+    private static final int MAX_SEARCH_LIMIT = 100;
+    private static final int SEARCH_LIMIT_STEP = 10;
 
     @Override
     public String getPlatformCode() {
@@ -41,6 +45,9 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
         if (SEARCH_API_PATH.equals(path) && baseUrl != null) {
             return baseUrl.replace(V3_API_HOST, V2_API_HOST);
         }
+        if (getOrderQueryApiPath().equals(path) && baseUrl != null) {
+            return baseUrl.replace(V2_API_HOST, V3_API_HOST);
+        }
         return baseUrl;
     }
 
@@ -49,7 +56,7 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("keyword", request.getKeyword());
         params.put("min_id", request.getPageNo() == null ? 1 : request.getPageNo());
-        params.put("limit", request.getPageSize() == null ? 20 : request.getPageSize());
+        params.put("limit", normalizeSearchLimit(resolveRequestedPageSize(request)));
         params.put("sort", convertSortType(request.getSortType()));
         params.put("is_coupon", request.getHasCoupon() == null ? 0 : request.getHasCoupon());
         if (request.getPriceLowerLimit() != null) {
@@ -67,9 +74,13 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
     @Override
     protected CpsGoodsSearchResult parseSearchResponse(JsonNode response, CpsGoodsSearchRequest request) {
         JsonNode data = response.path("data");
+        int requestedPageSize = resolveRequestedPageSize(request);
         List<CpsGoodsItem> goodsList = new ArrayList<>();
         if (data.isArray()) {
             for (JsonNode item : data) {
+                if (goodsList.size() >= requestedPageSize) {
+                    break;
+                }
                 // 好单库 v2 的 itemprice/itemendprice 已经是元；兼容旧版 PDD 原生分字段。
                 BigDecimal originalPrice = parseDecimal(item, "itemprice");
                 if (originalPrice == null) {
@@ -105,20 +116,27 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
                 .total(total)
                 .nextPageId(firstText(response, "min_id"))
                 .pageNo(request.getPageNo() == null ? 1 : request.getPageNo())
-                .pageSize(request.getPageSize() == null ? 20 : request.getPageSize())
+                .pageSize(requestedPageSize)
                 .build();
     }
 
     @Override
     protected String getPromotionLinkApiPath() {
-        return "/unify_pdditems_link";
+        return "/get_pdditems_link";
+    }
+
+    @Override
+    protected String getPromotionLinkBaseUrl(CpsVendorConfig config) {
+        String baseUrl = super.resolveApiBaseUrl(config);
+        return baseUrl == null ? null : baseUrl.replace(V3_API_HOST, V2_API_HOST);
     }
 
     @Override
     protected Map<String, Object> buildPromotionLinkParams(CpsPromotionLinkRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("itemid", firstNonBlank(request.getGoodsSign(), request.getGoodsId()));
-        params.put("channel", firstNonBlank(request.getChannelId(), request.getExternalId()));
+        params.put("goods_sign", firstNonBlank(request.getGoodsSign(), request.getGoodsId()));
+        params.put("pid", firstNonBlank(request.getAdzoneId(), config.getDefaultAdzoneId()));
+        params.put("subUnionId", firstNonBlank(request.getChannelId(), request.getExternalId()));
         return params;
     }
 
@@ -216,6 +234,16 @@ public class HdkPddVendorClient extends AbstractHdkVendorClient {
             case 4 -> 6;
             default -> 0;
         };
+    }
+
+    private int resolveRequestedPageSize(CpsGoodsSearchRequest request) {
+        return request.getPageSize() == null ? DEFAULT_SEARCH_PAGE_SIZE : Math.max(1, request.getPageSize());
+    }
+
+    private int normalizeSearchLimit(int requestedPageSize) {
+        // 好单库拼多多搜索仅接受 10 到 100 的十倍数，业务侧可继续请求更小的结果集。
+        int cappedPageSize = Math.max(MIN_SEARCH_LIMIT, Math.min(MAX_SEARCH_LIMIT, requestedPageSize));
+        return ((cappedPageSize + SEARCH_LIMIT_STEP - 1) / SEARCH_LIMIT_STEP) * SEARCH_LIMIT_STEP;
     }
 
 }

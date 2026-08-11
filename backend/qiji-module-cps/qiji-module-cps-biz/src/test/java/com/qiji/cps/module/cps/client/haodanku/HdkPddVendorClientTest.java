@@ -36,7 +36,10 @@ class HdkPddVendorClientTest {
         assertEquals("https://v2.api.haodanku.com",
                 client.resolveApiBaseUrl(client.getSearchApiPath(), v3Config));
         assertEquals("https://v3.api.haodanku.com",
-                client.resolveApiBaseUrl(client.getOrderQueryApiPath(), v3Config));
+                client.resolveApiBaseUrl(client.getOrderQueryApiPath(), CpsVendorConfig.builder()
+                        .apiBaseUrl("https://v2.api.haodanku.com")
+                        .build()));
+        assertEquals("https://v2.api.haodanku.com", client.getPromotionLinkBaseUrl(v3Config));
 
         CpsGoodsSearchResult result = client.parseSearchResponse(OBJECT_MAPPER.readTree("""
                 {
@@ -95,5 +98,40 @@ class HdkPddVendorClientTest {
         assertEquals(88L, result.getTotal());
         assertEquals(1, result.getPageNo());
         assertEquals(20, result.getPageSize());
+    }
+
+    @Test
+    @DisplayName("拼多多搜索请求 5 条时应向好单库请求 10 条并裁剪结果")
+    void searchShouldNormalizeUpstreamLimitAndTrimResults() throws Exception {
+        HdkPddVendorClient client = new HdkPddVendorClient();
+        CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
+        request.setPageNo(1);
+        request.setPageSize(5);
+
+        Map<String, Object> params = client.buildSearchParams(request, CpsVendorConfig.builder().build());
+        CpsGoodsSearchResult result = client.parseSearchResponse(OBJECT_MAPPER.readTree("""
+                {
+                  "code": 200,
+                  "total": 10,
+                  "data": [
+                    {"goods_sign":"pdd-sign-1","goodsname":"商品1"},
+                    {"goods_sign":"pdd-sign-2","goodsname":"商品2"},
+                    {"goods_sign":"pdd-sign-3","goodsname":"商品3"},
+                    {"goods_sign":"pdd-sign-4","goodsname":"商品4"},
+                    {"goods_sign":"pdd-sign-5","goodsname":"商品5"},
+                    {"goods_sign":"pdd-sign-6","goodsname":"商品6"},
+                    {"goods_sign":"pdd-sign-7","goodsname":"商品7"},
+                    {"goods_sign":"pdd-sign-8","goodsname":"商品8"},
+                    {"goods_sign":"pdd-sign-9","goodsname":"商品9"},
+                    {"goods_sign":"pdd-sign-10","goodsname":"商品10"}
+                  ]
+                }
+                """), request);
+
+        assertEquals(10, params.get("limit"));
+        assertEquals(5, result.getList().size());
+        assertEquals("pdd-sign-5", result.getList().get(4).getGoodsSign());
+        assertEquals(10L, result.getTotal());
+        assertEquals(5, result.getPageSize());
     }
 }

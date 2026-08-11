@@ -64,7 +64,7 @@ AgenticCPS 把“电商平台”和“API 供应商”分开配置：
 | JD 用户/授权标识 | `cps_api_vendor.auth_token` 或 `extra_config.jd_user_id` | 京东搜索、转链、订单常需要 |
 | PDD PID | `cps_api_vendor.default_adzone_id` | 拼多多搜索、转链、订单建议配置 |
 
-好单库商品搜索使用 v2 域名；转链代码会把 `v2.api.haodanku.com` 自动替换成 `v3.api.haodanku.com`。
+好单库必须按具体接口选择版本，不能按“搜索 v2、转链 v3”整体替换：淘宝超级搜索、淘宝转链、京东搜索和各平台订单接口使用官方标注的 v3；淘宝频道、拼多多搜索、唯品会搜索以及京东/拼多多/唯品会普通账号转链使用 v2。代码会按接口路径修正域名，数据库基础地址推荐保留 `https://v2.api.haodanku.com`。
 
 好单库活动中心当前先走站点活动目录 `https://www.haodanku.com/openapi/activity_list_cat`，再按分类分页调用 `https://www.haodanku.com/openapi/activity_list`。同步只保留项目已经完成官方活动转链的活动：淘宝会场对应 `POST https://v2.api.haodanku.com/createConference_code`，淘宝闪购对应 `POST https://v3.api.haodanku.com/elm_activity_ratesurl`。其他平台即使出现在活动目录中，只要项目尚未完成活动字段到官方转链参数的可靠映射，就计入跳过且不入库。活动目录本身不依赖 `cps_api_vendor` 配置；实际转链、商品搜索、返利查询和订单仍然需要对应的 `cps_api_vendor`。
 

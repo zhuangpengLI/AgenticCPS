@@ -72,9 +72,7 @@ public class CpsPlatformOnboardingConnectionTester {
                     .code(passed ? "VENDOR_CONNECTION_OK" : "VENDOR_CONNECTION_FAILED")
                     .fieldPath("vendors." + vendorCode)
                     .section(describeVendor(vendor, vendorCode, normalizedPrimaryVendor))
-                    .message(passed
-                            ? "供应商连接检测通过"
-                            : "供应商连接检测失败，请检查凭证和网络配置")
+                    .message(connectionMessage(passed, vendorCode, normalizedPlatform))
                     .build());
         }
 
@@ -123,10 +121,18 @@ public class CpsPlatformOnboardingConnectionTester {
                         .code(passed ? "VENDOR_CONNECTION_OK" : "VENDOR_CONNECTION_FAILED")
                         .fieldPath("vendors." + vendorCode)
                         .section(describeVendor(vendor, vendorCode, primaryVendorCode))
-                        .message(passed
-                                ? "供应商连接检测通过"
-                                : "供应商连接检测失败，请检查凭证和网络配置")
+                        .message(connectionMessage(passed, vendorCode, normalizedPlatform))
                         .build()));
+    }
+
+    private String connectionMessage(boolean passed, String vendorCode, String platformCode) {
+        if (passed) {
+            return "供应商连接检测通过";
+        }
+        if ("haodanku".equals(vendorCode) && "vip".equals(platformCode)) {
+            return "好单库唯品会超级搜索接口检测失败：请确认 APIKEY 有效并检查网络配置";
+        }
+        return "供应商连接检测失败，请检查凭证和网络配置";
     }
 
     private String describeVendor(CpsOnboardingVendor vendor, String vendorCode,

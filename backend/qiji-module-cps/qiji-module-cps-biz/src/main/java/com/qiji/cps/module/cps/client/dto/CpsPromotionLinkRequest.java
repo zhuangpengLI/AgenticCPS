@@ -21,6 +21,11 @@ public class CpsPromotionLinkRequest {
     private String goodsSign;
 
     /**
+     * 商品标题（好单库淘宝转链必填）。
+     */
+    private String title;
+
+    /**
      * 推广位ID（PID，联盟推广位标识）
      */
     private String adzoneId;

@@ -18,7 +18,7 @@
           <el-option v-for="item in VENDOR_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-form-item>
-      <el-form-item v-for="field in fields" :key="field.name" :label="field.name" :required="field.required">
+      <el-form-item v-for="field in fields" :key="field.name" :label="fieldLabel(field.name)" :required="field.required">
         <el-input v-if="field.sensitive" v-model="secretValues[field.name]" type="password" show-password :placeholder="configured(field.name) ? '已配置（留空则保持不变）' : '请输入凭证'" autocomplete="new-password" />
         <el-input v-else v-model="form[field.name]" />
       </el-form-item>
@@ -40,6 +40,18 @@ const editing = computed(() => Boolean(props.vendor))
 const activeDescriptor = computed(() => props.descriptors?.find((item) => item.vendorCode === form.vendorCode)
   || (props.descriptor?.vendorCode === form.vendorCode ? props.descriptor : undefined))
 const fields = computed<VendorConfigField[]>(() => activeDescriptor.value?.configSchema?.fields || [])
+const FIELD_LABELS: Record<string, string> = {
+  appKey: 'appKey',
+  appSecret: 'appSecret',
+  apiKey: 'apiKey',
+  apiBaseUrl: '接口基础地址',
+  authToken: '授权令牌',
+  defaultAdzoneId: '备用推广位',
+  timeoutMs: '请求超时（毫秒）',
+  rateLimitPerMinute: '每分钟请求上限',
+  retryMaxAttempts: '最大重试次数'
+}
+const fieldLabel = (name: string) => FIELD_LABELS[name] || name
 const emptyForm = () => ({ vendorCode: '', vendorName: '', vendorType: 'aggregator', platformCode: props.platformCode, priority: 0, status: 1 })
 const form = reactive<any>(emptyForm())
 const secretValues = reactive<Record<string, string>>({})

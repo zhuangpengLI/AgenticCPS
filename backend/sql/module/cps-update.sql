@@ -1589,10 +1589,29 @@ UPDATE `cps_platform`
    AND FIND_IN_SET('haodanku', REPLACE(COALESCE(`supported_vendors`, ''), ' ', '')) = 0;
 
 INSERT INTO `cps_api_vendor` (`vendor_code`, `vendor_name`, `vendor_type`, `platform_code`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `extra_config`, `priority`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
-SELECT 'haodanku', '好单库', 'aggregator', 'vip', '', '', 'https://v3.api.haodanku.com', NULL, NULL, '{"searchPath":"/unify_vip_item_query","convertPath":"/unify_vip_item_convert"}', 100, 0, '请配置好单库 apikey 并确认已开通唯品会官方账号权限', 'system', '2026-08-07 17:30:00', 'system', '2026-08-07 17:30:00', b'0', 1
+SELECT 'haodanku', '好单库', 'aggregator', 'vip', '', '', 'https://v2.api.haodanku.com', NULL, NULL, '{"searchPath":"/vip_goods_search","convertPath":"/vip_ratesurl"}', 100, 0, '请配置好单库 apikey 和唯品会 PID；普通账号使用 v2 搜索与转链，v3 订单能力按官方权限开通', 'system', '2026-08-07 17:30:00', 'system', '2026-08-11 16:15:00', b'0', 1
 WHERE NOT EXISTS (
   SELECT 1 FROM `cps_api_vendor`
   WHERE `tenant_id` = 1 AND `vendor_code` = 'haodanku' AND `platform_code` = 'vip' AND `deleted` = b'0'
 );
+
+-- ============================================================
+-- 修改时间：2026-08-11 16:15:00
+-- 目的：将唯品会普通账号搜索与转链配置迁移到官方 v2 接口，移除高佣转链依赖。
+-- 说明：仅修正接口地址、路径说明，不覆盖 apikey、PID、授权信息或启停状态。
+-- ============================================================
+UPDATE `cps_api_vendor`
+SET `api_base_url` = 'https://v2.api.haodanku.com',
+    `extra_config` = JSON_SET(
+      CASE WHEN JSON_VALID(`extra_config`) THEN `extra_config` ELSE '{}' END,
+      '$.searchPath', '/vip_goods_search',
+      '$.convertPath', '/vip_ratesurl'
+    ),
+    `remark` = '请配置好单库 apikey 和唯品会 PID；普通账号使用 v2 搜索与转链，v3 订单能力按官方权限开通',
+    `updater` = 'system',
+    `update_time` = '2026-08-11 16:15:00'
+WHERE `vendor_code` = 'haodanku'
+  AND `platform_code` = 'vip'
+  AND `deleted` = b'0';
 
 SET FOREIGN_KEY_CHECKS = 1;

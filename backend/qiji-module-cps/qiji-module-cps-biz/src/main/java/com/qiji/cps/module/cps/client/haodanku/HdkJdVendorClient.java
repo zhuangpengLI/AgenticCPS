@@ -22,6 +22,9 @@ import java.util.*;
 @Component
 public class HdkJdVendorClient extends AbstractHdkVendorClient {
 
+    private static final String V2_API_HOST = "v2.api.haodanku.com";
+    private static final String V3_API_HOST = "v3.api.haodanku.com";
+
     @Override
     public String getPlatformCode() {
         return CpsPlatformCodeEnum.JD.getCode();
@@ -31,6 +34,15 @@ public class HdkJdVendorClient extends AbstractHdkVendorClient {
     protected String getSearchApiPath() {
         // 好单库京东搜索接口：/jd_goods_search，返回 code=200
         return "/jd_goods_search";
+    }
+
+    @Override
+    protected String resolveApiBaseUrl(String path, CpsVendorConfig config) {
+        String baseUrl = super.resolveApiBaseUrl(path, config);
+        if (baseUrl != null && (getSearchApiPath().equals(path) || getOrderQueryApiPath().equals(path))) {
+            return baseUrl.replace(V2_API_HOST, V3_API_HOST);
+        }
+        return baseUrl;
     }
 
     @Override
@@ -102,8 +114,8 @@ public class HdkJdVendorClient extends AbstractHdkVendorClient {
     @Override
     protected String getPromotionLinkBaseUrl(CpsVendorConfig config) {
         String baseUrl = resolveApiBaseUrl(config);
-        if (baseUrl != null && baseUrl.contains("v3.api.haodanku.com")) {
-            return baseUrl.replace("v3.api.haodanku.com", "v2.api.haodanku.com");
+        if (baseUrl != null && baseUrl.contains(V3_API_HOST)) {
+            return baseUrl.replace(V3_API_HOST, V2_API_HOST);
         }
         return baseUrl;
     }

@@ -2,7 +2,7 @@
 
 > 整理自 [好单库开放平台](https://www.haodanku.com/openapi/api_detail)
 >
-> 更新时间：2025-04-15
+> 更新时间：2026-08-11（按官方当前接口详情重新核对项目在用接口）
 
 ## 概述
 
@@ -13,7 +13,7 @@
 | 项目 | 说明 |
 |------|------|
 | v2 基础URL | `http://v2.api.haodanku.com` |
-| v3 基础URL | `http://v3.api.haodanku.com` (转链/订单/增值类) |
+| v3 基础URL | `http://v3.api.haodanku.com`（部分搜索、转链、订单与增值接口） |
 | v3 HTTPS | `https://v3.api.haodanku.com` (REST接口) |
 | 认证方式 | `apikey` 参数（应用中心获取） |
 | 返回格式 | JSON |
@@ -69,7 +69,7 @@
 
 | 项目 | 说明 |
 |------|------|
-| 请求地址 | `http://v2.api.haodanku.com/supersearch` |
+| 请求地址 | `https://v3.api.haodanku.com/supersearch` |
 | 请求方式 | GET |
 | 说明 | 同时包含好单库精选高佣商品和联盟全网商品（好单库精选高佣靠前） |
 
@@ -118,7 +118,7 @@
 #### 请求示例
 
 ```
-http://v2.api.haodanku.com/supersearch?apikey=你的apikey&keyword=%25e5%25a5%25b3%25e8%25a3%2585&back=10&min_id=1&tb_p=1&sort=0&is_tmall=0&is_coupon=0&limitrate=0
+https://v3.api.haodanku.com/supersearch?apikey=你的apikey&v=3.7.12&keyword=%25e5%25a5%25b3%25e8%25a3%2585&back=10&min_id=1&tb_p=1&sort=0&is_tmall=0&is_coupon=0&limitrate=0
 ```
 
 > **分页说明**：使用 `min_id` + `tb_p` 滚动分页机制，比传统页码更可靠，数据更新时保证不重复。
@@ -807,7 +807,7 @@ http://v2.api.haodanku.com/supersearch?apikey=你的apikey&keyword=%25e5%25a5%25
 
 ### 重要注意事项
 
-1. **域名差异**：搜索接口使用 `v2.api.haodanku.com`，转链接口使用 `v3.api.haodanku.com`
+1. **域名差异**：必须按官方单个接口文档选择 v2/v3；例如淘宝超级搜索是 v3、淘宝频道是 v2，唯品会与拼多多普通转链是 v2
 2. **HTTP方法差异**：搜索用 GET，转链用 POST（表单提交）
 3. **关键词编码**：supersearch 的 keyword 参数需进行**两次 urlencode 编码**
 4. **分页机制**：使用 `min_id` + `tb_p` 滚动分页，非传统页码

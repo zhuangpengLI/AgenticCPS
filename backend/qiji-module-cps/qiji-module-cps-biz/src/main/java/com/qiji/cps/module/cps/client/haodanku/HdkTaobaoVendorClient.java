@@ -24,9 +24,27 @@ import java.util.*;
 @Component
 public class HdkTaobaoVendorClient extends AbstractHdkVendorClient implements CpsTaobaoSelectionVendorClient {
 
+    private static final String V2_API_HOST = "v2.api.haodanku.com";
+    private static final String V3_API_HOST = "v3.api.haodanku.com";
+
     @Override
     public String getPlatformCode() {
         return CpsPlatformCodeEnum.TAOBAO.getCode();
+    }
+
+    @Override
+    protected String resolveApiBaseUrl(String path, CpsVendorConfig config) {
+        String baseUrl = super.resolveApiBaseUrl(path, config);
+        if (baseUrl == null) {
+            return null;
+        }
+        if ("/supersearch".equals(path) || "/ratesurl".equals(path) || "/rest".equals(path)) {
+            return baseUrl.replace(V2_API_HOST, V3_API_HOST);
+        }
+        if ("/column".equals(path) || "/hot_key".equals(path) || "/super_classify".equals(path)) {
+            return baseUrl.replace(V3_API_HOST, V2_API_HOST);
+        }
+        return baseUrl;
     }
 
     // ==================== 商品搜索 ====================
@@ -39,18 +57,19 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient implements Cp
     @Override
     protected Map<String, Object> buildSearchParams(CpsGoodsSearchRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
+        params.put("v", "3.7.12");
         params.put("keyword", request.getKeyword());
-        params.put("page", request.getPageNo());
-        params.put("pagesize", request.getPageSize());
+        params.put("min_id", request.getPageNo() == null ? 1 : request.getPageNo());
+        params.put("back", request.getPageSize() == null ? 20 : request.getPageSize());
         if (request.getSortType() != null) {
             // 好单库排序：0-综合，1-券后价升，2-券后价降，3-销量降，4-佣金比例降
             params.put("sort", convertSortType(request.getSortType()));
         }
         if (request.getPriceLowerLimit() != null) {
-            params.put("min_price", request.getPriceLowerLimit());
+            params.put("startprice", request.getPriceLowerLimit());
         }
         if (request.getPriceUpperLimit() != null) {
-            params.put("max_price", request.getPriceUpperLimit());
+            params.put("endprice", request.getPriceUpperLimit());
         }
         if (request.getHasCoupon() != null) {
             params.put("is_coupon", request.getHasCoupon());
@@ -134,6 +153,7 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient implements Cp
     protected Map<String, Object> buildPromotionLinkParams(CpsPromotionLinkRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("itemid", request.getGoodsId());
+        params.put("title", firstNonBlank(request.getTitle(), request.getOriginalContent(), request.getGoodsId()));
         if (request.getAdzoneId() != null) {
             params.put("pid", request.getAdzoneId());
         } else if (config.getDefaultAdzoneId() != null) {
@@ -180,8 +200,9 @@ public class HdkTaobaoVendorClient extends AbstractHdkVendorClient implements Cp
     @Override
     public CpsOrderPageResult queryOrderPage(CpsOrderQueryRequest request, CpsVendorConfig config) {
         try {
-            String fullUrl = getPromotionLinkBaseUrl(config) + getOrderQueryApiPath();
-            JsonNode response = executePostRequest(fullUrl, buildOrderQueryParams(request, config), config);
+            String path = getOrderQueryApiPath();
+            String fullUrl = resolveApiBaseUrl(path, config) + path;
+            JsonNode response = executeJsonPostRequest(fullUrl, buildOrderQueryParams(request, config), config);
             if (response == null || !isSuccessResponse(response)) {
                 log.warn("[{}:{}] 查询订单失败: {}", getVendorCode(), getPlatformCode(), response);
                 throw new CpsVendorException("CPS vendor order query failed [" + getVendorCode() + ":"

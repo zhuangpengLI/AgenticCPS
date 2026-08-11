@@ -130,6 +130,28 @@ class CpsPlatformOnboardingConnectionTesterTest {
     }
 
     @Test
+    void testVendor_haodankuVipFailure_shouldExplainApiKeyAndNetworkCheck() {
+        payload.getPlatform().setPlatformCode("vip");
+        payload.setPrimaryVendorCode("haodanku");
+        payload.getVendors().clear();
+        var haodanku = CpsPlatformOnboardingTestFixtures.vendor("haodanku");
+        haodanku.setVendorName("好单库");
+        haodanku.setPlatformCode("vip");
+        payload.getVendors().add(haodanku);
+        when(draftService.getRequiredSnapshot("vip", 5L))
+                .thenReturn(new CpsPlatformOnboardingDraftService.DraftSnapshot(
+                        7L, 5L, fingerprint.calculate(payload), payload));
+        when(clientFactory.getVendorClient("haodanku", "vip")).thenReturn(primaryClient);
+        when(primaryClient.testConnection(any())).thenReturn(false);
+
+        CpsPlatformOnboardingCheckRespVO result = tester.testVendor("vip", 5L, "haodanku");
+
+        assertFalse(result.isSuccess());
+        assertEquals("好单库唯品会超级搜索接口检测失败：请确认 APIKEY 有效并检查网络配置",
+                result.getItems().get(0).getMessage());
+    }
+
+    @Test
     void test_structuralFailure_shouldStoreSanitizedFailedStateAndNotCallClient() {
         CpsPlatformOnboardingCheckRespVO structural = CpsPlatformOnboardingCheckRespVO.failed(
                 CpsPlatformOnboardingCheckRespVO.Item.builder()

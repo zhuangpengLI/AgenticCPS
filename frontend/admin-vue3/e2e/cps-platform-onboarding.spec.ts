@@ -85,8 +85,15 @@ async function mockAdminBootstrapAndMenu(page: Page, permissions = [
   }))
 }
 
-async function mockOnboardingApi(page: Page, options: { testStatus?: 'FAILED' | 'SUCCESS'; runtimeVendor?: string; draftVendor?: string; staleConflict?: boolean; nullRuntimeDefaultAdzone?: boolean; trace?: string[] } = {}) {
+async function mockOnboardingApi(page: Page, options: { testStatus?: 'FAILED' | 'SUCCESS'; runtimeVendor?: string; draftVendor?: string; staleConflict?: boolean; nullRuntimeDefaultAdzone?: boolean; disabledPrimary?: boolean; savedVendorStatuses?: number[]; trace?: string[] } = {}) {
   let current = detail(options.draftVendor || options.runtimeVendor || 'dataoke', { status: 'DRAFT' })
+  if (options.disabledPrimary) {
+    const disabledPayload = {
+      ...(current as any).draftPayload,
+      vendors: (current as any).draftPayload.vendors.map((vendor: any) => ({ ...vendor, status: 0 }))
+    }
+    current = { ...current, payload: disabledPayload, draftPayload: disabledPayload }
+  }
   let runtimeVendor = options.runtimeVendor || 'dataoke'
   if (options.nullRuntimeDefaultAdzone) {
     const incompletePayload = { ...payload(options.draftVendor || options.runtimeVendor || 'dataoke'), runtimeDefaultAdzoneId: null }
@@ -123,8 +130,22 @@ async function mockOnboardingApi(page: Page, options: { testStatus?: 'FAILED' | 
       const savedPayload = body.payload || (current as any).payload
       const platformCode = body.platformCode || savedPayload?.platform?.platformCode || (current as any).platformCode
       options.trace?.push(`draft:${platformCode}`)
+      options.savedVendorStatuses?.push(...savedPayload.vendors.map((vendor: any) => vendor.status))
       current = { ...current, platformCode, draftVersion: (current.draftVersion as number) + 1, configFingerprint: 'fp-next', validatedFingerprint: undefined, status: 'DRAFT', payload: savedPayload, draftPayload: savedPayload }
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(current)) })
+    }
+    if (path.endsWith('/test-vendor')) {
+      return route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify(ok({
+          success: true,
+          items: [{
+            section: '供应商',
+            code: 'VENDOR_CONNECTION_OK',
+            message: '供应商连接检测通过'
+          }]
+        }))
+      })
     }
     if (path.endsWith('/test')) {
       const body = route.request().postDataJSON() as { platformCode?: string }
@@ -176,8 +197,8 @@ async function fillMinimumDraft(page: Page, scenario = platformScenarios[0]) {
   await page.getByLabel('供应商编码').click()
   await page.getByRole('option', { name: scenario.vendorCode, exact: true }).click()
   await page.getByLabel('供应商名称').fill(scenario.vendorName)
-  await page.getByLabel('appKey').fill('e2e-key')
-  await page.getByLabel('appSecret').fill('e2e-secret')
+  await page.getByLabel('应用标识').fill('e2e-key')
+  await page.getByLabel('应用密钥').fill('e2e-secret')
   await page.getByRole('button', { name: '确定' }).click()
   await page.getByRole('button', { name: '下一步' }).click()
 
@@ -283,6 +304,39 @@ test.describe('CPS platform onboarding', () => {
     await expect(haodankuRow.getByText('已配置（已脱敏）')).toBeVisible()
     await haodankuRow.getByRole('button', { name: '测试' }).click()
     await expect(page.getByText('检查成功')).toBeVisible()
+  })
+
+  test('shows Chinese labels for vendor API configuration fields', async ({ page }) => {
+    await mockAdminBootstrapAndMenu(page)
+    await mockOnboardingApi(page, { runtimeVendor: 'dataoke', draftVendor: 'haodanku' })
+    await openReconfigureWorkspace(page)
+    await page.getByText('API供应商', { exact: true }).click()
+    const haodankuRow = page.getByRole('row').filter({ hasText: '好单库' })
+    await haodankuRow.getByRole('button', { name: '编辑' }).click()
+
+    await expect(page.getByLabel('应用标识')).toBeVisible()
+    await expect(page.getByLabel('接口基础地址')).toBeVisible()
+    await expect(page.getByText('appKey', { exact: true })).toHaveCount(0)
+    await expect(page.getByText('apiBaseUrl', { exact: true })).toHaveCount(0)
+  })
+
+  test('enables and saves a disabled primary vendor before the full connection test', async ({ page }) => {
+    test.slow()
+    page.setDefaultTimeout(120_000)
+    page.setDefaultNavigationTimeout(120_000)
+    const trace: string[] = []
+    const savedVendorStatuses: number[] = []
+    await mockAdminBootstrapAndMenu(page)
+    await mockOnboardingApi(page, { disabledPrimary: true, trace, savedVendorStatuses })
+    await openReconfigureWorkspace(page)
+
+    await page.getByText('检测与启用', { exact: true }).click()
+    await expect(page.getByText('仍缺少：主供应商未启用')).toBeVisible()
+    await page.getByRole('button', { name: '连接测试' }).click()
+
+    await expect(page.getByText('连接测试通过')).toBeVisible()
+    expect(savedVendorStatuses).toEqual([1])
+    expect(trace).toEqual(['draft:taobao', 'test:taobao'])
   })
 
   test('changes runtime default adzone and validates advanced rebate rules', async ({ page }) => {

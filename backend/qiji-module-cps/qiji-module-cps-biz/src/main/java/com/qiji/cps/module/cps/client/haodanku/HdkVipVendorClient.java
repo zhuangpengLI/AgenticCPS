@@ -27,19 +27,23 @@ public class HdkVipVendorClient extends AbstractHdkVendorClient {
     }
 
     @Override
-    protected boolean isSuccessResponse(JsonNode root) {
-        return root != null && root.path("code").asInt(-1) == 200;
-    }
-
-    @Override
     protected String resolveApiBaseUrl(CpsVendorConfig config) {
         String baseUrl = super.resolveApiBaseUrl(config);
         return baseUrl == null ? null : baseUrl.replace("v2.api.haodanku.com", "v3.api.haodanku.com");
     }
 
     @Override
+    protected String resolveApiBaseUrl(String path, CpsVendorConfig config) {
+        if (getSearchApiPath().equals(path)) {
+            String baseUrl = super.resolveApiBaseUrl(config);
+            return baseUrl == null ? null : baseUrl.replace("v3.api.haodanku.com", "v2.api.haodanku.com");
+        }
+        return resolveApiBaseUrl(config);
+    }
+
+    @Override
     protected String getSearchApiPath() {
-        return "/unify_vip_item_query";
+        return "/vip_goods_search";
     }
 
     @Override
@@ -47,8 +51,7 @@ public class HdkVipVendorClient extends AbstractHdkVendorClient {
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("keyword", request.getKeyword());
         params.put("min_id", request.getPageNo() == null ? 1 : request.getPageNo());
-        params.put("back", request.getPageSize() == null ? 20 : request.getPageSize());
-        params.put("order", convertSortType(request.getSortType()));
+        params.put("min_size", request.getPageSize() == null ? 20 : request.getPageSize());
         return params;
     }
 
@@ -59,17 +62,17 @@ public class HdkVipVendorClient extends AbstractHdkVendorClient {
         if (data.isArray()) {
             for (JsonNode item : data) {
                 goodsList.add(CpsGoodsItem.builder()
-                        .goodsId(firstText(item, "goodsId", "goods_id"))
+                        .goodsId(firstText(item, "goodsid", "goodsId", "goods_id"))
                         .platformCode(getPlatformCode())
                         .vendorCode(getVendorCode())
-                        .title(firstText(item, "goodsName", "goods_name"))
-                        .mainPic(firstText(item, "goodsMainPicture", "goods_main_picture"))
-                        .originalPrice(firstDecimal(item, "marketPrice", "market_price"))
-                        .actualPrice(firstDecimal(item, "vipPrice", "vip_price"))
-                        .commissionRate(firstDecimal(item, "commissionRate", "commission_rate"))
-                        .commissionAmount(firstDecimal(item, "commission"))
-                        .brandName(firstText(item, "brandName", "brand_name"))
-                        .monthSales(item.path("productSales").asLong(0L))
+                        .title(firstText(item, "itemtitle", "goodsName", "goods_name"))
+                        .mainPic(firstText(item, "itempic", "goodsMainPicture", "goods_main_picture"))
+                        .originalPrice(firstDecimal(item, "itemprice", "marketPrice", "market_price"))
+                        .actualPrice(firstDecimal(item, "itemendprice", "vipPrice", "vip_price"))
+                        .commissionRate(firstDecimal(item, "tkrates", "commissionRate", "commission_rate"))
+                        .commissionAmount(firstDecimal(item, "tkmoney", "commission"))
+                        .brandName(firstText(item, "brandname", "brandName", "brand_name"))
+                        .monthSales(firstLong(item, "itemsale", "productSales"))
                         .rawPayload(item.toString())
                         .build());
             }
@@ -85,14 +88,21 @@ public class HdkVipVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getPromotionLinkApiPath() {
-        return "/unify_vip_item_convert";
+        return "/vip_ratesurl";
+    }
+
+    @Override
+    protected String getPromotionLinkBaseUrl(CpsVendorConfig config) {
+        String baseUrl = super.resolveApiBaseUrl(config);
+        return baseUrl == null ? null : baseUrl.replace("v3.api.haodanku.com", "v2.api.haodanku.com");
     }
 
     @Override
     protected Map<String, Object> buildPromotionLinkParams(CpsPromotionLinkRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("goods_id", firstNonBlank(request.getGoodsId(), request.getGoodsSign()));
-        params.put("channel", firstNonBlank(request.getChannelId(), request.getExternalId()));
+        params.put("goodsid", firstNonBlank(request.getGoodsId(), request.getGoodsSign()));
+        params.put("pid", firstNonBlank(request.getAdzoneId(), config.getDefaultAdzoneId()));
+        params.put("relation_id", request.getRelationId());
         return params;
     }
 
@@ -129,8 +139,9 @@ public class HdkVipVendorClient extends AbstractHdkVendorClient {
     @Override
     protected List<CpsOrderDTO> parseOrderQueryResponse(JsonNode response) {
         List<CpsOrderDTO> orders = new ArrayList<>();
-        String nextPositionIndex = firstText(response, "min_id");
-        JsonNode data = response.path("data");
+        JsonNode payload = response.path("data");
+        String nextPositionIndex = firstNonBlank(firstText(payload, "min_id"), firstText(response, "min_id"));
+        JsonNode data = payload.isObject() ? payload.path("list") : payload;
         if (!data.isArray()) {
             return orders;
         }
@@ -168,16 +179,19 @@ public class HdkVipVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected Map<String, Object> buildTestConnectionParams() {
-        return Map.of("keyword", "手机", "min_id", 1, "back", 10, "order", 0);
+        return Map.of("keyword", "手机", "min_id", 1, "min_size", 10);
     }
 
-    private int convertSortType(Integer sortType) {
-        return switch (sortType == null ? 0 : sortType) {
-            case 1 -> 6;
-            case 2 -> 1;
-            case 3 -> 2;
-            default -> 0;
-        };
+    private long firstLong(JsonNode node, String... fieldNames) {
+        String value = firstText(node, fieldNames);
+        if (value == null) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException ignored) {
+            return 0L;
+        }
     }
 
     private Integer mapVipOrderStatus(Integer status) {

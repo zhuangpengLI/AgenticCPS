@@ -137,4 +137,31 @@ public abstract class AbstractAggregatorVendorClient extends AbstractApiVendorCl
         }
     }
 
+    /**
+     * 执行 HTTP POST 请求（JSON 提交方式）。
+     *
+     * <p>用于明确要求 {@code application/json} 的聚合平台接口。</p>
+     */
+    protected JsonNode executeJsonPostRequest(String fullUrl, Map<String, Object> params, CpsVendorConfig config) {
+        Map<String, Object> allParams = new LinkedHashMap<>(params);
+        Map<String, String> signContext = computeSignContext(allParams, config);
+        injectSignParams(allParams, config, signContext);
+        allParams.entrySet().removeIf(entry -> entry.getValue() == null);
+
+        try {
+            HttpResponse response = HttpRequest.post(fullUrl)
+                    .body(objectMapper.writeValueAsString(allParams), "application/json")
+                    .timeout(HTTP_TIMEOUT)
+                    .execute();
+            String body = response.body();
+            log.debug("[{}:{}] JSON POST请求完成: status={}",
+                    getVendorCode(), getPlatformCode(), response.getStatus());
+            return objectMapper.readTree(body);
+        } catch (Exception e) {
+            log.error("[{}:{}] HTTP JSON POST请求异常: type={}",
+                    getVendorCode(), getPlatformCode(), e.getClass().getSimpleName());
+            return null;
+        }
+    }
+
 }

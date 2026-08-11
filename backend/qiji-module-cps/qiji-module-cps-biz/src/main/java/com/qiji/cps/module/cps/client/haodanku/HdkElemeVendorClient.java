@@ -12,6 +12,7 @@ import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -31,6 +32,12 @@ public class HdkElemeVendorClient extends AbstractHdkVendorClient {
     public Set<CpsVendorCapability> getCapabilities() {
         return EnumSet.of(CpsVendorCapability.PROMOTION_LINK,
                 CpsVendorCapability.ORDER_QUERY, CpsVendorCapability.CONNECTION_TEST);
+    }
+
+    @Override
+    protected String resolveApiBaseUrl(String path, CpsVendorConfig config) {
+        String baseUrl = super.resolveApiBaseUrl(path, config);
+        return baseUrl == null ? null : baseUrl.replace("v2.api.haodanku.com", "v3.api.haodanku.com");
     }
 
     @Override
@@ -134,12 +141,14 @@ public class HdkElemeVendorClient extends AbstractHdkVendorClient {
 
     @Override
     protected String getTestConnectionApiPath() {
-        return "/elm_activity_ratesurl";
+        return getOrderQueryApiPath();
     }
 
     @Override
     protected Map<String, Object> buildTestConnectionParams() {
-        return Map.of();
+        long end = Instant.now().getEpochSecond();
+        return Map.of("min_id", 1, "back", 10, "date_type", 1, "state", 0,
+                "start_date", end - 300, "end_date", end);
     }
 
     private boolean isValidSid(String value) {

@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HdkVipVendorClientTest {
@@ -24,8 +25,8 @@ class HdkVipVendorClientTest {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Test
-    void searchShouldUseVipV3ContractAndMapGoods() throws Exception {
-        HdkVipVendorClient client = new HdkVipVendorClient();
+    void searchShouldUseVipV2ContractAndMapGoods() throws Exception {
+        TestableHdkVipVendorClient client = new TestableHdkVipVendorClient();
         CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
         request.setKeyword("运动鞋");
         request.setPageNo(2);
@@ -35,25 +36,25 @@ class HdkVipVendorClientTest {
         Map<String, Object> params = client.buildSearchParams(request, CpsVendorConfig.builder().build());
         CpsGoodsSearchResult result = client.parseSearchResponse(OBJECT_MAPPER.readTree("""
                 {"code":200,"min_id":3,"data":[{
-                  "goodsId":"VIP-1",
-                  "goodsName":"唯品会运动鞋",
-                  "goodsMainPicture":"https://img.example/vip.jpg",
-                  "marketPrice":"599.00",
-                  "vipPrice":"199.00",
-                  "commissionRate":"12.5",
-                  "commission":"24.88",
-                  "brandName":"测试品牌",
-                  "productSales":"321"
+                  "goodsid":"VIP-1",
+                  "itemtitle":"唯品会运动鞋",
+                  "itempic":"https://img.example/vip.jpg",
+                  "itemprice":"599.00",
+                  "itemendprice":"199.00",
+                  "tkrates":"12.5",
+                  "tkmoney":"24.88",
+                  "brandname":"测试品牌",
+                  "itemsale":"321"
                 }]}
                 """), request);
 
         assertEquals("vip", client.getPlatformCode());
         assertTrue(client.isSuccessResponse(OBJECT_MAPPER.readTree("{\"code\":200}")));
-        assertEquals("/unify_vip_item_query", client.getSearchApiPath());
+        assertEquals("/vip_goods_search", client.getSearchApiPath());
         assertEquals("运动鞋", params.get("keyword"));
         assertEquals(2, params.get("min_id"));
-        assertEquals(30, params.get("back"));
-        assertEquals(6, params.get("order"));
+        assertEquals(30, params.get("min_size"));
+        assertFalse(params.containsKey("order"));
         CpsGoodsItem goods = result.getList().get(0);
         assertEquals("VIP-1", goods.getGoodsId());
         assertEquals("vip", goods.getPlatformCode());
@@ -74,9 +75,13 @@ class HdkVipVendorClientTest {
         HdkVipVendorClient client = new HdkVipVendorClient();
         CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
         request.setGoodsId("VIP-1");
-        request.setChannelId("member_123");
+        request.setRelationId("member_123");
 
-        Map<String, Object> params = client.buildPromotionLinkParams(request, CpsVendorConfig.builder().build());
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .apiBaseUrl("https://v3.api.haodanku.com")
+                .defaultAdzoneId("vip-pid")
+                .build();
+        Map<String, Object> params = client.buildPromotionLinkParams(request, config);
         CpsPromotionLinkResult result = client.parsePromotionLinkResponse(OBJECT_MAPPER.readTree("""
                 {"code":200,"data":{
                   "url":"https://s.example/vip",
@@ -86,9 +91,11 @@ class HdkVipVendorClientTest {
                 }}
                 """));
 
-        assertEquals("/unify_vip_item_convert", client.getPromotionLinkApiPath());
-        assertEquals("VIP-1", params.get("goods_id"));
-        assertEquals("member_123", params.get("channel"));
+        assertEquals("/vip_ratesurl", client.getPromotionLinkApiPath());
+        assertEquals("https://v2.api.haodanku.com", client.getPromotionLinkBaseUrl(config));
+        assertEquals("VIP-1", params.get("goodsid"));
+        assertEquals("vip-pid", params.get("pid"));
+        assertEquals("member_123", params.get("relation_id"));
         assertEquals("https://s.example/vip", result.getShortUrl());
         assertEquals("https://www.example/vip-long", result.getLongUrl());
         assertEquals("￥唯口令￥", result.getTpwd());
@@ -108,7 +115,7 @@ class HdkVipVendorClientTest {
 
         Map<String, Object> params = client.buildOrderQueryParams(request, CpsVendorConfig.builder().build());
         List<CpsOrderDTO> orders = client.parseOrderQueryResponse(OBJECT_MAPPER.readTree("""
-                {"code":200,"min_id":"9","data":[{
+                {"code":200,"data":{"min_id":"9","list":[{
                   "trade_id":"VIP-ORDER-1",
                   "trade_parent_id":"VIP-PARENT-1",
                   "order_status":5,
@@ -126,7 +133,7 @@ class HdkVipVendorClientTest {
                   "actual_money":"24.88",
                   "channel_code":"member_123",
                   "updated_at":"2026-09-02 10:00:01"
-                }]}
+                }]}}
                 """));
 
         assertEquals("/vip_union_order_list", client.getOrderQueryApiPath());
@@ -173,15 +180,38 @@ class HdkVipVendorClientTest {
 
     @Test
     void connectionTestShouldUseVipSearchAndDeclareAllImplementedCapabilities() {
-        HdkVipVendorClient client = new HdkVipVendorClient();
+        TestableHdkVipVendorClient client = new TestableHdkVipVendorClient();
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .apiBaseUrl("https://v3.api.haodanku.com")
+                .build();
 
-        assertEquals("/unify_vip_item_query", client.getTestConnectionApiPath());
-        assertEquals(Map.of("keyword", "手机", "min_id", 1, "back", 10, "order", 0),
+        assertEquals("/vip_goods_search", client.getTestConnectionApiPath());
+        assertEquals("https://v2.api.haodanku.com",
+                client.resolveBaseUrl(client.getTestConnectionApiPath(), config));
+        assertEquals(Map.of("keyword", "手机", "min_id", 1, "min_size", 10),
                 client.buildTestConnectionParams());
         assertTrue(client.getCapabilities().containsAll(List.of(
                 CpsVendorCapability.GOODS_SEARCH,
                 CpsVendorCapability.PROMOTION_LINK,
                 CpsVendorCapability.ORDER_QUERY,
                 CpsVendorCapability.CONNECTION_TEST)));
+    }
+
+    @Test
+    void searchWithoutExplicitSortShouldOmitUnsupportedZeroOrder() {
+        HdkVipVendorClient client = new HdkVipVendorClient();
+        CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
+        request.setKeyword("手机");
+
+        Map<String, Object> params = client.buildSearchParams(request, CpsVendorConfig.builder().build());
+
+        assertFalse(params.containsKey("order"));
+    }
+
+    private static final class TestableHdkVipVendorClient extends HdkVipVendorClient {
+
+        private String resolveBaseUrl(String path, CpsVendorConfig config) {
+            return resolveApiBaseUrl(path, config);
+        }
     }
 }

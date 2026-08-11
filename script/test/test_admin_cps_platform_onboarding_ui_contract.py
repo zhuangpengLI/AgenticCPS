@@ -286,6 +286,26 @@ def test_vendor_editor_uses_selects_for_enumerated_vendor_fields():
     )
 
 
+def test_vendor_editor_preserves_common_credential_names_and_translates_other_labels():
+    source = read_utf8(
+        "frontend/admin-vue3/src/views/cps/platformOnboarding/components/VendorEditorDialog.vue"
+    )
+
+    assert ':label="fieldLabel(field.name)"' in source
+    for field_name in ["appKey", "appSecret", "apiKey"]:
+        assert f"{field_name}: '{field_name}'" in source
+    for field_name, chinese_label in {
+        "apiBaseUrl": "接口基础地址",
+        "authToken": "授权令牌",
+        "defaultAdzoneId": "备用推广位",
+        "timeoutMs": "请求超时（毫秒）",
+        "rateLimitPerMinute": "每分钟请求上限",
+        "retryMaxAttempts": "最大重试次数",
+    }.items():
+        assert f"{field_name}: '{chinese_label}'" in source
+    assert "FIELD_LABELS[name] || name" in source
+
+
 def test_unified_menu_replaces_four_visible_entries():
     all_sql = read_utf8("backend/sql/module/cps-all-in-one.sql")
     update_sql = read_utf8("backend/sql/module/cps-update.sql")

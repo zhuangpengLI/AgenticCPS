@@ -86,7 +86,34 @@ const runVendorTest = async (vendor: VendorForm) => {
     testingVendorCode.value = undefined
   }
 }
-const runTest = async () => { if (dirty.value || !draft.value.draftVersion) await saveDraft(); if (!draft.value.draftVersion) return; testing.value = true; try { const result = await PlatformOnboardingApi.test(draft.value.platformCode, draft.value.draftVersion); draft.value.checkResult = result; draft.value.status = result.success ? 'READY' : 'FAILED'; draft.value.validatedFingerprint = result.success ? draft.value.configFingerprint : undefined; if (result.success) ElMessage.success('连接测试通过'); else ElMessage.error('连接测试失败') } finally { testing.value = false } }
+const enablePrimaryVendorForTest = () => {
+  const primary = draft.value.vendors.find(
+    (vendor) => vendor.vendorCode === draft.value.primaryVendorCode
+  )
+  if (!primary || primary.status === 1) return false
+  primary.status = 1
+  ElMessage.info(`${primary.vendorName || primary.vendorCode}已在草稿中启用`)
+  return true
+}
+const runTest = async () => {
+  const primaryVendorEnabled = enablePrimaryVendorForTest()
+  if (primaryVendorEnabled || dirty.value || !draft.value.draftVersion) await saveDraft()
+  if (!draft.value.draftVersion) return
+  testing.value = true
+  try {
+    const result = await PlatformOnboardingApi.test(
+      draft.value.platformCode,
+      draft.value.draftVersion
+    )
+    draft.value.checkResult = result
+    draft.value.status = result.success ? 'READY' : 'FAILED'
+    draft.value.validatedFingerprint = result.success ? draft.value.configFingerprint : undefined
+    if (result.success) ElMessage.success('连接测试通过')
+    else ElMessage.error('连接测试失败')
+  } finally {
+    testing.value = false
+  }
+}
 const publish = async (enableAfterPublish: boolean) => { publishing.value = true; try { const response = await PlatformOnboardingApi.publish({ platformCode: draft.value.platformCode, draftVersion: draft.value.draftVersion!, configFingerprint: draft.value.configFingerprint!, enableAfterPublish }); runtimePayload.value = response.runtimePayload; draftPayload.value = response.draftPayload; const nextDraft = payloadFromDetail(response); draft.value = nextDraft; originalDraft.value = JSON.parse(JSON.stringify(nextDraft)); emit('published', nextDraft); ElMessage.success(enableAfterPublish ? '已发布并启用' : '已发布但保持禁用') } finally { publishing.value = false } }
 const close = async () => { if (dirty.value && !(await ElMessageBox.confirm('草稿尚未保存，确定离开吗？', '提示', { type: 'warning' }).catch(() => false))) return; emit('close') }
 onBeforeRouteLeave(async () => { if (!dirty.value) return true; try { await ElMessageBox.confirm('草稿尚未保存，确定离开吗？', '提示', { type: 'warning' }); return true } catch { return false } })
