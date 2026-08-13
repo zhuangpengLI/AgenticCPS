@@ -33,4 +33,6 @@ public interface CpsRebateActivityService {
     CpsRebateActivityPromotionRespVO generatePromotionContent(@Valid CpsRebateActivityPromotionReqVO reqVO,
                                                                Long memberId);
 
+    void decorateActivityCapabilities(CpsRebateActivityDO activity, Object target);
+
 }

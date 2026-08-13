@@ -3,6 +3,8 @@ package com.qiji.cps.module.cps.client.jutuike;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.qiji.cps.module.cps.client.CpsThirdPartyActivityVendorClient;
+import com.qiji.cps.module.cps.client.CpsVendorConfigField;
+import com.qiji.cps.module.cps.client.CpsVendorConfigSchema;
 import com.qiji.cps.module.cps.client.common.AbstractAggregatorVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchResult;
@@ -50,6 +52,19 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
     @Override
     public String getPlatformCode() {
         return "union";
+    }
+
+    @Override
+    public CpsVendorConfigSchema getConfigSchema() {
+        return new CpsVendorConfigSchema(List.of(
+                CpsVendorConfigField.required("appKey", true),
+                CpsVendorConfigField.optional("apiBaseUrl", false),
+                CpsVendorConfigField.optional("authToken", true),
+                CpsVendorConfigField.optional("defaultAdzoneId", false),
+                CpsVendorConfigField.optional("timeoutMs", false),
+                CpsVendorConfigField.optional("rateLimitPerMinute", false),
+                CpsVendorConfigField.optional("retryMaxAttempts", false)
+        ));
     }
 
     @Override
@@ -157,7 +172,7 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
                 .longUrl(firstText(data, "long_h5", "longH5", "url", "link", "h5"))
                 .mobileUrl(firstText(data, "h5", "url", "link", "long_h5"))
                 .extraFields(toMap(data, "sid", "relation_flag_name", "qrcode", "mini_path",
-                        "act_name", "h5", "long_h5"))
+                        "act_name", "h5", "long_h5", "we_app_info"))
                 .rawPayload(toRawPayload(data))
                 .build();
     }
@@ -229,9 +244,27 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
                 .searchKeyword(firstText(item, "act_name", "activity_name", "name"))
                 .startTime(parseDateOrDateTime(firstText(item, "start_date", "start_time")))
                 .endTime(parseDateOrDateTime(firstText(item, "end_date", "end_time")))
-                .extraFields(toMap(item, "settlement_time", "note", "poster", "attribution_explain", "cate_name"))
+                .extraFields(withCapabilities(toMap(item, "settlement_time", "note", "poster", "attribution_explain", "cate_name",
+                        "xcx_spread", "alipay_xcx_spread"), true, true, true, supportsMiniProgram(item),
+                        isLocalLifeCategory(cateName)))
+                .supportsList(true)
+                .supportsPromotionLink(true)
+                .supportsOrders(true)
+                .supportsMiniProgram(supportsMiniProgram(item))
+                .supportsLocalLife(isLocalLifeCategory(cateName))
                 .rawPayload(toRawPayload(item))
                 .build();
+    }
+
+    private Map<String, Object> withCapabilities(Map<String, Object> metadata, boolean supportsList,
+                                                 boolean supportsPromotionLink, boolean supportsOrders,
+                                                 boolean supportsMiniProgram, boolean supportsLocalLife) {
+        metadata.put("supportsList", supportsList);
+        metadata.put("supportsPromotionLink", supportsPromotionLink);
+        metadata.put("supportsOrders", supportsOrders);
+        metadata.put("supportsMiniProgram", supportsMiniProgram);
+        metadata.put("supportsLocalLife", supportsLocalLife);
+        return metadata;
     }
 
     private CpsOrderDTO parseOrder(JsonNode item) {
@@ -240,6 +273,7 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
             shareRate = shareRate.multiply(BigDecimal.valueOf(100));
         }
         return CpsOrderDTO.builder()
+                .vendorCode(getVendorCode())
                 .platformCode(platformFromBrandId(item.path("brand_id").asInt(-1)))
                 .platformOrderId(firstText(item, "order_sn", "order_id"))
                 .itemId(firstText(item, "act_id", "item_id", "goods_id"))
@@ -322,7 +356,34 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
         if (category.contains("抖音")) {
             return CpsPlatformCodeEnum.DOUYIN.getCode();
         }
+        if (isLocalLifeCategory(category)) {
+            return "local_life";
+        }
         return null;
+    }
+
+    private boolean supportsMiniProgram(JsonNode item) {
+        return item.path("xcx_spread").asInt(0) == 1
+                || item.path("alipay_xcx_spread").asInt(0) == 1
+                || StringUtils.hasText(firstText(item, "mini_path", "miniCode", "page_path"));
+    }
+
+    private boolean isLocalLifeCategory(String category) {
+        if (!StringUtils.hasText(category)) {
+            return false;
+        }
+        return category.contains("美团")
+                || category.contains("饿了么")
+                || category.contains("外卖")
+                || category.contains("本地生活")
+                || category.contains("打车")
+                || category.contains("酒店")
+                || category.contains("电影")
+                || category.contains("快递")
+                || category.contains("餐饮")
+                || category.contains("在线点餐")
+                || category.contains("咖啡")
+                || category.contains("茶");
     }
 
     private Integer defaultInt(Integer value, int defaultValue) {
@@ -394,7 +455,13 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
         for (String fieldName : fieldNames) {
             JsonNode value = node.path(fieldName);
             if (!value.isMissingNode() && !value.isNull()) {
-                result.put(fieldName, value.isNumber() ? value.numberValue() : value.asText());
+                if (value.isNumber()) {
+                    result.put(fieldName, value.numberValue());
+                } else if (value.isContainerNode()) {
+                    result.put(fieldName, value.toString());
+                } else {
+                    result.put(fieldName, value.asText());
+                }
             }
         }
         return result;

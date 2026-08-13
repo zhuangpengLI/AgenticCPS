@@ -12,6 +12,10 @@ public class CpsRebateActivityPromotionReqVO {
     @NotNull(message = "活动 ID 不能为空")
     private Long activityId;
 
+    @Schema(description = "归因会员 ID", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "会员不能为空")
+    private Long memberId;
+
     @Schema(description = "推广位 ID / PID")
     private String adzoneId;
 

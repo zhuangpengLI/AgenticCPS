@@ -88,6 +88,20 @@ public interface CpsTransferRecordMapper extends BaseMapperX<CpsTransferRecordDO
                 .last("LIMIT 2"));
     }
 
+    default CpsTransferRecordDO selectReusableMemberSid(Long memberId, String vendorCode,
+                                                         String platformCode, LocalDateTime now) {
+        return selectOne(new LambdaQueryWrapperX<CpsTransferRecordDO>()
+                .eq(CpsTransferRecordDO::getMemberId, memberId)
+                .eq(CpsTransferRecordDO::getVendorCode, vendorCode)
+                .eq(CpsTransferRecordDO::getPlatformCode, platformCode)
+                .eq(CpsTransferRecordDO::getAttributionType, "SID")
+                .eq(CpsTransferRecordDO::getStatus, 1)
+                .and(wrapper -> wrapper.isNull(CpsTransferRecordDO::getExpireTime)
+                        .or().gt(CpsTransferRecordDO::getExpireTime, now))
+                .orderByDesc(CpsTransferRecordDO::getId)
+                .last("LIMIT 1"));
+    }
+
     default List<CpsTransferRecordDO> selectListForMarketingFunnel(CpsMarketingFunnelReqVO reqVO) {
         return selectList(new LambdaQueryWrapperX<CpsTransferRecordDO>()
                 .eqIfPresent(CpsTransferRecordDO::getPlatformCode, reqVO.getPlatformCode())

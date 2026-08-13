@@ -10,6 +10,7 @@ import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPag
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivitySaveReqVO;
+import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityRespVO;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
@@ -17,6 +18,7 @@ import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.client.haodanku.activity.HaodankuActivityVendorClient;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityClient;
+import com.qiji.cps.module.cps.client.jutuike.JutuikeUnionVendorClient;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
@@ -62,8 +64,10 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
     private static final String SOURCE_CONFIGURED = "configured";
     private static final String SOURCE_DATAOKE = "dataoke";
     private static final String SOURCE_HAODANKU = "haodanku";
+    private static final String SOURCE_JUTUIKE = "jutuike";
     private static final String VENDOR_DATAOKE = "dataoke";
     private static final String VENDOR_HAODANKU = "haodanku";
+    private static final String VENDOR_JUTUIKE = "jutuike";
     private static final String PLATFORM_TAOBAO = "taobao";
     private static final String PLATFORM_ELEME = "eleme";
     private static final String DTK_EXTERNAL_PREFIX = "dtk:";
@@ -97,6 +101,9 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
 
     @Resource
     private HdkActivityClient hdkActivityClient;
+
+    @Resource
+    private JutuikeUnionVendorClient jutuikeUnionVendorClient;
 
     @Resource
     private CpsAdzoneService adzoneService;
@@ -160,6 +167,7 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 .filter(activity -> matchPlatform(activity, reqVO.getPlatformCode()))
                 .filter(activity -> matchBillingType(activity, reqVO.getBillingType()))
                 .filter(activity -> matchKeyword(activity, reqVO.getKeyword()))
+                .filter(activity -> matchLocalLife(activity, reqVO.getLocalLifeOnly()))
                 .sorted(buildActivityComparator(reqVO.getSortMode()))
                 .toList();
 
@@ -182,6 +190,33 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
     }
 
     @Override
+    public void decorateActivityCapabilities(CpsRebateActivityDO activity, Object target) {
+        if (activity == null || target == null) {
+            return;
+        }
+        Boolean supportsList = supportsList(activity);
+        Boolean supportsPromotionLink = supportsPromotionLink(activity);
+        Boolean supportsOrders = supportsOrders(activity);
+        Boolean supportsMiniProgram = supportsMiniProgram(activity);
+        Boolean supportsLocalLife = supportsLocalLife(activity);
+        if (target instanceof CpsRebateActivityCenterRespVO.Card card) {
+            card.setSupportsList(supportsList);
+            card.setSupportsPromotionLink(supportsPromotionLink);
+            card.setSupportsOrders(supportsOrders);
+            card.setSupportsMiniProgram(supportsMiniProgram);
+            card.setSupportsLocalLife(supportsLocalLife);
+            return;
+        }
+        if (target instanceof AppCpsMarketingActivityRespVO activityRespVO) {
+            activityRespVO.setSupportsList(supportsList);
+            activityRespVO.setSupportsPromotionLink(supportsPromotionLink);
+            activityRespVO.setSupportsOrders(supportsOrders);
+            activityRespVO.setSupportsMiniProgram(supportsMiniProgram);
+            activityRespVO.setSupportsLocalLife(supportsLocalLife);
+        }
+    }
+
+    @Override
     public CpsRebateActivityPromotionRespVO generatePromotionContent(CpsRebateActivityPromotionReqVO reqVO) {
         return generatePromotionContent(reqVO, null);
     }
@@ -199,6 +234,9 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         if (SOURCE_HAODANKU.equalsIgnoreCase(firstText(activity.getSourceType(), ""))) {
             return generateHaodankuActivityLink(activity, reqVO, memberId);
         }
+        if (SOURCE_JUTUIKE.equalsIgnoreCase(firstText(activity.getSourceType(), ""))) {
+            return generateJutuikeActivityLink(activity, reqVO, memberId);
+        }
         if ("url".equals(activity.getJumpType())) {
             String promotionUrl = replaceUrlPlaceholders(activity.getJumpUrl(), reqVO);
             if (!isSafeExternalUrl(promotionUrl)) {
@@ -211,6 +249,55 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
             return buildInternalPromotion(activity, reqVO, reqVO.getAdzoneId(), "已生成站内商品广场落地页");
         }
         return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(), "当前活动没有可用的跳转配置");
+    }
+
+    private CpsRebateActivityPromotionRespVO generateJutuikeActivityLink(CpsRebateActivityDO activity,
+                                                                         CpsRebateActivityPromotionReqVO reqVO,
+                                                                         Long memberId) {
+        String activityId = firstText(activity.getPromotionActivityId(), metadataText(activity, "activity_id"),
+                parseJutuikeActivityId(activity.getExternalActivityId()));
+        if (!StringUtils.hasText(activityId)) {
+            return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(), "聚推客活动缺少官方活动 ID");
+        }
+        CpsVendorConfig config = platformClientFactory.getVendorConfig(VENDOR_JUTUIKE, "union");
+        if (config == null) {
+            return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(), "未配置聚推客联盟供应商，无法生成官方活动链接");
+        }
+
+        String platformCode = normalizePlatformCode(activity.getPlatformCode());
+        String actualAdzoneId = firstText(reqVO.getAdzoneId(), config.getDefaultAdzoneId());
+        CpsTransferRecordDO sidRecord = memberId == null ? null
+                : createPendingSidRecord(activity, memberId, actualAdzoneId, VENDOR_JUTUIKE, platformCode);
+        String sid = sidRecord == null ? firstText(reqVO.getChannelTag(), actualAdzoneId) : sidRecord.getAttributionToken();
+
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsId(activityId);
+        request.setExternalId(sid);
+        request.setAdzoneId(actualAdzoneId);
+        request.setChannelId(actualAdzoneId);
+
+        CpsPromotionLinkResult linkResult = jutuikeUnionVendorClient.generatePromotionLink(request, config);
+        String promotionUrl = firstSafePromotionUrl(linkResult);
+        if (linkResult == null || !StringUtils.hasText(promotionUrl)) {
+            return buildFailedPromotion(activity, reqVO, actualAdzoneId, "聚推客官方活动转链暂不可用");
+        }
+        if (sidRecord != null) {
+            transferRecordMapper.updateById(CpsTransferRecordDO.builder()
+                    .id(sidRecord.getId())
+                    .promotionUrl(promotionUrl)
+                    .status(1)
+                    .build());
+        }
+        String attributionStatus = sidRecord != null
+                ? ATTRIBUTION_MEMBER_TRACKED
+                : StringUtils.hasText(sid) ? ATTRIBUTION_CHANNEL_TRACKED : ATTRIBUTION_UNTRACKED;
+        String attributionMessage = ATTRIBUTION_MEMBER_TRACKED.equals(attributionStatus)
+                ? "已使用可信会员归因标识，订单同步后可自动绑定会员"
+                : ATTRIBUTION_CHANNEL_TRACKED.equals(attributionStatus)
+                ? "当前链接仅支持渠道跟踪，不能自动绑定具体会员"
+                : "当前链接没有可信会员归因标识，下单后可通过订单号申请找回";
+        return buildExternalPromotion(activity, reqVO, actualAdzoneId, promotionUrl, linkResult.getTpwd(), null,
+                "聚推客官方活动推广链接已生成", attributionStatus, attributionMessage);
     }
 
     private CpsRebateActivityPromotionRespVO generateDtkActivityLink(CpsRebateActivityDO activity,
@@ -326,6 +413,18 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 "好单库官方活动推广链接已生成", attributionStatus, attributionMessage);
     }
 
+    private String firstSafePromotionUrl(CpsPromotionLinkResult linkResult) {
+        if (linkResult == null) {
+            return null;
+        }
+        for (String value : new String[]{linkResult.getShortUrl(), linkResult.getMobileUrl(), linkResult.getLongUrl()}) {
+            if (isSafeOfficialPromotionTarget(value)) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
     private CpsRebateActivityPromotionRespVO buildExternalPromotion(CpsRebateActivityDO activity,
                                                                      CpsRebateActivityPromotionReqVO reqVO,
                                                                      String actualAdzoneId, String promotionUrl,
@@ -360,20 +459,32 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
 
     private CpsTransferRecordDO createPendingSidRecord(CpsRebateActivityDO activity, Long memberId,
                                                        String adzoneId) {
+        return createPendingSidRecord(activity, memberId, adzoneId, VENDOR_HAODANKU, PLATFORM_ELEME);
+    }
+
+    private CpsTransferRecordDO createPendingSidRecord(CpsRebateActivityDO activity, Long memberId,
+                                                       String adzoneId, String vendorCode, String platformCode) {
+        LocalDateTime now = LocalDateTime.now();
+        CpsTransferRecordDO reusable = transferRecordMapper.selectReusableMemberSid(
+                memberId, vendorCode, platformCode, now);
+        if (reusable != null) {
+            return reusable;
+        }
         for (int attempt = 0; attempt < 5; attempt++) {
             CpsTransferRecordDO record = CpsTransferRecordDO.builder()
                     .memberId(memberId)
-                    .platformCode(PLATFORM_ELEME)
-                    .vendorCode(VENDOR_HAODANKU)
+                    .platformCode(platformCode)
+                    .vendorCode(vendorCode)
                     .activityId(activity.getId())
                     .attributionType(ATTRIBUTION_TYPE_SID)
                     .attributionToken(generateSid())
                     .originalContent(firstText(metadataText(activity, "activity_url"), activity.getJumpUrl()))
-                    .itemId(firstText(activity.getPromotionActivityId(), metadataText(activity, "activity_id")))
+                    .itemId(firstText(activity.getPromotionActivityId(), metadataText(activity, "activity_id"),
+                            parseJutuikeActivityId(activity.getExternalActivityId())))
                     .itemTitle(activity.getActivityName())
                     .adzoneId(adzoneId)
                     .expireTime(resolveAttributionExpireTime(activity))
-                    .status(0)
+                    .status(1)
                     .build();
             try {
                 transferRecordMapper.insert(record);
@@ -445,6 +556,14 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         }
         String promotionSceneId = externalActivityId.substring(DTK_EXTERNAL_PREFIX.length());
         return StringUtils.hasText(promotionSceneId) ? promotionSceneId : null;
+    }
+
+    private String parseJutuikeActivityId(String externalActivityId) {
+        if (!StringUtils.hasText(externalActivityId) || !externalActivityId.startsWith("jtk:")) {
+            return null;
+        }
+        String activityId = externalActivityId.substring("jtk:".length());
+        return StringUtils.hasText(activityId) ? activityId : null;
     }
 
     private void validateActivityExists(Long id) {
@@ -675,6 +794,10 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 || billingType.equalsIgnoreCase(firstText(activity.getBillingType(), BILLING_TYPE_CPS));
     }
 
+    private boolean matchLocalLife(CpsRebateActivityDO activity, Boolean localLifeOnly) {
+        return !Boolean.TRUE.equals(localLifeOnly) || supportsLocalLife(activity);
+    }
+
     private boolean matchKeyword(CpsRebateActivityDO activity, String keyword) {
         if (!StringUtils.hasText(keyword)) {
             return true;
@@ -823,7 +946,77 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 .searchKeyword(activity.getSearchKeyword())
                 .startTime(activity.getStartTime())
                 .endTime(activity.getEndTime())
+                .supportsList(supportsList(activity))
+                .supportsPromotionLink(supportsPromotionLink(activity))
+                .supportsOrders(supportsOrders(activity))
+                .supportsMiniProgram(supportsMiniProgram(activity))
+                .supportsLocalLife(supportsLocalLife(activity))
                 .build();
+    }
+
+    private boolean supportsList(CpsRebateActivityDO activity) {
+        return metadataBoolean(activity, "supportsList", !SOURCE_CONFIGURED.equalsIgnoreCase(
+                firstText(activity.getSourceType(), SOURCE_CONFIGURED)));
+    }
+
+    private boolean supportsPromotionLink(CpsRebateActivityDO activity) {
+        String sourceType = firstText(activity.getSourceType(), SOURCE_CONFIGURED);
+        boolean defaultValue = SOURCE_DATAOKE.equalsIgnoreCase(sourceType)
+                || SOURCE_JUTUIKE.equalsIgnoreCase(sourceType)
+                || SOURCE_HAODANKU.equalsIgnoreCase(sourceType)
+                && HaodankuActivityVendorClient.supportsOfficialActivityPromotionLink(activity.getPlatformCode())
+                || "url".equals(activity.getJumpType());
+        return metadataBoolean(activity, "supportsPromotionLink", defaultValue);
+    }
+
+    private boolean supportsOrders(CpsRebateActivityDO activity) {
+        String sourceType = firstText(activity.getSourceType(), SOURCE_CONFIGURED);
+        boolean defaultValue = SOURCE_JUTUIKE.equalsIgnoreCase(sourceType)
+                || SOURCE_HAODANKU.equalsIgnoreCase(sourceType) && PLATFORM_ELEME.equals(normalizePlatformCode(activity.getPlatformCode()));
+        return metadataBoolean(activity, "supportsOrders", defaultValue);
+    }
+
+    private boolean supportsMiniProgram(CpsRebateActivityDO activity) {
+        return metadataBoolean(activity, "supportsMiniProgram", false);
+    }
+
+    private boolean supportsLocalLife(CpsRebateActivityDO activity) {
+        boolean defaultValue = isLocalLifePlatform(normalizePlatformCode(activity.getPlatformCode()))
+                || containsLocalLifeText(activity.getActivityType())
+                || containsLocalLifeText(activity.getTagText())
+                || containsLocalLifeText(activity.getActivityName());
+        if (defaultValue) {
+            return true;
+        }
+        return metadataBoolean(activity, "supportsLocalLife", defaultValue);
+    }
+
+    private boolean isLocalLifePlatform(String platformCode) {
+        return "meituan".equals(platformCode)
+                || "eleme".equals(platformCode)
+                || "local_life".equals(platformCode)
+                || "fliggy".equals(platformCode);
+    }
+
+    private boolean containsLocalLifeText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return false;
+        }
+        return value.contains("本地生活")
+                || value.contains("外卖")
+                || value.contains("美团")
+                || value.contains("饿了么")
+                || value.contains("打车")
+                || value.contains("酒店")
+                || value.contains("电影")
+                || value.contains("快递")
+                || value.contains("餐饮")
+                || value.contains("在线点餐");
+    }
+
+    private boolean metadataBoolean(CpsRebateActivityDO activity, String fieldName, boolean defaultValue) {
+        String value = metadataText(activity, fieldName);
+        return StringUtils.hasText(value) ? Boolean.parseBoolean(value) : defaultValue;
     }
 
     private static PlatformMeta fallbackMeta(String platformCode) {

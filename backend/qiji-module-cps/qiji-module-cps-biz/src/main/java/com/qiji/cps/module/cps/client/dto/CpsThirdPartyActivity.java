@@ -57,4 +57,19 @@ public class CpsThirdPartyActivity {
 
     private String rawPayload;
 
+    /** Whether the vendor can list this activity through an official activity API. */
+    private Boolean supportsList;
+
+    /** Whether the vendor can generate a real external promotion link for this activity. */
+    private Boolean supportsPromotionLink;
+
+    /** Whether the vendor exposes order synchronization for this activity family. */
+    private Boolean supportsOrders;
+
+    /** Whether the vendor response includes mini-program material for this activity. */
+    private Boolean supportsMiniProgram;
+
+    /** Whether this activity belongs to local-life promotion scenarios. */
+    private Boolean supportsLocalLife;
+
 }

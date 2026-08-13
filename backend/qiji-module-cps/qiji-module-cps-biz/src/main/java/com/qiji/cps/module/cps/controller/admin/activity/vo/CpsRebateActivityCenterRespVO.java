@@ -127,6 +127,21 @@ public class CpsRebateActivityCenterRespVO {
         @Schema(description = "下线时间")
         private LocalDateTime endTime;
 
+        @Schema(description = "是否支持官方活动列表同步")
+        private Boolean supportsList;
+
+        @Schema(description = "是否支持官方推广转链")
+        private Boolean supportsPromotionLink;
+
+        @Schema(description = "是否支持订单同步")
+        private Boolean supportsOrders;
+
+        @Schema(description = "是否支持小程序素材")
+        private Boolean supportsMiniProgram;
+
+        @Schema(description = "是否本地生活活动")
+        private Boolean supportsLocalLife;
+
     }
 
 }

@@ -7,6 +7,7 @@ import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityClient;
+import com.qiji.cps.module.cps.client.jutuike.JutuikeUnionVendorClient;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionRespVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityCenterReqVO;
@@ -63,6 +64,9 @@ class CpsRebateActivityServiceImplTest {
 
     @Mock
     private HdkActivityClient hdkActivityClient;
+
+    @Mock
+    private JutuikeUnionVendorClient jutuikeUnionVendorClient;
 
     @Mock
     private CpsAdzoneService adzoneService;
@@ -163,6 +167,72 @@ class CpsRebateActivityServiceImplTest {
     }
 
     @Test
+    @DisplayName("getActivityCenter - 输出活动能力标签")
+    void getActivityCenter_exposesCapabilityTags() {
+        CpsRebateActivityDO jutuikeActivity = buildActivity(21L, "聚推客美团外卖", "meituan", "CPS", 707, 1);
+        jutuikeActivity.setSourceType("jutuike");
+        jutuikeActivity.setVendorMetadata("""
+                {"supportsList":true,"supportsPromotionLink":true,"supportsOrders":true,"supportsMiniProgram":true,"supportsLocalLife":true}
+                """);
+        CpsRebateActivityDO internalLanding = buildActivity(22L, "站内酒店会场", "fliggy", "CPS", 8, 2);
+        internalLanding.setSourceType("configured");
+        internalLanding.setJumpType("search");
+        internalLanding.setSearchKeyword("酒店");
+        when(activityMapper.selectEnabledList(any(LocalDateTime.class))).thenReturn(List.of(jutuikeActivity, internalLanding));
+        when(platformService.getEnabledPlatformList()).thenReturn(List.of(
+                CpsPlatformDO.builder().platformCode("meituan").platformName("美团").sort(1).build(),
+                CpsPlatformDO.builder().platformCode("fliggy").platformName("飞猪旅行").sort(2).build()));
+
+        CpsRebateActivityCenterReqVO reqVO = new CpsRebateActivityCenterReqVO();
+        reqVO.setPlatformCode("hot");
+        reqVO.setBillingType("all");
+        reqVO.setPageNo(1);
+        reqVO.setPageSize(10);
+
+        CpsRebateActivityCenterRespVO result = service.getActivityCenter(reqVO);
+
+        CpsRebateActivityCenterRespVO.Card jutuikeCard = result.getCards().stream()
+                .filter(card -> Long.valueOf(21L).equals(card.getId()))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(jutuikeCard.getSupportsList());
+        assertTrue(jutuikeCard.getSupportsPromotionLink());
+        assertTrue(jutuikeCard.getSupportsOrders());
+        assertTrue(jutuikeCard.getSupportsMiniProgram());
+        assertTrue(jutuikeCard.getSupportsLocalLife());
+
+        CpsRebateActivityCenterRespVO.Card fallbackCard = result.getCards().stream()
+                .filter(card -> Long.valueOf(22L).equals(card.getId()))
+                .findFirst()
+                .orElseThrow();
+        assertFalse(fallbackCard.getSupportsList());
+        assertFalse(fallbackCard.getSupportsPromotionLink());
+        assertFalse(fallbackCard.getSupportsOrders());
+        assertFalse(fallbackCard.getSupportsMiniProgram());
+        assertTrue(fallbackCard.getSupportsLocalLife());
+    }
+
+    @Test
+    @DisplayName("getActivityCenter - 在线点餐历史活动归入本地生活")
+    void getActivityCenter_classifiesLegacyOnlineOrderingAsLocalLife() {
+        CpsRebateActivityDO activity = buildActivity(23L, "喜茶在线点餐", "", "CPS", 10, 1);
+        activity.setSourceType("jutuike");
+        activity.setVendorMetadata("{\"supportsLocalLife\":false}");
+        when(activityMapper.selectEnabledList(any(LocalDateTime.class))).thenReturn(List.of(activity));
+        when(platformService.getEnabledPlatformList()).thenReturn(List.of());
+
+        CpsRebateActivityCenterReqVO reqVO = new CpsRebateActivityCenterReqVO();
+        reqVO.setLocalLifeOnly(true);
+        reqVO.setPageNo(1);
+        reqVO.setPageSize(10);
+
+        CpsRebateActivityCenterRespVO result = service.getActivityCenter(reqVO);
+
+        assertEquals(1L, result.getTotal());
+        assertTrue(result.getCards().get(0).getSupportsLocalLife());
+    }
+
+    @Test
     @DisplayName("getActivityCenter - 按活动来源 API 供应商过滤")
     void getActivityCenter_filtersBySourceType() {
         CpsRebateActivityDO dataokeActivity = buildActivity(1L, "大淘客淘宝会场", "taobao", "CPS", 100, 1);
@@ -187,9 +257,9 @@ class CpsRebateActivityServiceImplTest {
 
         assertEquals(1L, result.getTotal());
         assertEquals(1, result.getCards().size());
-        assertEquals("大淘客淘宝会场", result.getCards().getFirst().getActivityName());
-        assertEquals("dataoke", result.getCards().getFirst().getSourceType());
-        assertEquals(1L, result.getTabs().getFirst().getActivityCount().longValue());
+        assertEquals("大淘客淘宝会场", result.getCards().get(0).getActivityName());
+        assertEquals("dataoke", result.getCards().get(0).getSourceType());
+        assertEquals(1L, result.getTabs().get(0).getActivityCount().longValue());
     }
 
     @Test
@@ -365,6 +435,62 @@ class CpsRebateActivityServiceImplTest {
         assertEquals("￥ABC123￥", result.getTpwd());
         assertTrue(result.getPromotionContent().contains("https://s.click.taobao.com/abc"));
         assertTrue(result.getPromotionContent().contains("淘口令：￥ABC123￥"));
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 聚推客活动使用官方转链和短 SID 会员归因")
+    void generatePromotionContent_usesJutuikeOfficialActivityLinkWithOpaqueSid() {
+        CpsRebateActivityDO activity = buildActivity(23L, "聚推客美团外卖红包", "meituan", "CPS", 88, 1);
+        activity.setSourceType("jutuike");
+        activity.setExternalActivityId("jtk:45");
+        activity.setVendorMetadata("{\"activity_id\":\"45\"}");
+        when(activityMapper.selectById(23L)).thenReturn(activity);
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .vendorCode("jutuike")
+                .platformCode("union")
+                .appKey("api-key")
+                .defaultAdzoneId("jtk_default")
+                .build();
+        when(platformClientFactory.getVendorConfig("jutuike", "union")).thenReturn(config);
+        when(transferRecordMapper.insert(any(CpsTransferRecordDO.class))).thenAnswer(invocation -> {
+            CpsTransferRecordDO record = invocation.getArgument(0);
+            record.setId(9101L);
+            return 1;
+        });
+        when(jutuikeUnionVendorClient.generatePromotionLink(any(CpsPromotionLinkRequest.class), eq(config)))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .shortUrl("https://s.example/jtk")
+                        .longUrl("https://union.example/jtk-long")
+                        .build());
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(23L);
+        reqVO.setAdzoneId("jtk_adzone");
+        reqVO.setChannelTag("1002");
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO, 1002L);
+
+        ArgumentCaptor<CpsPromotionLinkRequest> linkCaptor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
+        verify(jutuikeUnionVendorClient).generatePromotionLink(linkCaptor.capture(), eq(config));
+        String sid = linkCaptor.getValue().getExternalId();
+        assertEquals("45", linkCaptor.getValue().getGoodsId());
+        assertEquals("jtk_adzone", linkCaptor.getValue().getAdzoneId());
+        assertTrue(sid.matches("[A-Za-z0-9_]{15}"));
+        assertFalse(sid.contains("1002"));
+
+        ArgumentCaptor<CpsTransferRecordDO> recordCaptor = ArgumentCaptor.forClass(CpsTransferRecordDO.class);
+        verify(transferRecordMapper).insert(recordCaptor.capture());
+        assertEquals(1002L, recordCaptor.getValue().getMemberId());
+        assertEquals("jutuike", recordCaptor.getValue().getVendorCode());
+        assertEquals("meituan", recordCaptor.getValue().getPlatformCode());
+        assertEquals(23L, recordCaptor.getValue().getActivityId());
+        assertEquals("SID", recordCaptor.getValue().getAttributionType());
+        assertEquals(sid, recordCaptor.getValue().getAttributionToken());
+        verify(transferRecordMapper).updateById(any(CpsTransferRecordDO.class));
+        assertEquals("SUCCESS", result.getLinkStatus());
+        assertEquals("EXTERNAL_PROMOTION", result.getLinkType());
+        assertEquals("MEMBER_TRACKED", result.getAttributionStatus());
+        assertEquals("https://s.example/jtk", result.getPromotionUrl());
     }
 
     @Test

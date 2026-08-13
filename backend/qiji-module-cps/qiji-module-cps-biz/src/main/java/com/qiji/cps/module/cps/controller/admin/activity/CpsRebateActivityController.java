@@ -112,7 +112,7 @@ public class CpsRebateActivityController {
     @PreAuthorize("@ss.hasPermission('cps:rebate-activity:query')")
     public CommonResult<CpsRebateActivityPromotionRespVO> generatePromotionContent(
             @Valid @RequestBody CpsRebateActivityPromotionReqVO reqVO) {
-        return success(activityService.generatePromotionContent(reqVO));
+        return success(activityService.generatePromotionContent(reqVO, reqVO.getMemberId()));
     }
 
     @PostMapping("/sync")

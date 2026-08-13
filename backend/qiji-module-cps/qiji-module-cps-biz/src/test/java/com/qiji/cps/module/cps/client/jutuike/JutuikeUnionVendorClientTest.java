@@ -16,8 +16,22 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JutuikeUnionVendorClientTest {
+
+    @Test
+    @DisplayName("聚推客配置只要求 apikey")
+    void configSchemaShouldAcceptApiKeyWithoutAppSecret() {
+        JutuikeUnionVendorClient client = new JutuikeUnionVendorClient();
+
+        assertTrue(client.getConfigSchema()
+                .validate(CpsVendorConfig.builder().appKey("jtk-key").build())
+                .isValid());
+        assertFalse(client.getConfigSchema().getFields().stream()
+                .anyMatch(field -> field.isRequired() && "appSecret".equals(field.getName())));
+    }
 
     @Test
     @DisplayName("fetchActivities maps Jutuike act_list to standard activity page")
@@ -44,6 +58,27 @@ class JutuikeUnionVendorClientTest {
         assertEquals("meituan", activity.getPlatformCode());
         assertEquals("CPS", activity.getBillingType());
         assertEquals("T+1", activity.getExtraFields().get("settlement_time"));
+        assertTrue(activity.getSupportsList());
+        assertTrue(activity.getSupportsPromotionLink());
+        assertTrue(activity.getSupportsOrders());
+        assertTrue(activity.getSupportsLocalLife());
+        assertTrue(Boolean.TRUE.equals(activity.getExtraFields().get("supportsPromotionLink")));
+    }
+
+    @Test
+    @DisplayName("fetchActivities classifies online ordering as local life")
+    void fetchActivities_classifiesOnlineOrderingAsLocalLife() throws Exception {
+        StubJutuikeUnionVendorClient client = new StubJutuikeUnionVendorClient("""
+                {"code":1,"data":[{"act_id":8,"act_name":"喜茶在线点餐","cate_name":"在线点餐"}],"total":1}
+                """);
+
+        CpsThirdPartyPage<CpsThirdPartyActivity> page = client.fetchActivities(
+                CpsThirdPartyActivityRequest.builder().pageNo(1).pageSize(20).build(), config());
+
+        CpsThirdPartyActivity activity = page.getList().get(0);
+        assertEquals("local_life", activity.getPlatformCode());
+        assertTrue(activity.getSupportsLocalLife());
+        assertTrue(Boolean.TRUE.equals(activity.getExtraFields().get("supportsLocalLife")));
     }
 
     @Test
@@ -127,6 +162,8 @@ class JutuikeUnionVendorClientTest {
         assertEquals("https://union.example/long", result.getLongUrl());
         assertEquals("https://s.example/h5", result.getMobileUrl());
         assertEquals("美团外卖", result.getExtraFields().get("act_name"));
+        assertEquals("{\"app_id\":\"wx123\",\"page_path\":\"pages/index\"}",
+                result.getExtraFields().get("we_app_info"));
     }
 
     @Test
@@ -146,6 +183,7 @@ class JutuikeUnionVendorClientTest {
         assertEquals("/union/orders", client.lastPath);
         assertEquals("2026-05-26 10:00:00", client.lastParams.get("start_time"));
         CpsOrderDTO order = orders.get(0);
+        assertEquals("jutuike", order.getVendorCode());
         assertEquals("O-1", order.getPlatformOrderId());
         assertEquals("meituan", order.getPlatformCode());
         assertEquals("7", order.getItemId());

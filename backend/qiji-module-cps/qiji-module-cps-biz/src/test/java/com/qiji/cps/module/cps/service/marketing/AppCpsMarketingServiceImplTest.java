@@ -5,12 +5,14 @@ import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivi
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeItemRespVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeReqVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeRespVO;
+import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionRespVO;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeItemDO;
 import com.qiji.cps.module.cps.dal.mysql.activity.CpsRebateActivityMapper;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeItemMapper;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeMapper;
+import com.qiji.cps.module.cps.service.activity.CpsRebateActivityService;
 import com.qiji.cps.module.cps.service.selection.CpsSelectionConstants;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,8 +26,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,6 +44,8 @@ class AppCpsMarketingServiceImplTest {
     private CpsSelectionThemeMapper themeMapper;
     @Mock
     private CpsSelectionThemeItemMapper themeItemMapper;
+    @Mock
+    private CpsRebateActivityService activityService;
 
     @Test
     @DisplayName("getActivityCenter exposes only effective activity cards")
@@ -51,8 +57,24 @@ class AppCpsMarketingServiceImplTest {
                 .activityName("Summer CPS")
                 .platformCode("taobao")
                 .billingType("CPS")
+                .sourceType("jutuike")
                 .status(1)
                 .build()));
+        doAnswer(invocation -> {
+            AppCpsMarketingActivityRespVO target = invocation.getArgument(1);
+            target.setSupportsPromotionLink(true);
+            target.setSupportsOrders(true);
+            target.setSupportsLocalLife(true);
+            return null;
+        }).when(activityService).decorateActivityCapabilities(any(CpsRebateActivityDO.class),
+                any(AppCpsMarketingActivityRespVO.class));
+        when(activityService.generatePromotionContent(any(), org.mockito.ArgumentMatchers.eq(1001L)))
+                .thenReturn(CpsRebateActivityPromotionRespVO.builder()
+                        .linkStatus("SUCCESS")
+                        .linkType("EXTERNAL_PROMOTION")
+                        .attributionStatus("MEMBER_TRACKED")
+                        .promotionUrl("https://s.example/member-entry")
+                        .build());
         AppCpsMarketingActivityReqVO reqVO = new AppCpsMarketingActivityReqVO();
         reqVO.setPlatformCode("taobao");
 
@@ -61,6 +83,14 @@ class AppCpsMarketingServiceImplTest {
         assertEquals(1, result.size());
         assertEquals("Summer CPS", result.get(0).getActivityName());
         assertEquals("taobao", result.get(0).getPlatformCode());
+        assertTrue(result.get(0).getSupportsPromotionLink());
+        assertTrue(result.get(0).getSupportsOrders());
+        assertTrue(result.get(0).getSupportsLocalLife());
+        assertEquals("SUCCESS", result.get(0).getLinkStatus());
+        assertEquals("MEMBER_TRACKED", result.get(0).getAttributionStatus());
+        assertEquals("https://s.example/member-entry", result.get(0).getPromotionUrl());
+        verify(activityService).decorateActivityCapabilities(any(CpsRebateActivityDO.class),
+                any(AppCpsMarketingActivityRespVO.class));
     }
 
     @Test

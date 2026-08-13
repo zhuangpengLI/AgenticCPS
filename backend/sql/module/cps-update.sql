@@ -1615,3 +1615,16 @@ WHERE `vendor_code` = 'haodanku'
   AND `deleted` = b'0';
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============================================================
+-- Modified: 2026-08-12 18:35:00
+-- Purpose: register the hourly Jutuike order synchronization job.
+-- Note: created paused; enable it after the Jutuike union vendor credentials are verified.
+-- ============================================================
+INSERT INTO `infra_job` (`name`, `status`, `handler_name`, `handler_param`, `cron_expression`,
+                         `retry_count`, `retry_interval`, `monitor_timeout`, `creator`, `updater`, `deleted`)
+SELECT 'Jutuike order sync', 2, 'cpsJutuikeOrderSyncJob', '{"hours":2,"queryType":4}',
+       '0 10 * * * ?', 2, 60, 900, 'system', 'system', b'0'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `infra_job` WHERE `handler_name` = 'cpsJutuikeOrderSyncJob' AND `deleted` = b'0'
+);

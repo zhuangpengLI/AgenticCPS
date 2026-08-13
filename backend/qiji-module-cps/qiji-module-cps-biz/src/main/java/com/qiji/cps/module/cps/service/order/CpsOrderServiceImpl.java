@@ -657,13 +657,14 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     }
 
     private AttributionResult resolveByAttributionToken(CpsOrderDTO dto) {
-        if (!"haodanku".equalsIgnoreCase(dto.getVendorCode())
-                || !"eleme".equalsIgnoreCase(dto.getPlatformCode())
-                || isBlank(dto.getExternalId())) {
+        boolean supportedSidVendor = "jutuike".equalsIgnoreCase(dto.getVendorCode())
+                || "haodanku".equalsIgnoreCase(dto.getVendorCode())
+                && "eleme".equalsIgnoreCase(dto.getPlatformCode());
+        if (!supportedSidVendor || isBlank(dto.getPlatformCode()) || isBlank(dto.getExternalId())) {
             return null;
         }
         List<CpsTransferRecordDO> candidates = transferRecordMapper.selectValidAttributionTokenCandidates(
-                "haodanku", "eleme", "SID", dto.getExternalId(), LocalDateTime.now());
+                dto.getVendorCode(), dto.getPlatformCode(), "SID", dto.getExternalId(), LocalDateTime.now());
         if (candidates == null || candidates.isEmpty()) {
             return null;
         }

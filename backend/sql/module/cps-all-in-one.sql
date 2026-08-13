@@ -1971,4 +1971,12 @@ WHERE `deleted` = b'0' AND JSON_VALID(`menu_ids`)
   AND NOT JSON_CONTAINS(`menu_ids`, '6303');
 COMMIT;
 
+INSERT INTO `infra_job` (`name`, `status`, `handler_name`, `handler_param`, `cron_expression`,
+                         `retry_count`, `retry_interval`, `monitor_timeout`, `creator`, `updater`, `deleted`)
+SELECT 'Jutuike order sync', 2, 'cpsJutuikeOrderSyncJob', '{"hours":2,"queryType":4}',
+       '0 10 * * * ?', 2, 60, 900, 'system', 'system', b'0'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `infra_job` WHERE `handler_name` = 'cpsJutuikeOrderSyncJob' AND `deleted` = b'0'
+);
+
 SET FOREIGN_KEY_CHECKS = 1;

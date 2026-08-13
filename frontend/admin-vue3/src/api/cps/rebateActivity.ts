@@ -22,6 +22,11 @@ export interface CpsRebateActivityVO {
   endTime?: Date | string | number
   remark?: string
   createTime?: Date
+  supportsList?: boolean
+  supportsPromotionLink?: boolean
+  supportsOrders?: boolean
+  supportsMiniProgram?: boolean
+  supportsLocalLife?: boolean
 }
 
 export interface CpsRebateActivitySaveVO {
@@ -86,6 +91,7 @@ export interface CpsRebateActivityCenterReqVO {
   billingType?: string
   keyword?: string
   sortMode?: string
+  localLifeOnly?: boolean
 }
 
 export interface CpsRebateActivityCenterTabVO {
@@ -121,6 +127,11 @@ export interface CpsRebateActivityCenterCardVO {
   searchKeyword?: string
   startTime?: Date | string | number
   endTime?: Date | string | number
+  supportsList?: boolean
+  supportsPromotionLink?: boolean
+  supportsOrders?: boolean
+  supportsMiniProgram?: boolean
+  supportsLocalLife?: boolean
 }
 
 export interface CpsRebateActivityCenterRespVO {
@@ -148,6 +159,7 @@ export interface CpsRebateActivitySyncRespVO {
 
 export interface CpsRebateActivityPromotionReqVO {
   activityId: number
+  memberId: number
   adzoneId?: string
   channelTag?: string
 }
@@ -156,6 +168,8 @@ export interface CpsRebateActivityPromotionRespVO {
   linkStatus: 'SUCCESS' | 'INTERNAL_FALLBACK' | 'FAILED'
   linkType: 'EXTERNAL_PROMOTION' | 'INTERNAL_LANDING' | 'NONE'
   linkMessage?: string
+  attributionStatus?: 'MEMBER_TRACKED' | 'CHANNEL_TRACKED' | 'UNTRACKED'
+  attributionMessage?: string
   activityId: number
   activityName: string
   platformCode: string

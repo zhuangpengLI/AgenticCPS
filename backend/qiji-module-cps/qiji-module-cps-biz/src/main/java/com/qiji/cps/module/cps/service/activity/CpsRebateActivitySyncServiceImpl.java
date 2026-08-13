@@ -37,6 +37,8 @@ import java.util.Map;
 @Service
 public class CpsRebateActivitySyncServiceImpl {
 
+    private static final int REBATE_DESC_MAX_LENGTH = 255;
+
     private static final String SOURCE_HAODANKU = "haodanku";
     private static final String HDK_EXTERNAL_PREFIX = "hdk:";
     private static final String VENDOR_ALL = "all";
@@ -319,11 +321,11 @@ public class CpsRebateActivitySyncServiceImpl {
     private CpsRebateActivityDO toActivity(CpsRebateActivitySyncRequest request, CpsThirdPartyActivity item) {
         return CpsRebateActivityDO.builder()
                 .activityName(item.getActivityName())
-                .activityType(item.getActivityType())
-                .platformCode(firstText(item.getPlatformCode(), request.getPlatformCode()))
+                .activityType(firstText(item.getActivityType(), item.getTagText(), "其他活动"))
+                .platformCode(resolveThirdPartyPlatformCode(request, item))
                 .mainPic(item.getMainPic())
                 .shortDesc(item.getShortDesc())
-                .rebateDesc(item.getRebateDesc())
+                .rebateDesc(truncate(item.getRebateDesc(), REBATE_DESC_MAX_LENGTH))
                 .billingType(firstText(item.getBillingType(), "CPS"))
                 .promotionCount(item.getPromotionCount() == null ? 0 : item.getPromotionCount())
                 .sourceType(firstText(item.getSourceType(), request.getVendorCode(),
@@ -342,6 +344,15 @@ public class CpsRebateActivitySyncServiceImpl {
                 .build();
     }
 
+    private String resolveThirdPartyPlatformCode(CpsRebateActivitySyncRequest request, CpsThirdPartyActivity item) {
+        String platformCode = firstText(item.getPlatformCode(), request.getPlatformCode());
+        if (StringUtils.hasText(platformCode)) {
+            return platformCode;
+        }
+        CpsThirdPartyActivityVendorClient vendorClient = resolveThirdPartyActivityClient(request.getVendorCode());
+        return vendorClient == null ? null : vendorClient.getPlatformCode();
+    }
+
     private Map<String, Object> buildHaodankuMetadata(HdkActivityItem item) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("row_id", item.getId());
@@ -349,7 +360,22 @@ public class CpsRebateActivitySyncServiceImpl {
         metadata.put("activity_url", item.getActivityUrl());
         metadata.put("platform", item.getPlatform());
         metadata.put("is_channel", item.getIsChannel());
+        String platformCode = HaodankuActivityVendorClient.normalizeActivityPlatformCode(item.getPlatform());
+        metadata.put("supportsList", true);
+        metadata.put("supportsPromotionLink",
+                HaodankuActivityVendorClient.supportsOfficialActivityPromotionLink(platformCode));
+        metadata.put("supportsOrders", "eleme".equals(platformCode));
+        metadata.put("supportsMiniProgram", "eleme".equals(platformCode)
+                && item.getIsChannel() != null && item.getIsChannel() == 1);
+        metadata.put("supportsLocalLife", isLocalLifePlatform(platformCode));
         return metadata;
+    }
+
+    private boolean isLocalLifePlatform(String platformCode) {
+        return "meituan".equals(platformCode)
+                || "eleme".equals(platformCode)
+                || "local_life".equals(platformCode)
+                || "fliggy".equals(platformCode);
     }
 
     private String toJson(Object value) {
@@ -384,6 +410,13 @@ public class CpsRebateActivitySyncServiceImpl {
             normalized = normalized.substring(splitIndex + "</br>".length());
         }
         return normalized.replaceAll("<[^>]+>", "").trim();
+    }
+
+    private String truncate(String value, int maxCodePoints) {
+        if (value == null || value.codePointCount(0, value.length()) <= maxCodePoints) {
+            return value;
+        }
+        return value.substring(0, value.offsetByCodePoints(0, maxCodePoints));
     }
 
     private LocalDateTime parseTime(String value) {

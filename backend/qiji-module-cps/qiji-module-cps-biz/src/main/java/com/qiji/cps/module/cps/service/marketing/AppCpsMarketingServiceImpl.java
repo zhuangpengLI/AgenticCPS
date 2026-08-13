@@ -6,12 +6,15 @@ import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivi
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeItemRespVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeReqVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeRespVO;
+import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionReqVO;
+import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionRespVO;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeItemDO;
 import com.qiji.cps.module.cps.dal.mysql.activity.CpsRebateActivityMapper;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeItemMapper;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeMapper;
+import com.qiji.cps.module.cps.service.activity.CpsRebateActivityService;
 import com.qiji.cps.module.cps.service.selection.CpsSelectionConstants;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,8 @@ public class AppCpsMarketingServiceImpl implements AppCpsMarketingService {
     private CpsSelectionThemeMapper themeMapper;
     @Resource
     private CpsSelectionThemeItemMapper themeItemMapper;
+    @Resource
+    private CpsRebateActivityService activityService;
 
     private Supplier<LocalDateTime> nowSupplier = LocalDateTime::now;
 
@@ -41,7 +46,7 @@ public class AppCpsMarketingServiceImpl implements AppCpsMarketingService {
         LocalDateTime now = nowSupplier.get();
         return activityMapper.selectEnabledList(now).stream()
                 .filter(activity -> matchesActivityFilter(activity, reqVO))
-                .map(activity -> BeanUtils.toBean(activity, AppCpsMarketingActivityRespVO.class))
+                .map(activity -> toActivityResp(activity, trustedLoginId))
                 .toList();
     }
 
@@ -102,5 +107,32 @@ public class AppCpsMarketingServiceImpl implements AppCpsMarketingService {
 
     private AppCpsMarketingSelectionThemeItemRespVO toThemeItemResp(CpsSelectionThemeItemDO item) {
         return BeanUtils.toBean(item, AppCpsMarketingSelectionThemeItemRespVO.class);
+    }
+
+    private AppCpsMarketingActivityRespVO toActivityResp(CpsRebateActivityDO activity, Long memberId) {
+        AppCpsMarketingActivityRespVO respVO = BeanUtils.toBean(activity, AppCpsMarketingActivityRespVO.class);
+        activityService.decorateActivityCapabilities(activity, respVO);
+        if (memberId != null && Boolean.TRUE.equals(respVO.getSupportsPromotionLink())) {
+            try {
+                CpsRebateActivityPromotionReqVO request = new CpsRebateActivityPromotionReqVO();
+                request.setActivityId(activity.getId());
+                CpsRebateActivityPromotionRespVO promotion = activityService.generatePromotionContent(request, memberId);
+                if (promotion != null) {
+                    respVO.setLinkStatus(promotion.getLinkStatus());
+                    respVO.setLinkType(promotion.getLinkType());
+                    respVO.setLinkMessage(promotion.getLinkMessage());
+                    respVO.setAttributionStatus(promotion.getAttributionStatus());
+                    respVO.setAttributionMessage(promotion.getAttributionMessage());
+                    respVO.setPromotionUrl(promotion.getPromotionUrl());
+                    respVO.setTpwd(promotion.getTpwd());
+                    respVO.setPromotionContent(promotion.getPromotionContent());
+                }
+            } catch (RuntimeException ignored) {
+                respVO.setLinkStatus("FAILED");
+                respVO.setLinkType("NONE");
+                respVO.setLinkMessage("Activity entrance is temporarily unavailable");
+            }
+        }
+        return respVO;
     }
 }

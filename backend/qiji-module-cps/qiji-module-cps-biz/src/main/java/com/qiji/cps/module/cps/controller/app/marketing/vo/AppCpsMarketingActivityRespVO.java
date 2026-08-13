@@ -53,4 +53,43 @@ public class AppCpsMarketingActivityRespVO {
 
     @Schema(description = "结束时间")
     private LocalDateTime endTime;
+
+    @Schema(description = "是否支持官方活动列表同步")
+    private Boolean supportsList;
+
+    @Schema(description = "是否支持官方推广转链")
+    private Boolean supportsPromotionLink;
+
+    @Schema(description = "是否支持订单同步")
+    private Boolean supportsOrders;
+
+    @Schema(description = "是否支持小程序素材")
+    private Boolean supportsMiniProgram;
+
+    @Schema(description = "是否本地生活活动")
+    private Boolean supportsLocalLife;
+
+    @Schema(description = "Current member entrance generation status")
+    private String linkStatus;
+
+    @Schema(description = "Current member entrance type")
+    private String linkType;
+
+    @Schema(description = "Current member entrance message")
+    private String linkMessage;
+
+    @Schema(description = "Current member attribution status")
+    private String attributionStatus;
+
+    @Schema(description = "Current member attribution message")
+    private String attributionMessage;
+
+    @Schema(description = "Current member official promotion URL")
+    private String promotionUrl;
+
+    @Schema(description = "Current member platform command")
+    private String tpwd;
+
+    @Schema(description = "Current member promotion content")
+    private String promotionContent;
 }

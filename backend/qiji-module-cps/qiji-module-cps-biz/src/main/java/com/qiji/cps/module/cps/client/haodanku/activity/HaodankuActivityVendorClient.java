@@ -115,6 +115,11 @@ public class HaodankuActivityVendorClient implements CpsThirdPartyActivityVendor
                     .startTime(parseTime(item.getStartTime()))
                     .endTime(parseTime(item.getEndTime()))
                     .extraFields(extraFields)
+                    .supportsList(true)
+                    .supportsPromotionLink(supportsOfficialActivityPromotionLink(platformCode))
+                    .supportsOrders("eleme".equals(platformCode))
+                    .supportsMiniProgram("eleme".equals(platformCode) && item.getIsChannel() != null && item.getIsChannel() == 1)
+                    .supportsLocalLife(isLocalLifePlatform(platformCode))
                     .rawPayload(null)
                     .build());
         }
@@ -220,6 +225,13 @@ public class HaodankuActivityVendorClient implements CpsThirdPartyActivityVendor
 
     private boolean hasPromotionMaterial(HdkActivityItem item) {
         return StringUtils.hasText(item.getActivityId()) || StringUtils.hasText(item.getActivityUrl());
+    }
+
+    private boolean isLocalLifePlatform(String platformCode) {
+        return "meituan".equals(platformCode)
+                || "eleme".equals(platformCode)
+                || "local_life".equals(platformCode)
+                || "fliggy".equals(platformCode);
     }
 
     private String firstText(String... values) {

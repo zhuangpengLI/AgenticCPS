@@ -10,11 +10,12 @@
       <div class="hero-actions">
         <div class="sync-field">
           <span class="sync-label">同步来源</span>
-          <el-select v-model="syncForm.vendorCode" class="sync-vendor" size="large">
-            <el-option label="全部" value="all" />
-            <el-option label="大淘客" value="dataoke" />
-            <el-option label="好单库" value="haodanku" />
-          </el-select>
+            <el-select v-model="syncForm.vendorCode" class="sync-vendor" size="large">
+              <el-option label="全部" value="all" />
+              <el-option label="大淘客" value="dataoke" />
+              <el-option label="好单库" value="haodanku" />
+              <el-option label="聚推客" value="jutuike" />
+            </el-select>
         </div>
         <el-button
           type="primary"
@@ -65,12 +66,18 @@
             />
           </el-select>
         </div>
-        <el-segmented
-          v-model="queryParams.billingType"
-          :options="billingSegmentOptions"
-          @change="handleQuery"
-        />
-        <el-segmented v-model="queryParams.sortMode" :options="sortOptions" @change="handleQuery" />
+          <el-segmented
+            v-model="queryParams.billingType"
+            :options="billingSegmentOptions"
+            @change="handleQuery"
+          />
+          <el-switch
+            v-model="queryParams.localLifeOnly"
+            active-text="本地生活"
+            inactive-text="全部场景"
+            @change="handleQuery"
+          />
+          <el-segmented v-model="queryParams.sortMode" :options="sortOptions" @change="handleQuery" />
         <div class="filter-search">
           <el-input
             v-model="queryParams.keyword"
@@ -121,9 +128,22 @@
           <div class="card-body">
             <div class="card-title-row">
               <h3>{{ item.activityName }}</h3>
-              <Icon icon="ep:arrow-right" />
+              <el-tag size="small" :type="sourceTagType(item.sourceType)" effect="light">
+                {{ sourceLabel(item.sourceType) }}
+              </el-tag>
             </div>
             <p>{{ item.shortDesc || '活动持续更新中' }}</p>
+            <div class="ability-tags">
+              <el-tag
+                v-for="ability in activityAbilities(item)"
+                :key="ability.label"
+                size="small"
+                :type="ability.type"
+                effect="plain"
+              >
+                {{ ability.label }}
+              </el-tag>
+            </div>
             <div class="card-meta">
               <span>活动奖励</span>
               <b>{{ item.rebateDesc || '--' }}</b>
@@ -142,7 +162,7 @@
                   编辑
                 </el-button>
                 <el-button link type="primary" @click.stop="openPromotionDialog(item)">
-                  推广
+                  {{ promotionActionLabel(item) }}
                 </el-button>
                 <el-button link type="danger" @click.stop="handleDelete(item.id)"> 删除 </el-button>
               </div>
@@ -227,7 +247,9 @@
             <el-form-item label="来源类型">
               <el-select v-model="formData.sourceType" class="w-full">
                 <el-option label="运营配置" value="configured" />
-                <el-option label="实时接口" value="vendor" />
+                <el-option label="大淘客" value="dataoke" />
+                <el-option label="好单库" value="haodanku" />
+                <el-option label="聚推客" value="jutuike" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -302,7 +324,12 @@
     </el-dialog>
 
     <el-dialog v-model="promotionVisible" title="生成活动推广内容" width="720px">
-      <el-form :model="promotionForm" label-width="100px">
+      <el-form
+        ref="promotionFormRef"
+        :model="promotionForm"
+        :rules="promotionFormRules"
+        label-width="100px"
+      >
         <el-form-item label="活动">
           <div class="min-w-0">
             <div class="font-600">{{ selectedActivity?.activityName || '-' }}</div>
@@ -312,6 +339,27 @@
               {{ selectedActivity?.tagText || selectedActivity?.externalActivityId || '活动推广' }}
             </div>
           </div>
+        </el-form-item>
+        <el-form-item label="会员" prop="memberId">
+          <el-select
+            v-model="promotionForm.memberId"
+            filterable
+            remote
+            reserve-keyword
+            clearable
+            class="w-full"
+            placeholder="请输入会员昵称或手机号"
+            :remote-method="searchMemberOptions"
+            :loading="memberLoading"
+            @visible-change="handleMemberDropdownVisible"
+          >
+            <el-option
+              v-for="item in memberOptions"
+              :key="item.id"
+              :label="formatMemberLabel(item)"
+              :value="item.id"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="推广位">
           <el-select
@@ -352,6 +400,14 @@
               : 'warning'
         "
         :title="promotionResult.linkMessage || promotionResult.linkStatus"
+        show-icon
+        :closable="false"
+      />
+      <el-alert
+        v-if="promotionResult?.attributionMessage"
+        class="mt-10px"
+        :type="promotionResult.attributionStatus === 'MEMBER_TRACKED' ? 'success' : 'warning'"
+        :title="promotionResult.attributionMessage"
         show-icon
         :closable="false"
       />
@@ -403,6 +459,7 @@
 import { useClipboard } from '@vueuse/core'
 import type { FormInstance, FormRules } from 'element-plus'
 import { CpsAdzoneApi, type CpsAdzoneVO } from '@/api/cps/adzone'
+import { getUserPage, type UserVO } from '@/api/member/user/index'
 import {
   ACTIVITY_BILLING_TYPE_OPTIONS,
   ACTIVITY_JUMP_TYPE_OPTIONS,
@@ -438,7 +495,8 @@ const queryParams = reactive({
   sourceType: 'all',
   billingType: 'all',
   keyword: '',
-  sortMode: 'hot'
+  sortMode: 'hot',
+  localLifeOnly: false
 })
 const syncLoading = ref(false)
 const syncForm = reactive<CpsRebateActivitySyncReqVO>({
@@ -455,14 +513,21 @@ const formTitle = computed(() => (formType.value === 'create' ? '新增活动卡
 const formData = reactive<CpsRebateActivitySaveVO>(buildDefaultForm())
 const promotionVisible = ref(false)
 const promotionLoading = ref(false)
+const promotionFormRef = ref<FormInstance>()
 const selectedActivity = ref<CpsRebateActivityCenterCardVO>()
 const promotionResult = ref<CpsRebateActivityPromotionRespVO>()
 const adzoneLoading = ref(false)
 const adzoneOptions = ref<CpsAdzoneVO[]>([])
+const memberLoading = ref(false)
+const memberOptions = ref<UserVO[]>([])
 const promotionForm = reactive<CpsRebateActivityPromotionReqVO>({
   activityId: undefined as unknown as number,
+  memberId: undefined as unknown as number,
   adzoneId: undefined,
   channelTag: ''
+})
+const promotionFormRules = reactive<FormRules>({
+  memberId: [{ required: true, message: '请选择会员', trigger: 'change' }]
 })
 const sortOptions = [
   { label: '热门', value: 'hot' },
@@ -570,17 +635,20 @@ const billingSegmentOptions = computed(() => {
 
 const pageCount = computed(() => Math.max(1, Math.ceil(centerData.total / queryParams.pageSize)))
 const visiblePlatformTabs = computed(() => normalizePlatformTabs(centerData.tabs || []))
-const promotionRows = computed(() => [
-  {
-    label: promotionResult.value?.linkType === 'EXTERNAL_PROMOTION' ? '活动链接' : '站内落地页',
-    value: promotionResult.value?.promotionUrl || ''
-  },
-  { label: '淘口令', value: promotionResult.value?.tpwd || '' },
-  { label: '长淘口令', value: promotionResult.value?.longTpwd || '' },
-  { label: '推广位', value: promotionResult.value?.adzoneId || '' },
-  { label: '渠道标识', value: promotionResult.value?.channelTag || '' },
-  { label: '推广文案', value: promotionResult.value?.promotionContent || '' }
-])
+const promotionRows = computed(() =>
+  [
+    {
+      label: promotionResult.value?.linkType === 'EXTERNAL_PROMOTION' ? '联盟活动链接' : '站内落地页',
+      value: promotionResult.value?.promotionUrl || ''
+    },
+    { label: '淘口令', value: promotionResult.value?.tpwd || '' },
+    { label: '长淘口令', value: promotionResult.value?.longTpwd || '' },
+    { label: '归因状态', value: attributionStatusLabel(promotionResult.value?.attributionStatus) },
+    { label: '推广位', value: promotionResult.value?.adzoneId || '' },
+    { label: '渠道标识', value: promotionResult.value?.channelTag || '' },
+    { label: '推广文案', value: promotionResult.value?.promotionContent || '' }
+  ].filter((row) => row.value)
+)
 
 const getCenter = async () => {
   loading.value = true
@@ -731,11 +799,57 @@ const normalizePlatformTabs = (tabs: CpsRebateActivityCenterRespVO['tabs']) => {
   return Array.from(tabMap.values())
 }
 
+const sourceLabelMap: Record<string, string> = {
+  configured: '运营配置',
+  dataoke: '大淘客',
+  haodanku: '好单库',
+  jutuike: '聚推客'
+}
+
+const sourceLabel = (sourceType?: string) =>
+  sourceType ? sourceLabelMap[sourceType] || sourceType : '运营配置'
+
+type ActivityTagType = 'primary' | 'success' | 'warning' | 'danger' | 'info'
+
+const sourceTagType = (sourceType?: string) => {
+  const map: Record<string, ActivityTagType> = {
+    configured: 'info',
+    dataoke: 'success',
+    haodanku: 'warning',
+    jutuike: 'primary'
+  }
+  return sourceType ? map[sourceType] || 'info' : 'info'
+}
+
+const activityAbilities = (item: CpsRebateActivityCenterCardVO) => {
+  const abilities = [
+    item.supportsPromotionLink
+      ? { label: '官方转链', type: 'success' as const }
+      : item.jumpType === 'search'
+        ? { label: '站内落地', type: 'warning' as const }
+        : { label: '不可转链', type: 'info' as const },
+    item.supportsOrders ? { label: '订单同步', type: 'success' as const } : undefined,
+    item.supportsMiniProgram ? { label: '小程序', type: 'primary' as const } : undefined,
+    item.supportsLocalLife ? { label: '本地生活', type: 'danger' as const } : undefined
+  ]
+  return abilities.filter(Boolean) as Array<{
+    label: string
+    type: ActivityTagType
+  }>
+}
+
+const promotionActionLabel = (item: CpsRebateActivityCenterCardVO) => {
+  if (item.supportsPromotionLink) return '推广'
+  if (item.jumpType === 'search') return '落地页'
+  return '查看状态'
+}
+
 const openPromotionDialog = async (item: CpsRebateActivityCenterCardVO) => {
   selectedActivity.value = item
   promotionResult.value = undefined
   Object.assign(promotionForm, {
     activityId: item.id,
+    memberId: undefined,
     adzoneId: undefined,
     channelTag: ''
   })
@@ -745,6 +859,7 @@ const openPromotionDialog = async (item: CpsRebateActivityCenterCardVO) => {
 
 const handleGeneratePromotion = async () => {
   if (!promotionForm.activityId) return
+  await promotionFormRef.value?.validate()
   promotionLoading.value = true
   try {
     try {
@@ -764,6 +879,8 @@ const handleGeneratePromotion = async () => {
       message.success('推广内容已生成')
     } else if (promotionResult.value?.linkStatus === 'INTERNAL_FALLBACK') {
       message.warning('已生成站内落地页，该地址不是联盟推广链接')
+    } else if (promotionResult.value?.linkStatus === 'FAILED') {
+      message.error(promotionResult.value.linkMessage || '活动转链失败')
     }
   } finally {
     promotionLoading.value = false
@@ -858,6 +975,15 @@ const platformLabel = (platformCode?: string) => {
   return platformCode ? platformLabelMap[platformCode] || platformCode : '-'
 }
 
+const attributionStatusLabel = (status?: string) => {
+  const map: Record<string, string> = {
+    MEMBER_TRACKED: '会员可信归因',
+    CHANNEL_TRACKED: '渠道跟踪',
+    UNTRACKED: '未建立可信归因'
+  }
+  return status ? map[status] || status : ''
+}
+
 const platformIcon = (platformCode?: string) => {
   const map: Record<string, string> = {
     hot: 'ep:star-filled',
@@ -880,6 +1006,36 @@ const loadAdzoneOptions = async (platformCode: string) => {
   } finally {
     adzoneLoading.value = false
   }
+}
+
+const searchMemberOptions = async (keyword: string) => {
+  memberLoading.value = true
+  try {
+    const queryText = keyword?.trim()
+    const data = await getUserPage({
+      pageNo: 1,
+      pageSize: 20,
+      mobile: /^\d+$/.test(queryText || '') ? queryText : undefined,
+      nickname: queryText && !/^\d+$/.test(queryText) ? queryText : undefined
+    })
+    memberOptions.value = data?.list || []
+  } finally {
+    memberLoading.value = false
+  }
+}
+
+const handleMemberDropdownVisible = (visible: boolean) => {
+  if (visible && memberOptions.value.length === 0) {
+    searchMemberOptions('')
+  }
+}
+
+const formatMemberLabel = (item: UserVO) => {
+  const parts = [`ID:${item.id}`]
+  if (item.nickname) parts.push(item.nickname)
+  if (item.name) parts.push(item.name)
+  if (item.mobile) parts.push(item.mobile)
+  return parts.join(' / ')
 }
 
 const formatAdzoneLabel = (item: CpsAdzoneVO) => {
@@ -1218,6 +1374,14 @@ onMounted(getCenter)
   line-height: 19px;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+
+.ability-tags {
+  display: flex;
+  min-height: 24px;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -2px 0 10px;
 }
 
 .card-meta {

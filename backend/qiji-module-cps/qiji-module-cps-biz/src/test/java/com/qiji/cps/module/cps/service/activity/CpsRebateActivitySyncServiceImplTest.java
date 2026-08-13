@@ -344,6 +344,43 @@ class CpsRebateActivitySyncServiceImplTest {
     }
 
     @Test
+    @DisplayName("syncThirdPartyActivities - 聚推客缺少平台和类型时补齐必填字段")
+    void syncThirdPartyActivities_fillsRequiredJutuikeActivityFields() {
+        String longRebateDesc = "聚".repeat(300);
+        when(jutuikeUnionVendorClient.getVendorCode()).thenReturn("jutuike");
+        when(jutuikeUnionVendorClient.getPlatformCode()).thenReturn("union");
+        when(platformClientFactory.getVendorConfig("jutuike", "union")).thenReturn(CpsVendorConfig.builder()
+                .vendorCode("jutuike")
+                .platformCode("union")
+                .appKey("app-key")
+                .build());
+        when(jutuikeUnionVendorClient.fetchActivities(any(CpsThirdPartyActivityRequest.class), any()))
+                .thenReturn(CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                        .list(List.of(CpsThirdPartyActivity.builder()
+                                .sourceType("jutuike")
+                                .externalActivityId("jtk:1")
+                                .activityName("聚推客活动")
+                                .rebateDesc(longRebateDesc)
+                                .billingType("CPS")
+                                .build()))
+                        .build());
+        when(activityMapper.selectBySourceTypeAndExternalActivityId("jutuike", "jtk:1")).thenReturn(null);
+
+        service.syncThirdPartyActivities(CpsRebateActivitySyncRequest.builder()
+                .vendorCode("jutuike")
+                .pageSize(20)
+                .maxPages(1)
+                .build());
+
+        ArgumentCaptor<CpsRebateActivityDO> captor = ArgumentCaptor.forClass(CpsRebateActivityDO.class);
+        verify(activityMapper).insert(captor.capture());
+        assertEquals("union", captor.getValue().getPlatformCode());
+        assertEquals("其他活动", captor.getValue().getActivityType());
+        assertEquals(255, captor.getValue().getRebateDesc().codePointCount(0,
+                captor.getValue().getRebateDesc().length()));
+    }
+
+    @Test
     @DisplayName("syncThirdPartyActivities - 大淘客同步用 legacyExternalActivityId 修正旧的错误拓展 ID")
     void syncThirdPartyActivities_updatesLegacyDataokeActivityId() {
         CpsVendorConfig config = CpsVendorConfig.builder()

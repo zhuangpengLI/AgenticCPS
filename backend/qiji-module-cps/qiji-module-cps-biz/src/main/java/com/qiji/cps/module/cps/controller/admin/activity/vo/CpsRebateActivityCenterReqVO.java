@@ -27,4 +27,7 @@ public class CpsRebateActivityCenterReqVO extends PageParam {
     @Schema(description = "排序模式：hot/latest", example = "hot")
     private String sortMode;
 
+    @Schema(description = "是否只看本地生活活动", example = "true")
+    private Boolean localLifeOnly;
+
 }

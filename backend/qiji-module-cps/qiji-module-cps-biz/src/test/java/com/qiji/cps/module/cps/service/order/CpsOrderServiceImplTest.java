@@ -607,6 +607,32 @@ class CpsOrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("saveOrUpdateOrder - Jutuike order binds member by trusted SID")
+    void saveOrUpdateOrder_attributesJutuikeOrderByTrustedSid() {
+        when(orderMapper.selectByPlatformOrderId("meituan", "JTK-SID-1")).thenReturn(null);
+        when(transferRecordMapper.selectValidAttributionTokenCandidates(
+                eq("jutuike"), eq("meituan"), eq("SID"), eq("Jtk_123456789AB"), any()))
+                .thenReturn(List.of(CpsTransferRecordDO.builder()
+                        .id(30L).memberId(2002L).vendorCode("jutuike").platformCode("meituan")
+                        .attributionType("SID").attributionToken("Jtk_123456789AB")
+                        .status(1).expireTime(LocalDateTime.now().plusDays(1)).build()));
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(2002L);
+        member.setNickname("Jutuike Member");
+        when(memberUserApi.getUser(2002L)).thenReturn(member);
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .vendorCode("jutuike").platformCode("meituan")
+                .platformOrderId("JTK-SID-1").externalId("Jtk_123456789AB")
+                .platformStatus(1).build();
+
+        assertEquals(1, orderService.saveOrUpdateOrder(dto));
+        verify(orderMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
+                Long.valueOf(2002L).equals(order.getMemberId()) && "sid".equals(order.getAttributionSource())));
+        verify(transferRecordMapper).updatePlatformOrderId(30L, "JTK-SID-1");
+    }
+
+    @Test
     @DisplayName("saveOrUpdateOrder - 闪购 sid 存在多个候选时拒绝猜测归因")
     void saveOrUpdateOrder_rejectsAmbiguousElemeSid() {
         when(orderMapper.selectByPlatformOrderId("eleme", "ELM-SID-2")).thenReturn(null);
