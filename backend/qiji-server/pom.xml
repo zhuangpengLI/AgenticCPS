@@ -98,6 +98,15 @@
             <version>${revision}</version>
         </dependency>
 
+        <!-- qiji-module-cps-biz 中京东官方 SDK 的运行时依赖；随服务 fat jar 一并打包 -->
+        <dependency>
+            <groupId>com.jd.open.api</groupId>
+            <artifactId>open-api-sdk</artifactId>
+            <version>2.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../qiji-module-cps/qiji-module-cps-biz/lib/jd-api-sdk-java-20260814.jar</systemPath>
+        </dependency>
+
         <!-- spring boot 配置所需依赖 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -129,6 +138,10 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <!-- 京东官方 SDK 以项目内 system 依赖随包发布 -->
+                    <includeSystemScope>true</includeSystemScope>
+                </configuration>
             </plugin>
         </plugins>
     </build>

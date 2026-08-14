@@ -102,6 +102,15 @@
             <artifactId>qiji-module-ai</artifactId>
             <version>${revision}</version>
         </dependency>
+
+        <!-- 京东联盟官方 Java SDK（随项目发布，避免依赖开发机本地路径） -->
+        <dependency>
+            <groupId>com.jd.open.api</groupId>
+            <artifactId>open-api-sdk</artifactId>
+            <version>2.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/jd-api-sdk-java-20260814.jar</systemPath>
+        </dependency>
     </dependencies>
 
 </project>

@@ -120,10 +120,9 @@ class CpsSdkStandardizationContractTest {
     }
 
     @Test
-    void officialSkeletonsDoNotClaimBusinessCapabilitiesBeforeMigration() {
+    void officialSkeletonsRemainLimitedAndMigratedJdExposesBusinessCapabilities() {
         List<CpsApiVendorClient> skeletons = List.of(
                 new TaobaoOfficialVendorClient(),
-                new JdOfficialVendorClient(),
                 new PddOfficialVendorClient(),
                 new DouyinOfficialVendorClient()
         );
@@ -132,6 +131,13 @@ class CpsSdkStandardizationContractTest {
             assertEquals(Set.of(CpsVendorCapability.CONNECTION_TEST), skeleton.getCapabilities(),
                     skeleton.getPlatformCode());
         }
+
+        CpsApiVendorClient jd = new JdOfficialVendorClient();
+        assertTrue(jd.getCapabilities().containsAll(Set.of(
+                CpsVendorCapability.GOODS_SEARCH,
+                CpsVendorCapability.PROMOTION_LINK,
+                CpsVendorCapability.ORDER_QUERY,
+                CpsVendorCapability.CONNECTION_TEST)));
     }
 
     private static final class CouponVendor extends StubVendorClient implements CpsCouponInfoVendorClient {
