@@ -574,6 +574,18 @@
           }
         },
         {
+          "path": "scene",
+          "style": {
+            "navigationBarTitleText": "AIoT 场景推荐"
+          },
+          "meta": {
+            "auth": false,
+            "sync": true,
+            "title": "AIoT 场景推荐",
+            "group": "返利中心"
+          }
+        },
+        {
           "path": "history",
           "style": {
             "navigationBarTitleText": "返利足迹",

@@ -279,14 +279,14 @@
   .page {
     min-height: 100vh;
     padding: 24rpx;
-    background: #f6f7fb;
+    background: #fffaf6;
     box-sizing: border-box;
   }
   .balance-card {
     padding: 38rpx 30rpx;
     border-radius: 24rpx;
     color: #fff;
-    background: linear-gradient(135deg, #ff6b35, #ff3d63);
+    background: linear-gradient(135deg, #ff6a00, #ff9829);
   }
   .label,
   .hint {
@@ -357,7 +357,7 @@
     line-height: 78rpx;
     border-radius: 39rpx;
     color: #fff;
-    background: linear-gradient(90deg, #ff6b35, #ff3d63);
+    background: linear-gradient(90deg, #ff6a00, #ff9829);
     font-size: 27rpx;
   }
   button[disabled] {

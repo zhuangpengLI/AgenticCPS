@@ -2,7 +2,7 @@
   <s-layout title="返利活动" navbar="inner">
     <view class="page">
       <view class="hero">
-        <text class="hero__title">限时返利活动</text>
+        <text class="hero__title">限时高返活动</text>
         <text class="hero__desc">活动规则与返利金额以平台最终结算为准</text>
       </view>
 
@@ -37,14 +37,22 @@
               <text>{{ platformName(item.platformCode) }}</text>
               <text v-if="item.endTime">截至 {{ formatDate(item.endTime) }}</text>
             </view>
+            <view class="ability-row">
+              <text
+                v-for="ability in activityAbilities(item)"
+                :key="ability"
+                class="ability-tag"
+              >
+                {{ ability }}
+              </text>
+            </view>
             <view class="actions">
-              <button class="outline-button" @tap="viewActivity(item)">查看活动</button>
               <button
                 class="primary-button"
                 :disabled="state.promotingId === item.id"
                 @tap="promote(item)"
               >
-                {{ state.promotingId === item.id ? '生成中...' : '获取活动入口' }}
+                {{ state.promotingId === item.id ? '生成中...' : '立即进入' }}
               </button>
             </view>
           </view>
@@ -55,7 +63,7 @@
 </template>
 
 <script setup>
-  import { reactive } from 'vue';
+  import { reactive, watch } from 'vue';
   import { onLoad } from '@dcloudio/uni-app';
   import sheep from '@/sheep';
   import { showAuthModal } from '@/sheep/hooks/useModal';
@@ -70,6 +78,11 @@
     JD: '京东',
     PDD: '拼多多',
     MEITUAN: '美团',
+    ELEME: '饿了么',
+    LOCAL_LIFE: '本地生活',
+    FLIGGY: '飞猪旅行',
+    DOUYIN: '抖音',
+    VIP: '唯品会',
   };
   const platformName = (code) => platformNames[String(code || '').toUpperCase()] || '精选活动';
   const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 10) : '');
@@ -92,18 +105,6 @@
     }
   }
 
-  function viewActivity(item) {
-    if (item.searchKeyword) {
-      sheep.$router.go('/pages/cps/goods', { keyword: encodeURIComponent(item.searchKeyword) });
-      return;
-    }
-    if (item.jumpUrl) {
-      openOrCopy(item.jumpUrl, `已复制${platformName(item.platformCode)}活动链接`);
-      return;
-    }
-    promote(item);
-  }
-
   async function promote(item) {
     if (state.promotingId) return;
     if (!sheep.$store('user').isLogin) {
@@ -112,6 +113,14 @@
     }
     state.promotingId = item.id;
     try {
+      if (item.promotionUrl || item.tpwd || item.promotionContent) {
+        openOrCopy(
+          item.tpwd || item.promotionUrl || item.promotionContent,
+          item.attributionMessage || '活动入口已准备完成',
+          item.linkType,
+        );
+        return;
+      }
       const res = await CpsMarketingApi.generateActivityPromotion({ activityId: item.id });
       const promotion = unwrap(res, '活动入口生成失败') || {};
       if (
@@ -122,7 +131,12 @@
       }
       const value = promotion.tpwd || promotion.promotionUrl || promotion.promotionContent;
       if (!value) throw new Error('活动入口生成失败，请稍后重试');
-      openOrCopy(value, promotion.tpwd ? '口令已复制，请打开对应平台' : '活动链接已复制');
+      const message =
+        promotion.linkStatus === 'INTERNAL_FALLBACK'
+          ? '已复制站内落地页，该地址不是联盟链接'
+          : promotion.attributionMessage ||
+            (promotion.tpwd ? '口令已复制，请打开对应平台' : '活动链接已复制');
+      openOrCopy(value, message, promotion.linkType);
     } catch (error) {
       sheep.$helper.toast(error?.msg || error?.message || '活动入口生成失败');
     } finally {
@@ -130,9 +144,9 @@
     }
   }
 
-  function openOrCopy(value, message) {
+  function openOrCopy(value, message, linkType) {
     // #ifdef H5
-    if (/^https?:\/\//i.test(value)) {
+    if (/^https?:\/\//i.test(value) && linkType !== 'INTERNAL_LANDING') {
       window.location.assign(value);
       return;
     }
@@ -144,21 +158,40 @@
     });
   }
 
+  function activityAbilities(item) {
+    const tags = [];
+    if (item.supportsPromotionLink) {
+      tags.push('官方转链');
+    } else if (item.jumpType === 'search') {
+      tags.push('站内落地');
+    }
+    if (item.supportsOrders) tags.push('订单同步');
+    if (item.supportsMiniProgram) tags.push('小程序');
+    if (item.supportsLocalLife) tags.push('本地生活');
+    return tags;
+  }
+
   onLoad(loadActivities);
+  watch(
+    () => sheep.$store('user').isLogin,
+    (isLogin, wasLogin) => {
+      if (isLogin && !wasLogin) loadActivities();
+    },
+  );
 </script>
 
 <style lang="scss" scoped>
   .page {
     min-height: 100vh;
     padding: 24rpx;
-    background: #f6f7fb;
+    background: #fffaf6;
     box-sizing: border-box;
   }
   .hero {
     padding: 34rpx;
     border-radius: 24rpx;
     color: #fff;
-    background: linear-gradient(135deg, #ff6b35, #ff3d63);
+    background: linear-gradient(135deg, #ff6a00, #ff9829);
   }
   .hero__title,
   .hero__desc {
@@ -234,6 +267,19 @@
     color: #999ca5;
     font-size: 22rpx;
   }
+  .ability-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10rpx;
+    margin-top: 16rpx;
+  }
+  .ability-tag {
+    padding: 4rpx 12rpx;
+    border-radius: 999rpx;
+    color: #ff6a00;
+    background: #fff4e8;
+    font-size: 20rpx;
+  }
   .actions {
     gap: 16rpx;
     margin-top: 22rpx;
@@ -253,7 +299,7 @@
   }
   .primary-button {
     color: #fff;
-    background: linear-gradient(90deg, #ff6b35, #ff3d63);
+    background: linear-gradient(90deg, #ff6a00, #ff9829);
   }
   .primary-button[disabled] {
     opacity: 0.6;
