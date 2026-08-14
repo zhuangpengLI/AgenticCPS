@@ -1412,6 +1412,7 @@ onMounted(getCenter)
 
 .card-footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-top: 14px;
@@ -1419,8 +1420,16 @@ onMounted(getCenter)
 
 .card-actions {
   display: flex;
-  margin-left: auto;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-end;
   gap: 4px;
+  margin-top: 2px;
+}
+
+.card-actions :deep(.el-button) {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 @media (max-width: 768px) {

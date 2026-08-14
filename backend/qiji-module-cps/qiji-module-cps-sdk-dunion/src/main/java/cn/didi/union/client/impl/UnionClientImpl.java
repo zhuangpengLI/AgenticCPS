@@ -22,15 +22,20 @@ public class UnionClientImpl extends BasicClientImpl implements UnionClient {
     public UnionClientImpl(DunionClientConfig config) { this.config = config; }
 
     @Override public Result<LinkResponse> generateH5Link(long activityId, long promotionId, String sourceId, int timeout) {
-        return generateLink(activityId, promotionId, sourceId, LinkType.H5, timeout);
+        return generateH5Link(activityId, promotionId, sourceId, null, timeout);
+    }
+    @Override public Result<LinkResponse> generateH5Link(long activityId, long promotionId, String sourceId, String callback, int timeout) {
+        return generateLink(activityId, promotionId, sourceId, callback, LinkType.H5, timeout);
     }
     @Override public Result<LinkResponse> generateMiniLink(long activityId, long promotionId, String sourceId, int timeout) {
-        return generateLink(activityId, promotionId, sourceId, LinkType.Mini, timeout);
+        return generateLink(activityId, promotionId, sourceId, null, LinkType.Mini, timeout);
     }
-    private Result<LinkResponse> generateLink(long activityId, long promotionId, String sourceId, LinkType type, int timeout) {
+    private Result<LinkResponse> generateLink(long activityId, long promotionId, String sourceId, String callback,
+                                              LinkType type, int timeout) {
         if (activityId <= 0 || promotionId <= 0 || blank(sourceId)) return param("activityId, promotionId and sourceId are required");
         TreeMap<String, Object> params = params("activity_id", activityId, "promotion_id", promotionId,
                 "source_id", sourceId, "link_type", type.getValue());
+        if (!blank(callback)) params.put("dunion_callback", callback);
         return call(() -> doPost(config, path("/link/generate"), timeout, params), LinkResponse.class);
     }
     @Override public Result<QrCodeResponse> generateH5Code(String dsi, String sourceId, int timeout) {

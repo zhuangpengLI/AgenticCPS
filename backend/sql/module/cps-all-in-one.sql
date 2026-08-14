@@ -36,6 +36,7 @@
 --   26. cps_statistics                   统计数据表
 --   27. cps_risk_rule                    风控规则表
 --   28. cps_api_vendor                   CPS API供应商配置表
+--   29. cps_didi_callback_event          滴滴订单/领券回调审计与幂等表
 --   29. cps_platform_onboarding_draft    CPS平台接入草稿表
 --   30. cps_rebate_activity              CPS返利活动表
 --   31. cps_selection_theme              选品主题表
@@ -1008,6 +1009,33 @@ CREATE TABLE `cps_api_vendor` (
   INDEX `idx_platform_code` (`platform_code`) USING BTREE,
   INDEX `idx_vendor_code` (`vendor_code`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS API供应商配置表';
+
+DROP TABLE IF EXISTS `cps_didi_callback_event`;
+CREATE TABLE `cps_didi_callback_event` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `event_type` varchar(16) NOT NULL COMMENT '事件类型：ORDER/REWARD',
+  `idempotency_key` varchar(256) NOT NULL COMMENT '幂等键',
+  `app_key` varchar(128) NOT NULL COMMENT '滴滴 App-Key',
+  `trace_id` varchar(128) DEFAULT NULL COMMENT '领券 trace_id',
+  `platform_order_id` varchar(128) DEFAULT NULL COMMENT '滴滴订单号',
+  `activity_id` varchar(64) DEFAULT NULL COMMENT '活动ID',
+  `source_id` varchar(255) DEFAULT NULL COMMENT '推广来源ID',
+  `reward_sent` bit(1) DEFAULT NULL COMMENT '是否实际发券',
+  `retry_times` int DEFAULT NULL COMMENT '滴滴重试次数',
+  `process_status` varchar(16) NOT NULL COMMENT 'PROCESSING/SUCCESS/FAILED',
+  `failure_reason` varchar(500) DEFAULT NULL COMMENT '失败原因',
+  `request_body` longtext NOT NULL COMMENT '原始请求体',
+  `creator` varchar(64) DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_didi_callback_idempotency` (`tenant_id`,`idempotency_key`) USING BTREE,
+  KEY `idx_didi_callback_order` (`tenant_id`,`platform_order_id`) USING BTREE,
+  KEY `idx_didi_callback_trace` (`tenant_id`,`trace_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='滴滴联盟回调事件审计表';
 
 -- 好单库唯品会配置占位：不内置真实凭证，管理员填写 apikey 后再启用。
 INSERT INTO `cps_api_vendor` (`vendor_code`, `vendor_name`, `vendor_type`, `platform_code`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `extra_config`, `priority`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES

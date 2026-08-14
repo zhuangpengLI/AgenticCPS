@@ -6,6 +6,7 @@ import cn.didi.union.models.*;
 
 public interface UnionClient extends BasicClient {
     Result<LinkResponse> generateH5Link(long activityId, long promotionId, String sourceId, int timeout);
+    Result<LinkResponse> generateH5Link(long activityId, long promotionId, String sourceId, String callback, int timeout);
     Result<LinkResponse> generateMiniLink(long activityId, long promotionId, String sourceId, int timeout);
     Result<QrCodeResponse> generateH5Code(String dsi, String sourceId, int timeout);
     Result<QrCodeResponse> generateMiniCode(String dsi, String sourceId, int timeout);

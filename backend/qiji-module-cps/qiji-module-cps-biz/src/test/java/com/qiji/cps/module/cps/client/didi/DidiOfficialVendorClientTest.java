@@ -40,7 +40,7 @@ class DidiOfficialVendorClientTest {
         LinkResponse response = new Gson().fromJson("""
                 {"errno":0,"traceid":"trace-1","data":{"app_id":"wx123","app_source":"gh_x","dsi":"dsi-1","link":"https://didi.example/link"}}
                 """, LinkResponse.class);
-        when(unionClient.generateH5Link(1001L, 2002L, "88", 5000))
+        when(unionClient.generateH5Link(eq(1001L), eq(2002L), eq("88"), contains("source_id"), eq(5000)))
                 .thenReturn(Result.Builder.<LinkResponse>builder().success(true).model(response).build());
         CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
         request.setGoodsId("1001"); request.setAdzoneId("2002"); request.setExternalId("88");
@@ -50,6 +50,22 @@ class DidiOfficialVendorClientTest {
         assertEquals("https://didi.example/link", result.getLongUrl());
         assertEquals("dsi-1", result.getExtraFields().get("dsi"));
         assertEquals("trace-1", result.getExtraFields().get("traceId"));
+    }
+
+    @Test
+    void shouldAcceptLongActivityIdBeyondIntegerRange() {
+        long activityId = 990715010527L;
+        LinkResponse response = new Gson().fromJson("""
+                {"errno":0,"traceid":"trace-long","data":{"link":"https://didi.example/long-link"}}
+                """, LinkResponse.class);
+        when(unionClient.generateH5Link(eq(activityId), eq(2002L), eq("88"), contains("source_id"), eq(5000)))
+                .thenReturn(Result.Builder.<LinkResponse>builder().success(true).model(response).build());
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsId(String.valueOf(activityId)); request.setAdzoneId("2002"); request.setExternalId("88");
+
+        CpsPromotionLinkResult result = client.generatePromotionLink(request, config());
+
+        assertEquals("https://didi.example/long-link", result.getLongUrl());
     }
 
     @Test

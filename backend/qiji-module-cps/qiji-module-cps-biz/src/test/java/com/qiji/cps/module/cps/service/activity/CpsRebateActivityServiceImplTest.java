@@ -3,6 +3,7 @@ package com.qiji.cps.module.cps.service.activity;
 import com.qiji.cps.framework.common.exception.ServiceException;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
+import com.qiji.cps.module.cps.client.didi.DidiOfficialVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
@@ -67,6 +68,9 @@ class CpsRebateActivityServiceImplTest {
 
     @Mock
     private JutuikeUnionVendorClient jutuikeUnionVendorClient;
+
+    @Mock
+    private DidiOfficialVendorClient didiOfficialVendorClient;
 
     @Mock
     private CpsAdzoneService adzoneService;
@@ -435,6 +439,79 @@ class CpsRebateActivityServiceImplTest {
         assertEquals("￥ABC123￥", result.getTpwd());
         assertTrue(result.getPromotionContent().contains("https://s.click.taobao.com/abc"));
         assertTrue(result.getPromotionContent().contains("淘口令：￥ABC123￥"));
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 滴滴测试活动使用联盟官方推广链接")
+    void generatePromotionContent_usesDidiOfficialActivityLink() {
+        CpsRebateActivityDO activity = buildActivity(24L, "滴滴联盟转链测试活动", "didi", "CPS", 0, 1);
+        activity.setSourceType("configured");
+        activity.setPromotionActivityId("73253161873");
+        activity.setJumpType("search");
+        when(activityMapper.selectById(24L)).thenReturn(activity);
+        CpsVendorConfig config = CpsVendorConfig.builder().vendorCode("official").platformCode("didi")
+                .appKey("test-app-key").appSecret("test-access-key").defaultAdzoneId("15601691323").build();
+        when(platformClientFactory.getVendorConfig("official", "didi")).thenReturn(config);
+        when(didiOfficialVendorClient.generatePromotionLink(any(CpsPromotionLinkRequest.class), eq(config)))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .longUrl("https://union.didi.cn/link/test-short-link").build());
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(24L);
+        reqVO.setAdzoneId("15601691323");
+        reqVO.setChannelTag("didi-test");
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
+
+        ArgumentCaptor<CpsPromotionLinkRequest> captor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
+        verify(didiOfficialVendorClient).generatePromotionLink(captor.capture(), eq(config));
+        assertEquals("73253161873", captor.getValue().getGoodsId());
+        assertEquals("15601691323", captor.getValue().getAdzoneId());
+        assertEquals("didi-test", captor.getValue().getExternalId());
+        assertEquals("SUCCESS", result.getLinkStatus());
+        assertEquals("EXTERNAL_PROMOTION", result.getLinkType());
+        assertEquals("https://union.didi.cn/link/test-short-link", result.getPromotionUrl());
+        assertTrue(result.getLinkMessage().contains("滴滴联盟官方推广链接已生成"));
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 滴滴活动跳过无效推广活动字段并解析带前缀外部 ID")
+    void generatePromotionContent_parsesPrefixedDidiExternalActivityId() {
+        CpsRebateActivityDO activity = buildActivity(25L, "滴滴联盟活动", "didi", "CPS", 0, 1);
+        activity.setPromotionActivityId("滴滴官方活动");
+        activity.setExternalActivityId("didi:990715010527");
+        when(activityMapper.selectById(25L)).thenReturn(activity);
+        CpsVendorConfig config = CpsVendorConfig.builder().vendorCode("official").platformCode("didi")
+                .defaultAdzoneId("15601691323").build();
+        when(platformClientFactory.getVendorConfig("official", "didi")).thenReturn(config);
+        when(didiOfficialVendorClient.generatePromotionLink(any(CpsPromotionLinkRequest.class), eq(config)))
+                .thenReturn(CpsPromotionLinkResult.builder().longUrl("https://union.didi.cn/link/prefixed").build());
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(25L);
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
+
+        ArgumentCaptor<CpsPromotionLinkRequest> captor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
+        verify(didiOfficialVendorClient).generatePromotionLink(captor.capture(), eq(config));
+        assertEquals("990715010527", captor.getValue().getGoodsId());
+        assertEquals("SUCCESS", result.getLinkStatus());
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 滴滴活动 ID 无效时返回业务失败而非系统异常")
+    void generatePromotionContent_rejectsInvalidDidiActivityIdGracefully() {
+        CpsRebateActivityDO activity = buildActivity(26L, "滴滴联盟活动", "didi", "CPS", 0, 1);
+        activity.setPromotionActivityId("滴滴官方活动");
+        activity.setExternalActivityId("didi:invalid");
+        when(activityMapper.selectById(26L)).thenReturn(activity);
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(26L);
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO);
+
+        verify(didiOfficialVendorClient, never()).generatePromotionLink(any(), any());
+        assertEquals("FAILED", result.getLinkStatus());
+        assertTrue(result.getLinkMessage().contains("缺少有效的官方活动 ID"));
     }
 
     @Test

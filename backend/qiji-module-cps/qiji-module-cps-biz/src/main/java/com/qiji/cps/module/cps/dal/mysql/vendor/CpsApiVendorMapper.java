@@ -58,4 +58,12 @@ public interface CpsApiVendorMapper extends BaseMapperX<CpsApiVendorDO> {
         return selectList(CpsApiVendorDO::getStatus, status);
     }
 
+    default List<CpsApiVendorDO> selectEnabledDidiByAppKey(String appKey) {
+        return selectList(new LambdaQueryWrapperX<CpsApiVendorDO>()
+                .eq(CpsApiVendorDO::getVendorCode, "official")
+                .eq(CpsApiVendorDO::getPlatformCode, "didi")
+                .eq(CpsApiVendorDO::getAppKey, appKey)
+                .eq(CpsApiVendorDO::getStatus, 1));
+    }
+
 }

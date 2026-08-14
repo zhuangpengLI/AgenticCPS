@@ -53,7 +53,8 @@ public class DidiOfficialVendorClient implements CpsApiVendorClient {
         String sourceId = StringUtils.hasText(request.getExternalId()) ? request.getExternalId()
                 : "anonymous-" + UUID.randomUUID();
         UnionClient client = clientFactory.create(config);
-        Result<LinkResponse> result = client.generateH5Link(activityId, promotionId, sourceId,
+        String callback = GSON.toJson(Map.of("source_id", sourceId));
+        Result<LinkResponse> result = client.generateH5Link(activityId, promotionId, sourceId, callback,
                 clientFactory.resolveTimeout(config));
         LinkResponse response = requireSuccess(result, "generateH5Link");
         if (response.getData() == null || !StringUtils.hasText(response.getData().getLink())) {
