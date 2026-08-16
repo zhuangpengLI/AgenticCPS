@@ -155,6 +155,29 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
         String effectivePlatformCode = StringUtils.hasText(platformCode) ? platformCode : PLATFORM_TAOBAO;
         String effectiveVendorCode = StringUtils.hasText(vendorCode) ? vendorCode : DEFAULT_VENDOR_CODE;
         int pullCount = pageSize == null ? 20 : Math.max(1, Math.min(pageSize, 100));
+        if ("jd".equals(effectivePlatformCode) && "official".equals(effectiveVendorCode)) {
+            CpsApiVendorClient vendorClient = platformClientFactory.getVendorClient(
+                    effectiveVendorCode, effectivePlatformCode);
+            CpsVendorConfig config = platformClientFactory.getVendorConfig(
+                    effectiveVendorCode, effectivePlatformCode);
+            if (vendorClient == null || config == null) {
+                return emptySearchResult(1, pullCount);
+            }
+            CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
+            request.setSearchMode("jingfen");
+            request.setKeyword(sourceCode);
+            request.setPageNo(1);
+            request.setPageSize(pullCount);
+            CpsGoodsSearchResult result = vendorClient.searchGoods(request, config);
+            List<CpsGoodsItem> goods = result == null || result.getList() == null
+                    ? Collections.emptyList() : result.getList();
+            return CpsGoodsSquareSearchRespVO.builder()
+                    .list(toGoodsRespList(goods, effectiveVendorCode))
+                    .total(result != null && result.getTotal() != null ? result.getTotal() : (long) goods.size())
+                    .pageNo(1)
+                    .pageSize(pullCount)
+                    .build();
+        }
         if (!PLATFORM_TAOBAO.equals(effectivePlatformCode) || !DEFAULT_VENDOR_CODE.equals(effectiveVendorCode)) {
             return CpsGoodsSquareSearchRespVO.builder()
                     .list(Collections.emptyList())

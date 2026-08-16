@@ -8,8 +8,14 @@ import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzoneBatchCreateRe
 import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzonePageReqVO;
 import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzoneRespVO;
 import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsAdzoneSaveReqVO;
+import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsJdChannelRelationReqVO;
+import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsJdPidReqVO;
+import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsJdPositionCreateReqVO;
+import com.qiji.cps.module.cps.controller.admin.adzone.vo.CpsJdPositionQueryReqVO;
+import com.qiji.cps.module.cps.client.official.jd.JdOfficialManagementClient;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
+import com.qiji.cps.module.cps.service.adzone.CpsJdRemoteAdzoneService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,6 +37,8 @@ public class CpsAdzoneController {
 
     @Resource
     private CpsAdzoneService adzoneService;
+    @Resource
+    private CpsJdRemoteAdzoneService jdRemoteAdzoneService;
 
     @PostMapping("/create")
     @Operation(summary = "创建推广位")
@@ -88,6 +96,37 @@ public class CpsAdzoneController {
     public CommonResult<List<CpsAdzoneRespVO>> getAdzoneListByPlatformCode(@RequestParam("platformCode") String platformCode) {
         List<CpsAdzoneDO> list = adzoneService.getAdzoneListByPlatformCode(platformCode);
         return success(BeanUtils.toBean(list, CpsAdzoneRespVO.class));
+    }
+
+    @PostMapping("/jd/remote-create")
+    @Operation(summary = "创建并同步京东远端推广位")
+    @PreAuthorize("@ss.hasPermission('cps:adzone:create')")
+    public CommonResult<List<JdOfficialManagementClient.Position>> createJdRemotePositions(
+            @Valid @RequestBody CpsJdPositionCreateReqVO request) {
+        return success(jdRemoteAdzoneService.createAndSyncPositions(request));
+    }
+
+    @PostMapping("/jd/remote-sync")
+    @Operation(summary = "查询并同步京东远端推广位")
+    @PreAuthorize("@ss.hasPermission('cps:adzone:query')")
+    public CommonResult<JdOfficialManagementClient.PositionPage> syncJdRemotePositions(
+            @Valid @RequestBody CpsJdPositionQueryReqVO request) {
+        return success(jdRemoteAdzoneService.queryAndSyncPositions(request));
+    }
+
+    @PostMapping("/jd/pid")
+    @Operation(summary = "获取并同步京东 PID")
+    @PreAuthorize("@ss.hasPermission('cps:adzone:create')")
+    public CommonResult<String> getJdPid(@Valid @RequestBody CpsJdPidReqVO request) {
+        return success(jdRemoteAdzoneService.getAndSyncPid(request));
+    }
+
+    @PostMapping("/jd/channel-relation")
+    @Operation(summary = "生成京东渠道关系 ID")
+    @PreAuthorize("@ss.hasPermission('cps:adzone:create')")
+    public CommonResult<Long> createJdChannelRelation(
+            @Valid @RequestBody CpsJdChannelRelationReqVO request) {
+        return success(jdRemoteAdzoneService.createChannelRelation(request));
     }
 
 }

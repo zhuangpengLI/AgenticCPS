@@ -59,7 +59,12 @@ public class CpsSceneRecommendationServiceImpl implements CpsSceneRecommendation
         }
         List<CpsGoodsItem> items = new ArrayList<>();
         for (String platform : request.getPlatforms()) {
-            CpsGoodsSearchResult result = goodsService.searchGoods(platform, searchRequest);
+            CpsGoodsSearchRequest platformRequest = searchRequest;
+            if ("jd".equalsIgnoreCase(platform)) {
+                platformRequest = searchRequest.copyForPage(searchRequest.getPageNo(), searchRequest.getPageSize());
+                platformRequest.setSearchMode("recommend");
+            }
+            CpsGoodsSearchResult result = goodsService.searchGoods(platform, platformRequest);
             if (result != null && result.getList() != null) {
                 items.addAll(result.getList());
             }

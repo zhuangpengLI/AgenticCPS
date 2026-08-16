@@ -174,7 +174,7 @@ public class CpsGoodsToolboxServiceImpl implements CpsGoodsToolboxService {
 
     @Override
     public CpsGoodsCouponQueryRespVO queryCoupons(CpsGoodsCouponQueryReqVO reqVO) {
-        CpsGoodsCouponQueryRespVO couponInfoResp = queryDataokeTaobaoCouponInfo(reqVO);
+        CpsGoodsCouponQueryRespVO couponInfoResp = queryVendorCouponInfo(reqVO);
         if (couponInfoResp != null) {
             return couponInfoResp;
         }
@@ -202,13 +202,10 @@ public class CpsGoodsToolboxServiceImpl implements CpsGoodsToolboxService {
                 .build();
     }
 
-    private CpsGoodsCouponQueryRespVO queryDataokeTaobaoCouponInfo(CpsGoodsCouponQueryReqVO reqVO) {
-        if (!PLATFORM_TAOBAO.equals(reqVO.getPlatformCode())) {
-            return null;
-        }
+    private CpsGoodsCouponQueryRespVO queryVendorCouponInfo(CpsGoodsCouponQueryReqVO reqVO) {
         String vendorCode = StringUtils.hasText(reqVO.getVendorCode()) ? reqVO.getVendorCode()
                 : platformClientFactory.resolveActiveVendorCode(reqVO.getPlatformCode());
-        if (!VENDOR_DATAOKE.equals(vendorCode)) {
+        if (!StringUtils.hasText(vendorCode)) {
             return null;
         }
         CpsApiVendorClient vendorClient = platformClientFactory.getVendorClient(vendorCode, reqVO.getPlatformCode());
@@ -239,7 +236,8 @@ public class CpsGoodsToolboxServiceImpl implements CpsGoodsToolboxService {
         goods.setGoodsId(firstText(couponInfo.getCouponId(), reqVO.getQueryText()));
         goods.setPlatformCode(reqVO.getPlatformCode());
         goods.setVendorCode(vendorCode);
-        goods.setTitle("淘宝优惠券 " + couponInfo.getCouponAmount().stripTrailingZeros().toPlainString() + " 元");
+        goods.setTitle(reqVO.getPlatformCode() + " 优惠券 "
+                + couponInfo.getCouponAmount().stripTrailingZeros().toPlainString() + " 元");
         goods.setCouponPrice(couponInfo.getCouponAmount());
         goods.setCouponConditions(couponInfo.getCouponConditions());
         goods.setCouponTotalNum(couponInfo.getCouponTotalNum());
@@ -247,7 +245,7 @@ public class CpsGoodsToolboxServiceImpl implements CpsGoodsToolboxService {
         goods.setCouponReceiveNum(couponInfo.getCouponReceiveNum());
         goods.setCouponStartTime(couponInfo.getCouponStartTime());
         goods.setItemLink(couponInfo.getCouponLink());
-        goods.setSource("dataoke:coupon-info");
+        goods.setSource(vendorCode + ":coupon-info");
         goods.setActivityTag(buildCouponActivityTag(couponInfo));
         goods.setCouponEndTime(couponInfo.getCouponEndTime());
         goods.setSellingPoint(buildCouponSellingPoint(couponInfo));
