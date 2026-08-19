@@ -1,5 +1,15 @@
 <template>
   <view>
+    <!-- CPS 返利装修组件，仅由返利模板主动配置时展示 -->
+    <s-cps-rebate-home v-if="type === 'CpsRebateHome'" :data="data" :styles="styles" />
+    <s-cps-rebate-search v-if="type === 'CpsRebateSearch'" :data="data" :styles="styles" />
+    <s-cps-rebate-transfer v-if="type === 'CpsRebateTransfer'" :data="data" :styles="styles" />
+    <s-cps-rebate-ai-chat v-if="type === 'CpsRebateAiChat'" :data="data" :styles="styles" />
+    <s-cps-rebate-assets v-if="type === 'CpsRebateAssets'" :data="data" :styles="styles" />
+    <s-cps-rebate-menu v-if="type === 'CpsRebateMenu'" :data="data" :styles="styles" />
+    <s-cps-rebate-activities v-if="type === 'CpsRebateActivities'" :data="data" :styles="styles" />
+    <s-cps-selection-theme v-if="type === 'CpsSelectionTheme'" :data="data" :styles="styles" />
+    <s-cps-rebate-guide v-if="type === 'CpsRebateGuide'" :data="data" :styles="styles" />
     <!-- 基础组件：搜索框 -->
     <s-search-block v-if="type === 'SearchBar'" :data="data" :styles="styles" :navbar="false" />
     <!-- 基础组件：公告栏 -->

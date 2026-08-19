@@ -80,6 +80,20 @@ export interface PageComponent extends Pick<DiyComponent<any>, 'id' | 'property'
 // 页面组件库
 export const PAGE_LIBS = [
   {
+    name: '返利组件',
+    extended: true,
+    components: [
+      'CpsRebateSearch',
+      'CpsRebateTransfer',
+      'CpsRebateAiChat',
+      'CpsRebateAssets',
+      'CpsRebateMenu',
+      'CpsRebateActivities',
+      'CpsSelectionTheme',
+      'CpsRebateGuide'
+    ]
+  },
+  {
     name: '基础组件',
     extended: true,
     components: [

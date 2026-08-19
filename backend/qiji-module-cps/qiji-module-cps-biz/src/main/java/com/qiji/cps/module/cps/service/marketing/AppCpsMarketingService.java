@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.service.marketing;
 
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityReqVO;
+import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityCardRespVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityRespVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeItemRespVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeReqVO;
@@ -10,6 +11,8 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 public interface AppCpsMarketingService {
+
+    List<AppCpsMarketingActivityCardRespVO> getActivitiesByIds(List<Long> ids);
 
     List<AppCpsMarketingActivityRespVO> getActivityCenter(Long trustedLoginId,
                                                           @Valid AppCpsMarketingActivityReqVO reqVO);

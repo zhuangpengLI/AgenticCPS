@@ -30,7 +30,12 @@
           }
         ]"
       >
-        <el-image fit="cover" class="h-full w-full" :src="spu.picUrl" />
+        <el-image
+          fit="cover"
+          class="h-full w-full"
+          :src="getProductImageUrl(spu.picUrl)"
+          @error="handleImageError(spu.picUrl)"
+        />
       </div>
       <div
         :class="[
@@ -121,6 +126,7 @@
 import { ProductCardProperty } from './config'
 import * as ProductSpuApi from '@/api/mall/product/spu'
 import { fenToYuan } from '../../../../../utils'
+import { resolveMallStaticUrl } from '@/utils/mallAsset'
 
 /** 商品卡片 */
 defineOptions({ name: 'ProductCard' })
@@ -128,6 +134,11 @@ defineOptions({ name: 'ProductCard' })
 const props = defineProps<{ property: ProductCardProperty }>()
 // 商品列表
 const spuList = ref<ProductSpuApi.Spu[]>([])
+const failedImageUrls = reactive(new Set<string>())
+const productImageFallback = resolveMallStaticUrl('/static/img/shop/empty_network.png')
+const getProductImageUrl = (url = '') =>
+  !url || failedImageUrls.has(url) ? productImageFallback : url
+const handleImageError = (url = '') => failedImageUrls.add(url)
 watch(
   () => props.property.spuIds,
   async () => {

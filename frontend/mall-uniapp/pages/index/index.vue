@@ -9,7 +9,11 @@
       :navbarStyle="template.navigationBar"
       onShareAppMessage
     >
-      <view class="cps-entry ss-flex ss-row-between" @tap="sheep.$router.go('/pages/cps/index')">
+      <view
+        v-if="!isRebateTemplate"
+        class="cps-entry ss-flex ss-row-between"
+        @tap="sheep.$router.go('/pages/cps/index')"
+      >
         <view>
           <view class="cps-entry__title">查券返利</view>
           <view class="cps-entry__desc">搜商品、领优惠，购买后赚返利</view>
@@ -38,6 +42,11 @@
   });
 
   const template = computed(() => sheep.$store('app').template?.home);
+  const isRebateTemplate = computed(() =>
+    template.value?.components?.some((item) =>
+      ['CpsRebateSearch', 'CpsRebateHome'].includes(item.id),
+    ),
+  );
   // 在此处拦截改变一下首页轮播图 此处先写死后期复活 放到启动函数里
   // (async function() {
   // console.log('原代码首页定制化数据',template)

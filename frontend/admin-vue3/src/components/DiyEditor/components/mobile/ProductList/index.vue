@@ -29,7 +29,12 @@
           <el-image fit="cover" :src="property.badge.imgUrl" class="h-26px w-38px" />
         </div>
         <!-- 商品封面图 -->
-        <el-image fit="cover" :src="spu.picUrl" :style="{ width: imageSize, height: imageSize }" />
+        <el-image
+          fit="cover"
+          :src="getProductImageUrl(spu.picUrl)"
+          :style="{ width: imageSize, height: imageSize }"
+          @error="handleImageError(spu.picUrl)"
+        />
         <div
           :class="[
             'flex flex-col gap-8px p-8px box-border',
@@ -66,6 +71,7 @@
 import { ProductListProperty } from './config'
 import * as ProductSpuApi from '@/api/mall/product/spu'
 import { fenToYuan } from '@/utils'
+import { resolveMallStaticUrl } from '@/utils/mallAsset'
 
 /** 商品栏 */
 defineOptions({ name: 'ProductList' })
@@ -73,6 +79,11 @@ defineOptions({ name: 'ProductList' })
 const props = defineProps<{ property: ProductListProperty }>()
 // 商品列表
 const spuList = ref<ProductSpuApi.Spu[]>([])
+const failedImageUrls = reactive(new Set<string>())
+const productImageFallback = resolveMallStaticUrl('/static/img/shop/empty_network.png')
+const getProductImageUrl = (url = '') =>
+  !url || failedImageUrls.has(url) ? productImageFallback : url
+const handleImageError = (url = '') => failedImageUrls.add(url)
 watch(
   () => props.property.spuIds,
   async () => {

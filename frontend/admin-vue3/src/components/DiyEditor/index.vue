@@ -196,6 +196,7 @@ import { DiyComponent, DiyComponentLibrary, PageConfig } from '@/components/DiyE
 import { componentConfigs } from '@/components/DiyEditor/components/mobile'
 import { array, oneOfType } from 'vue-types'
 import { propTypes } from '@/utils/propTypes'
+import { resolveDiyAssetUrls } from '@/utils/mallAsset'
 
 /** 页面装修详情页 */
 defineOptions({ name: 'DiyPageDetail' })
@@ -215,6 +216,22 @@ const selectedComponent = ref<DiyComponent<any>>()
 const selectedComponentIndex = ref<number>(-1)
 // 组件列表
 const pageComponents = ref<DiyComponent<any>[]>([])
+
+const hydrateDiyComponent = (
+  component: DiyComponent<any>,
+  savedProperty: Record<string, any> | undefined
+): DiyComponent<any> => ({
+  ...component,
+  property: {
+    ...cloneDeep(component.property),
+    ...cloneDeep(savedProperty),
+    style: {
+      ...cloneDeep(component.property?.style),
+      ...cloneDeep(savedProperty?.style)
+    }
+  }
+})
+
 // 定义属性
 const props = defineProps({
   // 页面配置，支持Json字符串
@@ -238,10 +255,12 @@ const props = defineProps({
 watch(
   () => props.modelValue,
   () => {
-    const modelValue =
+    const rawModelValue =
       isString(props.modelValue) && !isEmpty(props.modelValue)
         ? (JSON.parse(props.modelValue) as PageConfig)
         : props.modelValue
+    const modelValue =
+      typeof rawModelValue === 'string' ? rawModelValue : resolveDiyAssetUrls(rawModelValue)
     pageConfigComponent.value.property =
       (typeof modelValue !== 'string' && modelValue?.page) || PAGE_CONFIG_COMPONENT.property
     navigationBarComponent.value.property =
@@ -253,7 +272,7 @@ watch(
     pageComponents.value = ((typeof modelValue !== 'string' && modelValue?.components) || []).map(
       (item) => {
         const component = componentConfigs[item.id]
-        return { ...component, property: item.property }
+        return hydrateDiyComponent(component, item.property)
       }
     )
   },

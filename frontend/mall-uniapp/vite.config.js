@@ -26,6 +26,9 @@ export default (command, mode) => {
 			host: true,
 			// open: true,
 			port: env.SHOPRO_DEV_PORT,
+			headers: {
+				'Cache-Control': 'no-store',
+			},
 			hmr: {
 				overlay: true,
 			},

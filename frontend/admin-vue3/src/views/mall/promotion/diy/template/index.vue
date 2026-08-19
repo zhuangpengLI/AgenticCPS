@@ -53,10 +53,10 @@
         <template #default="scope">
           <el-image
             class="h-40px max-w-40px"
-            v-for="(url, index) in scope.row.previewPicUrls"
+            v-for="(url, index) in getPreviewUrls(scope.row)"
             :key="index"
             :src="url"
-            :preview-src-list="scope.row.previewPicUrls"
+            :preview-src-list="getPreviewUrls(scope.row)"
             :initial-index="index"
             preview-teleported
           />
@@ -133,6 +133,7 @@ import { dateFormatter } from '@/utils/formatTime'
 import * as DiyTemplateApi from '@/api/mall/promotion/diy/template'
 import DiyTemplateForm from './DiyTemplateForm.vue'
 import { DICT_TYPE } from '@/utils/dict'
+import { resolveDiyPreviewUrls } from '@/utils/mallAsset'
 
 /** 装修模板 */
 defineOptions({ name: 'DiyTemplate' })
@@ -150,6 +151,9 @@ const queryParams = reactive({
   createTime: []
 })
 const queryFormRef = ref() // 搜索的表单
+
+const getPreviewUrls = (template: DiyTemplateApi.DiyTemplateVO) =>
+  resolveDiyPreviewUrls(template.name, template.previewPicUrls)
 
 /** 查询列表 */
 const getList = async () => {

@@ -622,6 +622,33 @@
             "title": "返利兑换 Token",
             "group": "返利中心"
           }
+        },
+        {
+          "path": "transfer",
+          "style": {
+            "navigationBarTitleText": "返利转链"
+          },
+          "meta": {
+            "auth": true,
+            "sync": true,
+            "title": "返利转链",
+            "group": "返利中心"
+          }
+        },
+        {
+          "path": "ai-chat",
+          "style": {
+            "navigationBarTitleText": "返利 AI 助手",
+            "app-plus": {
+              "softinputMode": "adjustResize"
+            }
+          },
+          "meta": {
+            "auth": true,
+            "sync": true,
+            "title": "返利 AI 助手",
+            "group": "返利中心"
+          }
         }
       ]
     },

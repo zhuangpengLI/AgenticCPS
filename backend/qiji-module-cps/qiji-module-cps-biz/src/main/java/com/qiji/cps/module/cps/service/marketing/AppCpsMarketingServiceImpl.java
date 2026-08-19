@@ -2,6 +2,7 @@ package com.qiji.cps.module.cps.service.marketing;
 
 import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityReqVO;
+import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityCardRespVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityRespVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeItemRespVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeReqVO;
@@ -15,6 +16,7 @@ import com.qiji.cps.module.cps.dal.mysql.activity.CpsRebateActivityMapper;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeItemMapper;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeMapper;
 import com.qiji.cps.module.cps.service.activity.CpsRebateActivityService;
+import com.qiji.cps.module.cps.service.platform.CpsPlatformService;
 import com.qiji.cps.module.cps.service.selection.CpsSelectionConstants;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -22,8 +24,14 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Service
 @Validated
@@ -37,8 +45,26 @@ public class AppCpsMarketingServiceImpl implements AppCpsMarketingService {
     private CpsSelectionThemeItemMapper themeItemMapper;
     @Resource
     private CpsRebateActivityService activityService;
+    @Resource
+    private CpsPlatformService platformService;
 
     private Supplier<LocalDateTime> nowSupplier = LocalDateTime::now;
+
+    @Override
+    public List<AppCpsMarketingActivityCardRespVO> getActivitiesByIds(List<Long> ids) {
+        List<Long> orderedIds = new LinkedHashSet<>(ids).stream().toList();
+        LocalDateTime now = nowSupplier.get();
+        Map<Long, CpsRebateActivityDO> activitiesById = activityMapper.selectByIds(orderedIds).stream()
+                .filter(activity -> CpsRebateActivityMapper.CPS_ENABLE_STATUS.equals(activity.getStatus()))
+                .filter(activity -> isEffective(activity.getStartTime(), activity.getEndTime(), now))
+                .collect(Collectors.toMap(CpsRebateActivityDO::getId, Function.identity()));
+        Map<String, String> platformNames = new HashMap<>();
+        return orderedIds.stream()
+                .map(activitiesById::get)
+                .filter(Objects::nonNull)
+                .map(activity -> toActivityCardResp(activity, platformNames))
+                .toList();
+    }
 
     @Override
     public List<AppCpsMarketingActivityRespVO> getActivityCenter(Long trustedLoginId,
@@ -132,6 +158,21 @@ public class AppCpsMarketingServiceImpl implements AppCpsMarketingService {
                 respVO.setLinkType("NONE");
                 respVO.setLinkMessage("Activity entrance is temporarily unavailable");
             }
+        }
+        return respVO;
+    }
+
+    private AppCpsMarketingActivityCardRespVO toActivityCardResp(CpsRebateActivityDO activity,
+                                                                  Map<String, String> platformNames) {
+        AppCpsMarketingActivityCardRespVO respVO =
+                BeanUtils.toBean(activity, AppCpsMarketingActivityCardRespVO.class);
+        String platformCode = activity.getPlatformCode();
+        if (StringUtils.hasText(platformCode)) {
+            respVO.setPlatformName(platformNames.computeIfAbsent(platformCode, code -> {
+                var platform = platformService.getPlatformByCode(code);
+                return platform != null && StringUtils.hasText(platform.getPlatformName())
+                        ? platform.getPlatformName() : code;
+            }));
         }
         return respVO;
     }

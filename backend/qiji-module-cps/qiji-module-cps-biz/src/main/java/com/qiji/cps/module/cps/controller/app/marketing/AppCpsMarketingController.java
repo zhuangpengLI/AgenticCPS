@@ -2,7 +2,9 @@ package com.qiji.cps.module.cps.controller.app.marketing;
 
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils;
+import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivitiesReqVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityReqVO;
+import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityCardRespVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityRespVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeItemRespVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeReqVO;
@@ -31,6 +33,14 @@ public class AppCpsMarketingController {
 
     @Resource
     private AppCpsMarketingService marketingService;
+
+    @PermitAll
+    @GetMapping("/activities")
+    @Operation(summary = "按 ID 查询有效营销活动")
+    public CommonResult<List<AppCpsMarketingActivityCardRespVO>> getActivities(
+            @Valid AppCpsMarketingActivitiesReqVO reqVO) {
+        return success(marketingService.getActivitiesByIds(reqVO.getIds()));
+    }
 
     @PermitAll
     @GetMapping("/activity-center")

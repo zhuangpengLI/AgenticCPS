@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960">
+  <rect width="720" height="960" fill="#f7f8fa"/>
+  <rect width="720" height="90" fill="#f4513b"/>
+  <text x="42" y="58" fill="#fff" font-size="28" font-family="Arial, sans-serif" font-weight="700">AgenticCPS 返利中心</text>
+  <rect x="28" y="118" width="664" height="190" rx="20" fill="#f4513b"/>
+  <text x="52" y="158" fill="#fff" font-size="16" font-family="Arial, sans-serif">AgenticCPS · 今日高返</text>
+  <text x="52" y="202" fill="#fff" font-size="34" font-family="Arial, sans-serif" font-weight="700">先查优惠，再下单</text>
+  <rect x="52" y="232" width="616" height="50" rx="25" fill="#fff"/>
+  <text x="76" y="263" fill="#a8abb2" font-size="15" font-family="Arial, sans-serif">搜商品或粘贴链接/口令</text>
+  <rect x="532" y="239" width="124" height="36" rx="18" fill="#20222a"/>
+  <text x="564" y="263" fill="#fff" font-size="14" font-family="Arial, sans-serif">查优惠</text>
+  <rect x="28" y="330" width="664" height="104" rx="16" fill="#fff" stroke="#ebeef5"/>
+  <text x="52" y="368" fill="#222" font-size="21" font-family="Arial, sans-serif" font-weight="700">一键转链</text>
+  <text x="52" y="400" fill="#8c8c8c" font-size="15" font-family="Arial, sans-serif">粘贴商品链接，生成专属返利链接</text>
+  <rect x="28" y="456" width="664" height="144" rx="16" fill="#202833"/>
+  <circle cx="72" cy="504" r="18" fill="#f4513b"/>
+  <text x="104" y="512" fill="#fff" font-size="21" font-family="Arial, sans-serif" font-weight="700">返利 AI 助手</text>
+  <text x="52" y="548" fill="#c5ccd3" font-size="15" font-family="Arial, sans-serif">问价格、优惠和返利，快速找到合适商品</text>
+  <rect x="52" y="566" width="616" height="20" rx="10" fill="#435363"/>
+  <rect x="28" y="622" width="664" height="120" rx="16" fill="#fff" stroke="#ebeef5"/>
+  <text x="52" y="662" fill="#222" font-size="21" font-family="Arial, sans-serif" font-weight="700">我的返利</text>
+  <text x="52" y="700" fill="#8c8c8c" font-size="15" font-family="Arial, sans-serif">可用返利      冻结返利      累计返利</text>
+  <rect x="28" y="764" width="664" height="140" rx="16" fill="#fff" stroke="#ebeef5"/>
+  <text x="52" y="806" fill="#222" font-size="21" font-family="Arial, sans-serif" font-weight="700">返利服务</text>
+  <text x="52" y="848" fill="#555" font-size="15" font-family="Arial, sans-serif">商品查询   返利订单   返利钱包   申请提现</text>
+  <text x="52" y="878" fill="#555" font-size="15" font-family="Arial, sans-serif">返利活动   主题好价   返利足迹</text>
+</svg>

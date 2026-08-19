@@ -2,6 +2,7 @@ package com.qiji.cps.module.cps.service.marketing;
 
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityReqVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityRespVO;
+import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityCardRespVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeItemRespVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeReqVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingSelectionThemeRespVO;
@@ -9,10 +10,12 @@ import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPro
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeItemDO;
+import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
 import com.qiji.cps.module.cps.dal.mysql.activity.CpsRebateActivityMapper;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeItemMapper;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeMapper;
 import com.qiji.cps.module.cps.service.activity.CpsRebateActivityService;
+import com.qiji.cps.module.cps.service.platform.CpsPlatformService;
 import com.qiji.cps.module.cps.service.selection.CpsSelectionConstants;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,6 +49,62 @@ class AppCpsMarketingServiceImplTest {
     private CpsSelectionThemeItemMapper themeItemMapper;
     @Mock
     private CpsRebateActivityService activityService;
+    @Mock
+    private CpsPlatformService platformService;
+
+    @Test
+    @DisplayName("getActivitiesByIds preserves request order and omits unavailable activities")
+    void getActivitiesByIds_preservesRequestOrderAndOmitsUnavailableActivities() {
+        LocalDateTime now = LocalDateTime.of(2026, 8, 17, 12, 0);
+        service.setClockForTest(() -> now);
+        CpsRebateActivityDO first = CpsRebateActivityDO.builder()
+                .id(1L)
+                .activityName("First")
+                .platformCode("taobao")
+                .status(1)
+                .startTime(now.minusHours(1))
+                .endTime(now.plusHours(1))
+                .build();
+        CpsRebateActivityDO third = CpsRebateActivityDO.builder()
+                .id(3L)
+                .activityName("Third")
+                .platformCode("jd")
+                .status(1)
+                .build();
+        CpsRebateActivityDO disabled = CpsRebateActivityDO.builder()
+                .id(2L)
+                .activityName("Disabled")
+                .status(0)
+                .build();
+        CpsRebateActivityDO future = CpsRebateActivityDO.builder()
+                .id(4L)
+                .activityName("Future")
+                .status(1)
+                .startTime(now.plusSeconds(1))
+                .build();
+        CpsRebateActivityDO expired = CpsRebateActivityDO.builder()
+                .id(5L)
+                .activityName("Expired")
+                .status(1)
+                .endTime(now.minusSeconds(1))
+                .build();
+        when(activityMapper.selectByIds(List.of(3L, 2L, 4L, 5L, 9L, 1L)))
+                .thenReturn(List.of(first, disabled, third, future, expired));
+        when(platformService.getPlatformByCode("taobao"))
+                .thenReturn(CpsPlatformDO.builder().platformCode("taobao").platformName("淘宝").build());
+        when(platformService.getPlatformByCode("jd"))
+                .thenReturn(CpsPlatformDO.builder().platformCode("jd").platformName("京东").build());
+
+        List<AppCpsMarketingActivityCardRespVO> result =
+                service.getActivitiesByIds(List.of(3L, 2L, 4L, 5L, 9L, 1L, 3L));
+
+        assertEquals(List.of(3L, 1L), result.stream().map(AppCpsMarketingActivityCardRespVO::getId).toList());
+        assertEquals(List.of("京东", "淘宝"),
+                result.stream().map(AppCpsMarketingActivityCardRespVO::getPlatformName).toList());
+        verify(activityMapper).selectByIds(List.of(3L, 2L, 4L, 5L, 9L, 1L));
+        verify(activityService, never()).decorateActivityCapabilities(any(), any());
+        verify(activityService, never()).generatePromotionContent(any(), any());
+    }
 
     @Test
     @DisplayName("getActivityCenter exposes only effective activity cards")

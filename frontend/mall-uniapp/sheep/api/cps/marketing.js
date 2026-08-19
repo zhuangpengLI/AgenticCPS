@@ -1,6 +1,13 @@
 import request from '@/sheep/request';
 
 const CpsMarketingApi = {
+  getActivitiesByIds: (ids = []) =>
+    request({
+      url: '/cps/marketing/activities',
+      method: 'GET',
+      params: { ids: ids.join(',') },
+      custom: { showLoading: false },
+    }),
   getActivityCenter: (params = {}) =>
     request({
       url: '/cps/marketing/activity-center',

@@ -31,18 +31,18 @@
               <text class="activity-card__title">{{ item.activityName }}</text>
               <text v-if="item.tagText" class="tag">{{ item.tagText }}</text>
             </view>
-            <text v-if="item.shortDesc" class="desc">{{ item.shortDesc }}</text>
-            <text v-if="item.rebateDesc" class="rebate">{{ item.rebateDesc }}</text>
+            <text v-if="plainText(item.shortDesc)" class="desc">{{
+              plainText(item.shortDesc)
+            }}</text>
+            <text v-if="plainText(item.rebateDesc)" class="rebate">{{
+              plainText(item.rebateDesc)
+            }}</text>
             <view class="meta-row">
               <text>{{ platformName(item.platformCode) }}</text>
               <text v-if="item.endTime">截至 {{ formatDate(item.endTime) }}</text>
             </view>
             <view class="ability-row">
-              <text
-                v-for="ability in activityAbilities(item)"
-                :key="ability"
-                class="ability-tag"
-              >
+              <text v-for="ability in activityAbilities(item)" :key="ability" class="ability-tag">
                 {{ ability }}
               </text>
             </view>
@@ -70,7 +70,13 @@
   import CpsMarketingApi from '@/sheep/api/cps/marketing';
 
   const emptyImage = '/static/goods-empty.png';
-  const state = reactive({ loading: false, error: '', list: [], promotingId: null });
+  const state = reactive({
+    activityId: null,
+    loading: false,
+    error: '',
+    list: [],
+    promotingId: null,
+  });
 
   const platformNames = {
     TAOBAO: '淘宝',
@@ -86,6 +92,20 @@
   };
   const platformName = (code) => platformNames[String(code || '').toUpperCase()] || '精选活动';
   const formatDate = (value) => (value ? String(value).replace('T', ' ').slice(0, 10) : '');
+  const plainText = (value) => {
+    if (!value) return '';
+    return String(value)
+      .replace(/<br\s*\/?\s*>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;|&apos;/gi, "'")
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&amp;/gi, '&')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
   const unwrap = (res, fallback) => {
     if (!res || res.code !== 0) throw new Error(res?.msg || fallback);
     return res.data;
@@ -95,7 +115,9 @@
     state.loading = true;
     state.error = '';
     try {
-      const res = await CpsMarketingApi.getActivityCenter();
+      const res = state.activityId
+        ? await CpsMarketingApi.getActivitiesByIds([state.activityId])
+        : await CpsMarketingApi.getActivityCenter();
       const data = unwrap(res, '活动加载失败');
       state.list = Array.isArray(data) ? data : [];
     } catch (error) {
@@ -115,7 +137,7 @@
     try {
       if (item.promotionUrl || item.tpwd || item.promotionContent) {
         openOrCopy(
-          item.tpwd || item.promotionUrl || item.promotionContent,
+          item.promotionUrl || item.tpwd || item.promotionContent,
           item.attributionMessage || '活动入口已准备完成',
           item.linkType,
         );
@@ -129,13 +151,18 @@
       ) {
         throw new Error(promotion.linkMessage || '活动入口暂不可用');
       }
-      const value = promotion.tpwd || promotion.promotionUrl || promotion.promotionContent;
+      const value = promotion.promotionUrl || promotion.tpwd || promotion.promotionContent;
       if (!value) throw new Error('活动入口生成失败，请稍后重试');
-      const message =
-        promotion.linkStatus === 'INTERNAL_FALLBACK'
-          ? '已复制站内落地页，该地址不是联盟链接'
-          : promotion.attributionMessage ||
-            (promotion.tpwd ? '口令已复制，请打开对应平台' : '活动链接已复制');
+      let message;
+      if (promotion.linkStatus === 'INTERNAL_FALLBACK') {
+        message = '已复制站内落地页，该地址不是联盟链接';
+      } else if (promotion.promotionUrl) {
+        message = '正在打开会员推广链接';
+      } else {
+        message =
+          promotion.attributionMessage ||
+          (promotion.tpwd ? '口令已复制，请打开对应平台' : '活动链接已复制');
+      }
       openOrCopy(value, message, promotion.linkType);
     } catch (error) {
       sheep.$helper.toast(error?.msg || error?.message || '活动入口生成失败');
@@ -171,7 +198,11 @@
     return tags;
   }
 
-  onLoad(loadActivities);
+  onLoad((options = {}) => {
+    const activityId = Number(options.activityId);
+    state.activityId = Number.isSafeInteger(activityId) && activityId > 0 ? activityId : null;
+    loadActivities();
+  });
   watch(
     () => sheep.$store('user').isLogin,
     (isLogin, wasLogin) => {
