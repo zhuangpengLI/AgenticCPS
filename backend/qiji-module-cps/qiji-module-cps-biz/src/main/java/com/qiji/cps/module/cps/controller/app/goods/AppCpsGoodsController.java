@@ -152,7 +152,9 @@ public class AppCpsGoodsController {
                 reqVO.getGoodsId(),
                 reqVO.getGoodsSign(),
                 memberId,
-                adzoneId
+                adzoneId,
+                null,
+                reqVO.getOriginalContent()
         );
         if (result == null) {
             return success(null);
@@ -160,7 +162,7 @@ public class AppCpsGoodsController {
         CpsTransferRecordDO record = CpsTransferRecordDO.builder()
                 .memberId(memberId)
                 .platformCode(reqVO.getPlatformCode())
-                .originalContent(firstText(reqVO.getGoodsId(), reqVO.getGoodsSign()))
+                .originalContent(firstText(reqVO.getOriginalContent(), reqVO.getGoodsId(), reqVO.getGoodsSign()))
                 .itemId(firstText(reqVO.getGoodsId(), reqVO.getGoodsSign()))
                 .promotionUrl(firstText(result.getShortUrl(), result.getLongUrl(), result.getMobileUrl()))
                 .taoCommand(result.getTpwd())

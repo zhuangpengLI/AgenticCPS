@@ -10,6 +10,7 @@
       <view class="result-title">{{ state.result.title || '已生成返利链接' }}</view>
       <view class="result-meta">券后价 ¥{{ money(state.result.actualPrice) }} · 佣金 {{ state.result.commissionRate || '--' }}%</view>
       <button class="ss-reset-button result-button" @tap="copyResult">复制推广链接</button>
+      <button class="ss-reset-button result-button result-copy-rebate" @tap="copyRebateCopy">复制返利文案</button>
     </view>
   </view>
 </template>
@@ -34,7 +35,12 @@
     try {
       const parsed = await CpsGoodsApi.parseContent({ platformCode: content.value.platformCode, originalContent });
       if (parsed?.code !== 0 || !parsed.data?.supported) { sheep.$helper.toast(parsed?.data?.failureReason || '暂不支持该商品内容'); return; }
-      const linked = await CpsGoodsApi.generateLink({ platformCode: parsed.data.platformCode || content.value.platformCode, goodsId: parsed.data.goodsId, goodsSign: parsed.data.goodsSign });
+      const linked = await CpsGoodsApi.generateLink({
+        platformCode: parsed.data.platformCode || content.value.platformCode,
+        goodsId: parsed.data.goodsId,
+        goodsSign: parsed.data.goodsSign,
+        originalContent,
+      });
       if (linked?.code !== 0 || !linked.data) { sheep.$helper.toast('生成推广链接失败，请重试'); return; }
       state.result = { ...linked.data, title: parsed.data.title };
     } catch (error) { sheep.$helper.toast('转链失败，请稍后重试'); } finally { state.loading = false; }
@@ -43,6 +49,18 @@
     const value = state.result?.shortUrl || state.result?.longUrl || state.result?.tpwd;
     if (!value) return;
     await copyPromotionValue(value); sheep.$helper.toast('推广链接已复制');
+  }
+  async function copyRebateCopy() {
+    const result = state.result;
+    if (!result) return;
+    const value = result.shortUrl || result.longUrl || result.mobileUrl || result.tpwd || '';
+    const lines = [
+      result.title || '精选商品',
+      `券后价 ¥${money(result.actualPrice)} · 佣金 ${result.commissionRate || '--'}%`,
+      value,
+    ].filter(Boolean);
+    await copyPromotionValue(lines.join('\n'));
+    sheep.$helper.toast('返利文案已复制');
   }
 </script>
 
@@ -58,4 +76,5 @@
   .result-title { color: #333; font-size: 25rpx; font-weight: 600; }
   .result-meta { margin-top: 8rpx; color: #a16b55; font-size: 22rpx; }
   .result-button { height: 58rpx; margin-top: 14rpx; border: 1rpx solid #f4513b; border-radius: 29rpx; color: #f4513b; background: #fff; font-size: 23rpx; line-height: 56rpx; }
+  .result-copy-rebate { margin-top: 10rpx; color: #fff; background: #f4513b; }
 </style>

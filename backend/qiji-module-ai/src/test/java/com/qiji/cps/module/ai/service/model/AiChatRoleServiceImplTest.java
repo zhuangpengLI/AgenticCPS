@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 
 import static com.qiji.cps.framework.test.core.util.AssertUtils.assertServiceException;
 import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.CHAT_ROLE_MEMBER_DISABLED;
+import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.CHAT_ROLE_MEMBER_NOT_AVAILABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -42,6 +43,22 @@ class AiChatRoleServiceImplTest extends BaseMockitoUnitTest {
         List<AiChatRoleDO> roles = chatRoleService.getMemberEnabledChatRoleList();
 
         assertEquals(List.of(eligible), roles);
+    }
+
+    @Test
+    void getDefaultMemberChatRole_usesFirstSortedEligibleRole() {
+        AiChatRoleDO first = role(1L, true, true, CommonStatusEnum.ENABLE.getStatus());
+        AiChatRoleDO second = role(2L, true, true, CommonStatusEnum.ENABLE.getStatus());
+        when(chatRoleMapper.selectList(any())).thenReturn(List.of(first, second));
+
+        assertEquals(first, chatRoleService.getDefaultMemberChatRole());
+    }
+
+    @Test
+    void getDefaultMemberChatRole_rejectsMissingBackendConfiguration() {
+        when(chatRoleMapper.selectList(any())).thenReturn(List.of());
+
+        assertServiceException(chatRoleService::getDefaultMemberChatRole, CHAT_ROLE_MEMBER_NOT_AVAILABLE);
     }
 
     @ParameterizedTest

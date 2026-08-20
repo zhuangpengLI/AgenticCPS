@@ -82,7 +82,7 @@
             v-if="state.parseResult.supported"
             class="ss-reset-button mini-button"
             :disabled="state.linkLoading"
-            @tap="generateLink(state.parseResult)"
+            @tap="generateLink(state.parseResult, state.originalContent)"
             >领券购买</button
           >
         </view>
@@ -408,7 +408,7 @@
     }
   }
 
-  async function generateLink(item) {
+  async function generateLink(item, originalContent) {
     if (!sheep.$store('user').isLogin) {
       showAuthModal();
       return;
@@ -420,6 +420,7 @@
         platformCode: item.platformCode || state.platformCode,
         goodsId: item.goodsId,
         goodsSign: item.goodsSign,
+        originalContent,
       });
       if (code !== 0 || !data) {
         trackCpsEvent('cps_promotion_link', {

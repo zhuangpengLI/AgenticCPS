@@ -68,6 +68,17 @@
           </el-radio>
         </el-radio-group>
       </el-form-item>
+      <el-form-item label="会员可用" prop="memberEnabled" v-if="!isUser">
+        <el-radio-group v-model="formData.memberEnabled">
+          <el-radio
+            v-for="dict in getBoolDictOptions(DICT_TYPE.INFRA_BOOLEAN_STRING)"
+            :key="dict.value"
+            :value="dict.value"
+          >
+            {{ dict.label }}
+          </el-radio>
+        </el-radio-group>
+      </el-form-item>
       <el-form-item label="角色排序" prop="sort" v-if="!isUser">
         <el-input-number v-model="formData.sort" placeholder="请输入角色排序" class="!w-1/1" />
       </el-form-item>
@@ -119,6 +130,7 @@ const formData = ref({
   description: undefined,
   systemMessage: undefined,
   publicStatus: true,
+  memberEnabled: false,
   status: CommonStatusEnum.ENABLE,
   knowledgeIds: [] as number[],
   toolIds: [] as number[],
@@ -141,7 +153,8 @@ const formRules = reactive<FormRules>({
   sort: [{ required: true, message: '角色排序不能为空', trigger: 'blur' }],
   description: [{ required: true, message: '角色描述不能为空', trigger: 'blur' }],
   systemMessage: [{ required: true, message: '角色设定不能为空', trigger: 'blur' }],
-  publicStatus: [{ required: true, message: '是否公开不能为空', trigger: 'blur' }]
+  publicStatus: [{ required: true, message: '是否公开不能为空', trigger: 'blur' }],
+  memberEnabled: [{ required: true, message: '会员可用不能为空', trigger: 'blur' }]
 })
 
 /** 打开弹窗 */
@@ -213,6 +226,7 @@ const resetForm = () => {
     description: undefined,
     systemMessage: undefined,
     publicStatus: true,
+    memberEnabled: false,
     status: CommonStatusEnum.ENABLE,
     knowledgeIds: [],
     toolIds: [],

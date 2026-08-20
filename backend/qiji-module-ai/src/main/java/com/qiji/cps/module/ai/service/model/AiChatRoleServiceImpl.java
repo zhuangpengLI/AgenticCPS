@@ -25,6 +25,7 @@ import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.
 import static com.qiji.cps.framework.common.util.collection.CollectionUtils.convertList;
 import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.CHAT_ROLE_DISABLE;
 import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.CHAT_ROLE_MEMBER_DISABLED;
+import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.CHAT_ROLE_MEMBER_NOT_AVAILABLE;
 import static com.qiji.cps.module.ai.enums.ErrorCodeConstants.CHAT_ROLE_NOT_EXISTS;
 
 /**
@@ -185,6 +186,15 @@ public class AiChatRoleServiceImpl implements AiChatRoleService {
                 .eq(AiChatRoleDO::getMemberEnabled, true)
                 .orderByAsc(AiChatRoleDO::getSort));
         return roles.stream().filter(this::isMemberEnabledChatRole).toList();
+    }
+
+    @Override
+    public AiChatRoleDO getDefaultMemberChatRole() {
+        AiChatRoleDO role = CollUtil.getFirst(getMemberEnabledChatRoleList());
+        if (role == null) {
+            throw exception(CHAT_ROLE_MEMBER_NOT_AVAILABLE);
+        }
+        return role;
     }
 
     @Override

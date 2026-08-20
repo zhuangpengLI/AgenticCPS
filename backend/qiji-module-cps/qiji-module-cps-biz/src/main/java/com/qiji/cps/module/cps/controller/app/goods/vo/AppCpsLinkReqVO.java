@@ -28,6 +28,9 @@ public class AppCpsLinkReqVO {
     @Schema(description = "推广位ID（不传则使用平台/会员默认推广位）")
     private String adzoneId;
 
+    @Schema(description = "用户粘贴的完整商品链接或口令，用于供应商万能转链")
+    private String originalContent;
+
     /**
      * goodsId 和 goodsSign 至少一个非空
      */

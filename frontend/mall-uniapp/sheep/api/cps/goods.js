@@ -60,7 +60,7 @@ const CpsGoodsApi = {
       },
     });
   },
-  generateLink: ({ platformCode, goodsId, goodsSign, adzoneId }) => {
+  generateLink: ({ platformCode, goodsId, goodsSign, adzoneId, originalContent }) => {
     return request({
       url: '/cps/goods/link',
       method: 'POST',
@@ -69,6 +69,7 @@ const CpsGoodsApi = {
         goodsId,
         goodsSign,
         adzoneId,
+        originalContent,
       },
       custom: {
         auth: true,

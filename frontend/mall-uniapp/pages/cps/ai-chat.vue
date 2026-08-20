@@ -23,14 +23,22 @@
   import sheep from '@/sheep';
   const quickPrompts = ['帮我找高返蓝牙耳机', '怎么计算返利？', '推荐一款适合送人的礼物'];
   const state = reactive({ conversationId: null, roleId: null, roleName: '', input: '', messages: [], loading: false, anchor: '' });
+  let conversationPromise = null;
   async function ensureConversation() {
     if (state.conversationId) return true;
-    const roles = await AiChatApi.getRoles(); const role = (roles?.data || [])[0];
-    state.roleId = state.roleId || role?.id; state.roleName = role?.name || '返利 AI 助手';
-    if (!state.roleId) { sheep.$helper.toast('暂无可用 AI 角色'); return false; }
-    const created = await AiChatApi.createConversation({ roleId: state.roleId });
-    if (created?.code !== 0 || !created.data) { sheep.$helper.toast('创建 AI 会话失败'); return false; }
-    state.conversationId = created.data; return true;
+    if (conversationPromise) return conversationPromise;
+    conversationPromise = (async () => {
+      const created = await AiChatApi.createConversation({ roleId: state.roleId || undefined });
+      if (created?.code !== 0 || !created.data) { sheep.$helper.toast('创建 AI 会话失败'); return false; }
+      state.conversationId = created.data;
+      const conversation = await AiChatApi.getConversation(state.conversationId);
+      if (conversation?.code === 0 && conversation.data) {
+        state.roleId = conversation.data.roleId;
+        state.roleName = conversation.data.roleName || conversation.data.title || '返利 AI 助手';
+      }
+      return true;
+    })();
+    try { return await conversationPromise; } finally { conversationPromise = null; }
   }
   async function loadMessages() { if (!state.conversationId) return; const result = await AiChatApi.getMessages(state.conversationId); if (result?.code === 0) state.messages = result.data || []; }
   async function sendPrompt(text) { state.input = text; await send(); }
@@ -39,14 +47,16 @@
     state.input = ''; state.loading = true;
     try {
       const result = await AiChatApi.send({ conversationId: state.conversationId, content });
-      if (result?.code !== 0) { sheep.$helper.toast('AI 暂时无法响应'); return; }
+      if (result === false) return;
+      if (result?.code !== 0) { sheep.$helper.toast(result?.msg || 'AI 暂时无法响应'); return; }
       const response = result.data || {}; if (response.send) state.messages.push(response.send); if (response.receive) state.messages.push(response.receive); state.anchor = `msg-${state.messages.length - 1}`;
     } catch (error) { sheep.$helper.toast('网络异常，请稍后重试'); } finally { state.loading = false; }
   }
   onLoad(async (options = {}) => {
     if (options.roleId) state.roleId = Number(options.roleId);
     const conversations = await AiChatApi.getConversations(); const latest = (conversations?.data || [])[0];
-    if (latest && !options.roleId) { state.conversationId = latest.id; state.roleId = latest.roleId; state.roleName = latest.roleName || '返利 AI 助手'; await loadMessages(); }
+    if (latest && !state.roleId) { state.conversationId = latest.id; state.roleId = latest.roleId; state.roleName = latest.roleName || latest.title || '返利 AI 助手'; await loadMessages(); return; }
+    await ensureConversation();
   });
 </script>
 

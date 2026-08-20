@@ -92,6 +92,30 @@ class AiChatConversationServiceImplTest extends BaseMockitoUnitTest {
     }
 
     @Test
+    void createMemberConversation_withoutRoleUsesBackendDefaultMemberRole() {
+        AiModelDO model = model();
+        var defaultRole = new com.qiji.cps.module.ai.dal.dataobject.model.AiChatRoleDO().setId(8L)
+                .setName("CPS 联盟助手").setSystemMessage("default system message");
+        when(chatRoleService.getDefaultMemberChatRole()).thenReturn(defaultRole);
+        when(modelService.getRequiredDefaultModel(AiModelTypeEnum.CHAT.getType())).thenReturn(model);
+        doAnswer(invocation -> {
+            invocation.<AiChatConversationDO>getArgument(0).setId(103L);
+            return 1;
+        }).when(conversationMapper).insert(any(AiChatConversationDO.class));
+
+        Long id = conversationService.createMemberConversation(new AiChatConversationCreateMyReqVO(), 42L);
+
+        ArgumentCaptor<AiChatConversationDO> captor = ArgumentCaptor.forClass(AiChatConversationDO.class);
+        verify(conversationMapper).insert(captor.capture());
+        AiChatConversationDO saved = captor.getValue();
+        assertEquals(103L, id);
+        assertEquals(8L, saved.getRoleId());
+        assertEquals("CPS 联盟助手", saved.getTitle());
+        assertEquals("default system message", saved.getSystemMessage());
+        verify(chatRoleService).getDefaultMemberChatRole();
+    }
+
+    @Test
     void createMcpTestConversation_bindsMemberAndEnablesAdminTestingOperations() {
         AiModelDO model = model();
         when(chatRoleService.validateChatRole(7L)).thenReturn(

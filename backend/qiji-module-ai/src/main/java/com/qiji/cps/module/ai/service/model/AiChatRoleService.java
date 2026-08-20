@@ -102,6 +102,13 @@ public interface AiChatRoleService {
     List<AiChatRoleDO> getMemberEnabledChatRoleList();
 
     /**
+     * 获得会员默认聊天角色，按角色排序优先级选择。
+     *
+     * @return 默认聊天角色
+     */
+    AiChatRoleDO getDefaultMemberChatRole();
+
+    /**
      * 校验聊天角色是否允许会员使用。
      *
      * @param id 角色编号

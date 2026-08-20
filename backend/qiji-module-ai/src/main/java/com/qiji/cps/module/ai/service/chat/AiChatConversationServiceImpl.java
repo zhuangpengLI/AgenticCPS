@@ -98,6 +98,8 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
             role = ownerType == AiChatOwnerTypeEnum.MEMBER
                     ? chatRoleService.validateMemberEnabledChatRole(createReqVO.getRoleId())
                     : chatRoleService.validateChatRole(createReqVO.getRoleId());
+        } else if (ownerType == AiChatOwnerTypeEnum.MEMBER) {
+            role = chatRoleService.getDefaultMemberChatRole();
         }
         // 1.2 获得 AiModelDO 聊天模型
         AiModelDO model = role != null && role.getModelId() != null ? modalService.validateModel(role.getModelId())

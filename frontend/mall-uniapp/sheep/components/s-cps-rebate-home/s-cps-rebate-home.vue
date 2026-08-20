@@ -34,6 +34,28 @@
       </view>
     </view>
 
+    <view class="rebate-panel tools-panel">
+      <view class="section-title">返利工具</view>
+      <view class="tool-list">
+        <view class="tool-item" @tap="goAsset('/pages/cps/transfer')">
+          <text class="tool-icon">链</text>
+          <view class="tool-info">
+            <text class="tool-title">返利转链</text>
+            <text class="tool-description">粘贴链接，一键生成专属返利链接</text>
+          </view>
+          <text class="tool-arrow">›</text>
+        </view>
+        <view class="tool-item ai-tool" @tap="goAsset('/pages/cps/ai-chat')">
+          <text class="tool-icon">AI</text>
+          <view class="tool-info">
+            <text class="tool-title">返利 AI 对话</text>
+            <text class="tool-description">问价格、优惠和返利，智能帮你选</text>
+          </view>
+          <text class="tool-arrow">›</text>
+        </view>
+      </view>
+    </view>
+
     <view class="rebate-panel">
       <view class="section-title">发现好物</view>
       <view class="quick-grid">
@@ -68,28 +90,6 @@
           <text class="featured-meta">券后 {{ item.price }} · 预计返利 {{ item.rebate }}</text>
         </view>
         <text class="featured-action">去查券</text>
-      </view>
-    </view>
-
-    <view class="rebate-panel tools-panel">
-      <view class="section-title">返利工具</view>
-      <view class="tool-list">
-        <view class="tool-item" @tap="goAsset('/pages/cps/transfer')">
-          <text class="tool-icon">链</text>
-          <view class="tool-info">
-            <text class="tool-title">返利转链</text>
-            <text class="tool-description">粘贴链接，一键生成专属返利链接</text>
-          </view>
-          <text class="tool-arrow">›</text>
-        </view>
-        <view class="tool-item ai-tool" @tap="goAsset('/pages/cps/ai-chat')">
-          <text class="tool-icon">AI</text>
-          <view class="tool-info">
-            <text class="tool-title">返利 AI 对话</text>
-            <text class="tool-description">问价格、优惠和返利，智能帮你选</text>
-          </view>
-          <text class="tool-arrow">›</text>
-        </view>
       </view>
     </view>
 

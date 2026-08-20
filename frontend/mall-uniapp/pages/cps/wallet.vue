@@ -1,5 +1,5 @@
 <template>
-  <s-layout title="返利钱包" navbar="inner">
+  <s-layout title="返利钱包" navbar="inner" tabbar="/pages/cps/wallet">
     <view class="balance-panel ui-BG-Main-Gradient">
       <view class="balance-label">可用返利</view>
       <view class="balance-value">¥{{ formatMoney(state.account.availableBalance) }}</view>

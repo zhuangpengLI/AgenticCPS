@@ -176,7 +176,8 @@ class AppCpsGoodsControllerTest {
         reqVO.setAdzoneId("mm_111_222_333");
         when(cpsGoodsService.resolvePromotionAdzoneId("taobao", 1001L, "mm_111_222_333"))
                 .thenReturn("mm_111_222_333");
-        when(cpsGoodsService.generatePromotionLink("taobao", "ITEM-1", null, 1001L, "mm_111_222_333"))
+        when(cpsGoodsService.generatePromotionLink(
+                "taobao", "ITEM-1", null, 1001L, "mm_111_222_333", null, null))
                 .thenReturn(CpsPromotionLinkResult.builder()
                         .shortUrl("https://s.click/1")
                         .longUrl("https://item.taobao.com/item.htm?id=ITEM-1")
@@ -205,6 +206,37 @@ class AppCpsGoodsControllerTest {
     }
 
     @Test
+    @DisplayName("generateLink preserves pasted content for universal transfer vendors")
+    void generateLink_preservesOriginalContentForUniversalTransferVendors() {
+        String originalContent = "https://e.tb.cn/h.8QmDdSBTOsKPQXg?tk=1ZJuTcccJP5 MF937";
+        AppCpsLinkReqVO reqVO = new AppCpsLinkReqVO();
+        reqVO.setPlatformCode("taobao");
+        reqVO.setGoodsId("ITEM-1");
+        reqVO.setOriginalContent(originalContent);
+        when(cpsGoodsService.resolvePromotionAdzoneId("taobao", 1001L, null))
+                .thenReturn("mm_111_222_333");
+        when(cpsGoodsService.generatePromotionLink(
+                "taobao", "ITEM-1", null, 1001L, "mm_111_222_333", null, originalContent))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .shortUrl("https://s.click/1")
+                        .build());
+
+        try (MockedStatic<SecurityFrameworkUtils> securityMock = mockStatic(SecurityFrameworkUtils.class)) {
+            securityMock.when(SecurityFrameworkUtils::getLoginUserId).thenReturn(1001L);
+
+            var response = controller.generateLink(reqVO);
+
+            assertEquals("https://s.click/1", response.getData().getShortUrl());
+        }
+
+        verify(cpsGoodsService).generatePromotionLink(
+                "taobao", "ITEM-1", null, 1001L, "mm_111_222_333", null, originalContent);
+        ArgumentCaptor<CpsTransferRecordDO> captor = ArgumentCaptor.forClass(CpsTransferRecordDO.class);
+        verify(transferRecordMapper).insert(captor.capture());
+        assertEquals(originalContent, captor.getValue().getOriginalContent());
+    }
+
+    @Test
     @DisplayName("generateLink does not insert transfer record when link generation fails")
     void generateLink_doesNotInsertTransferRecordWhenLinkGenerationFails() {
         AppCpsLinkReqVO reqVO = new AppCpsLinkReqVO();
@@ -213,7 +245,8 @@ class AppCpsGoodsControllerTest {
         reqVO.setAdzoneId("mm_111_222_333");
         when(cpsGoodsService.resolvePromotionAdzoneId("taobao", 1001L, "mm_111_222_333"))
                 .thenReturn("mm_111_222_333");
-        when(cpsGoodsService.generatePromotionLink("taobao", "ITEM-1", null, 1001L, "mm_111_222_333"))
+        when(cpsGoodsService.generatePromotionLink(
+                "taobao", "ITEM-1", null, 1001L, "mm_111_222_333", null, null))
                 .thenReturn(null);
 
         try (MockedStatic<SecurityFrameworkUtils> securityMock = mockStatic(SecurityFrameworkUtils.class)) {
