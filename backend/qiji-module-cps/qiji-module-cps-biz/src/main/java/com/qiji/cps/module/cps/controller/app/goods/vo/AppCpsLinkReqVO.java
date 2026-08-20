@@ -31,6 +31,9 @@ public class AppCpsLinkReqVO {
     @Schema(description = "用户粘贴的完整商品链接或口令，用于供应商万能转链")
     private String originalContent;
 
+    @Schema(description = "搜索结果所属 API 供应商编码（可选，用于保持搜索与转链供应商一致）")
+    private String vendorCode;
+
     /**
      * goodsId 和 goodsSign 至少一个非空
      */

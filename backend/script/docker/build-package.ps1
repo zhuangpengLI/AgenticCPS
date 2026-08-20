@@ -57,6 +57,7 @@ Copy-Item -LiteralPath $BackendJar -Destination (Join-Path $DeployBackend "qiji-
 Copy-Item -LiteralPath (Join-Path $BackendRoot "sql/mysql/ruoyi-vue-pro.sql") -Destination (Join-Path $DeployMysqlInit "00-ruoyi-vue-pro.sql") -Force
 Copy-Item -LiteralPath (Join-Path $BackendRoot "sql/mysql/quartz.sql") -Destination (Join-Path $DeployMysqlInit "05-quartz.sql") -Force
 Copy-Item -LiteralPath (Join-Path $BackendRoot "sql/module/cps-all-in-one.sql") -Destination (Join-Path $DeployMysqlInit "10-cps-all-in-one.sql") -Force
+Copy-Item -LiteralPath (Join-Path $BackendRoot "sql/module/ai-all.sql") -Destination (Join-Path $DeployMysqlInit "15-ai-all.sql") -Force
 
 Write-Host "[4/4] 校验部署目录"
 if (Get-Command docker -ErrorAction SilentlyContinue) {

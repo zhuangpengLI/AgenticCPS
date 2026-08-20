@@ -10,6 +10,8 @@ import java.util.List;
 @Schema(description = "会员端 - AI 聊天消息发送 Response VO")
 @Data
 public class AppAiChatMessageSendRespVO {
+    private String eventType;
+    private ToolExecution toolExecution;
     private Message send;
     private Message receive;
 
@@ -22,6 +24,16 @@ public class AppAiChatMessageSendRespVO {
         private List<Long> segmentIds;
         private List<AppAiChatMessageRespVO.KnowledgeSegment> segments;
         private List<AiWebSearchResponse.WebPage> webSearchPages;
+        private List<java.util.Map<String, Object>> blocks;
         private LocalDateTime createTime;
+    }
+
+    @Data
+    public static class ToolExecution {
+        private String executionId;
+        private String intent;
+        private String label;
+        private String status;
+        private String message;
     }
 }

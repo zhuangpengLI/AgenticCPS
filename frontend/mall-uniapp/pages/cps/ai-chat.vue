@@ -1,29 +1,81 @@
 <template>
   <s-layout title="返利 AI 助手" navbar="inner">
-    <view class="chat-page">
-      <view v-if="!state.messages.length" class="welcome">
-        <view class="welcome-icon _icon-magic" />
-        <view class="welcome-title">{{ state.roleName || '返利 AI 助手' }}</view>
-        <view class="welcome-text">可以帮你搜索商品、比较价格、解释返利规则</view>
-        <view class="quick-list"><button v-for="item in quickPrompts" :key="item" class="ss-reset-button quick-item" @tap="sendPrompt(item)">{{ item }}</button></view>
+    <view v-if="!v2Enabled" class="legacy-page">
+      <view v-if="!state.messages.length" class="legacy-welcome"><view class="legacy-icon">AI</view><view class="legacy-title">{{ state.roleName || '返利 AI 助手' }}</view><view class="legacy-copy">可以帮你搜索商品、比较价格、解释返利规则</view><button v-for="prompt in quickPrompts.slice(0, 3)" :key="prompt" @tap="sendPrompt(prompt)">{{ prompt }}</button></view>
+      <scroll-view v-else class="legacy-messages" scroll-y :scroll-into-view="state.anchor"><view v-for="(message, index) in state.messages" :id="`ai-msg-${index}`" :key="message.id || index" class="legacy-row" :class="String(message.type || '').toUpperCase() === 'USER' ? 'legacy-user' : ''"><view>{{ message.content }}</view></view></scroll-view>
+      <view class="legacy-composer"><textarea v-model="state.input" auto-height placeholder="问问返利 AI" /><button :disabled="state.loading || !state.input.trim()" @tap="send">发送</button></view>
+    </view>
+    <view v-else class="chat-page">
+      <AiChatHeader :name="state.roleName" :avatar="state.roleAvatar" @history="showHistory" @new-chat="newChat" />
+      <view class="chat-body">
+        <AiChatWelcome v-if="!state.messages.length" :name="state.roleName" :avatar="state.roleAvatar" :prompts="quickPrompts" @prompt="sendPrompt" />
+        <AiChatMessageList v-else :messages="state.messages" :anchor="state.anchor" :loading="state.loading" :error="state.error" @action="handleAction" @retry="retryLast" />
       </view>
-      <scroll-view v-else class="message-scroll" scroll-y :scroll-into-view="state.anchor">
-        <view v-for="(item, index) in state.messages" :id="`msg-${index}`" :key="item.id || index" class="message-row" :class="item.type === 'USER' ? 'is-user' : 'is-ai'"><view class="message-bubble">{{ item.content }}</view></view>
-        <view v-if="state.loading" class="message-row is-ai"><view class="message-bubble pending">正在思考...</view></view>
-      </scroll-view>
-      <view class="composer"><textarea v-model="state.input" class="composer-input" placeholder="问问返利 AI" :maxlength="500" @confirm="send" /><button class="ss-reset-button send-button" :disabled="state.loading" @tap="send">发送</button></view>
+      <AiChatComposer
+        v-model="state.input"
+        :attachments="state.attachments"
+        :disabled="state.loading"
+        :recording="state.recording"
+        :voice-status="state.voiceStatus"
+        @send="send"
+        @choose-image="chooseImages"
+        @remove-attachment="removeAttachment"
+        @record-start="startRecording"
+        @record-stop="stopRecording"
+      />
+      <AiChatHistoryDrawer :visible="state.historyOpen" :conversations="state.historyConversations" @close="state.historyOpen = false" @select="selectHistory" />
     </view>
   </s-layout>
 </template>
 
 <script setup>
+  import { nextTick, onBeforeUnmount, reactive } from 'vue';
   import { onLoad } from '@dcloudio/uni-app';
-  import { reactive } from 'vue';
-  import AiChatApi from '@/sheep/api/ai/chat';
   import sheep from '@/sheep';
-  const quickPrompts = ['帮我找高返蓝牙耳机', '怎么计算返利？', '推荐一款适合送人的礼物'];
-  const state = reactive({ conversationId: null, roleId: null, roleName: '', input: '', messages: [], loading: false, anchor: '' });
+  import AiChatApi from '@/sheep/api/ai/chat';
+  import { sendAiChatStream } from '@/sheep/api/ai/ai-chat-transport';
+  import { startVoiceRecording, stopVoiceRecording, transcribeVoice } from '@/sheep/api/ai/ai-chat-voice';
+  import CpsGoodsApi from '@/sheep/api/cps/goods';
+  import { copyPromotionValue, createPromotionAction, executePromotionAction, openPromotionUrl, platformText, promotionUrl } from '@/sheep/helper/cps';
+  import { chooseAndUploadFile } from '@/sheep/components/s-uploader/choose-and-upload-file';
+  import AiChatHeader from './components/ai-chat/AiChatHeader.vue';
+  import AiChatHistoryDrawer from './components/ai-chat/AiChatHistoryDrawer.vue';
+  import AiChatWelcome from './components/ai-chat/AiChatWelcome.vue';
+  import AiChatMessageList from './components/ai-chat/AiChatMessageList.vue';
+  import AiChatComposer from './components/ai-chat/AiChatComposer.vue';
+
+  const quickPrompts = [
+    '帮我找一款高返蓝牙耳机',
+    '比较 iPhone 在各平台的到手价',
+    '查询我的返利余额和订单进度',
+    '推荐一款预算 500 元的送礼好物',
+  ];
+  // Deployment can set SHOPRO_AI_CHAT_V2_ON=0 for a reversible UI rollback.
+  const v2Enabled = import.meta.env.SHOPRO_AI_CHAT_V2_ON !== '0';
+
+  const state = reactive({
+    conversationId: null,
+    roleId: null,
+    roleName: '',
+    roleAvatar: '',
+    input: '',
+    attachments: [],
+    messages: [],
+    loading: false,
+    anchor: '',
+    error: '',
+    lastContent: '',
+    lastAttachments: [],
+    lastAction: null,
+    recording: false,
+    voiceStatus: '',
+    recordStartedAt: 0,
+    abortController: null,
+    historyOpen: false,
+    historyConversations: [],
+  });
   let conversationPromise = null;
+
   async function ensureConversation() {
     if (state.conversationId) return true;
     if (conversationPromise) return conversationPromise;
@@ -35,46 +87,198 @@
       if (conversation?.code === 0 && conversation.data) {
         state.roleId = conversation.data.roleId;
         state.roleName = conversation.data.roleName || conversation.data.title || '返利 AI 助手';
+        state.roleAvatar = conversation.data.roleAvatar || '';
       }
       return true;
     })();
     try { return await conversationPromise; } finally { conversationPromise = null; }
   }
-  async function loadMessages() { if (!state.conversationId) return; const result = await AiChatApi.getMessages(state.conversationId); if (result?.code === 0) state.messages = result.data || []; }
-  async function sendPrompt(text) { state.input = text; await send(); }
-  async function send() {
-    const content = state.input.trim(); if (!content || state.loading || !(await ensureConversation())) return;
-    state.input = ''; state.loading = true;
-    try {
-      const result = await AiChatApi.send({ conversationId: state.conversationId, content });
-      if (result === false) return;
-      if (result?.code !== 0) { sheep.$helper.toast(result?.msg || 'AI 暂时无法响应'); return; }
-      const response = result.data || {}; if (response.send) state.messages.push(response.send); if (response.receive) state.messages.push(response.receive); state.anchor = `msg-${state.messages.length - 1}`;
-    } catch (error) { sheep.$helper.toast('网络异常，请稍后重试'); } finally { state.loading = false; }
+
+  async function loadMessages() {
+    if (!state.conversationId) return;
+    const result = await AiChatApi.getMessages(state.conversationId);
+    if (result?.code === 0) state.messages = (result.data || []).map(normalizeMessage);
+    scrollToEnd();
   }
+
+  function normalizeMessage(message) {
+    return { ...message, toolExecutions: message.toolExecutions || [], reasoningOpen: false, blocks: message.blocks || [] };
+  }
+
+  function sendPrompt(text) { state.input = text; send(); }
+
+  async function send() {
+    const content = state.input.trim() || (state.attachments.length ? '请分析我上传的图片，并给出购买建议。' : '');
+    if (!content || state.loading || !(await ensureConversation())) return;
+    state.input = '';
+    state.error = '';
+    state.lastContent = content;
+    state.lastAttachments = state.attachments.map((item) => item.url);
+    state.messages.push(normalizeMessage({ id: `local-${Date.now()}`, type: 'USER', content, attachmentUrls: state.lastAttachments }));
+    state.attachments = [];
+    state.messages.push(normalizeMessage({ id: `assistant-${Date.now()}`, type: 'ASSISTANT', content: '', blocks: [], toolExecutions: [] }));
+    state.loading = true;
+    state.abortController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    scrollToEnd();
+    await sendAiChatStream({ conversationId: state.conversationId, content, useContext: true, useSearch: false, attachmentUrls: state.lastAttachments, toolIntent: state.lastAction?.intent, intentRequestId: state.lastAction?.intentRequestId }, { onEvent: handleStreamEvent, onError: (error) => { state.error = error?.message || '网络异常，请稍后重试'; }, signal: state.abortController?.signal });
+    state.loading = false;
+    state.abortController = null;
+    state.lastAction = null;
+    scrollToEnd();
+  }
+
+  function handleStreamEvent(event) {
+    if (!event) return;
+    const type = event.eventType || 'MESSAGE_COMPLETE';
+    const assistant = state.messages[state.messages.length - 1];
+    if (!assistant || String(assistant.type || '').toUpperCase() !== 'ASSISTANT') return;
+    if (type === 'TOOL_STARTED' || type === 'TOOL_SUCCEEDED' || type === 'TOOL_FAILED') {
+      const execution = event.toolExecution || {};
+      const list = assistant.toolExecutions || [];
+      const index = list.findIndex((item) => item.executionId === execution.executionId);
+      if (index >= 0) list[index] = { ...list[index], ...execution };
+      else list.push(execution);
+      assistant.toolExecutions = list;
+      return;
+    }
+    const receive = event.receive || event.data?.receive;
+    if (receive) {
+      if (type === 'MESSAGE_DELTA') assistant.content += receive.content || '';
+      else assistant.content = receive.content || assistant.content;
+      assistant.reasoningContent = type === 'MESSAGE_DELTA' ? `${assistant.reasoningContent || ''}${receive.reasoningContent || ''}` : receive.reasoningContent || assistant.reasoningContent;
+      assistant.blocks = receive.blocks || assistant.blocks || [];
+      assistant.webSearchPages = receive.webSearchPages || assistant.webSearchPages;
+      scrollToEnd();
+    }
+  }
+
+  async function chooseImages() {
+    if (state.attachments.length >= 3) { sheep.$helper.toast('最多上传 3 张图片'); return; }
+    try {
+      const files = await chooseAndUploadFile({ type: 'image', count: 3 - state.attachments.length, directory: 'ai/chat' });
+      (files || []).slice(0, 3 - state.attachments.length).forEach((file) => { if (file?.url) state.attachments.push({ url: file.url }); });
+    } catch (error) { sheep.$helper.toast('图片上传失败，请重试'); }
+  }
+
+  function removeAttachment(item) { state.attachments = state.attachments.filter((file) => file.url !== item.url); }
+
+  function startRecording() {
+    if (state.loading || state.recording) return;
+    state.recording = true; state.voiceStatus = '正在录音，松开结束'; state.recordStartedAt = Date.now();
+    startVoiceRecording({ onStart: () => {}, onStop: handleRecording, onError: (error) => { state.recording = false; state.voiceStatus = ''; sheep.$helper.toast(error?.message || '无法使用麦克风'); } });
+  }
+
+  function stopRecording() {
+    if (!state.recording) return;
+    state.recording = false; state.voiceStatus = '正在转写…'; stopVoiceRecording();
+  }
+
+  async function handleRecording(file) {
+    // A recorder can stop automatically at the platform's 60s limit. Keep the
+    // composer in sync even when no touchend event was delivered.
+    state.recording = false;
+    try {
+      const text = await transcribeVoice(file, Date.now() - state.recordStartedAt);
+      if (text) state.input = `${state.input}${state.input ? ' ' : ''}${text}`;
+      else sheep.$helper.toast('没有识别到有效内容');
+    } catch (error) { sheep.$helper.toast(error?.message || '语音转写失败'); }
+    finally { state.voiceStatus = ''; }
+  }
+
+  async function handleAction({ action, item }) {
+    if (action?.type === 'OPEN_DETAIL') {
+      const product = item || action.payload || {};
+      sheep.$router.go('/pages/cps/goods-detail', { platformCode: product.platformCode || '', goodsId: product.goodsId || '', goodsSign: product.goodsSign || '' });
+      return;
+    }
+    if (action?.type === 'GENERATE_LINK') {
+      const payload = action.payload || {};
+      const result = await CpsGoodsApi.generateLink({
+        platformCode: payload.platformCode,
+        goodsId: payload.goodsId,
+        goodsSign: payload.goodsSign,
+        vendorCode: payload.vendorCode,
+      });
+      if (result?.code === 0 && result.data) {
+        if (item) Object.assign(item, result.data, { promotionUrl: promotionUrl(result.data) });
+        try {
+          const promotion = createPromotionAction(result.data, payload.platformCode);
+          if (promotion.type === 'tpwd') {
+            sheep.$helper.toast(`已生成${platformText(payload.platformCode)}购买信息，请点击“复制口令”后打开对应APP`);
+          } else {
+            await executePromotionAction(promotion);
+            sheep.$helper.toast(`已打开${platformText(payload.platformCode)}购买页`);
+          }
+        } catch (error) { sheep.$helper.toast('推广链接已生成，请点击购买按钮重试'); }
+      } else sheep.$helper.toast(result?.msg || '生成链接失败');
+      return;
+    }
+    if (action?.type === 'OPEN_PROMOTION') {
+      const url = action.payload?.url || promotionUrl(item || {});
+      try {
+        const result = await openPromotionUrl(url);
+        if (result.opened) sheep.$helper.toast(`已打开${platformText(action.payload?.platformCode)}购买页`);
+        else { await copyPromotionValue(url); sheep.$helper.toast(`无法直接打开，请复制链接后打开${platformText(action.payload?.platformCode)}APP`); }
+      } catch (error) { sheep.$helper.toast('购买链接暂不可用，请稍后重试'); }
+      return;
+    }
+    if (action?.type === 'COPY_COMMAND') {
+      try { await copyPromotionValue(action.payload?.value || item?.tpwd || item?.command); sheep.$helper.toast(`口令已复制，请打开${platformText(action.payload?.platformCode)}APP购买`); }
+      catch (error) { sheep.$helper.toast('口令复制失败，请稍后重试'); }
+      return;
+    }
+    if (action?.type === 'SEND_PROMPT') { state.input = action.payload?.prompt || ''; send(); }
+  }
+
+  function retryLast() { state.input = state.lastContent; state.attachments = state.lastAttachments.map((url) => ({ url })); send(); }
+
+  async function showHistory() {
+    const result = await AiChatApi.getConversations();
+    const list = result?.data || [];
+    if (!list.length) { sheep.$helper.toast('暂无历史会话'); return; }
+    state.historyConversations = list;
+    state.historyOpen = true;
+  }
+
+  async function selectHistory(picked) {
+    state.historyOpen = false;
+    state.conversationId = picked.id;
+    state.roleId = picked.roleId;
+    state.roleName = picked.roleName || picked.title || '返利 AI 助手';
+    state.roleAvatar = picked.roleAvatar || '';
+    state.messages = [];
+    await loadMessages();
+  }
+
+  async function newChat() { state.conversationId = null; state.messages = []; state.input = ''; state.attachments = []; await ensureConversation(); }
+
+  function scrollToEnd() { nextTick(() => { state.anchor = `ai-msg-${Math.max(0, state.messages.length - 1)}`; }); }
+
   onLoad(async (options = {}) => {
     if (options.roleId) state.roleId = Number(options.roleId);
-    const conversations = await AiChatApi.getConversations(); const latest = (conversations?.data || [])[0];
-    if (latest && !state.roleId) { state.conversationId = latest.id; state.roleId = latest.roleId; state.roleName = latest.roleName || latest.title || '返利 AI 助手'; await loadMessages(); return; }
+    const conversations = await AiChatApi.getConversations();
+    const latest = (conversations?.data || [])[0];
+    if (latest && !state.roleId) { state.conversationId = latest.id; state.roleId = latest.roleId; state.roleName = latest.roleName || latest.title || '返利 AI 助手'; state.roleAvatar = latest.roleAvatar || ''; await loadMessages(); return; }
     await ensureConversation();
   });
+  onBeforeUnmount(() => state.abortController?.abort?.());
 </script>
 
-<style lang="scss" scoped>
-  .chat-page { display: flex; min-height: calc(100vh - 88rpx); flex-direction: column; background: #f7f8fa; }
-  .welcome { padding: 100rpx 38rpx 30rpx; text-align: center; }
-  .welcome-icon { display: inline-flex; width: 92rpx; height: 92rpx; align-items: center; justify-content: center; border-radius: 28rpx; color: #fff; background: #f4513b; font-size: 48rpx; }
-  .welcome-title { margin-top: 24rpx; color: #222; font-size: 36rpx; font-weight: 600; }
-  .welcome-text { margin-top: 12rpx; color: #888; font-size: 24rpx; }
-  .quick-list { display: flex; margin-top: 46rpx; flex-direction: column; gap: 18rpx; }
-  .quick-item { padding: 20rpx 24rpx; border: 1rpx solid #f0d7d0; border-radius: 14rpx; color: #a25b49; background: #fff; font-size: 24rpx; text-align: left; }
-  .message-scroll { flex: 1; padding: 24rpx 24rpx 180rpx; box-sizing: border-box; }
-  .message-row { display: flex; margin-bottom: 20rpx; }
-  .message-row.is-user { justify-content: flex-end; }
-  .message-bubble { max-width: 78%; padding: 18rpx 22rpx; border-radius: 16rpx; color: #333; background: #fff; font-size: 26rpx; line-height: 1.55; overflow-wrap: anywhere; }
-  .is-user .message-bubble { color: #fff; background: #f4513b; }
-  .pending { color: #888; }
-  .composer { position: fixed; right: 0; bottom: 0; left: 0; display: flex; align-items: flex-end; gap: 14rpx; padding: 18rpx 20rpx calc(18rpx + env(safe-area-inset-bottom)); background: #fff; box-shadow: 0 -4rpx 18rpx rgba(0,0,0,.05); }
-  .composer-input { min-height: 70rpx; max-height: 160rpx; padding: 18rpx; box-sizing: border-box; border: 1rpx solid #e5e6eb; border-radius: 14rpx; flex: 1; font-size: 25rpx; }
-  .send-button { width: 118rpx; height: 70rpx; border-radius: 14rpx; color: #fff; background: #f4513b; font-size: 25rpx; line-height: 70rpx; }
+<style scoped lang="scss">
+  .chat-page { display: flex; min-height: calc(100vh - 88rpx); flex-direction: column; background: #f6f8fb; }
+  .chat-body { min-height: 0; flex: 1; }
+  .legacy-page { min-height: calc(100vh - 88rpx); padding: 28rpx; box-sizing: border-box; background: #f7f8fa; }
+  .legacy-welcome { padding-top: 90rpx; text-align: center; }
+  .legacy-icon { display: inline-flex; width: 88rpx; height: 88rpx; align-items: center; justify-content: center; border-radius: 24rpx; color: #fff; background: #103ea6; font-weight: 800; }
+  .legacy-title { margin-top: 22rpx; color: #22324d; font-size: 34rpx; font-weight: 700; }
+  .legacy-copy { margin: 12rpx 0 30rpx; color: #68778e; font-size: 24rpx; }
+  .legacy-welcome button { margin: 14rpx 0; border-radius: 14rpx; color: #103ea6; background: #fff; font-size: 24rpx; }
+  .legacy-messages { height: calc(100vh - 270rpx); padding-bottom: 120rpx; box-sizing: border-box; }
+  .legacy-row { display: flex; margin: 18rpx 0; justify-content: flex-start; }
+  .legacy-row view { max-width: 78%; padding: 18rpx 22rpx; border-radius: 16rpx; color: #273854; background: #fff; white-space: pre-wrap; }
+  .legacy-row.legacy-user { justify-content: flex-end; }
+  .legacy-row.legacy-user view { color: #fff; background: #103ea6; }
+  .legacy-composer { position: fixed; right: 0; bottom: 0; left: 0; display: flex; padding: 16rpx 22rpx calc(16rpx + env(safe-area-inset-bottom)); gap: 12rpx; background: #fff; }
+  .legacy-composer textarea { min-height: 68rpx; padding: 15rpx; border-radius: 14rpx; background: #f3f5f8; flex: 1; }
+  .legacy-composer button { width: 112rpx; height: 68rpx; margin: 0; border-radius: 14rpx; color: #fff; background: #103ea6; font-size: 24rpx; line-height: 68rpx; }
 </style>

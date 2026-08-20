@@ -125,6 +125,8 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
     private AiChatToolCallbackService toolCallbackService;
     @Resource
     private AiChatToolActionService toolActionService;
+    @Resource
+    private List<AiChatMessageBlockResolver> blockResolvers;
     @Autowired(required = false)
     private AiWebSearchClient webSearchClient;
 
@@ -133,6 +135,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         // 1.1 校验对话存在
         AiChatConversationDO conversation = chatConversationService
                 .getOwnedConversation(sendReqVO.getConversationId(), ownerUserType, userId);
+        normalizeAttachmentOnlyMessage(sendReqVO);
         AiChatToolAction requestedAction = toolActionService.requireAllowedAction(conversation, sendReqVO.getToolIntent());
         validateIntentRequestId(requestedAction, sendReqVO);
         List<AiChatMessageDO> historyMessages = chatMessageMapper.selectListByConversationId(conversation.getId());
@@ -159,16 +162,19 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                 userId, conversation.getRoleId(), MessageType.ASSISTANT, "", sendReqVO.getUseContext(),
                 knowledgeSegments, null, webSearchResponse);
 
+        AtomicReference<List<Map<String, Object>>> blocks = new AtomicReference<>(Collections.emptyList());
+        AiChatToolExecutionListener blockListener = event -> collectBlocks(blocks, event);
+        // The synchronous path does not expose tool events, but still resolves blocks.
         // 4.2 创建 chat 需要的 Prompt
         Prompt prompt = buildPrompt(conversation, historyMessages, knowledgeSegments, webSearchResponse, model, sendReqVO,
-                requestedAction, AiChatToolExecutionListener.NOOP);
+                requestedAction, blockListener);
         ChatResponse chatResponse = chatModel.call(prompt);
 
         // 4.3 更新响应内容
         String newContent = AiUtils.getChatResponseContent(chatResponse);
         String newReasoningContent = AiUtils.getChatResponseReasoningContent(chatResponse);
         chatMessageMapper.updateById(new AiChatMessageDO().setId(assistantMessage.getId())
-                .setContent(newContent).setReasoningContent(newReasoningContent));
+                .setContent(newContent).setReasoningContent(newReasoningContent).setBlocks(blocks.get()));
         // 4.4 响应结果
         Map<Long, AiKnowledgeDocumentDO> documentMap = knowledgeDocumentService.getKnowledgeDocumentMap(
                 convertSet(knowledgeSegments, AiKnowledgeSegmentSearchRespBO::getDocumentId));
@@ -178,11 +184,12 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                     segment.setDocumentName(document != null ? document.getName() : null);
                 });
         return new AiChatMessageSendRespVO()
-                .setEventType("MESSAGE_DELTA")
+                .setEventType("MESSAGE_COMPLETE")
                 .setSend(BeanUtils.toBean(userMessage, AiChatMessageSendRespVO.Message.class))
                 .setReceive(BeanUtils.toBean(assistantMessage, AiChatMessageSendRespVO.Message.class)
                         .setContent(newContent).setSegments(segments)
-                        .setWebSearchPages(webSearchResponse != null ? webSearchResponse.getLists() : null));
+                        .setWebSearchPages(webSearchResponse != null ? webSearchResponse.getLists() : null)
+                        .setBlocks(blocks.get()));
     }
 
     @Override
@@ -191,6 +198,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         // 1.1 校验对话存在
         AiChatConversationDO conversation = chatConversationService
                 .getOwnedConversation(sendReqVO.getConversationId(), ownerUserType, userId);
+        normalizeAttachmentOnlyMessage(sendReqVO);
         AiChatToolAction requestedAction = toolActionService.requireAllowedAction(conversation, sendReqVO.getToolIntent());
         validateIntentRequestId(requestedAction, sendReqVO);
         List<AiChatMessageDO> historyMessages = chatMessageMapper.selectListByConversationId(conversation.getId());
@@ -220,7 +228,10 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         // 4.2 构建 Prompt，并进行调用
         Sinks.Many<AiChatToolExecutionEvent> toolEventSink = Sinks.many().unicast().onBackpressureBuffer();
         Object toolEventLock = new Object();
+        AtomicReference<List<Map<String, Object>>> blocks = new AtomicReference<>(Collections.emptyList());
+        Sinks.One<CommonResult<AiChatMessageSendRespVO>> completeSink = Sinks.one();
         AiChatToolExecutionListener toolExecutionListener = event -> {
+            collectBlocks(blocks, event);
             synchronized (toolEventLock) {
                 toolEventSink.tryEmitNext(event);
             }
@@ -264,15 +275,23 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
             return success(new AiChatMessageSendRespVO()
                     .setEventType("MESSAGE_DELTA")
                     .setSend(BeanUtils.toBean(userMessage, AiChatMessageSendRespVO.Message.class))
-                    .setReceive(BeanUtils.toBean(assistantMessage, AiChatMessageSendRespVO.Message.class)
+            .setReceive(BeanUtils.toBean(assistantMessage, AiChatMessageSendRespVO.Message.class)
                             .setContent(StrUtil.nullToDefault(newContent, "")) // 避免 null 的 情况
                             .setReasoningContent(StrUtil.nullToDefault(newReasoningContent, "")) // 避免 null 的 情况
-                            .setSegments(cacheSegments.get()).setWebSearchPages(cacheWebSearchPages.get()))); // 知识库 + 联网搜索
+                            .setSegments(cacheSegments.get()).setWebSearchPages(cacheWebSearchPages.get())
+                            .setBlocks(blocks.get()))); // 知识库 + 联网搜索
         }).doOnComplete(() -> {
             // 忽略租户，因为 Flux 异步无法透传租户
             TenantUtils.executeIgnore(() -> chatMessageMapper.updateById(
                     new AiChatMessageDO().setId(assistantMessage.getId()).setContent(contentBuffer.toString())
-                            .setReasoningContent(reasoningContentBuffer.toString())));
+                            .setReasoningContent(reasoningContentBuffer.toString()).setBlocks(blocks.get())));
+            completeSink.tryEmitValue(success(new AiChatMessageSendRespVO().setEventType("MESSAGE_COMPLETE")
+                    .setSend(BeanUtils.toBean(userMessage, AiChatMessageSendRespVO.Message.class))
+                    .setReceive(BeanUtils.toBean(assistantMessage, AiChatMessageSendRespVO.Message.class)
+                            .setContent(contentBuffer.toString())
+                            .setReasoningContent(reasoningContentBuffer.toString())
+                            .setSegments(cacheSegments.get()).setWebSearchPages(cacheWebSearchPages.get())
+                            .setBlocks(blocks.get()))));
         }).doOnError(throwable -> {
             log.error("[sendChatMessageStream][userId({}) sendReqVO({}) 发生异常]", userId, sendReqVO, throwable);
             // 忽略租户，因为 Flux 异步无法透传租户
@@ -286,6 +305,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                     chatMessageMapper.deleteById(assistantMessage.getId());
                 }
             });
+            completeSink.tryEmitEmpty();
         }).doOnCancel(() -> {
             log.info("[sendChatMessageStream][userId({}) sendReqVO({}) 取消请求]", userId, sendReqVO);
             // 忽略租户，因为 Flux 异步无法透传租户
@@ -299,6 +319,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                     chatMessageMapper.deleteById(assistantMessage.getId());
                 }
             });
+            completeSink.tryEmitEmpty();
         }).onErrorResume(error -> Flux.just(error(ErrorCodeConstants.CHAT_STREAM_ERROR)))
                 .doFinally(signalType -> {
                     synchronized (toolEventLock) {
@@ -307,8 +328,9 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                 });
         Flux<CommonResult<AiChatMessageSendRespVO>> toolEventFlux = toolEventSink.asFlux()
                 .map(event -> success(toToolExecutionResponse(event)));
+        Flux<CommonResult<AiChatMessageSendRespVO>> completeEventFlux = completeSink.asMono().flux();
         // Subscribe to the event sink before the single model stream subscription starts emitting tool callbacks.
-        return Flux.merge(toolEventFlux, messageFlux);
+        return Flux.merge(toolEventFlux, messageFlux, completeEventFlux);
     }
 
     private List<AiKnowledgeSegmentSearchRespBO> recallKnowledgeSegment(String content,
@@ -425,8 +447,33 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
     private AiChatMessageSendRespVO toToolExecutionResponse(AiChatToolExecutionEvent event) {
         return new AiChatMessageSendRespVO().setEventType(event.getEventType())
                 .setToolExecution(new AiChatMessageSendRespVO.ToolExecution()
-                        .setExecutionId(event.getExecutionId()).setIntent(event.getIntent()).setLabel(event.getLabel())
+                        .setExecutionId(event.getExecutionId()).setToolName(event.getToolName())
+                        .setIntent(event.getIntent()).setLabel(event.getLabel())
                         .setStatus(event.getStatus()).setMessage(event.getMessage()));
+    }
+
+    private void collectBlocks(AtomicReference<List<Map<String, Object>>> blocks,
+                               AiChatToolExecutionEvent event) {
+        if (!"TOOL_SUCCEEDED".equals(event.getEventType()) || StrUtil.isEmpty(event.getResultPayload())
+                || CollUtil.isEmpty(blockResolvers)) {
+            return;
+        }
+        for (AiChatMessageBlockResolver resolver : blockResolvers) {
+            if (!resolver.supports(event.getToolName())) {
+                continue;
+            }
+            try {
+                List<Map<String, Object>> resolved = resolver.resolve(event.getToolName(), event.getResultPayload());
+                if (CollUtil.isNotEmpty(resolved)) {
+                    List<Map<String, Object>> merged = new ArrayList<>(blocks.get());
+                    merged.addAll(resolved);
+                    blocks.set(Collections.unmodifiableList(merged));
+                }
+            } catch (RuntimeException ex) {
+                log.warn("[collectBlocks][toolName({}) resolve structured blocks failed]", event.getToolName(), ex);
+            }
+            return;
+        }
     }
 
     /**
@@ -503,6 +550,23 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                 .map(entry -> "<Attachment name=\"" + entry.getKey() + "\">" + entry.getValue() + "</Attachment>")
                 .collect(Collectors.joining("\n\n"));
         return new UserMessage(String.format(Attachment_USER_MESSAGE_TEMPLATE, attachment));
+    }
+
+    /**
+     * Image-only messages are a supported mobile use case. Keep the request
+     * contract backwards compatible by supplying a safe prompt server-side;
+     * reject an actually empty message before it reaches a model provider.
+     */
+    private void normalizeAttachmentOnlyMessage(AiChatMessageSendReqVO request) {
+        if (StrUtil.isBlank(request.getContent()) && CollUtil.isNotEmpty(request.getAttachmentUrls())) {
+            request.setContent("请分析我上传的图片，并给出购买建议。");
+        }
+        if (StrUtil.isBlank(request.getContent())) {
+            throw new IllegalArgumentException("聊天内容或附件不能为空");
+        }
+        if (CollUtil.size(request.getAttachmentUrls()) > 3) {
+            throw new IllegalArgumentException("最多上传 3 个附件");
+        }
     }
 
     private AiChatMessageDO createChatMessage(Long conversationId, Long replyId,

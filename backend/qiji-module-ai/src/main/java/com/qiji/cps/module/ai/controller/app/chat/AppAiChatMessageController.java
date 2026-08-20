@@ -54,9 +54,6 @@ public class AppAiChatMessageController {
             @Valid @RequestBody AppAiChatMessageSendReqVO reqVO) {
         return chatMessageService.sendChatMessageStream(toAdminReq(reqVO),
                 AiChatOwnerTypeEnum.MEMBER.name(), getLoginUserId())
-                .filter(result -> !result.isSuccess() || result.getData() == null
-                        || result.getData().getEventType() == null
-                        || "MESSAGE_DELTA".equals(result.getData().getEventType()))
                 .map(result -> {
             if (!result.isSuccess()) {
                 return CommonResult.error(result);
@@ -85,6 +82,14 @@ public class AppAiChatMessageController {
             return null;
         }
         return new AppAiChatMessageSendRespVO()
+                .setEventType(response.getEventType())
+                .setToolExecution(response.getToolExecution() == null ? null
+                        : new AppAiChatMessageSendRespVO.ToolExecution()
+                        .setExecutionId(response.getToolExecution().getExecutionId())
+                        .setIntent(response.getToolExecution().getIntent())
+                        .setLabel(response.getToolExecution().getLabel())
+                        .setStatus(response.getToolExecution().getStatus())
+                        .setMessage(response.getToolExecution().getMessage()))
                 .setSend(toAppMessage(response.getSend()))
                 .setReceive(toAppMessage(response.getReceive()));
     }

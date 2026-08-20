@@ -123,4 +123,11 @@ public class AiChatMessageDO extends BaseDO {
     @TableField(typeHandler = StringListTypeHandler.class)
     private List<String> attachmentUrls;
 
+    /**
+     * Sanitized UI blocks resolved from allow-listed business tool results.
+     * Kept as JSON so generic AI messages remain independent of CPS DTOs.
+     */
+    @TableField(value = "content_blocks", typeHandler = JacksonTypeHandler.class)
+    private List<java.util.Map<String, Object>> blocks;
+
 }

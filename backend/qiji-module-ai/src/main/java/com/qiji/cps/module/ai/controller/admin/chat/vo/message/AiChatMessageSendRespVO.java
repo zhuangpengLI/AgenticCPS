@@ -48,6 +48,9 @@ public class AiChatMessageSendRespVO {
         @Schema(description = "联网搜索的网页内容数组")
         private List<AiWebSearchResponse.WebPage> webSearchPages;
 
+        @Schema(description = "结构化 UI 块")
+        private List<java.util.Map<String, Object>> blocks;
+
         @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
         private LocalDateTime createTime;
 
@@ -57,6 +60,7 @@ public class AiChatMessageSendRespVO {
     @Data
     public static class ToolExecution {
         private String executionId;
+        private String toolName;
         private String intent;
         private String label;
         private String status;

@@ -24,6 +24,7 @@ public class AppAiChatMessageRespVO {
     private List<KnowledgeSegment> segments;
     private List<AiWebSearchResponse.WebPage> webSearchPages;
     private List<String> attachmentUrls;
+    private List<java.util.Map<String, Object>> blocks;
     private LocalDateTime createTime;
     private String roleName;
 

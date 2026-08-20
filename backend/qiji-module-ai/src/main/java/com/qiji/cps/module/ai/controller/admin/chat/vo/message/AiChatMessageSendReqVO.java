@@ -1,8 +1,8 @@
 package com.qiji.cps.module.ai.controller.admin.chat.vo.message;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.util.List;
@@ -17,7 +17,6 @@ public class AiChatMessageSendReqVO {
     private Long conversationId;
 
     @Schema(description = "聊天内容", requiredMode = Schema.RequiredMode.REQUIRED, example = "帮我写个 Java 算法")
-    @NotEmpty(message = "聊天内容不能为空")
     private String content;
 
     @Schema(description = "是否携带上下文", example = "true")
@@ -27,6 +26,7 @@ public class AiChatMessageSendReqVO {
     private Boolean useSearch;
 
     @Schema(description = "附件 URL 数组", example = "https://www.iocoder.cn/1.png")
+    @Size(max = 3, message = "最多上传 3 个附件")
     private List<String> attachmentUrls;
 
     @Schema(description = "服务端白名单工具意图，仅作为路由建议", example = "SEARCH_GOODS")

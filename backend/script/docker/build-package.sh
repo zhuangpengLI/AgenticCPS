@@ -40,6 +40,7 @@ cp -R "${FRONTEND_DIST}/." "${SCRIPT_DIR}/frontend/dist/"
 cp -f "${BACKEND_ROOT}/sql/mysql/ruoyi-vue-pro.sql" "${SCRIPT_DIR}/mysql/init/00-ruoyi-vue-pro.sql"
 cp -f "${BACKEND_ROOT}/sql/mysql/quartz.sql" "${SCRIPT_DIR}/mysql/init/05-quartz.sql"
 cp -f "${BACKEND_ROOT}/sql/module/cps-all-in-one.sql" "${SCRIPT_DIR}/mysql/init/10-cps-all-in-one.sql"
+cp -f "${BACKEND_ROOT}/sql/module/ai-all.sql" "${SCRIPT_DIR}/mysql/init/15-ai-all.sql"
 
 echo "[4/4] 校验部署目录"
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then

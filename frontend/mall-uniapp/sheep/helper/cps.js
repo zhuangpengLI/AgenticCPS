@@ -66,6 +66,38 @@ export function copyPromotionValue(value) {
   });
 }
 
+export function promotionUrl(link = {}) {
+  return link.mobileUrl || link.shortUrl || link.longUrl || link.promotionUrl || '';
+}
+
+/**
+ * Open a platform promotion URL in the current runtime. APP-PLUS delegates
+ * to the operating system so a platform deep link can launch its native app;
+ * H5 opens a new tab. Callers can fall back to copying the URL when the
+ * runtime or platform cannot handle it.
+ */
+export function openPromotionUrl(url) {
+  if (!url) return Promise.reject(new Error('EMPTY_PROMOTION_VALUE'));
+  // #ifdef H5
+  if (typeof window !== 'undefined') {
+    const opened = Boolean(window.open(url, '_blank'));
+    if (opened) return Promise.resolve({ opened: true });
+    // A delayed API response may be outside the popup-allowlist window. A
+    // same-tab navigation still provides the requested purchase jump.
+    window.location.assign(url);
+    return Promise.resolve({ opened: true });
+  }
+  // #endif
+  // #ifdef APP-PLUS
+  if (typeof plus !== 'undefined' && plus.runtime?.openURL) {
+    return new Promise((resolve) => {
+      plus.runtime.openURL(url, () => resolve({ opened: true }), () => resolve({ opened: false }));
+    });
+  }
+  // #endif
+  return Promise.resolve({ opened: false });
+}
+
 export async function executePromotionAction(action) {
   if (!action?.value) {
     throw new Error('EMPTY_PROMOTION_VALUE');
@@ -74,14 +106,8 @@ export async function executePromotionAction(action) {
     await copyPromotionValue(action.value);
     return { copied: true, opened: false };
   }
-
-  // #ifdef H5
-  const opened = Boolean(window.open(action.value, '_blank'));
-  if (opened) {
-    return { copied: false, opened: true };
-  }
-  // #endif
-
+  const opened = await openPromotionUrl(action.value);
+  if (opened.opened) return { copied: false, opened: true };
   await copyPromotionValue(action.value || action.fallbackValue);
   return { copied: true, opened: false };
 }

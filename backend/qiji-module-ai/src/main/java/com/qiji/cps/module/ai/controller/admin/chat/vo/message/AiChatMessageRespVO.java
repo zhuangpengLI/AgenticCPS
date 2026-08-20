@@ -56,6 +56,9 @@ public class AiChatMessageRespVO {
     @Schema(description = "附件 URL 数组", example = "https://www.iocoder.cn/1.png")
     private List<String> attachmentUrls;
 
+    @Schema(description = "结构化 UI 块")
+    private List<java.util.Map<String, Object>> blocks;
+
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED, example = "2024-05-12 12:51")
     private LocalDateTime createTime;
 

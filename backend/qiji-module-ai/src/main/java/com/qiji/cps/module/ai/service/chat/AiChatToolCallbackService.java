@@ -211,17 +211,23 @@ public class AiChatToolCallbackService {
             listener.onEvent(event("TOOL_STARTED", executionId, "RUNNING", action.getRunningMessage()));
             try {
                 String result = delegate.call(toolInput, toolContext);
-                listener.onEvent(event("TOOL_SUCCEEDED", executionId, "SUCCEEDED", action.getSuccessMessage()));
+                listener.onEvent(event("TOOL_SUCCEEDED", executionId, "SUCCEEDED", action.getSuccessMessage(), result));
                 return result;
             } catch (RuntimeException ex) {
-                listener.onEvent(event("TOOL_FAILED", executionId, "FAILED", "操作失败，请稍后重试"));
+            listener.onEvent(event("TOOL_FAILED", executionId, "FAILED", "操作失败，请稍后重试", null));
                 throw ex;
             }
         }
 
         private AiChatToolExecutionEvent event(String eventType, String executionId, String status, String message) {
+            return event(eventType, executionId, status, message, null);
+        }
+
+        private AiChatToolExecutionEvent event(String eventType, String executionId, String status, String message,
+                                               String resultPayload) {
             return new AiChatToolExecutionEvent().setEventType(eventType).setExecutionId(executionId)
-                    .setIntent(action.getIntent()).setLabel(action.getLabel()).setStatus(status).setMessage(message);
+                    .setToolName(action.getToolName()).setIntent(action.getIntent()).setLabel(action.getLabel())
+                    .setStatus(status).setMessage(message).setResultPayload(resultPayload);
         }
     }
 

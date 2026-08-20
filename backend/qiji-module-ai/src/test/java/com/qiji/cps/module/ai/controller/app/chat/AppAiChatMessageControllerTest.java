@@ -75,7 +75,7 @@ class AppAiChatMessageControllerTest extends com.qiji.cps.framework.test.core.ut
     }
 
     @Test
-    void streamFiltersAdminOnlyToolLifecycleEvents() {
+    void streamPassesThroughToolLifecycleEventsForMemberUi() {
         AppAiChatMessageSendReqVO req = new AppAiChatMessageSendReqVO().setConversationId(7L).setContent("hi");
         AiChatMessageSendRespVO toolEvent = new AiChatMessageSendRespVO().setEventType("TOOL_STARTED");
         AiChatMessageSendRespVO messageEvent = new AiChatMessageSendRespVO().setEventType("MESSAGE_DELTA");
@@ -85,7 +85,9 @@ class AppAiChatMessageControllerTest extends com.qiji.cps.framework.test.core.ut
         try (MockedStatic<SecurityFrameworkUtils> security = mockStatic(SecurityFrameworkUtils.class)) {
             security.when(SecurityFrameworkUtils::getLoginUserId).thenReturn(42L);
             var events = controller.sendChatMessageStream(req).collectList().block();
-            assertEquals(1, events.size());
+            assertEquals(2, events.size());
+            assertEquals("TOOL_STARTED", events.get(0).getData().getEventType());
+            assertEquals("MESSAGE_DELTA", events.get(1).getData().getEventType());
         }
     }
 

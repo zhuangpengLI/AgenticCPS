@@ -26,6 +26,15 @@ public class AppCpsLinkRespVO {
     @Schema(description = "移动端链接（拼多多专用）")
     private String mobileUrl;
 
+    @Schema(description = "推荐购买链接（移动端链接、短链接或长链接）")
+    private String promotionUrl;
+
+    @Schema(description = "口令名称")
+    private String commandLabel;
+
+    @Schema(description = "平台口令")
+    private String command;
+
     @Schema(description = "券后价（元）")
     private BigDecimal actualPrice;
 

@@ -15,7 +15,8 @@ validate_artifacts() {
     "frontend/dist/index.html" \
     "mysql/init/00-ruoyi-vue-pro.sql" \
     "mysql/init/05-quartz.sql" \
-    "mysql/init/10-cps-all-in-one.sql"; do
+    "mysql/init/10-cps-all-in-one.sql" \
+    "mysql/init/15-ai-all.sql"; do
     if [[ ! -f "${artifact}" ]]; then
       echo "缺少部署文件: ${artifact}" >&2
       missing=1

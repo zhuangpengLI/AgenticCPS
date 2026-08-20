@@ -153,7 +153,7 @@ public class AppCpsGoodsController {
                 reqVO.getGoodsSign(),
                 memberId,
                 adzoneId,
-                null,
+                reqVO.getVendorCode(),
                 reqVO.getOriginalContent()
         );
         if (result == null) {
@@ -176,8 +176,14 @@ public class AppCpsGoodsController {
         vo.setLongUrl(result.getLongUrl());
         vo.setTpwd(result.getTpwd());
         vo.setMobileUrl(result.getMobileUrl());
+        vo.setPromotionUrl(firstText(result.getMobileUrl(), result.getShortUrl(), result.getLongUrl()));
+        vo.setCommand(result.getTpwd());
+        if (StringUtils.hasText(result.getTpwd())) {
+            vo.setCommandLabel("taobao".equalsIgnoreCase(reqVO.getPlatformCode()) ? "淘口令" : "平台口令");
+        }
         vo.setActualPrice(result.getActualPrice());
         vo.setCommissionRate(result.getCommissionRate());
+        vo.setEstimateRebateAmount(result.getCommissionAmount());
         vo.setCouponInfo(result.getCouponInfo());
         return success(vo);
     }
