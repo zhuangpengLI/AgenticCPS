@@ -19,7 +19,13 @@ export const apiPath = import.meta.env.SHOPRO_API_PATH;
 export const staticUrl = import.meta.env.SHOPRO_STATIC_URL;
 export const tenantId = import.meta.env.SHOPRO_TENANT_ID;
 export const websocketPath = import.meta.env.SHOPRO_WEBSOCKET_PATH;
-export const h5Url = import.meta.env.SHOPRO_H5_URL;
+// 开发环境固定使用 localhost:3000；生产 H5 与管理端共用域名，通过 /h5/ 子路径访问。
+export const h5Url =
+  process.env.NODE_ENV === 'development'
+    ? import.meta.env.SHOPRO_H5_URL
+    : typeof window !== 'undefined'
+      ? `${window.location.origin}/h5/`
+      : '/h5/';
 
 export default {
   baseUrl,

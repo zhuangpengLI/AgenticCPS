@@ -90,6 +90,8 @@ services:
     volumes:
       # 前端构建目录从部署目录直接挂载，上传新页面后重建容器即可生效。
       - ./frontend/dist:/usr/share/nginx/html:ro
+      # mall-uniapp 的 H5 发行产物由 build-package 归集到该目录，供 /h5/ 子路径使用。
+      - ./frontend/mall-h5:/usr/share/nginx/h5:ro
     depends_on:
       - server
 

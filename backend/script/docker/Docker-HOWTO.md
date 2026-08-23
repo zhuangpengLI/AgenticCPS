@@ -12,7 +12,8 @@ docker/
 ├── frontend/
 │   ├── Dockerfile
 │   ├── nginx.conf
-│   └── dist/                    # build-package 脚本生成
+│   ├── dist/                    # build-package 脚本生成
+│   └── mall-h5/                  # mall-uniapp H5 发行产物
 ├── mysql/init/
 │   ├── 00-ruoyi-vue-pro.sql    # build-package 脚本生成
 │   ├── 05-quartz.sql            # build-package 脚本生成
@@ -45,7 +46,7 @@ cd backend/script/docker
 
 1. 构建 `backend/qiji-server/target/qiji-server.jar`。
 2. 使用 Docker 专用的同源 API 配置构建管理前端。
-3. 将 JAR、前端页面、基础 SQL、Quartz SQL、CPS 全量 SQL 和 AI 全量 SQL 复制到当前 Docker 目录。
+3. 将 JAR、管理端页面、mall-uniapp H5 页面、基础 SQL、Quartz SQL、CPS 全量 SQL 和 AI 全量 SQL 复制到当前 Docker 目录。
 4. 本机安装了 Docker Compose 时，额外校验 Compose 配置。
 
 如果 CI 已经完成后端和前端构建，可使用 `bash build-package.sh --skip-build` 或 `./build-package.ps1 -SkipBuild`，只执行制品归集和校验。
@@ -81,6 +82,7 @@ bash deploy.sh down
 ## 3. 访问地址与配置
 
 - 管理后台：`http://服务器地址:8080`
+- 移动端 H5：`http://服务器地址:8080/h5/`（与管理端共用域名，无需额外 DNS 子域名）
 - 后端 API：`http://服务器地址:48080`
 - MySQL：服务器端口 `3306`
 - Redis：服务器端口 `6379`
@@ -97,6 +99,16 @@ bash deploy.sh down
 MySQL 初始化 SQL 和应用账号只会在首次创建数据卷时生效。已有数据库升级应执行 `backend/sql/module/cps-update.sql` 和 `backend/sql/module/ai-update.sql` 对应发布区块；如果已有数据卷曾使用不同账号密码，还需要在数据库内同步修改账号，不能只修改 `docker.env`。
 
 部署服务器需要 Docker Engine、Docker Compose v2，并能拉取 MySQL、Redis、Eclipse Temurin 和 Nginx 基础镜像。
+
+### mall-uniapp H5 发行
+
+当前 mall-uniapp 的 package.json 不包含可独立运行的 uni-app CLI 依赖，因此使用 HBuilderX 发行 H5：打开 `frontend/mall-uniapp`，选择“发行 → 网站-H5”，输出目录通常为 `unpackage/dist/build/h5`。H5 路由 base 已设置为 `/h5/`，在开发环境访问 `http://localhost:3000/h5/`，部署后访问管理端同源的 `/h5/`。在源码机器执行部署包脚本前，确认该目录存在 `index.html`。若 HBuilderX 输出到其他目录，可通过环境变量 `SHOPRO_H5_DIST` 指定：
+
+```bash
+SHOPRO_H5_DIST=/path/to/h5-dist bash build-package.sh
+```
+
+脚本会将该目录归集为 `frontend/mall-h5`，Docker Nginx 的 `/h5/` 子路径通过 `try_files` 支持 history 路由，并复用 `/app-api/` 代理。
 
 
 

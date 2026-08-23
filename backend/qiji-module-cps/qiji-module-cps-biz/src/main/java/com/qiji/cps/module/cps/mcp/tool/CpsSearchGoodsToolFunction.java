@@ -127,6 +127,15 @@ public class CpsSearchGoodsToolFunction
             /** 优惠券金额（元） */
             private BigDecimal couponPrice;
 
+            /** 优惠券使用门槛（元） */
+            private BigDecimal couponConditions;
+
+            /** 优惠券开始时间 */
+            private String couponStartTime;
+
+            /** 优惠券结束时间 */
+            private String couponEndTime;
+
             /** 佣金比例（%） */
             private BigDecimal commissionRate;
 
@@ -210,6 +219,9 @@ public class CpsSearchGoodsToolFunction
                         vo.setOriginalPrice(item.getOriginalPrice());
                         vo.setActualPrice(item.getActualPrice());
                         vo.setCouponPrice(item.getCouponPrice());
+                        vo.setCouponConditions(item.getCouponConditions());
+                        vo.setCouponStartTime(item.getCouponStartTime());
+                        vo.setCouponEndTime(item.getCouponEndTime());
                         vo.setCommissionRate(item.getCommissionRate());
                         vo.setCommissionAmount(item.getCommissionAmount());
                         vo.setMonthSales(item.getMonthSales());

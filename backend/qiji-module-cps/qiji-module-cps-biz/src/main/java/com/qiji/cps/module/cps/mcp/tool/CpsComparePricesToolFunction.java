@@ -106,6 +106,18 @@ public class CpsComparePricesToolFunction
             /** 券后价（元） */
             private BigDecimal actualPrice;
 
+            /** 优惠券金额（元） */
+            private BigDecimal couponPrice;
+
+            /** 优惠券使用门槛（元） */
+            private BigDecimal couponConditions;
+
+            /** 优惠券开始时间 */
+            private String couponStartTime;
+
+            /** 优惠券结束时间 */
+            private String couponEndTime;
+
             /** 预估佣金（元） */
             private BigDecimal commissionAmount;
 
@@ -117,6 +129,9 @@ public class CpsComparePricesToolFunction
 
             /** 商品goodsSign（拼多多转链必填） */
             private String goodsSign;
+
+            /** 搜索结果所属 API 供应商 */
+            private String vendorCode;
 
         }
 
@@ -159,9 +174,14 @@ public class CpsComparePricesToolFunction
                 pi.setMainPic(item.getMainPic());
                 pi.setOriginalPrice(item.getOriginalPrice());
                 pi.setActualPrice(item.getActualPrice());
+                pi.setCouponPrice(item.getCouponPrice());
+                pi.setCouponConditions(item.getCouponConditions());
+                pi.setCouponStartTime(item.getCouponStartTime());
+                pi.setCouponEndTime(item.getCouponEndTime());
                 pi.setCommissionAmount(item.getCommissionAmount());
                 pi.setMonthSales(item.getMonthSales());
                 pi.setGoodsSign(item.getGoodsSign());
+                pi.setVendorCode(item.getVendorCode());
                 // 净价 = 券后价 - 预估佣金（返利）
                 BigDecimal actual = item.getActualPrice() != null ? item.getActualPrice() : BigDecimal.ZERO;
                 BigDecimal commission = item.getCommissionAmount() != null ? item.getCommissionAmount() : BigDecimal.ZERO;

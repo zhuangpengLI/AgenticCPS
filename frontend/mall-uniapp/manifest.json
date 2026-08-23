@@ -202,7 +202,7 @@
     "template": "index.html",
     "router": {
       "mode": "history",
-      "base": "/"
+      "base": "/h5/"
     },
     "sdkConfigs": {
       "maps": {}

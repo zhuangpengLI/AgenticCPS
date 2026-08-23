@@ -61,7 +61,8 @@ public class CpsAiChatMessageBlockResolver implements AiChatMessageBlockResolver
             for (JsonNode item : items) {
                 Map<String, Object> product = new LinkedHashMap<>();
                 copy(product, item, "platformCode", "platformName", "goodsId", "goodsSign", "title", "mainPic",
-                        "originalPrice", "actualPrice", "couponPrice", "commissionAmount", "commissionRate",
+                        "originalPrice", "actualPrice", "couponPrice", "couponConditions", "couponStartTime",
+                        "couponEndTime", "netPrice", "commissionAmount", "commissionRate",
                         "monthSales", "shopName", "vendorCode", "itemLink", "promotionUrl");
                 if (!product.isEmpty()) {
                     product.put("actions", Collections.singletonList(action("OPEN_DETAIL", "查看详情", "READ_ONLY", product)));

@@ -7,6 +7,7 @@ $ScriptDir = $PSScriptRoot
 $BackendRoot = (Resolve-Path (Join-Path $ScriptDir "../..")).Path
 $ProjectRoot = (Resolve-Path (Join-Path $BackendRoot "..")).Path
 $FrontendRoot = Join-Path $ProjectRoot "frontend/admin-vue3"
+$MallRoot = Join-Path $ProjectRoot "frontend/mall-uniapp"
 
 function Invoke-Checked {
     param(
@@ -37,22 +38,31 @@ if ($SkipBuild) {
 
 $BackendJar = Join-Path $BackendRoot "qiji-server/target/qiji-server.jar"
 $FrontendDist = Join-Path $FrontendRoot "dist-prod"
+$MallH5Dist = if ($env:SHOPRO_H5_DIST) { $env:SHOPRO_H5_DIST } else { Join-Path $MallRoot "unpackage/dist/build/h5" }
 if (-not (Test-Path -LiteralPath $BackendJar -PathType Leaf)) {
     throw "未找到后端构建产物: $BackendJar"
 }
 if (-not (Test-Path -LiteralPath (Join-Path $FrontendDist "index.html") -PathType Leaf)) {
     throw "未找到前端构建产物: $FrontendDist/index.html"
 }
+if (-not (Test-Path -LiteralPath (Join-Path $MallH5Dist "index.html") -PathType Leaf)) {
+    throw "未找到 mall-uniapp H5 构建产物: $MallH5Dist/index.html。请使用 HBuilderX 发行 H5，或设置 SHOPRO_H5_DIST 指向 H5 dist 目录。"
+}
 
 Write-Host "[3/4] 归集后端、前端和数据库初始化文件"
 $DeployBackend = Join-Path $ScriptDir "backend"
 $DeployFrontendDist = Join-Path $ScriptDir "frontend/dist"
+$DeployMallH5Dist = Join-Path $ScriptDir "frontend/mall-h5"
 $DeployMysqlInit = Join-Path $ScriptDir "mysql/init"
 New-Item -ItemType Directory -Force -Path $DeployBackend, $DeployMysqlInit | Out-Null
 if (Test-Path -LiteralPath $DeployFrontendDist) {
     Remove-Item -LiteralPath $DeployFrontendDist -Recurse -Force
 }
+if (Test-Path -LiteralPath $DeployMallH5Dist) {
+    Remove-Item -LiteralPath $DeployMallH5Dist -Recurse -Force
+}
 Copy-Item -LiteralPath $FrontendDist -Destination $DeployFrontendDist -Recurse
+Copy-Item -LiteralPath $MallH5Dist -Destination $DeployMallH5Dist -Recurse
 Copy-Item -LiteralPath $BackendJar -Destination (Join-Path $DeployBackend "qiji-server.jar") -Force
 Copy-Item -LiteralPath (Join-Path $BackendRoot "sql/mysql/ruoyi-vue-pro.sql") -Destination (Join-Path $DeployMysqlInit "00-ruoyi-vue-pro.sql") -Force
 Copy-Item -LiteralPath (Join-Path $BackendRoot "sql/mysql/quartz.sql") -Destination (Join-Path $DeployMysqlInit "05-quartz.sql") -Force

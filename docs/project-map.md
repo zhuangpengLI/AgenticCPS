@@ -513,7 +513,7 @@ pnpm type-check
 pnpm lint
 ```
 
-`mall-uniapp` 当前 `package.json` 主要提供：
+`mall-uniapp` 当前 `package.json` 只提供代码格式化脚本；H5 开发/发行由 HBuilderX（uni-app CLI 依赖未纳入该工作区）负责：
 
 ```bash
 npm run prettier
@@ -545,6 +545,10 @@ pnpm install
 pnpm dev
 pnpm build:prod
 ```
+
+### mall-uniapp H5
+
+打开 `frontend/mall-uniapp`，在 HBuilderX 中运行 H5，开发服务使用 `http://localhost:3000/h5/`；发行 H5 后确认 `unpackage/dist/build/h5/index.html` 存在，再执行 `backend/script/docker/build-package.sh`（或 PowerShell 版本）归集部署制品。部署后通过管理端同源的 `/h5/` 子路径访问，无需额外域名。也可用 `SHOPRO_H5_DIST` 指向其他发行目录。
 
 ### admin-uniapp
 

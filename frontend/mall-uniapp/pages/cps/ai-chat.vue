@@ -23,7 +23,7 @@
         @record-start="startRecording"
         @record-stop="stopRecording"
       />
-      <AiChatHistoryDrawer :visible="state.historyOpen" :conversations="state.historyConversations" @close="state.historyOpen = false" @select="selectHistory" />
+      <AiChatHistoryDrawer :visible="state.historyOpen" :conversations="state.historyConversations" @close="state.historyOpen = false" @select="selectHistory" @delete="deleteHistory" />
     </view>
   </s-layout>
 </template>
@@ -49,6 +49,7 @@
     '比较 iPhone 在各平台的到手价',
     '查询我的返利余额和订单进度',
     '推荐一款预算 500 元的送礼好物',
+    '优化商品展示，并结合优惠券、到手价和返利给出购买建议',
   ];
   // Deployment can set SHOPRO_AI_CHAT_V2_ON=0 for a reversible UI rollback.
   const v2Enabled = import.meta.env.SHOPRO_AI_CHAT_V2_ON !== '0';
@@ -235,9 +236,35 @@
   async function showHistory() {
     const result = await AiChatApi.getConversations();
     const list = result?.data || [];
-    if (!list.length) { sheep.$helper.toast('暂无历史会话'); return; }
     state.historyConversations = list;
     state.historyOpen = true;
+  }
+
+  async function deleteHistory(conversation) {
+    if (state.conversationId === conversation.id && state.loading) {
+      sheep.$helper.toast('回复生成中，暂时无法删除当前会话');
+      return;
+    }
+    const title = conversation.title || conversation.roleName || 'AI 会话';
+    const confirmed = await new Promise((resolve) => {
+      uni.showModal({ title: '删除历史会话', content: `确定删除“${title}”吗？`, confirmColor: '#e34d59', success: (result) => resolve(result.confirm), fail: () => resolve(false) });
+    });
+    if (!confirmed) return;
+    const result = await AiChatApi.deleteConversation(conversation.id);
+    if (result?.code !== 0) { sheep.$helper.toast(result?.msg || '删除会话失败'); return; }
+    state.historyConversations = state.historyConversations.filter((item) => item.id !== conversation.id);
+    if (state.conversationId === conversation.id) {
+      state.conversationId = null;
+      state.messages = [];
+      state.input = '';
+      state.attachments = [];
+      state.error = '';
+      state.anchor = '';
+      state.lastContent = '';
+      state.lastAttachments = [];
+      state.lastAction = null;
+    }
+    sheep.$helper.toast('历史会话已删除');
   }
 
   async function selectHistory(picked) {

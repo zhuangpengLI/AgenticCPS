@@ -13,6 +13,7 @@ validate_artifacts() {
   for artifact in \
     "backend/qiji-server.jar" \
     "frontend/dist/index.html" \
+    "frontend/mall-h5/index.html" \
     "mysql/init/00-ruoyi-vue-pro.sql" \
     "mysql/init/05-quartz.sql" \
     "mysql/init/10-cps-all-in-one.sql" \
