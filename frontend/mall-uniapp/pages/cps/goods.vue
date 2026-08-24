@@ -271,6 +271,7 @@
     { name: '京东', value: 'jd' },
     { name: '拼多多', value: 'pdd' },
     { name: '抖音', value: 'douyin' },
+    { name: '唯品会', value: 'vip' },
   ];
   const sortTabs = [
     { name: '综合', value: 0 },
@@ -502,6 +503,9 @@
 
   onLoad((options = {}) => {
     state.recentKeywords = uni.getStorageSync(RECENT_KEY) || [];
+    if (options.platformCode) {
+      state.platformCode = decodeURIComponent(options.platformCode);
+    }
     if (options.keyword) {
       state.keyword = decodeURIComponent(options.keyword);
       onSearch();

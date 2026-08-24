@@ -38,7 +38,29 @@
       <el-col :xl="8" :lg="8" :md="24" :sm="24" :xs="24">
         <el-card shadow="never" class="panel-card mobile-panel">
           <template #header><div class="panel-header"><div><div class="panel-title">移动端 H5 演示</div><div class="panel-caption">预览 CPS 会员端核心页面</div></div><el-button link type="primary" @click="openMobile">打开移动端</el-button></div></template>
-          <div class="phone-stage"><div class="phone-shell"><div class="phone-notch"></div><div class="phone-screen"><div class="phone-topbar"><span>Agentic CPS</span><Icon icon="ep:search" :size="16" /></div><div class="phone-banner"><div class="banner-title">今日返利</div><div class="banner-amount">¥ {{ mobileRebate }}</div><div class="banner-tip">购物省钱 · 分享赚钱</div></div><div class="phone-grid"><div v-for="item in mobileActions" :key="item.label" class="phone-action"><Icon :icon="item.icon" :size="20" /><span>{{ item.label }}</span></div></div><div class="phone-section-title">精选好物 <span>查看更多 ›</span></div><div class="phone-goods"><div v-for="item in mobileGoods" :key="item.title" class="phone-good"><div class="good-image" :style="{ background: item.color }">{{ item.badge }}</div><div class="good-title">{{ item.title }}</div><div class="good-price">{{ item.price }}</div></div></div><div class="phone-tabs"><div v-for="item in mobileTabs" :key="item.label" class="phone-tab" :class="{ active: activeMobileTab === item.label }" @click="activeMobileTab = item.label"><Icon :icon="item.icon" :size="17" /><span>{{ item.label }}</span></div></div></div></div><div class="phone-tip">点击底部导航可切换演示状态</div></div>
+          <div class="phone-stage">
+            <div class="phone-shell">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <iframe
+                  class="mobile-preview-frame"
+                  :src="mobilePreviewUrl"
+                  title="CPS 会员端移动页面"
+                  @load="mobilePreviewReady = true"
+                  @error="mobilePreviewError = true"
+                ></iframe>
+                <div v-if="!mobilePreviewReady && !mobilePreviewError" class="mobile-preview-state">
+                  <Icon icon="ep:loading" :size="18" class="is-loading" />
+                  <span>正在加载真实移动端页面…</span>
+                </div>
+                <div v-else-if="mobilePreviewError" class="mobile-preview-state mobile-preview-error">
+                  <Icon icon="ep:warning-filled" :size="18" />
+                  <span>移动端页面暂时无法加载</span>
+                </div>
+              </div>
+            </div>
+            <div class="phone-tip">实时预览商城 H5 会员端，点击“打开移动端”可在新窗口操作</div>
+          </div>
         </el-card>
         <el-card shadow="never" class="panel-card shortcut-card"><template #header><div class="panel-header"><span class="panel-title">常用功能</span></div></template><div class="shortcut-grid"><div v-for="item in shortcuts" :key="item.name" class="shortcut-item" @click="router.push(item.url)"><span class="shortcut-icon" :style="{ color: item.color, background: `${item.color}15` }"><Icon :icon="item.icon" /></span><span>{{ item.name }}</span></div></div></el-card>
       </el-col>
@@ -56,7 +78,8 @@ import { useRouter } from 'vue-router'
 
 defineOptions({ name: 'Index' })
 const { t } = useI18n(); const router = useRouter(); const userStore = useUserStore(); const avatar = userStore.getUser.avatar; const username = userStore.getUser.nickname
-const updateTime = ref(dayjs().format('MM月DD日 HH:mm')); const activeMobileTab = ref('首页'); const pendingCount = ref(3)
+const updateTime = ref(dayjs().format('MM月DD日 HH:mm')); const pendingCount = ref(3)
+const mobilePreviewReady = ref(false); const mobilePreviewError = ref(false)
 type Metric = { key: string; label: string; value: number; decimals: number; change: number; changeText: string; icon: string; tone: string }
 const metrics = ref<Metric[]>([
   { key: 'orders', label: '今日订单数', value: 0, decimals: 0, change: 0, changeText: '—', icon: 'ep:shopping-cart', tone: 'blue' }, { key: 'commission', label: '今日佣金（元）', value: 0, decimals: 2, change: 0, changeText: '—', icon: 'ep:money', tone: 'orange' }, { key: 'rebate', label: '今日返利（元）', value: 0, decimals: 2, change: 0, changeText: '—', icon: 'ep:wallet', tone: 'green' }, { key: 'profit', label: '今日利润（元）', value: 0, decimals: 2, change: 0, changeText: '—', icon: 'ep:trend-charts', tone: 'purple' }, { key: 'members', label: '活跃会员数', value: 0, decimals: 0, change: 0, changeText: '实时', icon: 'ep:user', tone: 'cyan' }
@@ -65,12 +88,19 @@ const trendOptions = ref<EChartsOption>({ tooltip: { trigger: 'axis' }, legend: 
 const platforms = ref<{ name: string; value: number; percent: number; color: string }[]>([]); const colors = ['#2563eb', '#f97316', '#22c55e', '#8b5cf6', '#06b6d4']
 const activities = [{ title: '有 3 笔订单待确认收货', time: '建议及时跟进订单状态', type: 'warning', icon: 'ep:bell' }, { title: '本月返利结算进度 86%', time: '最后同步：刚刚', type: 'success', icon: 'ep:circle-check' }, { title: '平台连接状态正常', time: '淘宝联盟 · 京东 · 多多', type: 'info', icon: 'ep:connection' }]
 const shortcuts = [{ name: '订单管理', icon: 'ep:list', url: '/cps/order', color: '#2563eb' }, { name: '商品选品', icon: 'ep:goods', url: '/cps/goods-square', color: '#f97316' }, { name: '推广链接', icon: 'ep:link', url: '/cps/toolbox', color: '#22c55e' }, { name: '返利结算', icon: 'ep:wallet', url: '/cps/settlement', color: '#8b5cf6' }]
-const mobileActions = [{ label: '搜好物', icon: 'ep:search' }, { label: '比价', icon: 'ep:data-analysis' }, { label: '返利', icon: 'ep:wallet' }, { label: '邀请', icon: 'ep:share' }]; const mobileGoods = [{ title: '夏日清凉好物', price: '最高返 ¥18', badge: '精选', color: '#dbeafe' }, { title: '居家生活专场', price: '最高返 ¥26', badge: '热卖', color: '#ffedd5' }]; const mobileTabs = [{ label: '首页', icon: 'ep:home-filled' }, { label: '精选', icon: 'ep:star' }, { label: '订单', icon: 'ep:tickets' }, { label: '我的', icon: 'ep:user' }]; const mobileRebate = computed(() => metrics.value[2].value.toFixed(2))
+const mobilePreviewUrl = computed(() => {
+  const configuredDomain = String(import.meta.env.VITE_MALL_H5_DOMAIN || '').trim()
+  const base = /^https?:\/\//i.test(configuredDomain)
+    ? configuredDomain
+    : new URL(configuredDomain || '/h5/', window.location.origin).toString()
+  const normalizedBase = base.endsWith('/') ? base : `${base}/`
+  return new URL('pages/cps/index', normalizedBase).toString()
+})
 const money = (value: unknown) => Number(value || 0); const changeText = (today: number, yesterday: number) => !yesterday ? (today ? '新增' : '—') : `${today >= yesterday ? '+' : ''}${(((today - yesterday) / yesterday) * 100).toFixed(1)}%`
 async function loadDashboard() { try { const data = (await CpsStatisticsApi.getDashboard()) as unknown as CpsDashboardVO; const values = [data.todayOrderCount, money(data.todayCommission), money(data.todayRebate), money(data.todayProfit), data.todayActiveMembers]; const previous = [data.yesterdayOrderCount, money(data.yesterdayCommission), money(data.yesterdayRebate), money(data.yesterdayProfit), 0]; const changes = [changeText(values[0], previous[0]), changeText(values[1], previous[1]), changeText(values[2], previous[2]), changeText(values[3], previous[3]), '实时']; metrics.value = metrics.value.map((item, index) => ({ ...item, value: values[index] || 0, change: (values[index] || 0) - previous[index], changeText: changes[index] })) } catch { /* 空态 */ } }
 async function loadTrend() { try { const end = dayjs().format('YYYY-MM-DD'); const start = dayjs().subtract(6, 'day').format('YYYY-MM-DD'); const data = (await CpsStatisticsApi.getTrend({ startDate: start, endDate: end, platformCode: 'total' })) as unknown as CpsTrendVO; trendOptions.value = { ...trendOptions.value, xAxis: { ...(trendOptions.value.xAxis as object), data: data.dates || [] }, series: [{ name: '订单数', type: 'line', smooth: true, yAxisIndex: 1, data: data.orderCounts || [], areaStyle: { opacity: 0.08 }, itemStyle: { color: '#2563eb' } }, { name: '佣金（元）', type: 'line', smooth: true, data: data.commissions || [], itemStyle: { color: '#f97316' } }] } } catch { /* 空图表 */ } }
 async function loadPlatforms() { try { const end = dayjs().format('YYYY-MM-DD'); const start = dayjs().subtract(6, 'day').format('YYYY-MM-DD'); const data = (await CpsStatisticsApi.getPlatformSummary({ startDate: start, endDate: end })) as unknown as CpsPlatformSummaryVO[]; const total = data.reduce((sum, item) => sum + money(item.commissionAmount), 0); platforms.value = data.slice(0, 5).map((item, index) => ({ name: item.platformName || item.platformCode, value: money(item.commissionAmount), percent: total ? Math.round((money(item.commissionAmount) / total) * 100) : 0, color: colors[index] })) } catch { platforms.value = [] } }
-function openMobile() { const domain = import.meta.env.VITE_MALL_H5_DOMAIN || window.location.origin; window.open(`${domain}?page=/pages/cps/index`, '_blank') }
+function openMobile() { window.open(mobilePreviewUrl.value, '_blank', 'noopener,noreferrer') }
 onMounted(async () => { await Promise.all([loadDashboard(), loadTrend(), loadPlatforms()]); updateTime.value = dayjs().format('MM月DD日 HH:mm') })
 </script>
 
@@ -93,4 +123,23 @@ onMounted(async () => { await Promise.all([loadDashboard(), loadTrend(), loadPla
 @media (max-width: 1200px) { .metric-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 768px) { .metric-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .metric-card { margin-bottom: 0; } }
 @media (max-width: 480px) { .metric-row { grid-template-columns: 1fr; } }
+
+/* 宽屏下让左右两列的底部对齐，避免右侧快捷入口悬空 */
+@media (min-width: 1201px) {
+  .main-row { align-items: stretch; }
+  .main-row > .el-col { display: flex; flex-direction: column; }
+  .main-row > .el-col:first-child > .el-row { flex: 1; align-items: stretch; }
+  .main-row > .el-col:first-child > .el-row > .el-col { display: flex; }
+  .main-row > .el-col:first-child > .el-row > .el-col > .panel-card { width: 100%; }
+  .main-row > .el-col:last-child > .shortcut-card { display: flex; flex: 1; flex-direction: column; margin-top: 12px; }
+  .main-row > .el-col:last-child > .shortcut-card :deep(.el-card__body) { display: flex; flex: 1; align-items: center; }
+}
+
+/* 预览窗口直接加载商城 H5，保持手机外框但不再复制一份静态页面。 */
+.phone-screen { height: 405px; min-height: 0; }
+.mobile-preview-frame { display: block; width: 100%; height: 100%; border: 0; background: #f8fafc; }
+.mobile-preview-state { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #64748b; background: #f8fafc; font-size: 11px; }
+.mobile-preview-error { color: #dc2626; }
+.is-loading { animation: mobile-preview-spin 1s linear infinite; }
+@keyframes mobile-preview-spin { to { transform: rotate(360deg); } }
 </style>

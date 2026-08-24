@@ -72,6 +72,8 @@
   const emptyImage = '/static/goods-empty.png';
   const state = reactive({
     activityId: null,
+    platformCode: '',
+    keyword: '',
     loading: false,
     error: '',
     list: [],
@@ -115,9 +117,12 @@
     state.loading = true;
     state.error = '';
     try {
+      const filters = {};
+      if (state.platformCode) filters.platformCode = state.platformCode;
+      if (state.keyword) filters.keyword = state.keyword;
       const res = state.activityId
         ? await CpsMarketingApi.getActivitiesByIds([state.activityId])
-        : await CpsMarketingApi.getActivityCenter();
+        : await CpsMarketingApi.getActivityCenter(filters);
       const data = unwrap(res, '活动加载失败');
       state.list = Array.isArray(data) ? data : [];
     } catch (error) {
@@ -201,6 +206,12 @@
   onLoad((options = {}) => {
     const activityId = Number(options.activityId);
     state.activityId = Number.isSafeInteger(activityId) && activityId > 0 ? activityId : null;
+    if (options.platformCode) {
+      state.platformCode = decodeURIComponent(options.platformCode);
+    }
+    if (options.keyword) {
+      state.keyword = decodeURIComponent(options.keyword);
+    }
     loadActivities();
   });
   watch(
