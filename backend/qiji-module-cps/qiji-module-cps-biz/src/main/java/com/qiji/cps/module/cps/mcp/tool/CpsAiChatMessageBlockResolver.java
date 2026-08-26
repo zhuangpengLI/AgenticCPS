@@ -29,7 +29,12 @@ public class CpsAiChatMessageBlockResolver implements AiChatMessageBlockResolver
     @Override
     public boolean supports(String toolName) {
         return PRODUCT_TOOLS.contains(toolName) || "cps_compare_prices".equals(toolName)
-                || "cps_get_rebate_summary".equals(toolName) || "cps_generate_link".equals(toolName);
+                || "cps_get_rebate_summary".equals(toolName) || "cps_generate_link".equals(toolName)
+                || "cps_find_resonance_goods".equals(toolName)
+                || "cps_find_alternatives".equals(toolName)
+                || "cps_analyze_goods_detail".equals(toolName)
+                || "cps_analyze_order_profile".equals(toolName)
+                || "cps_analyze_order_trend".equals(toolName);
     }
 
     @Override
@@ -49,6 +54,21 @@ public class CpsAiChatMessageBlockResolver implements AiChatMessageBlockResolver
             if ("cps_generate_link".equals(toolName)) {
                 return Collections.singletonList(linkBlock(root));
             }
+            if ("cps_find_resonance_goods".equals(toolName)) {
+                return selectionReportBlock(root);
+            }
+            if ("cps_find_alternatives".equals(toolName)) {
+                return alternativesReportBlock(root);
+            }
+            if ("cps_analyze_goods_detail".equals(toolName)) {
+                return goodsDetailBlock(root);
+            }
+            if ("cps_analyze_order_profile".equals(toolName)) {
+                return Collections.singletonList(orderProfileBlock(root));
+            }
+            if ("cps_analyze_order_trend".equals(toolName)) {
+                return Collections.singletonList(orderTrendBlock(root));
+            }
         } catch (Exception ignored) {
             // The model still receives the original tool result; UI blocks are optional.
         }
@@ -64,6 +84,14 @@ public class CpsAiChatMessageBlockResolver implements AiChatMessageBlockResolver
                         "originalPrice", "actualPrice", "couponPrice", "couponConditions", "couponStartTime",
                         "couponEndTime", "netPrice", "commissionAmount", "commissionRate",
                         "monthSales", "shopName", "vendorCode", "itemLink", "promotionUrl");
+                copyJson(product, item, "resonanceScore", "sourceCount", "sourceHits", "scoreBreakdown",
+                        "alternativeScore", "priceDelta", "commissionRateDelta", "commissionAmountDelta",
+                        "commissionDelta", "analysisScore", "reasons", "riskWarnings", "risks");
+                // Keep the raw evidence fields for API compatibility and expose UI-friendly aliases.
+                aliasJson(product, "rankSources", "sourceHits");
+                aliasJson(product, "evidence", "reasons");
+                aliasJson(product, "riskNotes", "riskWarnings");
+                aliasJson(product, "riskNotes", "risks");
                 if (!product.isEmpty()) {
                     product.put("actions", Collections.singletonList(action("OPEN_DETAIL", "查看详情", "READ_ONLY", product)));
                     products.add(product);
@@ -88,6 +116,78 @@ public class CpsAiChatMessageBlockResolver implements AiChatMessageBlockResolver
         Map<String, Object> block = base("FOLLOW_UP", "推广链接已准备好");
         copy(block, root, "actualPrice", "commissionAmount", "shortUrl", "mobileUrl", "promotionUrl", "tpwd",
                 "commandLabel", "command");
+        return block;
+    }
+
+    private List<Map<String, Object>> selectionReportBlock(JsonNode root) {
+        List<Map<String, Object>> blocks = productBlock("SELECTION_REPORT", "多来源共振选品报告",
+                root.path("goods"));
+        if (blocks.isEmpty()) {
+            return blocks;
+        }
+        Map<String, Object> block = blocks.get(0);
+        copyJson(block, root, "candidateCount", "successfulSources", "sourceCounts", "sourceErrors",
+                "selectionNote");
+        if (root.has("selectionNote")) {
+            block.put("summary", root.path("selectionNote").asText());
+        }
+        if (root.has("sourceCounts")) {
+            block.put("evidence", Collections.singletonList(objectMapper.convertValue(root.path("sourceCounts"), Object.class)));
+        }
+        if (root.has("sourceErrors")) {
+            List<String> sourceErrors = new ArrayList<>();
+            root.path("sourceErrors").fields().forEachRemaining(entry ->
+                    sourceErrors.add(entry.getKey() + "：" + entry.getValue().asText()));
+            if (!sourceErrors.isEmpty()) {
+                block.put("riskNotes", sourceErrors);
+            }
+        }
+        return blocks;
+    }
+
+    private Map<String, Object> orderProfileBlock(JsonNode root) {
+        Map<String, Object> block = base("ORDER_PROFILE", "成交画像分析");
+        copyJson(block, root, "days", "analyzedOrders", "excludedOrders", "gmv", "estimatedRebate",
+                "realRebate", "averageOrderValue", "platformBreakdown", "priceBandBreakdown", "topProducts",
+                "insights", "dataLimitations", "error");
+        return block;
+    }
+
+    private List<Map<String, Object>> alternativesReportBlock(JsonNode root) {
+        List<Map<String, Object>> blocks = productBlock("ALTERNATIVES_REPORT", "高佣替代品分析",
+                root.path("goods"));
+        if (blocks.isEmpty()) {
+            return blocks;
+        }
+        Map<String, Object> block = blocks.get(0);
+        copyJson(block, root, "keyword", "referencePrice", "candidateCount", "selectionNote", "error");
+        if (root.has("selectionNote")) {
+            block.put("summary", root.path("selectionNote").asText());
+        }
+        return blocks;
+    }
+
+    private List<Map<String, Object>> goodsDetailBlock(JsonNode root) {
+        List<Map<String, Object>> blocks = productBlock("GOODS_ANALYSIS", "商品深度分析",
+                root.path("topGoods"));
+        Map<String, Object> block = blocks.isEmpty() ? base("GOODS_ANALYSIS", "商品深度分析") : blocks.get(0);
+        copyJson(block, root, "keyword", "platformCode", "sampledCount", "eligibleCount", "price",
+                "commission", "coupon", "sales", "platformBreakdown", "insights", "dataLimitations", "error");
+        if (root.has("insights")) {
+            block.put("evidence", objectMapper.convertValue(root.path("insights"), Object.class));
+        }
+        if (root.has("error")) {
+            block.put("summary", root.path("error").asText());
+        } else if (root.has("keyword")) {
+            block.put("summary", "已完成“" + root.path("keyword").asText() + "”的当前候选快照分析");
+        }
+        return Collections.singletonList(block);
+    }
+
+    private Map<String, Object> orderTrendBlock(JsonNode root) {
+        Map<String, Object> block = base("ORDER_TREND", "成交趋势分析");
+        copyJson(block, root, "days", "granularity", "analyzedOrders", "totalGmv",
+                "totalEstimatedRebate", "totalRealRebate", "points", "insights", "dataLimitations", "error");
         return block;
     }
 
@@ -121,6 +221,21 @@ public class CpsAiChatMessageBlockResolver implements AiChatMessageBlockResolver
             if (value != null && !value.isNull()) {
                 target.put(field, value.isNumber() ? value.numberValue() : value.asText());
             }
+        }
+    }
+
+    private void copyJson(Map<String, Object> target, JsonNode source, String... fields) {
+        for (String field : fields) {
+            JsonNode value = source.get(field);
+            if (value != null && !value.isNull()) {
+                target.put(field, objectMapper.convertValue(value, Object.class));
+            }
+        }
+    }
+
+    private void aliasJson(Map<String, Object> target, String targetField, String sourceField) {
+        if (target.containsKey(sourceField) && !target.containsKey(targetField)) {
+            target.put(targetField, target.get(sourceField));
         }
     }
 }

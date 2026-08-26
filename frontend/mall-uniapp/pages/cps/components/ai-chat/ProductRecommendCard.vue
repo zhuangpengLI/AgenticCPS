@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-  import { platformText, promotionUrl } from '@/sheep/helper/cps';
+  import { platformText } from '@/sheep/helper/cps';
   defineProps({ block: { type: Object, default: () => ({}) } });
   defineEmits(['action']);
   const price = (value) => value === undefined || value === null || value === '' ? '--' : Number(value).toFixed(2);
@@ -72,10 +72,29 @@
     return end || start;
   };
   const command = (item) => item.tpwd || item.command || '';
-  const buyAction = (item) => promotionUrl(item)
-    ? { type: 'OPEN_PROMOTION', label: `去${platformText(item.platformCode)}购买`, riskLevel: 'ATTRIBUTION_WRITE', payload: { url: promotionUrl(item), platformCode: item.platformCode } }
-    : { type: 'GENERATE_LINK', label: '生成购买链接', riskLevel: 'ATTRIBUTION_WRITE', payload: { platformCode: item.platformCode, goodsId: item.goodsId, goodsSign: item.goodsSign, vendorCode: item.vendorCode } };
-  const copyAction = (item) => ({ type: 'COPY_COMMAND', label: `复制${item.commandLabel || '口令'}`, payload: { value: command(item), platformCode: item.platformCode } });
+  // Always generate against the current logged-in member. A promotion URL
+  // embedded in an AI response may belong to another session/member and must
+  // never be opened directly from a purchase action.
+  const linkPayload = (item, delivery) => ({
+    platformCode: item.platformCode,
+    goodsId: item.goodsId,
+    goodsSign: item.goodsSign,
+    vendorCode: item.vendorCode,
+    ...(delivery ? { delivery } : {}),
+  });
+  const buyAction = (item) => ({
+    type: 'GENERATE_LINK',
+    label: '生成购买链接',
+    riskLevel: 'ATTRIBUTION_WRITE',
+    payload: linkPayload(item, 'open'),
+  });
+  // Copying a pre-populated command also needs a fresh member-scoped link.
+  const copyAction = (item) => ({
+    type: 'GENERATE_LINK',
+    label: `复制${item.commandLabel || '口令'}`,
+    riskLevel: 'ATTRIBUTION_WRITE',
+    payload: linkPayload(item, 'copy'),
+  });
 </script>
 
 <style scoped lang="scss">

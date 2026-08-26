@@ -1,9 +1,9 @@
 package com.qiji.cps.module.cps.controller.app.activity;
 
 import com.qiji.cps.framework.common.pojo.CommonResult;
-import com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionRespVO;
+import com.qiji.cps.module.cps.controller.app.CpsAppMemberContext;
 import com.qiji.cps.module.cps.controller.app.activity.vo.AppCpsRebateActivityPromotionReqVO;
 import com.qiji.cps.module.cps.service.activity.CpsRebateActivityService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,6 +35,6 @@ public class AppCpsRebateActivityController {
         serviceRequest.setActivityId(reqVO.getActivityId());
         serviceRequest.setChannelTag(reqVO.getChannelTag());
         return success(activityService.generatePromotionContent(
-                serviceRequest, SecurityFrameworkUtils.getLoginUserId()));
+                serviceRequest, CpsAppMemberContext.requireMemberId()));
     }
 }

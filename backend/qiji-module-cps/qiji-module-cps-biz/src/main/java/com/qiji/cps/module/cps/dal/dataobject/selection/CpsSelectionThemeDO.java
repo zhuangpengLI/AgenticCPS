@@ -65,6 +65,15 @@ public class CpsSelectionThemeDO extends TenantBaseDO {
 
     private LocalDateTime lastRefreshTime;
 
+    /** 刷新结果摘要或失败原因，供运营工作台展示。 */
+    private String refreshMessage;
+
+    /** 当前刷新租约开始时间，用于超时接管。 */
+    private LocalDateTime refreshStartedTime;
+
+    /** 当前刷新租约批次号，用于防止旧任务覆盖新结果。 */
+    private String refreshBatchNo;
+
     private Integer sort;
 
     private String remark;

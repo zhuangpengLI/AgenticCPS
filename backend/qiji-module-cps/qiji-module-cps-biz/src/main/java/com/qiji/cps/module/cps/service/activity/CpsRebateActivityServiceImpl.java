@@ -235,7 +235,7 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
             throw exception(REBATE_ACTIVITY_NOT_EXISTS);
         }
         if (SOURCE_DATAOKE.equalsIgnoreCase(firstText(activity.getSourceType(), ""))) {
-            return generateDtkActivityLink(activity, reqVO);
+            return generateDtkActivityLink(activity, reqVO, memberId);
         }
         if (SOURCE_HAODANKU.equalsIgnoreCase(firstText(activity.getSourceType(), ""))) {
             return generateHaodankuActivityLink(activity, reqVO, memberId);
@@ -350,7 +350,8 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
     }
 
     private CpsRebateActivityPromotionRespVO generateDtkActivityLink(CpsRebateActivityDO activity,
-                                                                      CpsRebateActivityPromotionReqVO reqVO) {
+                                                                      CpsRebateActivityPromotionReqVO reqVO,
+                                                                      Long memberId) {
         String promotionSceneId = parseDtkPromotionSceneId(activity);
         if (!StringUtils.hasText(promotionSceneId)) {
             return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(), "大淘客活动缺少官方转链场景 ID");
@@ -364,7 +365,10 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         request.setGoodsId(promotionSceneId);
         String actualAdzoneId = firstText(reqVO.getAdzoneId(), config.getDefaultAdzoneId());
         request.setAdzoneId(actualAdzoneId);
-        request.setExternalId(reqVO.getChannelTag());
+        CpsTransferRecordDO sidRecord = memberId == null ? null
+                : createPendingSidRecord(activity, memberId, actualAdzoneId, VENDOR_DATAOKE, PLATFORM_TAOBAO);
+        String attributionId = sidRecord == null ? reqVO.getChannelTag() : sidRecord.getAttributionToken();
+        request.setExternalId(attributionId);
         CpsPromotionLinkResult linkResult = dtkActivityVendorClient.generateActivityLink(request, config);
         if (linkResult == null) {
             return buildFailedPromotion(activity, reqVO, actualAdzoneId, "大淘客官方活动转链暂不可用");
@@ -373,14 +377,30 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         if (!isSafeExternalUrl(promotionUrl)) {
             return buildFailedPromotion(activity, reqVO, actualAdzoneId, "大淘客官方活动转链暂不可用：未返回有效公网链接");
         }
+        if (sidRecord != null) {
+            transferRecordMapper.updateById(CpsTransferRecordDO.builder()
+                    .id(sidRecord.getId())
+                    .promotionUrl(promotionUrl)
+                    .taoCommand(linkResult.getTpwd())
+                    .status(1)
+                    .build());
+        }
 
         String longTpwd = null;
         if (linkResult.getExtraFields() != null) {
             Object value = linkResult.getExtraFields().get("longTpwd");
             longTpwd = value == null ? null : String.valueOf(value);
         }
+        String attributionStatus = sidRecord != null
+                ? ATTRIBUTION_MEMBER_TRACKED
+                : StringUtils.hasText(attributionId) ? ATTRIBUTION_CHANNEL_TRACKED : ATTRIBUTION_UNTRACKED;
+        String attributionMessage = ATTRIBUTION_MEMBER_TRACKED.equals(attributionStatus)
+                ? "已使用可信会员归因标识，订单同步后可自动绑定会员"
+                : ATTRIBUTION_CHANNEL_TRACKED.equals(attributionStatus)
+                ? "当前链接仅支持渠道跟踪，不能自动绑定具体会员"
+                : "当前链接没有可信会员归因标识，下单后可通过订单号申请找回";
         return buildExternalPromotion(activity, reqVO, actualAdzoneId, promotionUrl, linkResult.getTpwd(), longTpwd,
-                "大淘客官方活动推广链接已生成");
+                "大淘客官方活动推广链接已生成", attributionStatus, attributionMessage);
     }
 
     private CpsRebateActivityPromotionRespVO generateHaodankuActivityLink(CpsRebateActivityDO activity,

@@ -442,6 +442,37 @@ class CpsRebateActivityServiceImplTest {
     }
 
     @Test
+    @DisplayName("generatePromotionContent - 大淘客活动使用当前会员的匿名归因标识")
+    void generatePromotionContent_usesMemberScopedDtkAttribution() {
+        CpsRebateActivityDO activity = buildActivity(13L, "淘宝会员会场", "taobao", "CPS", 88, 1);
+        activity.setSourceType("dataoke");
+        activity.setExternalActivityId("dtk:10002");
+        when(activityMapper.selectById(13L)).thenReturn(activity);
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .vendorCode("dataoke").platformCode("taobao")
+                .apiBaseUrl("https://openapi.dataoke.com/api")
+                .defaultAdzoneId("mm_default").build();
+        when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(config);
+        when(dtkActivityVendorClient.generateActivityLink(any(CpsPromotionLinkRequest.class), eq(config)))
+                .thenReturn(CpsPromotionLinkResult.builder().shortUrl("https://s.click.taobao.com/member").build());
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(13L);
+        reqVO.setChannelTag("wechat_a");
+
+        CpsRebateActivityPromotionRespVO result = service.generatePromotionContent(reqVO, 1002L);
+
+        ArgumentCaptor<CpsPromotionLinkRequest> captor = ArgumentCaptor.forClass(CpsPromotionLinkRequest.class);
+        verify(dtkActivityVendorClient).generateActivityLink(captor.capture(), eq(config));
+        assertEquals("10002", captor.getValue().getGoodsId());
+        assertTrue(captor.getValue().getExternalId() != null);
+        assertFalse("1002".equals(captor.getValue().getExternalId()));
+        assertFalse("wechat_a".equals(captor.getValue().getExternalId()));
+        assertEquals("MEMBER_TRACKED", result.getAttributionStatus());
+        verify(transferRecordMapper).insert(any(CpsTransferRecordDO.class));
+    }
+
+    @Test
     @DisplayName("generatePromotionContent - 滴滴测试活动使用联盟官方推广链接")
     void generatePromotionContent_usesDidiOfficialActivityLink() {
         CpsRebateActivityDO activity = buildActivity(24L, "滴滴联盟转链测试活动", "didi", "CPS", 0, 1);

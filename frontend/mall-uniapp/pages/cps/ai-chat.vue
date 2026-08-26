@@ -32,6 +32,7 @@
   import { nextTick, onBeforeUnmount, reactive } from 'vue';
   import { onLoad } from '@dcloudio/uni-app';
   import sheep from '@/sheep';
+  import { showAuthModal } from '@/sheep/hooks/useModal';
   import AiChatApi from '@/sheep/api/ai/chat';
   import { sendAiChatStream } from '@/sheep/api/ai/ai-chat-transport';
   import { startVoiceRecording, stopVoiceRecording, transcribeVoice } from '@/sheep/api/ai/ai-chat-voice';
@@ -194,14 +195,38 @@
     }
     if (action?.type === 'GENERATE_LINK') {
       const payload = action.payload || {};
-      const result = await CpsGoodsApi.generateLink({
-        platformCode: payload.platformCode,
-        goodsId: payload.goodsId,
-        goodsSign: payload.goodsSign,
-        vendorCode: payload.vendorCode,
-      });
+      if (!sheep.$store('user').isLogin || !uni.getStorageSync('token')) {
+        showAuthModal();
+        sheep.$helper.toast('请先登录后再生成购买链接');
+        return;
+      }
+      let result;
+      try {
+        result = await CpsGoodsApi.generateLink({
+          platformCode: payload.platformCode,
+          goodsId: payload.goodsId,
+          goodsSign: payload.goodsSign,
+          vendorCode: payload.vendorCode,
+        });
+      } catch (error) {
+        const message = error?.msg || error?.message || '';
+        if (/会员不能为空|请先登录|未登录|未授权|登录已过期|登陆已过期/i.test(message)) {
+          showAuthModal();
+          sheep.$helper.toast('请先登录后再生成购买链接');
+        } else {
+          sheep.$helper.toast(message || '生成链接失败');
+        }
+        return;
+      }
       if (result?.code === 0 && result.data) {
         if (item) Object.assign(item, result.data, { promotionUrl: promotionUrl(result.data) });
+        if (payload.delivery === 'copy') {
+          const value = result.data.tpwd || promotionUrl(result.data) || result.data.promotionContent || result.data.command;
+          if (!value) throw new Error('EMPTY_PROMOTION_VALUE');
+          await copyPromotionValue(value);
+          sheep.$helper.toast(result.data.tpwd ? '口令已复制，请打开对应APP购买' : '购买链接已复制');
+          return;
+        }
         try {
           const promotion = createPromotionAction(result.data, payload.platformCode);
           if (promotion.type === 'tpwd') {

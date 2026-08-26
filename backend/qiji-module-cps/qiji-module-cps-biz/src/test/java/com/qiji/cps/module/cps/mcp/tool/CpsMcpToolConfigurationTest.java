@@ -48,6 +48,11 @@ class CpsMcpToolConfigurationTest {
 
         List<ToolCallback> callbacks = configuration.cpsMcpToolCallbacks(
                 mock(CpsSearchGoodsToolFunction.class),
+                mock(CpsFindResonanceGoodsToolFunction.class),
+                mock(CpsFindAlternativesToolFunction.class),
+                mock(CpsAnalyzeGoodsDetailToolFunction.class),
+                mock(CpsAnalyzeOrderProfileToolFunction.class),
+                mock(CpsAnalyzeOrderTrendToolFunction.class),
                 mock(CpsComparePricesToolFunction.class),
                 mock(CpsGenerateLinkToolFunction.class),
                 mock(CpsQueryOrdersToolFunction.class),
@@ -73,7 +78,9 @@ class CpsMcpToolConfigurationTest {
                 .map(callback -> callback.getToolDefinition().name())
                 .collect(Collectors.toSet());
 
-        assertTrue(names.containsAll(Set.of("cps_search_goods", "cps_compare_prices", "cps_generate_link",
+        assertTrue(names.containsAll(Set.of("cps_search_goods", "cps_find_resonance_goods",
+                "cps_find_alternatives", "cps_analyze_goods_detail", "cps_analyze_order_profile", "cps_analyze_order_trend",
+                "cps_compare_prices", "cps_generate_link",
                 "cps_promotion_strategy_advice", "cps_explain_rebate")));
         assertFalse(names.stream().anyMatch(name -> name.startsWith("ps_")));
 
@@ -113,6 +120,11 @@ class CpsMcpToolConfigurationTest {
     void cpsMcpToolCallbacks_qualifiesCpxListTasksBeanBecauseSceneRecommendationExtendsIt() throws Exception {
         Method method = CpsMcpToolConfiguration.class.getDeclaredMethod("cpsMcpToolCallbacks",
                 CpsSearchGoodsToolFunction.class,
+                CpsFindResonanceGoodsToolFunction.class,
+                CpsFindAlternativesToolFunction.class,
+                CpsAnalyzeGoodsDetailToolFunction.class,
+                CpsAnalyzeOrderProfileToolFunction.class,
+                CpsAnalyzeOrderTrendToolFunction.class,
                 CpsComparePricesToolFunction.class,
                 CpsGenerateLinkToolFunction.class,
                 CpsQueryOrdersToolFunction.class,
@@ -157,6 +169,11 @@ class CpsMcpToolConfigurationTest {
         });
         List<ToolCallback> callbacks = configuration.cpsMcpToolCallbacks(
                 searchFunction,
+                mock(CpsFindResonanceGoodsToolFunction.class),
+                mock(CpsFindAlternativesToolFunction.class),
+                mock(CpsAnalyzeGoodsDetailToolFunction.class),
+                mock(CpsAnalyzeOrderProfileToolFunction.class),
+                mock(CpsAnalyzeOrderTrendToolFunction.class),
                 mock(CpsComparePricesToolFunction.class),
                 mock(CpsGenerateLinkToolFunction.class),
                 mock(CpsQueryOrdersToolFunction.class),
@@ -209,6 +226,11 @@ class CpsMcpToolConfigurationTest {
         });
         List<ToolCallback> callbacks = new CpsMcpToolConfiguration().cpsMcpToolCallbacks(
                 searchFunction,
+                mock(CpsFindResonanceGoodsToolFunction.class),
+                mock(CpsFindAlternativesToolFunction.class),
+                mock(CpsAnalyzeGoodsDetailToolFunction.class),
+                mock(CpsAnalyzeOrderProfileToolFunction.class),
+                mock(CpsAnalyzeOrderTrendToolFunction.class),
                 mock(CpsComparePricesToolFunction.class),
                 mock(CpsGenerateLinkToolFunction.class),
                 mock(CpsQueryOrdersToolFunction.class),

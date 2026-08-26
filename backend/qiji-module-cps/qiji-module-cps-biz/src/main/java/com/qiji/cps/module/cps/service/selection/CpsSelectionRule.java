@@ -28,6 +28,7 @@ public class CpsSelectionRule {
     private Integer sortType;
     private String sortBy;
     private Integer pullCount;
+    private Boolean autoRefresh;
     private Map<String, BigDecimal> platformWeights;
     private String vendorThemeSource;
     private String externalThemeId;

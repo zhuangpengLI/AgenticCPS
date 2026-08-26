@@ -1,5 +1,6 @@
 package com.qiji.cps.module.cps.dal.mysql.selection;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.mybatis.core.mapper.BaseMapperX;
 import com.qiji.cps.framework.mybatis.core.query.LambdaQueryWrapperX;
@@ -70,5 +71,50 @@ public interface CpsSelectionThemeMapper extends BaseMapperX<CpsSelectionThemeDO
                     .or().like(CpsSelectionThemeDO::getTags, keyword));
         }
         return selectList(wrapper);
+    }
+
+    default List<CpsSelectionThemeDO> selectAiSavedFilterList() {
+        return selectList(new LambdaQueryWrapperX<CpsSelectionThemeDO>()
+                .eq(CpsSelectionThemeDO::getThemeType, CpsSelectionConstants.ThemeType.AI_SAVED_FILTER)
+                .eq(CpsSelectionThemeDO::getStatus, CpsSelectionConstants.ThemeStatus.DRAFT)
+                .orderByAsc(CpsSelectionThemeDO::getId));
+    }
+
+    default int claimAiSavedFilterRefresh(Long id, String batchNo, LocalDateTime startedAt,
+                                          LocalDateTime staleBefore) {
+        return update(null, new LambdaUpdateWrapper<CpsSelectionThemeDO>()
+                .eq(CpsSelectionThemeDO::getId, id)
+                .eq(CpsSelectionThemeDO::getThemeType, CpsSelectionConstants.ThemeType.AI_SAVED_FILTER)
+                .eq(CpsSelectionThemeDO::getStatus, CpsSelectionConstants.ThemeStatus.DRAFT)
+                .and(w -> w.ne(CpsSelectionThemeDO::getRefreshStatus,
+                                CpsSelectionConstants.ImportTaskStatus.PROCESSING)
+                        .or().isNull(CpsSelectionThemeDO::getRefreshStatus)
+                        .or().isNull(CpsSelectionThemeDO::getRefreshStartedTime)
+                        .or().lt(CpsSelectionThemeDO::getRefreshStartedTime, staleBefore))
+                .set(CpsSelectionThemeDO::getRefreshStatus, CpsSelectionConstants.ImportTaskStatus.PROCESSING)
+                .set(CpsSelectionThemeDO::getRefreshMessage, "正在刷新")
+                .set(CpsSelectionThemeDO::getRefreshStartedTime, startedAt)
+                .set(CpsSelectionThemeDO::getRefreshBatchNo, batchNo));
+    }
+
+    default int finishAiSavedFilterRefresh(Long id, String batchNo, String status,
+                                           String message, LocalDateTime finishedAt) {
+        return update(null, new LambdaUpdateWrapper<CpsSelectionThemeDO>()
+                .eq(CpsSelectionThemeDO::getId, id)
+                .eq(CpsSelectionThemeDO::getRefreshStatus, CpsSelectionConstants.ImportTaskStatus.PROCESSING)
+                .eq(CpsSelectionThemeDO::getRefreshBatchNo, batchNo)
+                .set(CpsSelectionThemeDO::getRefreshStatus, status)
+                .set(CpsSelectionThemeDO::getRefreshMessage, message)
+                .set(CpsSelectionThemeDO::getLastRefreshTime, finishedAt)
+                .set(CpsSelectionThemeDO::getRefreshStartedTime, null)
+                .set(CpsSelectionThemeDO::getRefreshBatchNo, null));
+    }
+
+    default int renewAiSavedFilterRefresh(Long id, String batchNo, LocalDateTime renewedAt) {
+        return update(null, new LambdaUpdateWrapper<CpsSelectionThemeDO>()
+                .eq(CpsSelectionThemeDO::getId, id)
+                .eq(CpsSelectionThemeDO::getRefreshStatus, CpsSelectionConstants.ImportTaskStatus.PROCESSING)
+                .eq(CpsSelectionThemeDO::getRefreshBatchNo, batchNo)
+                .set(CpsSelectionThemeDO::getRefreshStartedTime, renewedAt));
     }
 }

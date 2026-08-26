@@ -19,17 +19,18 @@ class CpsAiChatToolActionProviderTest {
     private final CpsAiChatToolActionProvider provider = new CpsAiChatToolActionProvider();
 
     @Test
-    void shouldProvideAllTwentyActionsWithUniqueStableIntents() {
+    void shouldProvideAllActionsWithUniqueStableIntents() {
         List<AiChatToolAction> actions = provider.getToolActions();
 
-        assertEquals(20, actions.size());
+        assertEquals(25, actions.size());
         assertEquals(Set.of(
                 "SEARCH_GOODS", "COMPARE_PRICES", "GENERATE_LINK", "QUERY_ORDERS",
                 "GET_REBATE_SUMMARY", "RECOMMEND_BY_SCENE", "PURCHASE_DECISION",
                 "PROMOTION_STRATEGY_ADVICE", "EXPLAIN_REBATE", "LIST_SELECTION_THEMES",
                 "RECOMMEND_FROM_SELECTION_THEME", "GET_REBATE_BALANCE", "CREATE_TOKEN_EXCHANGE",
                 "QUERY_EXCHANGE_STATUS", "LIST_TASKS", "GET_TASK_DETAIL", "GENERATE_TRACKING_LINK",
-                "QUERY_CONVERSIONS", "RECOMMEND_TASKS_BY_SCENE", "SEARCH_ARTICLES"),
+                "QUERY_CONVERSIONS", "RECOMMEND_TASKS_BY_SCENE", "SEARCH_ARTICLES", "FIND_RESONANCE_GOODS",
+                "FIND_ALTERNATIVES", "ANALYZE_GOODS_DETAIL", "ANALYZE_ORDER_PROFILE", "ANALYZE_ORDER_TREND"),
                 actions.stream().map(AiChatToolAction::getIntent).collect(java.util.stream.Collectors.toSet()));
         assertEquals(actions.size(), new HashSet<>(actions.stream().map(AiChatToolAction::getIntent).toList()).size());
         assertEquals(actions.size(), new HashSet<>(actions.stream().map(AiChatToolAction::getToolName).toList()).size());

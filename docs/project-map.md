@@ -103,7 +103,7 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 | `service` | 核心业务：goods、toolbox、activity、order、rebate、freeze、exchange、risk、statistics、withdraw、transfer、vendor、adzone、selection、cpx。 |
 | `dal/dataobject` + `dal/mysql` | CPS 表 DO 与 MyBatis Mapper，包括 `cps_rebate_activity` 活动卡片配置、`cps_selection_theme` 选品主题、`cps_selection_theme_item` 主题商品快照和加密的 `cps_platform_onboarding_draft` 草稿；CPX 新增 `cpx_task`、`cpx_offer`、`cpx_material`、`cpx_article`、`cpx_platform_profile`、`cpx_tracking_link`、`cpx_event`、`cpx_conversion`、`cpx_settlement_record`、`cpx_lead_detail`。 |
 | `job` | 定时任务：订单同步、返利结算、冻结解冻、统计聚合。 |
-| `mcp/tool` | Agent 可调用工具：搜索、比价、转链、查订单、查返利汇总、推广策略建议、返利规则咨询、AIoT 场景推荐、购买决策、选品库主题查询与主题商品推荐、Token 兑换查询/创建，以及 CPX 任务/转化/内容工具。 |
+| `mcp/tool` | Agent 可调用工具：搜索、比价、转链、查订单、商品深度分析、成交画像、返利汇总、多来源共振选品、高佣替代品、推广策略建议、返利规则咨询、AIoT 场景推荐、购买决策、选品库主题查询与主题商品推荐、Token 兑换查询/创建，以及 CPX 任务/转化/内容工具。 |
 | `config` | CPS 缓存、aitoken 兑换配置。 |
 
 ## 3. 数据流是什么
@@ -245,6 +245,12 @@ CPS 聚合 POM：`backend/qiji-module-cps/pom.xml`。
 - `CpsSelectionAiRecommendService`：规则评分决定排序，LLM/文案能力不可用时仍可返回稳定推荐；文案不得覆盖商品 ID、价格、佣金等第三方事实字段。
 - `cps_selection_theme` / `cps_selection_theme_item`：选品主题主表与主题商品快照表，均带租户、软删、状态与排序索引。
 - `CpsGoodsMasterServiceImpl.importSelectionItem()` 可将选品主题商品快照导入阶段 1 商品主档，按 `platformCode + vendorCode + goodsId + goodsSign` 复用来源映射并追加价格快照。
+
+### 3.1.4.1 AI 选品工作台
+
+`frontend/admin-vue3/src/views/ai/chat/index` 提供选品分析/订单分析双模式、快捷场景、流式任务进度、结构化报告、CSV 导出和商品人工复核标记。保存的 AI 筛选条件复用 `cps_selection_theme` 草稿（`theme_type=AI_SAVED_FILTER`、`goods_square_visible=0`），可再次分析或删除；它们仍然只是运营分析条件，不会直接生成推广链接或改变返利资产。
+
+后端 MCP 工具包括多来源共振选品、高佣替代品、商品深度分析、成交画像和成交趋势，新增工具必须同时更新回调注册、风险清单、AI 工具种子 SQL 和结构化消息解析器。
 
 ### 3.1.5 阶段 1 商品主档与券池
 
@@ -620,6 +626,7 @@ bash deploy.sh down
 - 选品库服务：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/selection/CpsSelectionThemeServiceImpl.java`
 - 选品库 AI 推荐：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/selection/CpsSelectionAiRecommendService.java`
 - 选品库前端：`frontend/admin-vue3/src/views/cps/selection/theme/index.vue`
+- AI 选品工作台：`frontend/admin-vue3/src/views/ai/chat/index/components/workbench/CpsSelectionWorkbench.vue`；保存条件刷新处理器：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/job/CpsAiSavedFilterRefreshJob.java`
 - 商品主档 Controller：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/admin/goodsmaster/CpsGoodsMasterController.java`
 - 商品主档服务：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/service/goods/master/CpsGoodsMasterServiceImpl.java`
 - 商品搜索/转链 Controller：`backend/qiji-module-cps/qiji-module-cps-biz/src/main/java/com/qiji/cps/module/cps/controller/app/goods/AppCpsGoodsController.java`

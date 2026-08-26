@@ -3,6 +3,111 @@ import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { getAccessToken } from '@/utils/auth'
 import { config } from '@/config/axios/config'
 
+export type ChatMessageBlockType =
+  | 'PRODUCT_RECOMMEND'
+  | 'PRODUCT_COMPARE'
+  | 'REBATE_SUMMARY'
+  | 'FOLLOW_UP'
+  | 'SELECTION_REPORT'
+  | 'ALTERNATIVES_REPORT'
+  | 'GOODS_ANALYSIS'
+  | 'ORDER_PROFILE'
+  | 'ORDER_TREND'
+  | (string & {})
+
+export interface ChatMessageBlockAction {
+  type: string
+  label: string
+  riskLevel?: string
+  payload?: Record<string, unknown>
+}
+
+export interface ChatMessageProductItem {
+  platformCode?: string
+  platformName?: string
+  goodsId?: string | number
+  goodsSign?: string
+  title?: string
+  mainPic?: string
+  originalPrice?: string | number
+  actualPrice?: string | number
+  couponPrice?: string | number
+  couponConditions?: string
+  couponStartTime?: string
+  couponEndTime?: string
+  netPrice?: string | number
+  commissionAmount?: string | number
+  commissionRate?: string | number
+  monthSales?: string | number
+  shopName?: string
+  vendorCode?: string
+  itemLink?: string
+  promotionUrl?: string
+  resonanceScore?: string | number
+  alternativeScore?: string | number
+  priceDelta?: string | number
+  commissionDelta?: string | number
+  rankSources?: string[]
+  evidence?: Array<string | Record<string, unknown>>
+  riskNotes?: string[]
+  actions?: ChatMessageBlockAction[]
+  [key: string]: unknown
+}
+
+export interface ChatMessageBlock {
+  id: string
+  version: number
+  type: ChatMessageBlockType
+  title?: string
+  subtitle?: string
+  content?: string
+  summary?: string
+  items?: ChatMessageProductItem[]
+  criteria?: Record<string, unknown> | Array<string | Record<string, unknown>>
+  evidence?: Array<string | Record<string, unknown>>
+  riskNotes?: string[]
+  risks?: string[]
+  actions?: ChatMessageBlockAction[]
+  availableBalance?: string | number
+  frozenBalance?: string | number
+  totalRebate?: string | number
+  withdrawnAmount?: string | number
+  accountStatus?: string
+  actualPrice?: string | number
+  commissionAmount?: string | number
+  shortUrl?: string
+  mobileUrl?: string
+  promotionUrl?: string
+  tpwd?: string
+  commandLabel?: string
+  command?: string
+  [key: string]: unknown
+}
+
+export type ChatTaskStatus = 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED'
+export type ChatTaskStepStatus = 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'SKIPPED'
+
+export interface ChatTaskStep {
+  id: string
+  label: string
+  status: ChatTaskStepStatus
+  message?: string
+}
+
+/**
+ * 前端流式任务状态。该字段只存在于当前页面的临时消息，不改变后端消息接口。
+ * 用于把工具事件转换成可理解的任务进度，并为失败任务提供重试入口。
+ */
+export interface ChatTaskProgress {
+  status: ChatTaskStatus
+  percent: number
+  currentStep?: string
+  summary?: string
+  error?: string
+  retryable?: boolean
+  steps: ChatTaskStep[]
+}
+
 // 聊天VO
 export interface ChatMessageVO {
   id: number // 编号
@@ -34,7 +139,9 @@ export interface ChatMessageVO {
   createTime: Date // 创建时间
   roleAvatar: string // 角色头像
   userAvatar: string // 用户头像
+  blocks?: ChatMessageBlock[] // 允许列表业务工具生成的结构化展示块
   toolExecutions?: ToolExecutionVO[] // 当前回答的工具执行状态（仅当前页面保留）
+  taskProgress?: ChatTaskProgress // 当前页面的任务进度（仅流式执行期间/结果摘要使用）
   toolIntent?: string // 仅发送时使用的隐藏路由意图
   intentRequestId?: string // 仅发送时使用的幂等请求编号
 }

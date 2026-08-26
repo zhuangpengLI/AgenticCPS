@@ -2,8 +2,8 @@ package com.qiji.cps.module.cps.controller.app.cpx;
 
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
-import com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils;
 import com.qiji.cps.module.cps.controller.admin.cpx.vo.CpxTaskRespVO;
+import com.qiji.cps.module.cps.controller.app.CpsAppMemberContext;
 import com.qiji.cps.module.cps.controller.app.cpx.vo.AppCpxTrackingLinkCreateReqVO;
 import com.qiji.cps.module.cps.controller.app.cpx.vo.AppCpxTrackingLinkRespVO;
 import com.qiji.cps.module.cps.dal.dataobject.cpx.CpxConversionDO;
@@ -50,14 +50,14 @@ public class AppCpxTaskController {
     @PostMapping("/tracking-link")
     @Operation(summary = "生成 CPX tracking link")
     public CommonResult<AppCpxTrackingLinkRespVO> generateTrackingLink(@Valid @RequestBody AppCpxTrackingLinkCreateReqVO createReqVO) {
-        Long memberId = SecurityFrameworkUtils.getLoginUserId();
+        Long memberId = CpsAppMemberContext.requireMemberId();
         return success(BeanUtils.toBean(taskService.generateTrackingLink(createReqVO, memberId), AppCpxTrackingLinkRespVO.class));
     }
 
     @GetMapping("/my-conversions")
     @Operation(summary = "查询我的 CPX 转化")
     public CommonResult<List<CpxConversionDO>> getMyConversions(@RequestParam(value = "limit", required = false) Integer limit) {
-        Long memberId = SecurityFrameworkUtils.getLoginUserId();
+        Long memberId = CpsAppMemberContext.requireMemberId();
         return success(taskService.listMemberConversions(memberId, limit));
     }
 }

@@ -28,6 +28,7 @@ public class CpsSelectionThemeRespVO {
     private LocalDateTime endTime;
     private String refreshStatus;
     private LocalDateTime lastRefreshTime;
+    private String refreshMessage;
     private Integer sort;
     private String remark;
     private LocalDateTime createTime;

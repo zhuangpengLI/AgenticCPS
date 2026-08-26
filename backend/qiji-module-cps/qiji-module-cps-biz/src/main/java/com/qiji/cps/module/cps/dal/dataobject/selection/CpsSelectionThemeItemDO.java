@@ -74,6 +74,9 @@ public class CpsSelectionThemeItemDO extends TenantBaseDO {
 
     private Integer topFlag;
 
+    /** 是否经过人工排序、置顶或状态调整：0 否，1 是。 */
+    private Integer manualAdjusted;
+
     private String status;
 
     private String sourceType;

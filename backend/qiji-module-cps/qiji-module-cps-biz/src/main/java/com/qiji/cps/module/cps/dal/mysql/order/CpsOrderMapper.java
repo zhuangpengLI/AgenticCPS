@@ -150,6 +150,21 @@ public interface CpsOrderMapper extends BaseMapperX<CpsOrderDO> {
     }
 
     /**
+     * 查询可信会员在指定时间窗口内的订单，用于只读成交画像分析。
+     *
+     * <p>调用方必须传入从登录或签名上下文解析出的 memberId，不能接受请求体身份。</p>
+     */
+    default List<CpsOrderDO> selectRecentListByMemberId(Long memberId, LocalDateTime startTime,
+                                                         LocalDateTime endTime, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 500));
+        return selectList(new LambdaQueryWrapperX<CpsOrderDO>()
+                .eq(CpsOrderDO::getMemberId, memberId)
+                .betweenIfPresent(CpsOrderDO::getCreateTime, startTime, endTime)
+                .orderByDesc(CpsOrderDO::getId)
+                .last("LIMIT " + safeLimit));
+    }
+
+    /**
      * 按日期统计各平台订单聊合数据（给定日期、租户）
      */
     List<Map<String, Object>> selectDailyStatsByDate(@Param("statDate") LocalDate statDate,

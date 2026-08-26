@@ -18,7 +18,11 @@ public class CpsMcpToolRiskRegistry {
     static {
         Map<String, CpsMcpToolRisk> risks = new LinkedHashMap<>();
         registerReadOnly(risks,
-                "cps_search_goods", "cps_compare_prices", "cps_query_orders", "cps_get_rebate_summary",
+                "cps_search_goods", "cps_find_resonance_goods", "cps_find_alternatives", "cps_analyze_goods_detail",
+                "cps_analyze_order_profile",
+                "cps_analyze_order_trend",
+                "cps_compare_prices", "cps_query_orders",
+                "cps_get_rebate_summary",
                 "cps_recommend_by_scene", "cps_purchase_decision", "cps_list_selection_themes",
                 "cps_promotion_strategy_advice", "cps_explain_rebate", "cps_get_rebate_balance",
                 "cps_query_exchange_status", "cpx_list_tasks", "cpx_get_task_detail",

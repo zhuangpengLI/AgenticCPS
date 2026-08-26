@@ -85,7 +85,10 @@ class CpsMcpAuthorizationServiceTest {
     void authorizationPolicy_coversEveryRegisteredCpsAndCpxTool() {
         CpsMcpToolRiskRegistry registry = new CpsMcpToolRiskRegistry();
         Set<String> registeredTools = Set.of(
-                "cps_search_goods", "cps_compare_prices", "cps_generate_link", "cps_query_orders",
+                "cps_search_goods", "cps_find_resonance_goods", "cps_find_alternatives", "cps_analyze_goods_detail",
+                "cps_analyze_order_profile",
+                "cps_analyze_order_trend",
+                "cps_compare_prices", "cps_generate_link", "cps_query_orders",
                 "cps_get_rebate_summary", "cps_recommend_by_scene", "cps_purchase_decision",
                 "cps_promotion_strategy_advice", "cps_explain_rebate",
                 "cps_list_selection_themes", "cps_recommend_from_selection_theme", "cps_get_rebate_balance",
@@ -95,6 +98,11 @@ class CpsMcpAuthorizationServiceTest {
 
         assertEquals(registeredTools, registry.getRegisteredTools());
         assertEquals(CpsMcpToolRisk.READ_ONLY, registry.getRisk("cps_search_goods"));
+        assertEquals(CpsMcpToolRisk.READ_ONLY, registry.getRisk("cps_find_resonance_goods"));
+        assertEquals(CpsMcpToolRisk.READ_ONLY, registry.getRisk("cps_find_alternatives"));
+        assertEquals(CpsMcpToolRisk.READ_ONLY, registry.getRisk("cps_analyze_goods_detail"));
+        assertEquals(CpsMcpToolRisk.READ_ONLY, registry.getRisk("cps_analyze_order_profile"));
+        assertEquals(CpsMcpToolRisk.READ_ONLY, registry.getRisk("cps_analyze_order_trend"));
         assertEquals(CpsMcpToolRisk.ATTRIBUTION_WRITE, registry.getRisk("cps_generate_link"));
         assertEquals(CpsMcpToolRisk.ASSET_WRITE, registry.getRisk("cps_create_token_exchange"));
         assertTrue(registry.getRisk("unknown_tool") == null);

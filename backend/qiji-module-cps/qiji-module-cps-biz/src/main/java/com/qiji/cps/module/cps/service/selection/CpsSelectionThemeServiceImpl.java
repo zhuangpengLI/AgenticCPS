@@ -1,5 +1,7 @@
 package com.qiji.cps.module.cps.service.selection;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
@@ -16,6 +18,7 @@ import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsResp
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeAiRecommendReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionAiReviewReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemImportReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemSortReqVO;
@@ -30,6 +33,8 @@ import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTe
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeVendorPullReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeItemDO;
+import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionAiReviewDO;
+import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionAiReviewMapper;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeItemMapper;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeMapper;
 import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
@@ -37,18 +42,21 @@ import com.qiji.cps.module.cps.enums.CpsVendorCodeEnum;
 import com.qiji.cps.module.cps.service.goods.CpsGoodsSquareService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.SELECTION_THEME_CODE_DUPLICATE;
@@ -65,13 +73,24 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
     private static final int DEFAULT_SYNC_THEME_PAGE_SIZE = 20;
     private static final int DEFAULT_SYNC_GOODS_PULL_COUNT = 20;
     private static final int DEFAULT_SYNC_MAX_PAGES = 1;
+    private static final int REFRESH_LEASE_MINUTES = 30;
     private static final DateTimeFormatter TEMPLATE_CODE_SUFFIX = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    private static final Set<String> RULE_FIELDS = Set.of(
+            "keywords", "platforms", "vendorCode", "priceLowerLimit", "priceUpperLimit",
+            "minCommissionRate", "minCommissionAmount", "minMonthSales", "couponAmountMin",
+            "onlyCoupon", "categoryId", "channelCode", "activityTags", "sortType", "sortBy",
+            "pullCount", "autoRefresh", "platformWeights", "vendorThemeSource", "externalThemeId",
+            "externalThemeName", "themeListUrl", "themeListParams", "goodsListUrl", "goodsListParams",
+            "prompt", "toolIntent", "mode");
 
     @Resource
     private CpsSelectionThemeMapper themeMapper;
 
     @Resource
     private CpsSelectionThemeItemMapper itemMapper;
+
+    @Resource
+    private CpsSelectionAiReviewMapper aiReviewMapper;
 
     @Resource
     private CpsGoodsSquareService goodsSquareService;
@@ -91,7 +110,8 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
     @Resource
     private CpsPlatformClientFactory platformClientFactory;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -222,6 +242,7 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
                     .id(item.getId())
                     .sort(item.getSort())
                     .topFlag(item.getTopFlag())
+                    .manualAdjusted(1)
                     .build());
         }
     }
@@ -230,7 +251,8 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
     public void updateItemStatus(CpsSelectionThemeItemStatusReqVO reqVO) {
         for (Long id : reqVO.getIds()) {
             validateItemExists(id);
-            itemMapper.updateById(CpsSelectionThemeItemDO.builder().id(id).status(reqVO.getStatus()).build());
+            itemMapper.updateById(CpsSelectionThemeItemDO.builder().id(id).status(reqVO.getStatus())
+                    .manualAdjusted(1).build());
         }
     }
 
@@ -480,6 +502,176 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
         saveReqVO.setStatus(CpsSelectionConstants.ThemeStatus.DRAFT);
         saveReqVO.setSort(0);
         return createTheme(saveReqVO);
+    }
+
+    @Override
+    public CpsSelectionThemeOperationRespVO refreshAiSavedFilter(Long id) {
+        CpsSelectionThemeDO theme = validateThemeExists(id);
+        if (!CpsSelectionConstants.ThemeType.AI_SAVED_FILTER.equals(theme.getThemeType())) {
+            return CpsSelectionThemeOperationRespVO.builder().themeId(id)
+                    .status(CpsSelectionConstants.ImportTaskStatus.SKIPPED)
+                    .message("仅支持刷新 AI 保存条件").build();
+        }
+        // cps_selection_theme_item.snapshot_time 使用 datetime(0)，刷新边界也统一到秒精度，
+        // 避免同一秒写入的新快照因 JDBC 参数携带纳秒而被误判为旧快照。
+        LocalDateTime startedAt = LocalDateTime.now().withNano(0);
+        String batchNo = UUID.randomUUID().toString().replace("-", "");
+        int claimed = themeMapper.claimAiSavedFilterRefresh(id, batchNo, startedAt,
+                startedAt.minusMinutes(REFRESH_LEASE_MINUTES));
+        if (claimed == 0) {
+            return CpsSelectionThemeOperationRespVO.builder().themeId(id)
+                    .status(CpsSelectionConstants.ImportTaskStatus.SKIPPED)
+                    .message("刷新任务正在执行，请稍后重试").build();
+        }
+        try {
+            CpsSelectionRule rule = parseRule(theme.getRuleJson());
+            validateAiSavedFilterRule(rule);
+            if (!hasStructuredRule(rule)) {
+                String message = "保存条件仅包含自然语言提示词，需先补充结构化筛选规则后才能定时刷新";
+                finishRefresh(id, batchNo, CpsSelectionConstants.ImportTaskStatus.SKIPPED, message);
+                return CpsSelectionThemeOperationRespVO.builder().themeId(id)
+                        .status(CpsSelectionConstants.ImportTaskStatus.SKIPPED).message(message).build();
+            }
+            List<CpsGoodsSquareGoodsRespVO> pulled = pullThemeGoods(theme, rule);
+            if (themeMapper.renewAiSavedFilterRefresh(id, batchNo, LocalDateTime.now()) == 0) {
+                return CpsSelectionThemeOperationRespVO.builder().themeId(id)
+                        .status(CpsSelectionConstants.ImportTaskStatus.SKIPPED)
+                        .message("刷新租约已失效，已放弃写入结果").build();
+            }
+            int imported = importRecommendedGoods(theme, pulled, rule, CpsSelectionConstants.SourceType.AUTO_REFRESH);
+            if (!pulled.isEmpty()) {
+                itemMapper.disableStaleAutoRefreshItems(id, startedAt);
+            }
+            String status = imported == pulled.size() ? CpsSelectionConstants.ImportTaskStatus.SUCCESS
+                    : CpsSelectionConstants.ImportTaskStatus.PARTIAL_SUCCESS;
+            String message = "结构化条件刷新完成";
+            if (!finishRefresh(id, batchNo, status, message)) {
+                return CpsSelectionThemeOperationRespVO.builder().themeId(id)
+                        .status(CpsSelectionConstants.ImportTaskStatus.SKIPPED)
+                        .message("刷新租约已失效，结果未覆盖后续任务状态").build();
+            }
+            return CpsSelectionThemeOperationRespVO.builder().themeId(id).status(status)
+                    .pulledCount(pulled.size()).importedCount(imported).message(message).build();
+        } catch (Exception exception) {
+            String message = trimToMax(exception.getMessage(), 500);
+            String failureMessage = StringUtils.hasText(message) ? message : "刷新失败";
+            if (!finishRefresh(id, batchNo, CpsSelectionConstants.ImportTaskStatus.FAILED, failureMessage)) {
+                return CpsSelectionThemeOperationRespVO.builder().themeId(id)
+                        .status(CpsSelectionConstants.ImportTaskStatus.SKIPPED)
+                        .message("刷新租约已失效，失败状态未覆盖后续任务").build();
+            }
+            return CpsSelectionThemeOperationRespVO.builder().themeId(id)
+                    .status(CpsSelectionConstants.ImportTaskStatus.FAILED)
+                    .message(failureMessage).build();
+        }
+    }
+
+    @Override
+    public CpsSelectionThemeOperationRespVO refreshAiSavedFilters() {
+        int success = 0, skipped = 0, failed = 0, imported = 0;
+        for (CpsSelectionThemeDO theme : themeMapper.selectAiSavedFilterList()) {
+            try {
+                if (!shouldAutoRefresh(theme.getRuleJson())) {
+                    skipped++;
+                    continue;
+                }
+                CpsSelectionThemeOperationRespVO result = refreshAiSavedFilter(theme.getId());
+                imported += result.getImportedCount() == null ? 0 : result.getImportedCount();
+                if (CpsSelectionConstants.ImportTaskStatus.SKIPPED.equals(result.getStatus())) skipped++;
+                else if (CpsSelectionConstants.ImportTaskStatus.FAILED.equals(result.getStatus())) failed++;
+                else success++;
+            } catch (Exception exception) {
+                failed++;
+            }
+        }
+        String message = String.format("刷新完成：成功%d，跳过%d，失败%d，写入商品%d", success, skipped, failed, imported);
+        return CpsSelectionThemeOperationRespVO.builder().status(failed > 0
+                        ? CpsSelectionConstants.ImportTaskStatus.PARTIAL_SUCCESS
+                        : CpsSelectionConstants.ImportTaskStatus.SUCCESS)
+                .importedCount(imported).message(message).build();
+    }
+
+    @Override
+    public List<CpsSelectionAiReviewDO> listAiReviews(String reviewContextId, Long ownerUserId) {
+        if (!StringUtils.hasText(reviewContextId)) {
+            return List.of();
+        }
+        return aiReviewMapper.selectListByContextId(reviewContextId.trim(), ownerUserId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long upsertAiReview(CpsSelectionAiReviewReqVO reqVO, Long reviewerId) {
+        String vendorCode = normalizeOptionalIdentity(reqVO.getVendorCode());
+        String goodsSign = normalizeOptionalIdentity(reqVO.getGoodsSign());
+        CpsSelectionAiReviewDO existing = aiReviewMapper.selectOneByUnique(
+                reqVO.getReviewContextId().trim(), reviewerId, reqVO.getPlatformCode().trim(), vendorCode,
+                reqVO.getGoodsId().trim(), goodsSign);
+        CpsSelectionAiReviewDO review = CpsSelectionAiReviewDO.builder()
+                .reviewContextId(reqVO.getReviewContextId().trim())
+                .ownerUserId(reviewerId)
+                .platformCode(reqVO.getPlatformCode().trim())
+                .vendorCode(vendorCode)
+                .goodsId(reqVO.getGoodsId().trim())
+                .goodsSign(goodsSign)
+                .title(trimToMax(reqVO.getTitle(), 255))
+                .mainPic(trimToMax(reqVO.getMainPic(), 1024))
+                .reviewStatus(reqVO.getReviewStatus())
+                .reviewerId(reviewerId)
+                .reviewTime(LocalDateTime.now())
+                .remark(trimToMax(reqVO.getRemark(), 500))
+                .build();
+        if (existing == null) {
+            try {
+                aiReviewMapper.insert(review);
+            } catch (DuplicateKeyException duplicate) {
+                existing = aiReviewMapper.selectOneByUniqueForUpdate(review.getReviewContextId(), reviewerId,
+                        review.getPlatformCode(), review.getVendorCode(), review.getGoodsId(), review.getGoodsSign());
+                if (existing == null) {
+                    throw duplicate;
+                }
+                review.setId(existing.getId());
+                aiReviewMapper.updateById(review);
+            }
+        } else {
+            review.setId(existing.getId());
+            aiReviewMapper.updateById(review);
+        }
+        return review.getId();
+    }
+
+    private boolean hasStructuredRule(CpsSelectionRule rule) {
+        return rule != null && ((rule.getKeywords() != null && !rule.getKeywords().isEmpty())
+                || StringUtils.hasText(rule.getCategoryId())
+                || StringUtils.hasText(rule.getGoodsListUrl()));
+    }
+
+    private boolean finishRefresh(Long id, String batchNo, String status, String message) {
+        return themeMapper.finishAiSavedFilterRefresh(id, batchNo, status,
+                trimToMax(message, 500), LocalDateTime.now()) == 1;
+    }
+
+    private boolean shouldAutoRefresh(String ruleJson) {
+        if (!StringUtils.hasText(ruleJson)) {
+            return false;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(ruleJson);
+            if (root == null || !root.isObject()) {
+                return true;
+            }
+            boolean hasUnknownField = false;
+            var fields = root.fieldNames();
+            while (fields.hasNext()) {
+                if (!RULE_FIELDS.contains(fields.next())) {
+                    hasUnknownField = true;
+                    break;
+                }
+            }
+            return hasUnknownField || root.path("autoRefresh").asBoolean(false);
+        } catch (Exception ignored) {
+            return true;
+        }
     }
 
     private CpsSelectionThemeDO toVendorTheme(CpsThirdPartyActivity activity, String vendorCode, int goodsPullCount) {
@@ -874,21 +1066,33 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
 
     private void upsertItem(Long themeId, CpsSelectionThemeItemImportReqVO.ImportItem item, String sourceType) {
         CpsSelectionThemeItemDO exists = itemMapper.selectOneByUnique(
-                themeId, item.getPlatformCode(), firstText(item.getVendorCode(), ""), item.getGoodsId(),
-                firstText(item.getGoodsSign(), ""));
+                themeId, item.getPlatformCode(), normalizeOptionalIdentity(item.getVendorCode()), item.getGoodsId(),
+                normalizeOptionalIdentity(item.getGoodsSign()));
         CpsSelectionThemeItemDO saveObj = BeanUtils.toBean(item, CpsSelectionThemeItemDO.class);
         saveObj.setThemeId(themeId);
-        saveObj.setVendorCode(firstText(item.getVendorCode(), ""));
-        saveObj.setGoodsSign(firstText(item.getGoodsSign(), ""));
+        saveObj.setVendorCode(normalizeOptionalIdentity(item.getVendorCode()));
+        saveObj.setGoodsSign(normalizeOptionalIdentity(item.getGoodsSign()));
         saveObj.setSourceType(firstText(sourceType, CpsSelectionConstants.SourceType.MANUAL));
         saveObj.setStatus(firstText(item.getStatus(), CpsSelectionConstants.ItemStatus.ENABLED));
         saveObj.setTopFlag(item.getTopFlag() == null ? 0 : item.getTopFlag());
+        saveObj.setManualAdjusted(0);
         saveObj.setSnapshotTime(LocalDateTime.now());
         saveObj.setSort(item.getSort() == null ? 0 : item.getSort());
         if (exists == null) {
             itemMapper.insert(saveObj);
         } else {
             saveObj.setId(exists.getId());
+            if (CpsSelectionConstants.SourceType.AUTO_REFRESH.equals(sourceType)) {
+                saveObj.setSourceType(exists.getSourceType());
+                saveObj.setManualAdjusted(exists.getManualAdjusted());
+                boolean preserveManualState = Integer.valueOf(1).equals(exists.getManualAdjusted())
+                        || !CpsSelectionConstants.SourceType.AUTO_REFRESH.equals(exists.getSourceType());
+                if (preserveManualState) {
+                    saveObj.setStatus(exists.getStatus());
+                    saveObj.setTopFlag(exists.getTopFlag());
+                    saveObj.setSort(exists.getSort());
+                }
+            }
             itemMapper.updateById(saveObj);
         }
     }
@@ -933,10 +1137,91 @@ public class CpsSelectionThemeServiceImpl implements CpsSelectionThemeService {
             return new CpsSelectionRule();
         }
         try {
-            return objectMapper.readValue(ruleJson, CpsSelectionRule.class);
+            JsonNode root = objectMapper.readTree(ruleJson);
+            if (root == null || !root.isObject()) {
+                throw new IllegalArgumentException("主题规则必须是 JSON 对象");
+            }
+            root.fieldNames().forEachRemaining(field -> {
+                if (!RULE_FIELDS.contains(field)) {
+                    throw new IllegalArgumentException("主题规则包含不支持的字段：" + field);
+                }
+            });
+            CpsSelectionRule rule = objectMapper.treeToValue(root, CpsSelectionRule.class);
+            validateRuleRanges(rule);
+            return rule;
         } catch (Exception e) {
-            throw exception(SELECTION_THEME_STATUS_INVALID, "主题规则 JSON 格式错误");
+            String message = StringUtils.hasText(e.getMessage()) ? e.getMessage() : "主题规则 JSON 格式错误";
+            throw exception(SELECTION_THEME_STATUS_INVALID, trimToMax(message, 500));
         }
+    }
+
+    private void validateRuleRanges(CpsSelectionRule rule) {
+        if (rule.getPullCount() != null && (rule.getPullCount() < 1 || rule.getPullCount() > MAX_PULL_COUNT)) {
+            throw new IllegalArgumentException("候选数量必须在 1 到 100 之间");
+        }
+        requireNonNegative(rule.getPriceLowerLimit(), "最低价格");
+        requireNonNegative(rule.getPriceUpperLimit(), "最高价格");
+        requireNonNegative(rule.getMinCommissionAmount(), "最低佣金金额");
+        requireNonNegative(rule.getCouponAmountMin(), "最低优惠券金额");
+        if (rule.getMinCommissionRate() != null
+                && (rule.getMinCommissionRate().signum() < 0
+                || rule.getMinCommissionRate().compareTo(BigDecimal.valueOf(100)) > 0)) {
+            throw new IllegalArgumentException("最低佣金率必须在 0 到 100 之间");
+        }
+        if (rule.getMinMonthSales() != null && rule.getMinMonthSales() < 0) {
+            throw new IllegalArgumentException("最低月销量不能小于 0");
+        }
+        if (rule.getPriceLowerLimit() != null && rule.getPriceUpperLimit() != null
+                && rule.getPriceLowerLimit().compareTo(rule.getPriceUpperLimit()) > 0) {
+            throw new IllegalArgumentException("最低价格不能高于最高价格");
+        }
+        if (rule.getSortType() != null && (rule.getSortType() < 0 || rule.getSortType() > 4)) {
+            throw new IllegalArgumentException("排序类型必须在 0 到 4 之间");
+        }
+        if (rule.getKeywords() != null) {
+            if (rule.getKeywords().size() > 10) {
+                throw new IllegalArgumentException("关键词数量不能超过 10 个");
+            }
+            for (String keyword : rule.getKeywords()) {
+                if (!StringUtils.hasText(keyword) || keyword.trim().length() > 64) {
+                    throw new IllegalArgumentException("关键词不能为空且长度不能超过 64 个字符");
+                }
+            }
+        }
+        if (rule.getPlatformWeights() != null && rule.getPlatformWeights().values().stream()
+                .anyMatch(value -> value == null || value.signum() < 0)) {
+            throw new IllegalArgumentException("平台权重不能小于 0");
+        }
+    }
+
+    private void validateAiSavedFilterRule(CpsSelectionRule rule) {
+        validateSafeVendorPath(rule.getThemeListUrl(), "主题列表 URL");
+        validateSafeVendorPath(rule.getGoodsListUrl(), "商品列表 URL");
+        if ((StringUtils.hasText(rule.getThemeListUrl()) || StringUtils.hasText(rule.getGoodsListUrl()))
+                && !CpsVendorCodeEnum.DATAOKE.getCode().equals(firstText(rule.getVendorCode(),
+                CpsVendorCodeEnum.DATAOKE.getCode()))) {
+            throw new IllegalArgumentException("AI 保存条件只允许使用已配置的大淘客相对接口路径");
+        }
+    }
+
+    private void validateSafeVendorPath(String path, String fieldName) {
+        if (!StringUtils.hasText(path)) {
+            return;
+        }
+        if (!(path.startsWith("/api/") || path.startsWith("/open-api/"))
+                || path.startsWith("//") || path.contains("://") || path.contains("\\")) {
+            throw new IllegalArgumentException(fieldName + " 只允许已配置供应商的相对接口路径");
+        }
+    }
+
+    private void requireNonNegative(BigDecimal value, String fieldName) {
+        if (value != null && value.signum() < 0) {
+            throw new IllegalArgumentException(fieldName + "不能小于 0");
+        }
+    }
+
+    private String normalizeOptionalIdentity(String value) {
+        return StringUtils.hasText(value) ? value.trim() : "";
     }
 
     private String resolveKeyword(CpsSelectionThemeDO theme, CpsSelectionRule rule) {

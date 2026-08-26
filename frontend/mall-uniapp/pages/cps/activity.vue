@@ -79,6 +79,7 @@
     list: [],
     promotingId: null,
   });
+  let activityRequestVersion = 0;
 
   const platformNames = {
     TAOBAO: '淘宝',
@@ -113,6 +114,19 @@
     return res.data;
   };
 
+  const currentLoginSnapshot = () => {
+    const userStore = sheep.$store('user');
+    // Keep the token in the snapshot as well as the derived flag: login state
+    // can flip before storage is persisted, and an old anonymous response must
+    // never replace a member-scoped list.
+    return `${Boolean(userStore.isLogin)}:${uni.getStorageSync('token') || ''}`;
+  };
+
+  const requiresLogin = () => {
+    const userStore = sheep.$store('user');
+    return !userStore.isLogin || !uni.getStorageSync('token');
+  };
+
   async function loadActivities() {
     state.loading = true;
     state.error = '';
@@ -120,34 +134,30 @@
       const filters = {};
       if (state.platformCode) filters.platformCode = state.platformCode;
       if (state.keyword) filters.keyword = state.keyword;
+      const requestVersion = ++activityRequestVersion;
+      const loginSnapshot = currentLoginSnapshot();
       const res = state.activityId
         ? await CpsMarketingApi.getActivitiesByIds([state.activityId])
         : await CpsMarketingApi.getActivityCenter(filters);
+      if (requestVersion !== activityRequestVersion || loginSnapshot !== currentLoginSnapshot()) return;
       const data = unwrap(res, '活动加载失败');
       state.list = Array.isArray(data) ? data : [];
     } catch (error) {
+      if (requestVersion !== activityRequestVersion || loginSnapshot !== currentLoginSnapshot()) return;
       state.error = error?.msg || error?.message || '活动加载失败，请稍后重试';
     } finally {
-      state.loading = false;
+      if (requestVersion === activityRequestVersion) state.loading = false;
     }
   }
 
   async function promote(item) {
     if (state.promotingId) return;
-    if (!sheep.$store('user').isLogin) {
+    if (requiresLogin()) {
       showAuthModal();
       return;
     }
     state.promotingId = item.id;
     try {
-      if (item.promotionUrl || item.tpwd || item.promotionContent) {
-        openOrCopy(
-          item.promotionUrl || item.tpwd || item.promotionContent,
-          item.attributionMessage || '活动入口已准备完成',
-          item.linkType,
-        );
-        return;
-      }
       const res = await CpsMarketingApi.generateActivityPromotion({ activityId: item.id });
       const promotion = unwrap(res, '活动入口生成失败') || {};
       if (
@@ -170,6 +180,12 @@
       }
       openOrCopy(value, message, promotion.linkType);
     } catch (error) {
+      const message = error?.msg || error?.message || '';
+      if (/会员不能为空|请先登录|未登录|未授权|登录已过期|登陆已过期/i.test(message)) {
+        showAuthModal();
+        sheep.$helper.toast('请先登录后再进入活动');
+        return;
+      }
       sheep.$helper.toast(error?.msg || error?.message || '活动入口生成失败');
     } finally {
       state.promotingId = null;
@@ -217,7 +233,7 @@
   watch(
     () => sheep.$store('user').isLogin,
     (isLogin, wasLogin) => {
-      if (isLogin && !wasLogin) loadActivities();
+      if (isLogin !== wasLogin) loadActivities();
     },
   );
 </script>

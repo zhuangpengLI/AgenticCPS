@@ -38,6 +38,19 @@
         </div>
       </el-header>
 
+      <CpsSelectionWorkbench
+        v-if="activeConversation"
+        v-model:mode="workbenchMode"
+        :has-results="activeMessageList.length > 0"
+        :disabled="conversationInProgress"
+        :task-progress="activeTaskProgress"
+        :result-summary="workbenchResultSummary"
+        :current-prompt="currentWorkbenchPrompt"
+        :current-tool-intent="currentWorkbenchToolIntent"
+        @prompt="handleRecommendedPrompt"
+        @retry="retryWorkbenchTask"
+      />
+
       <!-- main：消息列表 -->
       <el-main class="m-0 p-0 relative h-full w-full">
         <div>
@@ -55,15 +68,20 @@
               @on-prompt="handleRecommendedPrompt"
             />
             <!-- 情况四：消息列表不为空 -->
-            <MessageList
+            <div
               v-if="!activeMessageListLoading && messageList.length > 0 && activeConversation"
-              ref="messageRef"
-              :conversation="activeConversation"
-              :list="messageList"
-              @on-delete-success="handleMessageDelete"
-              @on-edit="handleMessageEdit"
-              @on-refresh="handleMessageRefresh"
-            />
+              class="h-full"
+              data-testid="cps-analysis-results"
+            >
+              <MessageList
+                ref="messageRef"
+                :conversation="activeConversation"
+                :list="messageList"
+                @on-delete-success="handleMessageDelete"
+                @on-edit="handleMessageEdit"
+                @on-refresh="handleMessageRefresh"
+              />
+            </div>
           </div>
         </div>
       </el-main>
@@ -80,10 +98,19 @@
           class="mt-10px mx-20px mb-20px py-9px px-10px flex flex-col h-auto rounded-10px"
           style="border: 1px solid var(--el-border-color)"
         >
-          <div v-if="selectedToolAction" class="mb-8px flex items-center">
-            <el-tag closable type="primary" @close="clearSelectedToolAction">
+          <div class="mb-8px flex items-center gap-8px" data-testid="cps-workbench-input-mode">
+            <el-tag effect="plain" type="info">
+              {{ workbenchMode === 'SELECTION' ? '选品分析' : '订单分析' }}
+            </el-tag>
+            <el-tag
+              v-if="selectedToolAction"
+              closable
+              type="primary"
+              @close="clearSelectedToolAction"
+            >
               优先使用：{{ friendlyToolText(selectedToolAction.label, '已选业务能力') }}
             </el-tag>
+            <el-tag v-else type="primary" effect="plain">自动选择业务能力</el-tag>
           </div>
           <textarea
             class="h-80px border-none box-border resize-none py-0 px-2px overflow-auto focus:outline-none"
@@ -92,7 +119,7 @@
             @input="handlePromptInput"
             @compositionstart="onCompositionstart"
             @compositionend="onCompositionend"
-            placeholder="问我任何问题...（Shift+Enter 换行，按下 Enter 发送）"
+            :placeholder="workbenchPlaceholder"
           >
           </textarea>
           <div class="flex justify-between pb-0 pt-5px">
@@ -138,6 +165,8 @@ import {
   ChatMessageApi,
   type ChatMessageStreamData,
   type ChatMessageVO,
+  type ChatTaskProgress,
+  type ChatTaskStep,
   type ToolExecutionVO
 } from '@/api/ai/chat/message'
 import { ChatConversationApi, ChatConversationVO } from '@/api/ai/chat/conversation'
@@ -150,6 +179,9 @@ import MessageLoading from './components/message/MessageLoading.vue'
 import MessageNewConversation from './components/message/MessageNewConversation.vue'
 import MessageFileUpload from './components/message/MessageFileUpload.vue'
 import CpsToolActionBar from './components/tool/CpsToolActionBar.vue'
+import CpsSelectionWorkbench, {
+  type CpsWorkbenchMode
+} from './components/workbench/CpsSelectionWorkbench.vue'
 import {
   createIntentRequestId,
   type RecommendedPrompt,
@@ -171,6 +203,8 @@ const conversationInProgress = ref(false) // 对话是否正在进行中。目�
 const toolActions = ref<ToolActionVO[]>([]) // 当前角色实际可用的业务工具入口
 const selectedToolAction = ref<ToolActionVO>() // 输入框携带的隐藏路由意图
 const selectedIntentRequestId = ref<string>() // 写操作重试所需的稳定请求编号
+const workbenchMode = ref<CpsWorkbenchMode>('SELECTION') // CPS 工作台当前分析模式
+const lastWorkbenchRequest = ref<Pick<ChatMessageVO, 'content' | 'toolIntent'>>()
 
 // 消息列表
 const messageRef = ref()
@@ -189,6 +223,32 @@ const prompt = ref<string>() // prompt
 const enableContext = ref<boolean>(true) // 是否开启上下文
 const enableWebSearch = ref<boolean>(false) // 是否开启联网搜索
 const uploadFiles = ref<string[]>([]) // 上传的文件 URL 列表
+const workbenchPlaceholder = computed(() =>
+  workbenchMode.value === 'SELECTION'
+    ? '描述品类、价格、佣金、销量、榜单或目标人群…（Enter 发送）'
+    : '描述订单范围、成交品类、价格带或收益分析需求…（Enter 发送）'
+)
+const currentWorkbenchPrompt = computed(
+  () => prompt.value?.trim() || lastWorkbenchRequest.value?.content || ''
+)
+const currentWorkbenchToolIntent = computed(
+  () => selectedToolAction.value?.intent || lastWorkbenchRequest.value?.toolIntent
+)
+const activeTaskProgress = computed(
+  () => [...activeMessageList.value].reverse().find((item) => item.type === 'assistant')?.taskProgress
+)
+const workbenchResultSummary = computed(() => {
+  const latestAssistant = [...activeMessageList.value].reverse().find((item) => item.type === 'assistant')
+  const block = latestAssistant?.blocks?.find(
+    (item) =>
+      item.type === 'SELECTION_REPORT' ||
+      item.type === 'ALTERNATIVES_REPORT' ||
+      item.type === 'GOODS_ANALYSIS' ||
+      item.type === 'ORDER_PROFILE' ||
+      item.type === 'ORDER_TREND'
+  )
+  return block?.summary || latestAssistant?.taskProgress?.summary || ''
+})
 // 接收 Stream 消息
 const receiveMessageFullText = ref('')
 const receiveMessageDisplayedText = ref('')
@@ -249,6 +309,7 @@ const handleConversationClick = async (conversation: ChatConversationVO) => {
   scrollToBottom(true)
   // 清空输入框
   prompt.value = ''
+  lastWorkbenchRequest.value = undefined
   // 清空文件列表
   uploadFiles.value = []
   return true
@@ -274,6 +335,7 @@ const handleConversationClear = async () => {
   toolActions.value = []
   selectedToolAction.value = undefined
   selectedIntentRequestId.value = undefined
+  lastWorkbenchRequest.value = undefined
 }
 
 /** 修改聊天对话 */
@@ -299,6 +361,7 @@ const handleConversationCreateSuccess = async () => {
   uploadFiles.value = []
   selectedToolAction.value = undefined
   selectedIntentRequestId.value = undefined
+  lastWorkbenchRequest.value = undefined
 }
 
 // =========== 【消息列表】相关 ===========
@@ -395,12 +458,21 @@ const handleGoTopMessage = () => {
 
 // =========== 【发送消息】相关 ===========
 
-const friendlyToolText = (value?: string, fallback?: string) =>
-  toFriendlyToolText(value, fallback)
+const friendlyToolText = (value?: string, fallback?: string) => toFriendlyToolText(value, fallback)
 
 const clearSelectedToolAction = () => {
   selectedToolAction.value = undefined
   selectedIntentRequestId.value = undefined
+}
+
+/** 在工作台中重新执行最近一次失败的只读分析。 */
+const retryWorkbenchTask = async () => {
+  if (conversationInProgress.value || !lastWorkbenchRequest.value?.content) return
+  selectedToolAction.value = toolActions.value.find(
+    (action) => action.intent === lastWorkbenchRequest.value?.toolIntent
+  )
+  selectedIntentRequestId.value = selectedToolAction.value ? createIntentRequestId() : undefined
+  await doSendMessage(lastWorkbenchRequest.value.content)
 }
 
 /** 推荐问题只预填输入框，不自动发送。 */
@@ -507,6 +579,9 @@ const doSendMessage = async (content: string) => {
   const attachmentUrls = [...uploadFiles.value]
   const toolIntent = selectedToolAction.value?.intent
   const intentRequestId = selectedIntentRequestId.value
+  if (toolIntent) {
+    lastWorkbenchRequest.value = { content, toolIntent }
+  }
 
   // 清空输入框和文件列表
   prompt.value = ''
@@ -549,6 +624,102 @@ const updateToolExecution = (
   if (assistantMessage.content === '正在理解需求…') {
     assistantMessage.content = ''
   }
+  assistantMessage.taskProgress = updateTaskProgress(
+    assistantMessage.taskProgress,
+    execution,
+    eventType
+  )
+}
+
+const createTaskProgress = (): ChatTaskProgress => ({
+  status: 'QUEUED',
+  percent: 5,
+  currentStep: '正在理解分析需求',
+  steps: [
+    { id: 'understand', label: '理解任务与筛选条件', status: 'RUNNING' },
+    { id: 'retrieve', label: '获取商品或成交数据', status: 'PENDING' },
+    { id: 'analyze', label: '分析证据与风险', status: 'PENDING' },
+    { id: 'report', label: '生成结构化结果', status: 'PENDING' }
+  ]
+})
+
+const updateTaskProgress = (
+  current: ChatTaskProgress | undefined,
+  execution: ToolExecutionVO,
+  eventType: Exclude<NonNullable<ChatMessageStreamData['eventType']>, 'MESSAGE_DELTA'>
+): ChatTaskProgress => {
+  const progress = current || createTaskProgress()
+  const steps: ChatTaskStep[] = progress.steps.map((step) => ({ ...step }))
+  const retrieve = steps.find((step) => step.id === 'retrieve')!
+  const analyze = steps.find((step) => step.id === 'analyze')!
+  const report = steps.find((step) => step.id === 'report')!
+  const understand = steps.find((step) => step.id === 'understand')!
+  if (eventType === 'TOOL_STARTED') {
+    understand.status = 'SUCCEEDED'
+    retrieve.status = 'RUNNING'
+    retrieve.message = friendlyToolText(execution.label, '正在获取数据')
+    return {
+      ...progress,
+      status: 'RUNNING',
+      percent: 45,
+      currentStep: retrieve.message,
+      error: undefined,
+      retryable: false,
+      steps
+    }
+  }
+  if (eventType === 'TOOL_SUCCEEDED') {
+    understand.status = 'SUCCEEDED'
+    retrieve.status = 'SUCCEEDED'
+    retrieve.message = friendlyToolText(execution.label, '数据已获取')
+    analyze.status = 'RUNNING'
+    return {
+      ...progress,
+      status: 'RUNNING',
+      percent: 75,
+      currentStep: '正在整理数据证据与风险提示',
+      error: undefined,
+      retryable: false,
+      steps
+    }
+  }
+  understand.status = 'SUCCEEDED'
+  retrieve.status = 'FAILED'
+  retrieve.message = friendlyToolText(execution.label, '数据获取失败')
+  analyze.status = 'SKIPPED'
+  report.status = 'SKIPPED'
+  return {
+    ...progress,
+    status: 'FAILED',
+    percent: 100,
+    currentStep: '任务未完成，可重试',
+    error: friendlyToolText(execution.message, '数据获取失败，请稍后重试'),
+    retryable: true,
+    steps
+  }
+}
+
+const completeTaskProgress = (assistantMessage?: ChatMessageVO) => {
+  if (!assistantMessage?.taskProgress || assistantMessage.taskProgress.status === 'FAILED') return
+  assistantMessage.taskProgress = {
+    ...assistantMessage.taskProgress,
+    status: 'SUCCEEDED',
+    percent: 100,
+    currentStep: '结构化结果已生成',
+    summary: assistantMessage.blocks?.find(
+      (block) =>
+        block.type === 'SELECTION_REPORT' ||
+        block.type === 'ALTERNATIVES_REPORT' ||
+        block.type === 'GOODS_ANALYSIS' ||
+        block.type === 'ORDER_PROFILE' ||
+        block.type === 'ORDER_TREND'
+    )?.summary || '分析已完成，可查看数据证据、推荐理由和风险提示。',
+    retryable: false,
+    steps: assistantMessage.taskProgress.steps.map((step) => ({
+      ...step,
+      status: step.status === 'PENDING' || step.status === 'RUNNING' ? 'SUCCEEDED' : step.status
+    }))
+  }
 }
 
 /** 真正执行【发送】消息操作 */
@@ -564,21 +735,36 @@ const doSendMessageStream = async (userMessage: ChatMessageVO) => {
     // 1.1 先添加两个假数据，等 stream 返回再替换
     activeMessageList.value.push({
       id: -1,
-      conversationId: activeConversationId.value,
+      conversationId: activeConversationId.value!,
       type: 'user',
+      userId: '',
+      roleId: '',
+      model: 0,
+      modelId: 0,
       content: userMessage.content,
       attachmentUrls: userMessage.attachmentUrls || [],
-      createTime: new Date()
-    } as ChatMessageVO)
+      tokens: 0,
+      createTime: new Date(),
+      roleAvatar: '',
+      userAvatar: ''
+    })
     activeMessageList.value.push({
       id: -2,
-      conversationId: activeConversationId.value,
+      conversationId: activeConversationId.value!,
       type: 'assistant',
+      userId: '',
+      roleId: '',
+      model: 0,
+      modelId: 0,
       content: '正在理解需求…',
       reasoningContent: '',
       toolExecutions: [],
-      createTime: new Date()
-    } as ChatMessageVO)
+      taskProgress: userMessage.toolIntent ? createTaskProgress() : undefined,
+      tokens: 0,
+      createTime: new Date(),
+      roleAvatar: '',
+      userAvatar: ''
+    })
     // 1.2 滚动到最下面
     await nextTick()
     await scrollToBottom() // 底部
@@ -601,10 +787,7 @@ const doSendMessageStream = async (userMessage: ChatMessageVO) => {
         }
         if (code !== 0) {
           message.alert(`对话异常! ${msg}`)
-          // 如果未接收到消息，则进行删除
-          if (receiveMessageFullText.value === '') {
-            activeMessageList.value.pop()
-          }
+          failCurrentTask(friendlyToolText(msg, '分析请求未完成，请稍后重试'))
           return
         }
 
@@ -620,7 +803,11 @@ const doSendMessageStream = async (userMessage: ChatMessageVO) => {
         }
 
         // 如果内容为空，就不处理。
-        if (data.receive.content === '' && !data.receive.reasoningContent) {
+        if (
+          data.receive.content === '' &&
+          !data.receive.reasoningContent &&
+          !data.receive.blocks?.length
+        ) {
           return
         }
 
@@ -629,6 +816,7 @@ const doSendMessageStream = async (userMessage: ChatMessageVO) => {
           isFirstChunk = false
           const pendingAssistant = activeMessageList.value[activeMessageList.value.length - 1]
           const toolExecutions = pendingAssistant?.toolExecutions || []
+          const taskProgress = pendingAssistant?.taskProgress
           // 弹出两个假数据
           activeMessageList.value.pop()
           activeMessageList.value.pop()
@@ -636,6 +824,7 @@ const doSendMessageStream = async (userMessage: ChatMessageVO) => {
           activeMessageList.value.push(data.send)
           data.send.attachmentUrls = userMessage.attachmentUrls
           data.receive.toolExecutions = toolExecutions
+          data.receive.taskProgress = taskProgress
           activeMessageList.value.push(data.receive)
         }
 
@@ -644,6 +833,11 @@ const doSendMessageStream = async (userMessage: ChatMessageVO) => {
           const lastMessage = activeMessageList.value[activeMessageList.value.length - 1]
           lastMessage.reasoningContent =
             lastMessage.reasoningContent + data.receive.reasoningContent
+        }
+
+        if (data.receive.blocks?.length) {
+          const lastMessage = activeMessageList.value[activeMessageList.value.length - 1]
+          lastMessage.blocks = data.receive.blocks
         }
 
         // 处理正常内容
@@ -656,12 +850,16 @@ const doSendMessageStream = async (userMessage: ChatMessageVO) => {
       (error: any) => {
         // 异常提示，并停止流
         message.alert(`对话异常！`)
-        stopStream()
+        failCurrentTask('分析请求异常中断，请重试')
+        stopStream('FAILED')
         // 需要抛出异常，禁止重试
         throw error
       },
       () => {
-        stopStream()
+        // 人工停止或异常中止也会触发 onclose，不能把已停止/失败任务覆盖成成功。
+        if (!conversationInProgress.value) return
+        completeTaskProgress(getCurrentAssistantMessage())
+        stopStream('SUCCEEDED')
       },
       userMessage.attachmentUrls,
       userMessage.toolIntent,
@@ -671,11 +869,50 @@ const doSendMessageStream = async (userMessage: ChatMessageVO) => {
 }
 
 /** 停止 stream 流式调用 */
-const stopStream = async () => {
+const getCurrentAssistantMessage = () =>
+  [...activeMessageList.value].reverse().find((item) => item.type === 'assistant')
+
+const failCurrentTask = (error: string) => {
+  const assistantMessage = getCurrentAssistantMessage()
+  if (!assistantMessage?.taskProgress) return
+  assistantMessage.taskProgress = {
+    ...assistantMessage.taskProgress,
+    status: 'FAILED',
+    percent: 100,
+    currentStep: '任务未完成，可重试',
+    error,
+    retryable: Boolean(lastWorkbenchRequest.value?.toolIntent),
+    steps: assistantMessage.taskProgress.steps.map((step) => ({
+      ...step,
+      status: step.status === 'RUNNING' ? 'FAILED' : step.status
+    }))
+  }
+}
+
+const cancelCurrentTask = () => {
+  const assistantMessage = getCurrentAssistantMessage()
+  if (!assistantMessage?.taskProgress || assistantMessage.taskProgress.status === 'FAILED') return
+  assistantMessage.taskProgress = {
+    ...assistantMessage.taskProgress,
+    status: 'CANCELLED',
+    currentStep: '任务已停止',
+    summary: '本次分析已停止，已有数据可能不完整。',
+    retryable: Boolean(lastWorkbenchRequest.value?.toolIntent),
+    steps: assistantMessage.taskProgress.steps.map((step) => ({
+      ...step,
+      status: step.status === 'RUNNING' ? 'SKIPPED' : step.status
+    }))
+  }
+}
+
+/** 停止 stream 流式调用。正常关闭会先完成任务状态，人工停止则保留可重试入口。 */
+const stopStream = async (result: 'SUCCEEDED' | 'FAILED' | 'CANCELLED' = 'CANCELLED') => {
   // tip：如果 stream 进行中的 message，就需要调用 controller 结束
   if (conversationInAbortController.value) {
     conversationInAbortController.value.abort()
   }
+  if (result === 'CANCELLED') cancelCurrentTask()
+  if (result === 'FAILED') failCurrentTask('分析请求异常中断，请重试')
   // 设置为 false
   conversationInProgress.value = false
 }

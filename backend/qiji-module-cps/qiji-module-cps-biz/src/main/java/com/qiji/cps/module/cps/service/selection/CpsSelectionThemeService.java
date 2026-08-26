@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.service.selection;
 
 import com.qiji.cps.framework.common.pojo.PageResult;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionAiReviewReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeAiRecommendReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemImportReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemPageReqVO;
@@ -15,6 +16,7 @@ import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTe
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTemplateRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeVendorPullReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
+import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionAiReviewDO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeItemDO;
 import jakarta.validation.Valid;
 
@@ -67,4 +69,12 @@ public interface CpsSelectionThemeService {
     List<CpsSelectionThemeTemplateRespVO> listPromotionTemplates();
 
     Long createFromTemplate(@Valid CpsSelectionThemeTemplateCreateReqVO reqVO);
+
+    CpsSelectionThemeOperationRespVO refreshAiSavedFilter(Long id);
+
+    CpsSelectionThemeOperationRespVO refreshAiSavedFilters();
+
+    List<CpsSelectionAiReviewDO> listAiReviews(String reviewContextId, Long ownerUserId);
+
+    Long upsertAiReview(@Valid CpsSelectionAiReviewReqVO reqVO, Long reviewerId);
 }

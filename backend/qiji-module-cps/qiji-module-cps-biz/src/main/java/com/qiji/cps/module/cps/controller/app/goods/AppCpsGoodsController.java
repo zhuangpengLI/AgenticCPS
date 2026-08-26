@@ -1,13 +1,13 @@
 package com.qiji.cps.module.cps.controller.app.goods;
 
 import com.qiji.cps.framework.common.pojo.CommonResult;
-import com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsItem;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchResult;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsParseReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsParseRespVO;
+import com.qiji.cps.module.cps.controller.app.CpsAppMemberContext;
 import com.qiji.cps.module.cps.controller.app.goods.vo.*;
 import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
@@ -144,7 +144,7 @@ public class AppCpsGoodsController {
     @PostMapping("/link")
     @Operation(summary = "生成推广链接（转链）")
     public CommonResult<AppCpsLinkRespVO> generateLink(@Valid @RequestBody AppCpsLinkReqVO reqVO) {
-        Long memberId = SecurityFrameworkUtils.getLoginUserId();
+        Long memberId = CpsAppMemberContext.requireMemberId();
         String adzoneId = cpsGoodsService.resolvePromotionAdzoneId(
                 reqVO.getPlatformCode(), memberId, reqVO.getAdzoneId());
         CpsPromotionLinkResult result = cpsGoodsService.generatePromotionLink(

@@ -15,6 +15,7 @@
             ref="markdownViewRef"
           >
             <MessageToolExecutions :executions="item.toolExecutions" />
+            <MessageBlocks :blocks="item.blocks" :message-id="item.id" />
             <MessageReasoning
               :reasoning-content="item.reasoningContent || ''"
               :content="item.content || ''"
@@ -119,6 +120,7 @@ import MessageReasoning from './MessageReasoning.vue'
 import MessageFiles from './MessageFiles.vue'
 import MessageWebSearch from './MessageWebSearch.vue'
 import MessageToolExecutions from './MessageToolExecutions.vue'
+import MessageBlocks from './MessageBlocks.vue'
 import { useClipboard } from '@vueuse/core'
 import { ArrowDownBold, Edit, RefreshRight } from '@element-plus/icons-vue'
 import { ChatMessageApi, ChatMessageVO } from '@/api/ai/chat/message'

@@ -1,5 +1,6 @@
 package com.qiji.cps.module.cps.controller.app.activity;
 
+import com.qiji.cps.framework.security.core.LoginUser;
 import com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionReqVO;
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPromotionRespVO;
@@ -10,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -46,9 +46,9 @@ class AppCpsRebateActivityControllerTest {
                 .thenReturn(CpsRebateActivityPromotionRespVO.builder()
                         .activityId(8L).attributionStatus("MEMBER_TRACKED").build());
 
-        try (MockedStatic<SecurityFrameworkUtils> security = mockStatic(SecurityFrameworkUtils.class)) {
-            security.when(SecurityFrameworkUtils::getLoginUserId).thenReturn(1001L);
-
+        try (var security = mockStatic(SecurityFrameworkUtils.class)) {
+            security.when(SecurityFrameworkUtils::getLoginUser)
+                    .thenReturn(new LoginUser().setId(1001L).setUserType(1));
             assertEquals("MEMBER_TRACKED", controller.generatePromotion(request).getData().getAttributionStatus());
         }
 
@@ -58,5 +58,6 @@ class AppCpsRebateActivityControllerTest {
         assertEquals(8L, captor.getValue().getActivityId());
         assertEquals("mall", captor.getValue().getChannelTag());
         assertEquals(null, captor.getValue().getAdzoneId());
+        assertEquals(null, captor.getValue().getMemberId());
     }
 }

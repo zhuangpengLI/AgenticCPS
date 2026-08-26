@@ -41,22 +41,23 @@
 --   30. cps_rebate_activity              CPS返利活动表
 --   31. cps_selection_theme              选品主题表
 --   32. cps_selection_theme_item         选品主题商品快照表
---   33. cps_goods_master                 CPS商品主档表
---   34. cps_goods_source_mapping         CPS商品来源映射表
---   35. cps_goods_price_snapshot         CPS商品价格快照表
---   36. cps_coupon_pool                  CPS券池表
---   37. cps_marketing_short_link         CPS营销短链表
---   38. cps_marketing_click_event        CPS营销点击事件表
---   39. cpx_task                         CPX任务表
---   40. cpx_offer                        CPX任务报价表
---   41. cpx_material                     CPX素材表
---   42. cpx_platform_profile             CPX平台档案表
---   43. cpx_article                      CPX资讯文章表
---   44. cpx_tracking_link                CPX追踪链接表
---   45. cpx_event                        CPX事件表
---   46. cpx_conversion                   CPX转化表
---   47. cpx_settlement_record            CPX结算记录表
---   48. cpx_lead_detail                  CPX线索详情表
+--   33. cps_selection_ai_review          AI选品人工复核审计表
+--   34. cps_goods_master                 CPS商品主档表
+--   35. cps_goods_source_mapping         CPS商品来源映射表
+--   36. cps_goods_price_snapshot         CPS商品价格快照表
+--   37. cps_coupon_pool                  CPS券池表
+--   38. cps_marketing_short_link         CPS营销短链表
+--   39. cps_marketing_click_event        CPS营销点击事件表
+--   40. cpx_task                         CPX任务表
+--   41. cpx_offer                        CPX任务报价表
+--   42. cpx_material                     CPX素材表
+--   43. cpx_platform_profile             CPX平台档案表
+--   44. cpx_article                      CPX资讯文章表
+--   45. cpx_tracking_link                CPX追踪链接表
+--   46. cpx_event                        CPX事件表
+--   47. cpx_conversion                   CPX转化表
+--   48. cpx_settlement_record            CPX结算记录表
+--   49. cpx_lead_detail                  CPX线索详情表
 -- ============================================================
 
 SET NAMES utf8mb4;
@@ -1147,6 +1148,9 @@ CREATE TABLE `cps_selection_theme`  (
   `end_time` datetime DEFAULT NULL COMMENT '下线时间',
   `refresh_status` varchar(32) NOT NULL DEFAULT 'SUCCESS' COMMENT '刷新状态',
   `last_refresh_time` datetime DEFAULT NULL COMMENT '最后刷新时间',
+  `refresh_message` varchar(500) DEFAULT NULL COMMENT '刷新结果摘要或失败原因',
+  `refresh_started_time` datetime DEFAULT NULL COMMENT '当前刷新租约开始时间',
+  `refresh_batch_no` varchar(64) DEFAULT NULL COMMENT '当前刷新租约批次号',
   `sort` int NOT NULL DEFAULT 0 COMMENT '排序',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `creator` varchar(64) DEFAULT '' COMMENT '创建者',
@@ -1159,7 +1163,8 @@ CREATE TABLE `cps_selection_theme`  (
   UNIQUE KEY `uk_cps_selection_theme_code` (`tenant_id`, `theme_code`, `deleted`) USING BTREE,
   KEY `idx_cps_selection_theme_page` (`tenant_id`, `deleted`, `status`, `goods_square_visible`, `promotion_event`, `sort`) USING BTREE,
   KEY `idx_cps_selection_theme_platform` (`tenant_id`, `deleted`, `platform_codes`, `vendor_code`) USING BTREE,
-  KEY `idx_cps_selection_theme_window` (`tenant_id`, `deleted`, `status`, `start_time`, `end_time`) USING BTREE
+  KEY `idx_cps_selection_theme_window` (`tenant_id`, `deleted`, `status`, `start_time`, `end_time`) USING BTREE,
+  KEY `idx_cps_selection_theme_refresh_lease` (`tenant_id`, `deleted`, `theme_type`, `status`, `refresh_status`, `refresh_started_time`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPS选品主题表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1190,6 +1195,7 @@ CREATE TABLE `cps_selection_theme_item`  (
   `recommend_score` decimal(10,2) DEFAULT NULL COMMENT '推荐分',
   `recommend_reason` varchar(1024) DEFAULT NULL COMMENT '推荐理由',
   `top_flag` tinyint NOT NULL DEFAULT 0 COMMENT '置顶标识',
+  `manual_adjusted` tinyint NOT NULL DEFAULT 0 COMMENT '是否经过人工排序、置顶或状态调整：0否 1是',
   `status` varchar(32) NOT NULL DEFAULT 'ENABLED' COMMENT '状态：ENABLED/DISABLED',
   `source_type` varchar(32) NOT NULL DEFAULT 'MANUAL' COMMENT '来源类型',
   `item_link` varchar(1024) DEFAULT NULL COMMENT '原始链接',
@@ -1206,8 +1212,39 @@ CREATE TABLE `cps_selection_theme_item`  (
   UNIQUE KEY `uk_cps_selection_theme_item_goods` (`tenant_id`, `theme_id`, `platform_code`, `vendor_code`, `goods_id`, `goods_sign`, `deleted`) USING BTREE,
   KEY `idx_cps_selection_theme_item_list` (`tenant_id`, `deleted`, `theme_id`, `status`, `top_flag`, `sort`) USING BTREE,
   KEY `idx_cps_selection_theme_item_platform` (`tenant_id`, `deleted`, `platform_code`, `source_type`) USING BTREE,
-  KEY `idx_cps_selection_theme_item_score` (`tenant_id`, `deleted`, `theme_id`, `recommend_score`) USING BTREE
+  KEY `idx_cps_selection_theme_item_score` (`tenant_id`, `deleted`, `theme_id`, `recommend_score`) USING BTREE,
+  KEY `idx_cps_selection_theme_item_refresh` (`tenant_id`, `deleted`, `theme_id`, `source_type`, `snapshot_time`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'CPS选品主题商品快照表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for cps_selection_ai_review
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_selection_ai_review`;
+CREATE TABLE `cps_selection_ai_review` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '复核记录ID',
+  `review_context_id` varchar(128) NOT NULL COMMENT '分析结果上下文ID',
+  `owner_user_id` bigint NOT NULL COMMENT '复核状态所属管理员ID',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `vendor_code` varchar(32) NOT NULL DEFAULT '' COMMENT '供应商编码',
+  `goods_id` varchar(128) NOT NULL COMMENT '商品ID',
+  `goods_sign` varchar(255) NOT NULL DEFAULT '' COMMENT '商品签名',
+  `title` varchar(255) DEFAULT NULL COMMENT '商品标题快照',
+  `main_pic` varchar(1024) DEFAULT NULL COMMENT '商品主图快照',
+  `review_status` varchar(32) NOT NULL COMMENT '复核状态：CONFIRMED/WITHDRAWN',
+  `reviewer_id` bigint NOT NULL COMMENT '复核管理员ID',
+  `review_time` datetime NOT NULL COMMENT '复核时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '复核备注',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cps_selection_ai_review_goods` (`tenant_id`, `owner_user_id`, `review_context_id`, `platform_code`, `vendor_code`, `goods_id`, `goods_sign`, `deleted`) USING BTREE,
+  KEY `idx_cps_selection_ai_review_context` (`tenant_id`, `deleted`, `owner_user_id`, `review_context_id`, `review_status`) USING BTREE,
+  KEY `idx_cps_selection_ai_review_operator` (`tenant_id`, `deleted`, `reviewer_id`, `review_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI选品人工复核审计表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for cps_member_goods_record
@@ -2005,6 +2042,14 @@ SELECT 'Jutuike order sync', 2, 'cpsJutuikeOrderSyncJob', '{"hours":2,"queryType
        '0 10 * * * ?', 2, 60, 900, 'system', 'system', b'0'
 WHERE NOT EXISTS (
   SELECT 1 FROM `infra_job` WHERE `handler_name` = 'cpsJutuikeOrderSyncJob' AND `deleted` = b'0'
+);
+
+INSERT INTO `infra_job` (`name`, `status`, `handler_name`, `handler_param`, `cron_expression`,
+                         `retry_count`, `retry_interval`, `monitor_timeout`, `creator`, `updater`, `deleted`)
+SELECT 'AI saved filter refresh', 2, 'cpsAiSavedFilterRefreshJob', NULL,
+       '0 */30 * * * ?', 1, 60, 900, 'system', 'system', b'0'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `infra_job` WHERE `handler_name` = 'cpsAiSavedFilterRefreshJob' AND `deleted` = b'0'
 );
 
 SET FOREIGN_KEY_CHECKS = 1;

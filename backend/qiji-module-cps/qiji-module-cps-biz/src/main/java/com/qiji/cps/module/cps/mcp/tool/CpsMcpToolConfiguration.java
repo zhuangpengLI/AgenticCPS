@@ -30,6 +30,11 @@ public class CpsMcpToolConfiguration {
     @Bean
     public List<ToolCallback> cpsMcpToolCallbacks(
             CpsSearchGoodsToolFunction searchGoodsToolFunction,
+            CpsFindResonanceGoodsToolFunction findResonanceGoodsToolFunction,
+            CpsFindAlternativesToolFunction findAlternativesToolFunction,
+            CpsAnalyzeGoodsDetailToolFunction analyzeGoodsDetailToolFunction,
+            CpsAnalyzeOrderProfileToolFunction analyzeOrderProfileToolFunction,
+            CpsAnalyzeOrderTrendToolFunction analyzeOrderTrendToolFunction,
             CpsComparePricesToolFunction comparePricesToolFunction,
             CpsGenerateLinkToolFunction generateLinkToolFunction,
             CpsQueryOrdersToolFunction queryOrdersToolFunction,
@@ -54,6 +59,26 @@ public class CpsMcpToolConfiguration {
                 FunctionToolCallback.builder("cps_search_goods", searchGoodsToolFunction)
                         .description("多平台商品搜索，返回商品标题、价格、券后价、优惠券金额、佣金比例、预估返利和销量等信息")
                         .inputType(CpsSearchGoodsToolFunction.Request.class)
+                        .build(),
+                FunctionToolCallback.builder("cps_find_resonance_goods", findResonanceGoodsToolFunction)
+                        .description("聚合综合搜索、销量、高佣、2 小时热销和全天热销候选，规则评分并返回多来源共振商品与证据")
+                        .inputType(CpsFindResonanceGoodsToolFunction.Request.class)
+                        .build(),
+                FunctionToolCallback.builder("cps_find_alternatives", findAlternativesToolFunction)
+                        .description("为商品或品类寻找价格相近、销量可靠且佣金更优的替代候选；只做选品分析")
+                        .inputType(CpsFindAlternativesToolFunction.Request.class)
+                        .build(),
+                FunctionToolCallback.builder("cps_analyze_goods_detail", analyzeGoodsDetailToolFunction)
+                        .description("分析商品搜索候选的价格带、优惠券、佣金、销量和平台覆盖，仅返回运营快照")
+                        .inputType(CpsAnalyzeGoodsDetailToolFunction.Request.class)
+                        .build(),
+                FunctionToolCallback.builder("cps_analyze_order_profile", analyzeOrderProfileToolFunction)
+                        .description("分析当前可信会员最近一段时间的成交画像，聚合订单、GMV、返利、平台、价格带和热销商品")
+                        .inputType(CpsAnalyzeOrderProfileToolFunction.Request.class)
+                        .build(),
+                FunctionToolCallback.builder("cps_analyze_order_trend", analyzeOrderTrendToolFunction)
+                        .description("分析当前可信会员已归因 CPS 订单的成交、客单价与返利时间趋势")
+                        .inputType(CpsAnalyzeOrderTrendToolFunction.Request.class)
                         .build(),
                 FunctionToolCallback.builder("cps_compare_prices", comparePricesToolFunction)
                         .description("跨平台或单平台比价，按券后价、返利金额和到手净价推荐最优商品")

@@ -1,7 +1,7 @@
 package com.qiji.cps.module.cps.controller.app.marketing;
 
 import com.qiji.cps.framework.common.pojo.CommonResult;
-import com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils;
+import com.qiji.cps.module.cps.controller.app.CpsAppMemberContext;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivitiesReqVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityReqVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityCardRespVO;
@@ -67,6 +67,6 @@ public class AppCpsMarketingController {
     }
 
     private Long getMemberId() {
-        return SecurityFrameworkUtils.getLoginUserId();
+        return CpsAppMemberContext.getOptionalMemberId();
     }
 }

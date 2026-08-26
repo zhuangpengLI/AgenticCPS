@@ -13,6 +13,8 @@ import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsResp
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchReqVO;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareSearchRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemImportReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionAiReviewReqVO;
+import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionAiReviewDO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemSortReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemePageReqVO;
@@ -23,6 +25,7 @@ import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeVe
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeItemDO;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeItemMapper;
+import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionAiReviewMapper;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeMapper;
 import com.qiji.cps.module.cps.service.goods.CpsGoodsSquareService;
 import org.junit.jupiter.api.DisplayName;
@@ -32,6 +35,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -57,6 +61,9 @@ class CpsSelectionThemeServiceImplTest {
 
     @Mock
     private CpsSelectionThemeItemMapper itemMapper;
+
+    @Mock
+    private CpsSelectionAiReviewMapper aiReviewMapper;
 
     @Mock
     private CpsGoodsSquareService goodsSquareService;
@@ -485,6 +492,265 @@ class CpsSelectionThemeServiceImplTest {
         assertEquals(8L, captor.getValue().getId());
         assertEquals(1, captor.getValue().getSort());
         assertEquals(1, captor.getValue().getTopFlag());
+        assertEquals(1, captor.getValue().getManualAdjusted());
+    }
+
+    @Test
+    @DisplayName("refreshAiSavedFilter - 仅自然语言条件安全跳过")
+    void refreshAiSavedFilter_skipsPromptOnlyRule() {
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder()
+                .id(100L).themeType(CpsSelectionConstants.ThemeType.AI_SAVED_FILTER)
+                .ruleJson("{\"prompt\":\"找厨房用品\",\"toolIntent\":\"SEARCH_GOODS\",\"mode\":\"SELECTION\"}")
+                .build());
+        when(themeMapper.claimAiSavedFilterRefresh(eq(100L), any(), any(), any())).thenReturn(1);
+        when(themeMapper.finishAiSavedFilterRefresh(eq(100L), any(),
+                eq(CpsSelectionConstants.ImportTaskStatus.SKIPPED), any(), any())).thenReturn(1);
+
+        var result = service.refreshAiSavedFilter(100L);
+
+        assertEquals(CpsSelectionConstants.ImportTaskStatus.SKIPPED, result.getStatus());
+        verify(goodsSquareService, never()).searchGoods(any());
+        verify(themeMapper).finishAiSavedFilterRefresh(eq(100L), any(),
+                eq(CpsSelectionConstants.ImportTaskStatus.SKIPPED), any(), any());
+    }
+
+    @Test
+    @DisplayName("refreshAiSavedFilter - 自动刷新使用结构化关键词并写入快照")
+    void refreshAiSavedFilter_refreshesStructuredRule() {
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder()
+                .id(100L).themeType(CpsSelectionConstants.ThemeType.AI_SAVED_FILTER)
+                .themeName("厨房用品").platformCodes("taobao").vendorCode("dataoke")
+                .ruleJson("{\"keywords\":[\"厨房用品\"],\"pullCount\":1,\"autoRefresh\":true}")
+                .build());
+        when(themeMapper.claimAiSavedFilterRefresh(eq(100L), any(), any(), any())).thenReturn(1);
+        when(themeMapper.renewAiSavedFilterRefresh(eq(100L), any(), any())).thenReturn(1);
+        when(themeMapper.finishAiSavedFilterRefresh(eq(100L), any(),
+                eq(CpsSelectionConstants.ImportTaskStatus.SUCCESS), any(), any())).thenReturn(1);
+        when(goodsSquareService.searchGoods(any())).thenReturn(CpsGoodsSquareSearchRespVO.builder()
+                .list(List.of(buildPulledGoods("taobao", "refresh-1"))).total(1L).build());
+
+        var result = service.refreshAiSavedFilter(100L);
+
+        assertEquals(CpsSelectionConstants.ImportTaskStatus.SUCCESS, result.getStatus());
+        assertEquals(1, result.getImportedCount());
+        ArgumentCaptor<CpsGoodsSquareSearchReqVO> searchCaptor =
+                ArgumentCaptor.forClass(CpsGoodsSquareSearchReqVO.class);
+        verify(goodsSquareService).searchGoods(searchCaptor.capture());
+        assertEquals("厨房用品", searchCaptor.getValue().getKeyword());
+        verify(itemMapper).insert(any(CpsSelectionThemeItemDO.class));
+    }
+
+    @Test
+    @DisplayName("refreshAiSavedFilter - 拉取完成后续租失败绝不写入商品")
+    void refreshAiSavedFilter_doesNotWriteWhenLeaseRenewalFails() {
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder()
+                .id(100L).themeType(CpsSelectionConstants.ThemeType.AI_SAVED_FILTER)
+                .themeName("厨房用品").platformCodes("taobao").vendorCode("dataoke")
+                .ruleJson("{\"keywords\":[\"厨房用品\"],\"pullCount\":1,\"autoRefresh\":true}")
+                .build());
+        when(themeMapper.claimAiSavedFilterRefresh(eq(100L), any(), any(), any())).thenReturn(1);
+        when(themeMapper.renewAiSavedFilterRefresh(eq(100L), any(), any())).thenReturn(0);
+        when(goodsSquareService.searchGoods(any())).thenReturn(CpsGoodsSquareSearchRespVO.builder()
+                .list(List.of(buildPulledGoods("taobao", "refresh-1"))).total(1L).build());
+
+        var result = service.refreshAiSavedFilter(100L);
+
+        assertEquals(CpsSelectionConstants.ImportTaskStatus.SKIPPED, result.getStatus());
+        verify(itemMapper, never()).insert(any(CpsSelectionThemeItemDO.class));
+        verify(itemMapper, never()).updateById(any(CpsSelectionThemeItemDO.class));
+        verify(itemMapper, never()).disableStaleAutoRefreshItems(eq(100L), any());
+        verify(themeMapper, never()).finishAiSavedFilterRefresh(eq(100L), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("refreshAiSavedFilter - 自动刷新保留人工调整和原始来源")
+    void refreshAiSavedFilter_preservesManualAdjustmentsAndSourceType() {
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder()
+                .id(100L).themeType(CpsSelectionConstants.ThemeType.AI_SAVED_FILTER)
+                .themeName("厨房用品").platformCodes("taobao").vendorCode("dataoke")
+                .ruleJson("{\"keywords\":[\"厨房用品\"],\"pullCount\":1,\"autoRefresh\":true}")
+                .build());
+        when(themeMapper.claimAiSavedFilterRefresh(eq(100L), any(), any(), any())).thenReturn(1);
+        when(themeMapper.renewAiSavedFilterRefresh(eq(100L), any(), any())).thenReturn(1);
+        when(themeMapper.finishAiSavedFilterRefresh(eq(100L), any(),
+                eq(CpsSelectionConstants.ImportTaskStatus.SUCCESS), any(), any())).thenReturn(1);
+        when(goodsSquareService.searchGoods(any())).thenReturn(CpsGoodsSquareSearchRespVO.builder()
+                .list(List.of(buildPulledGoods("taobao", "refresh-1"))).total(1L).build());
+        when(itemMapper.selectOneByUnique(100L, "taobao", "dataoke", "refresh-1", ""))
+                .thenReturn(CpsSelectionThemeItemDO.builder()
+                        .id(8L)
+                        .sourceType(CpsSelectionConstants.SourceType.AI_RECOMMEND)
+                        .status(CpsSelectionConstants.ItemStatus.DISABLED)
+                        .topFlag(1)
+                        .sort(9)
+                        .manualAdjusted(1)
+                        .build());
+
+        var result = service.refreshAiSavedFilter(100L);
+
+        assertEquals(CpsSelectionConstants.ImportTaskStatus.SUCCESS, result.getStatus());
+        ArgumentCaptor<CpsSelectionThemeItemDO> captor = ArgumentCaptor.forClass(CpsSelectionThemeItemDO.class);
+        verify(itemMapper).updateById(captor.capture());
+        assertEquals(8L, captor.getValue().getId());
+        assertEquals(CpsSelectionConstants.SourceType.AI_RECOMMEND, captor.getValue().getSourceType());
+        assertEquals(CpsSelectionConstants.ItemStatus.DISABLED, captor.getValue().getStatus());
+        assertEquals(1, captor.getValue().getTopFlag());
+        assertEquals(9, captor.getValue().getSort());
+        assertEquals(1, captor.getValue().getManualAdjusted());
+    }
+
+    @Test
+    @DisplayName("refreshAiSavedFilter - 未人工调整的旧自动商品再次命中后恢复启用")
+    void refreshAiSavedFilter_reactivatesStaleAutomaticItem() {
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder()
+                .id(100L).themeType(CpsSelectionConstants.ThemeType.AI_SAVED_FILTER)
+                .themeName("厨房用品").platformCodes("taobao").vendorCode("dataoke")
+                .ruleJson("{\"keywords\":[\"厨房用品\"],\"pullCount\":1,\"autoRefresh\":true}")
+                .build());
+        when(themeMapper.claimAiSavedFilterRefresh(eq(100L), any(), any(), any())).thenReturn(1);
+        when(themeMapper.renewAiSavedFilterRefresh(eq(100L), any(), any())).thenReturn(1);
+        when(themeMapper.finishAiSavedFilterRefresh(eq(100L), any(),
+                eq(CpsSelectionConstants.ImportTaskStatus.SUCCESS), any(), any())).thenReturn(1);
+        when(goodsSquareService.searchGoods(any())).thenReturn(CpsGoodsSquareSearchRespVO.builder()
+                .list(List.of(buildPulledGoods("taobao", "refresh-1"))).total(1L).build());
+        when(itemMapper.selectOneByUnique(100L, "taobao", "dataoke", "refresh-1", ""))
+                .thenReturn(CpsSelectionThemeItemDO.builder()
+                        .id(8L)
+                        .sourceType(CpsSelectionConstants.SourceType.AUTO_REFRESH)
+                        .status(CpsSelectionConstants.ItemStatus.DISABLED)
+                        .topFlag(1)
+                        .sort(9)
+                        .manualAdjusted(0)
+                        .build());
+
+        var result = service.refreshAiSavedFilter(100L);
+
+        assertEquals(CpsSelectionConstants.ImportTaskStatus.SUCCESS, result.getStatus());
+        ArgumentCaptor<CpsSelectionThemeItemDO> captor = ArgumentCaptor.forClass(CpsSelectionThemeItemDO.class);
+        verify(itemMapper).updateById(captor.capture());
+        assertEquals(CpsSelectionConstants.SourceType.AUTO_REFRESH, captor.getValue().getSourceType());
+        assertEquals(CpsSelectionConstants.ItemStatus.ENABLED, captor.getValue().getStatus());
+        assertEquals(0, captor.getValue().getTopFlag());
+        assertEquals(0, captor.getValue().getSort());
+        assertEquals(0, captor.getValue().getManualAdjusted());
+    }
+
+    @Test
+    @DisplayName("refreshAiSavedFilter - 未取得刷新租约时不调用供应商")
+    void refreshAiSavedFilter_skipsWhenLeaseIsBusy() {
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder()
+                .id(100L).themeType(CpsSelectionConstants.ThemeType.AI_SAVED_FILTER)
+                .ruleJson("{\"keywords\":[\"厨房用品\"]}").build());
+        when(themeMapper.claimAiSavedFilterRefresh(eq(100L), any(), any(), any())).thenReturn(0);
+
+        var result = service.refreshAiSavedFilter(100L);
+
+        assertEquals(CpsSelectionConstants.ImportTaskStatus.SKIPPED, result.getStatus());
+        verify(goodsSquareService, never()).searchGoods(any());
+        verify(itemMapper, never()).insert(any(CpsSelectionThemeItemDO.class));
+    }
+
+    @Test
+    @DisplayName("refreshAiSavedFilter - 未知规则字段写入失败状态")
+    void refreshAiSavedFilter_rejectsUnknownRuleField() {
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder()
+                .id(100L).themeType(CpsSelectionConstants.ThemeType.AI_SAVED_FILTER)
+                .ruleJson("{\"keywords\":[\"厨房用品\"],\"pullCounnt\":10}").build());
+        when(themeMapper.claimAiSavedFilterRefresh(eq(100L), any(), any(), any())).thenReturn(1);
+        when(themeMapper.finishAiSavedFilterRefresh(eq(100L), any(),
+                eq(CpsSelectionConstants.ImportTaskStatus.FAILED), any(), any())).thenReturn(1);
+
+        var result = service.refreshAiSavedFilter(100L);
+
+        assertEquals(CpsSelectionConstants.ImportTaskStatus.FAILED, result.getStatus());
+        verify(goodsSquareService, never()).searchGoods(any());
+        verify(themeMapper).finishAiSavedFilterRefresh(eq(100L), any(),
+                eq(CpsSelectionConstants.ImportTaskStatus.FAILED), any(), any());
+    }
+
+    @Test
+    @DisplayName("refreshAiSavedFilter - 无效规则失败落库时丢失租约则不覆盖后续状态")
+    void refreshAiSavedFilter_doesNotReportFailedAfterLeaseLoss() {
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder()
+                .id(100L).themeType(CpsSelectionConstants.ThemeType.AI_SAVED_FILTER)
+                .ruleJson("{\"keywords\":[\"厨房用品\"],\"pullCounnt\":10}").build());
+        when(themeMapper.claimAiSavedFilterRefresh(eq(100L), any(), any(), any())).thenReturn(1);
+        when(themeMapper.finishAiSavedFilterRefresh(eq(100L), any(),
+                eq(CpsSelectionConstants.ImportTaskStatus.FAILED), any(), any())).thenReturn(0);
+
+        var result = service.refreshAiSavedFilter(100L);
+
+        assertEquals(CpsSelectionConstants.ImportTaskStatus.SKIPPED, result.getStatus());
+        verify(goodsSquareService, never()).searchGoods(any());
+    }
+
+    @Test
+    @DisplayName("refreshAiSavedFilter - 拒绝绝对商品列表 URL")
+    void refreshAiSavedFilter_rejectsAbsoluteGoodsListUrl() {
+        when(themeMapper.selectById(100L)).thenReturn(CpsSelectionThemeDO.builder()
+                .id(100L).themeType(CpsSelectionConstants.ThemeType.AI_SAVED_FILTER)
+                .ruleJson("{\"goodsListUrl\":\"https://example.com/items\"}").build());
+        when(themeMapper.claimAiSavedFilterRefresh(eq(100L), any(), any(), any())).thenReturn(1);
+        when(themeMapper.finishAiSavedFilterRefresh(eq(100L), any(),
+                eq(CpsSelectionConstants.ImportTaskStatus.FAILED), any(), any())).thenReturn(1);
+
+        var result = service.refreshAiSavedFilter(100L);
+
+        assertEquals(CpsSelectionConstants.ImportTaskStatus.FAILED, result.getStatus());
+        verify(goodsSquareService, never()).searchGoods(any());
+    }
+
+    @Test
+    @DisplayName("upsertAiReview - 复核人由可信登录上下文传入并可审计")
+    void upsertAiReview_recordsTrustedReviewer() {
+        CpsSelectionAiReviewReqVO reqVO = new CpsSelectionAiReviewReqVO();
+        reqVO.setReviewContextId("message-10:block-1");
+        reqVO.setPlatformCode("taobao");
+        reqVO.setVendorCode("dataoke");
+        reqVO.setGoodsId("goods-1");
+        reqVO.setReviewStatus(CpsSelectionConstants.AiReviewStatus.CONFIRMED);
+        when(aiReviewMapper.selectOneByUnique("message-10:block-1", 88L, "taobao", "dataoke", "goods-1", ""))
+                .thenReturn(null);
+        when(aiReviewMapper.insert(any(CpsSelectionAiReviewDO.class))).thenAnswer(invocation -> {
+            CpsSelectionAiReviewDO review = invocation.getArgument(0);
+            review.setId(9L);
+            return 1;
+        });
+
+        Long id = service.upsertAiReview(reqVO, 88L);
+
+        ArgumentCaptor<CpsSelectionAiReviewDO> captor = ArgumentCaptor.forClass(CpsSelectionAiReviewDO.class);
+        verify(aiReviewMapper).insert(captor.capture());
+        assertEquals(9L, id);
+        assertEquals(88L, captor.getValue().getReviewerId());
+        assertEquals(CpsSelectionConstants.AiReviewStatus.CONFIRMED, captor.getValue().getReviewStatus());
+    }
+
+    @Test
+    @DisplayName("upsertAiReview - 并发首次写入唯一键冲突后幂等更新")
+    void upsertAiReview_recoversFromConcurrentInsert() {
+        CpsSelectionAiReviewReqVO reqVO = new CpsSelectionAiReviewReqVO();
+        reqVO.setReviewContextId("message-10:block-1");
+        reqVO.setPlatformCode("taobao");
+        reqVO.setVendorCode("dataoke");
+        reqVO.setGoodsId("goods-1");
+        reqVO.setReviewStatus(CpsSelectionConstants.AiReviewStatus.CONFIRMED);
+        CpsSelectionAiReviewDO concurrent = CpsSelectionAiReviewDO.builder().id(21L).build();
+        when(aiReviewMapper.selectOneByUnique("message-10:block-1", 88L, "taobao", "dataoke", "goods-1", ""))
+                .thenReturn(null);
+        when(aiReviewMapper.selectOneByUniqueForUpdate("message-10:block-1", 88L,
+                "taobao", "dataoke", "goods-1", "")).thenReturn(concurrent);
+        when(aiReviewMapper.insert(any(CpsSelectionAiReviewDO.class)))
+                .thenThrow(new DuplicateKeyException("concurrent insert"));
+
+        Long id = service.upsertAiReview(reqVO, 88L);
+
+        assertEquals(21L, id);
+        ArgumentCaptor<CpsSelectionAiReviewDO> captor = ArgumentCaptor.forClass(CpsSelectionAiReviewDO.class);
+        verify(aiReviewMapper).updateById(captor.capture());
+        assertEquals(21L, captor.getValue().getId());
+        assertEquals(88L, captor.getValue().getReviewerId());
+        assertEquals(CpsSelectionConstants.AiReviewStatus.CONFIRMED, captor.getValue().getReviewStatus());
     }
 
     private CpsSelectionThemeSaveReqVO buildThemeReq() {

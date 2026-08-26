@@ -1654,3 +1654,59 @@ CREATE TABLE IF NOT EXISTS `cps_didi_callback_event` (
   KEY `idx_didi_callback_order` (`tenant_id`,`platform_order_id`) USING BTREE,
   KEY `idx_didi_callback_trace` (`tenant_id`,`trace_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='滴滴联盟回调事件审计表';
+
+-- ============================================================
+-- 修改时间：2026-08-25 18:20:00
+-- 目的：为 AI 选品保存条件记录刷新结果摘要，支持工作台展示跳过/失败原因。
+-- ============================================================
+ALTER TABLE `cps_selection_theme`
+  ADD COLUMN `refresh_message` varchar(500) DEFAULT NULL COMMENT '刷新结果摘要或失败原因' AFTER `last_refresh_time`;
+
+INSERT INTO `infra_job` (`name`, `status`, `handler_name`, `handler_param`, `cron_expression`,
+                         `retry_count`, `retry_interval`, `monitor_timeout`, `creator`, `updater`, `deleted`)
+SELECT 'AI saved filter refresh', 2, 'cpsAiSavedFilterRefreshJob', NULL,
+       '0 */30 * * * ?', 1, 60, 900, 'system', 'system', b'0'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `infra_job` WHERE `handler_name` = 'cpsAiSavedFilterRefreshJob' AND `deleted` = b'0'
+);
+
+-- ============================================================
+-- 修改时间：2026-08-26 16:30:00
+-- 目的：补齐 AI 选品人工复核审计，并为保存条件刷新增加带超时接管的 CAS 租约与旧快照索引。
+-- ============================================================
+ALTER TABLE `cps_selection_theme`
+  ADD COLUMN `refresh_started_time` datetime DEFAULT NULL COMMENT '当前刷新租约开始时间' AFTER `refresh_message`,
+  ADD COLUMN `refresh_batch_no` varchar(64) DEFAULT NULL COMMENT '当前刷新租约批次号' AFTER `refresh_started_time`,
+  ADD KEY `idx_cps_selection_theme_refresh_lease`
+    (`tenant_id`, `deleted`, `theme_type`, `status`, `refresh_status`, `refresh_started_time`);
+
+ALTER TABLE `cps_selection_theme_item`
+  ADD COLUMN `manual_adjusted` tinyint NOT NULL DEFAULT 0 COMMENT '是否经过人工排序、置顶或状态调整：0否 1是' AFTER `top_flag`,
+  ADD KEY `idx_cps_selection_theme_item_refresh`
+    (`tenant_id`, `deleted`, `theme_id`, `source_type`, `snapshot_time`);
+
+CREATE TABLE IF NOT EXISTS `cps_selection_ai_review` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '复核记录ID',
+  `review_context_id` varchar(128) NOT NULL COMMENT '分析结果上下文ID',
+  `owner_user_id` bigint NOT NULL COMMENT '复核状态所属管理员ID',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `vendor_code` varchar(32) NOT NULL DEFAULT '' COMMENT '供应商编码',
+  `goods_id` varchar(128) NOT NULL COMMENT '商品ID',
+  `goods_sign` varchar(255) NOT NULL DEFAULT '' COMMENT '商品签名',
+  `title` varchar(255) DEFAULT NULL COMMENT '商品标题快照',
+  `main_pic` varchar(1024) DEFAULT NULL COMMENT '商品主图快照',
+  `review_status` varchar(32) NOT NULL COMMENT '复核状态：CONFIRMED/WITHDRAWN',
+  `reviewer_id` bigint NOT NULL COMMENT '复核管理员ID',
+  `review_time` datetime NOT NULL COMMENT '复核时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '复核备注',
+  `creator` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_cps_selection_ai_review_goods` (`tenant_id`, `owner_user_id`, `review_context_id`, `platform_code`, `vendor_code`, `goods_id`, `goods_sign`, `deleted`) USING BTREE,
+  KEY `idx_cps_selection_ai_review_context` (`tenant_id`, `deleted`, `owner_user_id`, `review_context_id`, `review_status`) USING BTREE,
+  KEY `idx_cps_selection_ai_review_operator` (`tenant_id`, `deleted`, `reviewer_id`, `review_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI选品人工复核审计表' ROW_FORMAT = DYNAMIC;

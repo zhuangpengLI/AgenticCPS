@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.service.selection;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qiji.cps.module.cps.controller.admin.goods.vo.CpsGoodsSquareGoodsRespVO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
@@ -40,7 +41,8 @@ import java.util.Objects;
 public class CpsSelectionAiRecommendService {
 
     private static final BigDecimal ZERO = BigDecimal.ZERO;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @Resource
     private ApplicationContext applicationContext;

@@ -33,6 +33,7 @@ public class CpsSelectionThemeItemRespVO {
     private BigDecimal recommendScore;
     private String recommendReason;
     private Integer topFlag;
+    private Integer manualAdjusted;
     private String status;
     private String sourceType;
     private String itemLink;

@@ -4,6 +4,8 @@ import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeAiRecommendReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionAiReviewReqVO;
+import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionAiReviewRespVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemImportReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeItemRespVO;
@@ -20,6 +22,7 @@ import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeTe
 import com.qiji.cps.module.cps.controller.admin.selection.vo.CpsSelectionThemeVendorPullReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeDO;
 import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionThemeItemDO;
+import com.qiji.cps.module.cps.dal.dataobject.selection.CpsSelectionAiReviewDO;
 import com.qiji.cps.module.cps.service.selection.CpsSelectionThemeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -40,6 +43,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 import static com.qiji.cps.framework.common.pojo.CommonResult.success;
+import static com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 
 @Tag(name = "管理后台 - CPS选品库")
 @RestController
@@ -217,5 +221,28 @@ public class CpsSelectionThemeController {
     @PreAuthorize("@ss.hasPermission('cps:selection-theme:create')")
     public CommonResult<Long> createFromTemplate(@Valid @RequestBody CpsSelectionThemeTemplateCreateReqVO reqVO) {
         return success(selectionThemeService.createFromTemplate(reqVO));
+    }
+
+    @PostMapping("/ai-saved-filters/refresh")
+    @Operation(summary = "刷新 AI 保存条件")
+    @PreAuthorize("@ss.hasPermission('cps:selection-theme:update')")
+    public CommonResult<CpsSelectionThemeOperationRespVO> refreshAiSavedFilter(@RequestParam("id") Long id) {
+        return success(selectionThemeService.refreshAiSavedFilter(id));
+    }
+
+    @GetMapping("/ai-reviews/list")
+    @Operation(summary = "查询 AI 选品人工复核记录")
+    @PreAuthorize("@ss.hasPermission('cps:selection-theme:query')")
+    public CommonResult<List<CpsSelectionAiReviewRespVO>> listAiReviews(
+            @RequestParam("reviewContextId") String reviewContextId) {
+        List<CpsSelectionAiReviewDO> list = selectionThemeService.listAiReviews(reviewContextId, getLoginUserId());
+        return success(BeanUtils.toBean(list, CpsSelectionAiReviewRespVO.class));
+    }
+
+    @PutMapping("/ai-reviews")
+    @Operation(summary = "记录 AI 选品人工复核结果")
+    @PreAuthorize("@ss.hasPermission('cps:selection-theme:update')")
+    public CommonResult<Long> upsertAiReview(@Valid @RequestBody CpsSelectionAiReviewReqVO reqVO) {
+        return success(selectionThemeService.upsertAiReview(reqVO, getLoginUserId()));
     }
 }
