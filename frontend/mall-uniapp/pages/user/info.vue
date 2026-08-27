@@ -173,8 +173,11 @@
     </view>
 
     <su-fixed bottom placeholder bg="none">
-      <view class="footer-box ss-p-20">
-        <button class="ss-rest-button logout-btn ui-Shadow-Main" @tap="onSubmit">保存</button>
+      <view class="footer-box ss-flex ss-p-20">
+        <button class="ss-reset-button action-btn logout-btn" @tap="onLogout">退出登录</button>
+        <button class="ss-reset-button action-btn save-btn ui-Shadow-Main" @tap="onSubmit">
+          保存
+        </button>
       </view>
     </su-fixed>
   </s-layout>
@@ -185,6 +188,7 @@
   import sheep from '@/sheep';
   import { clone } from 'lodash-es';
   import { showAuthModal } from '@/sheep/hooks/useModal';
+  import AuthUtil from '@/sheep/api/member/auth';
   import UserApi from '@/sheep/api/member/user';
   import {
     chooseAndUploadFile,
@@ -285,6 +289,28 @@
     }
   }
 
+  // 退出登录
+  function onLogout() {
+    uni.showModal({
+      title: '提示',
+      content: '确认退出账号？',
+      confirmColor: '#e34d59',
+      success: async function (res) {
+        if (!res.confirm) {
+          return;
+        }
+        try {
+          await AuthUtil.logout();
+        } catch (error) {
+          console.warn('服务端退出失败，继续清理本地会话:', error);
+        } finally {
+          await sheep.$store('user').logout();
+          sheep.$router.go('/pages/index/user');
+        }
+      },
+    });
+  }
+
   // 获得用户信息
   const getUserInfo = async () => {
     // 个人信息
@@ -350,13 +376,23 @@
     line-height: 100rpx;
   }
 
-  .logout-btn {
-    width: 710rpx;
+  .action-btn {
+    flex: 1;
     height: 80rpx;
-    background: linear-gradient(90deg, var(--ui-BG-Main), var(--ui-BG-Main-gradient));
     border-radius: 40rpx;
     font-size: 30rpx;
     font-weight: 500;
+  }
+
+  .logout-btn {
+    margin-right: 20rpx;
+    color: #e34d59;
+    background: $white;
+    border: 2rpx solid #e34d59;
+  }
+
+  .save-btn {
+    background: linear-gradient(90deg, var(--ui-BG-Main), var(--ui-BG-Main-gradient));
     color: $white;
   }
 

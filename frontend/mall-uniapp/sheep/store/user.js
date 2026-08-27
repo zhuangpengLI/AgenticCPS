@@ -41,12 +41,28 @@ const user = defineStore({
   state: () => ({
     userInfo: clone(defaultUserInfo), // 用户信息
     userWallet: clone(defaultUserWallet), // 用户钱包信息
-    isLogin: !!uni.getStorageSync('token'), // 登录状态
+    authRevision: 0, // 登录令牌变更版本，用于让 token 派生 getter 保持响应式
     numData: cloneDeep(defaultNumData), // 用户其他数据
     lastUpdateTime: 0, // 上次更新时间
   }),
 
+  getters: {
+    // token 是登录状态的唯一事实源；authRevision 仅用于令牌变更后使 getter 失效重算
+    isLogin: (state) => {
+      void state.authRevision;
+      return Boolean(uni.getStorageSync('token'));
+    },
+  },
+
   actions: {
+    // 清理旧版本持久化的整份用户资料；新版本只持久化 token
+    clearLegacyUserCache() {
+      uni.removeStorageSync('user-store');
+      // #ifdef H5
+      window.sessionStorage?.removeItem('user-store');
+      // #endif
+    },
+
     // 获取用户信息
     async getInfo() {
       const { code, data } = await UserApi.getUserInfo();
@@ -80,19 +96,41 @@ const user = defineStore({
       });
     },
 
-    // 设置 token
+    // 设置 token：这里只负责持久化，不触发登录后请求。
+    // 登录接口必须通过 establishSession 完成会员身份校验后，才对外宣布登录成功。
     setToken(token = '', refreshToken = '') {
       if (token === '') {
-        this.isLogin = false;
         uni.removeStorageSync('token');
         uni.removeStorageSync('refresh-token');
       } else {
-        this.isLogin = true;
         uni.setStorageSync('token', token);
         uni.setStorageSync('refresh-token', refreshToken);
-        this.loginAfter();
       }
+      this.authRevision += 1;
+      if (token === '') uni.$emit('auth:logout');
       return this.isLogin;
+    },
+
+    // 建立可用的会员会话：保存令牌后必须验证 /member/user/get，验证成功才关闭登录流程。
+    async establishSession(tokenData = {}) {
+      const accessToken =
+        typeof tokenData.accessToken === 'string' ? tokenData.accessToken.trim() : '';
+      if (!accessToken) {
+        throw new Error('登录响应缺少访问令牌');
+      }
+
+      this.setToken(accessToken, tokenData.refreshToken || '');
+      this.lastUpdateTime = 0;
+      try {
+        const userInfo = await this.getInfo();
+        if (!userInfo) throw new Error('会员登录状态校验失败');
+        await this.loginAfter({ refreshUser: false });
+        uni.$emit('auth:login');
+        return userInfo;
+      } catch (error) {
+        this.resetUserData();
+        throw error;
+      }
     },
 
     // 更新用户相关信息 (手动限流，5 秒之内不刷新)
@@ -119,17 +157,19 @@ const user = defineStore({
     resetUserData() {
       // 清空 token
       this.setToken();
+      this.clearLegacyUserCache();
       // 清空用户相关的缓存
       this.userInfo = clone(defaultUserInfo);
       this.userWallet = clone(defaultUserWallet);
       this.numData = cloneDeep(defaultNumData);
+      this.lastUpdateTime = 0;
       // 清空购物车的缓存
       cart().emptyList();
     },
 
     // 登录后，加载各种信息
-    async loginAfter() {
-      await this.updateUserData();
+    async loginAfter({ refreshUser = true } = {}) {
+      if (refreshUser) await this.updateUserData();
 
       // 加载购物车
       cart().getList();
@@ -150,14 +190,6 @@ const user = defineStore({
       this.resetUserData();
       return !this.isLogin;
     },
-  },
-  persist: {
-    enabled: true,
-    strategies: [
-      {
-        key: 'user-store',
-      },
-    ],
   },
 });
 

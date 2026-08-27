@@ -3,6 +3,90 @@ import { showAuthModal, showShareModal } from '@/sheep/hooks/useModal';
 import { isNumber, isString, isEmpty, startsWith, isObject, isNil, clone } from 'lodash-es';
 import throttle from '@/sheep/helper/throttle';
 
+let authGuardsInstalled = false;
+let pendingAuthRoute = '';
+
+function normalizeLocalUrl(value = '') {
+  if (!isString(value) || !value) return '';
+  if (startsWith(value, 'http') || startsWith(value, 'action:') || startsWith(value, 'plugin-')) {
+    return '';
+  }
+  const [pathWithQuery, hash = ''] = value.split('#');
+  const [rawPath, query = ''] = pathWithQuery.split('?');
+  const path = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+  return `${path}${query ? `?${query}` : ''}${hash ? `#${hash}` : ''}`;
+}
+
+function getRouteByUrl(value = '') {
+  const url = normalizeLocalUrl(value);
+  if (!url) return null;
+  return ROUTES_MAP[url.split(/[?#]/)[0]] || null;
+}
+
+function guardRoute(value, { remember = true } = {}) {
+  const url = normalizeLocalUrl(value);
+  const route = getRouteByUrl(url);
+  // 未知路径、外链和公开页面全部放行；进入已知公开页代表放弃之前被拦截的目标
+  if (!route?.meta?.auth) {
+    if (remember && route) pendingAuthRoute = '';
+    return true;
+  }
+  if ($store('user').isLogin) return true;
+
+  if (remember) pendingAuthRoute = url;
+  showAuthModal();
+  return false;
+}
+
+function restorePendingAuthRoute() {
+  if (!pendingAuthRoute || !$store('user').isLogin) return;
+  const target = pendingAuthRoute;
+  pendingAuthRoute = '';
+  setTimeout(() => {
+    uni.reLaunch({ url: target });
+  }, 0);
+}
+
+function installAuthGuards() {
+  if (authGuardsInstalled) return;
+  authGuardsInstalled = true;
+
+  ['navigateTo', 'redirectTo', 'reLaunch', 'switchTab'].forEach((method) => {
+    uni.addInterceptor(method, {
+      invoke(args = {}) {
+        if (!guardRoute(args.url)) return false;
+      },
+    });
+  });
+  uni.$on('auth:login', restorePendingAuthRoute);
+  uni.$on('auth:required', guardCurrentRoute);
+  uni.$on('auth:logout', () => {
+    pendingAuthRoute = '';
+  });
+}
+
+function queryObjectToString(query = {}) {
+  return Object.keys(query)
+    .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(query[key] ?? '')}`)
+    .join('&');
+}
+
+function guardEntry(options = {}) {
+  const path = options?.path || options?.route;
+  if (!path) return guardCurrentRoute();
+  const query = queryObjectToString(options.query || {});
+  return guardRoute(`${path}${query ? `?${query}` : ''}`);
+}
+
+function guardCurrentRoute() {
+  const pages = getCurrentPages();
+  const currentPage = pages[pages.length - 1];
+  if (!currentPage) return true;
+  const path = currentPage.route || currentPage.$page?.route || currentPage.$page?.fullPath;
+  const query = queryObjectToString(currentPage.options || currentPage.$page?.options || {});
+  return guardRoute(`${path || ''}${query ? `?${query}` : ''}`);
+}
+
 const _go = (
   path,
   params = {},
@@ -57,16 +141,13 @@ const _go = (
     return;
   }
 
-  // 页面登录拦截
-  if (nextRoute.meta?.auth && !$store('user').isLogin) {
-    showAuthModal();
-    return;
-  }
-
   url = page;
   if (!isEmpty(query)) {
     url += `?${query}`;
   }
+
+  // 页面登录拦截统一复用全局守卫
+  if (!guardRoute(url)) return;
 
   // 跳转底部导航
   if (TABBAR.includes(page)) {
@@ -199,5 +280,9 @@ export default {
   redirect,
   getCurrentPage,
   getCurrentRoute,
+  guardCurrentRoute,
+  guardEntry,
+  guardRoute,
+  installAuthGuards,
   error,
 };

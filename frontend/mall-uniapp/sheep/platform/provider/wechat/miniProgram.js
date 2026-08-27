@@ -25,6 +25,7 @@ const login = async () => {
     // 2. 社交登录
     const loginResult = await AuthUtil.socialLogin(socialType, codeResult.code, 'default');
     if (loginResult.code === 0) {
+      await sheep.$store('user').establishSession(loginResult.data);
       setOpenid(loginResult.data.openid);
       return resolve(true);
     } else {
@@ -49,6 +50,7 @@ const mobileLogin = async (e) => {
     // 2. 一键登录
     const loginResult = await AuthUtil.weixinMiniAppLogin(e.code, codeResult.code, 'default');
     if (loginResult.code === 0) {
+      await sheep.$store('user').establishSession(loginResult.data);
       setOpenid(loginResult.data.openid);
       return resolve(true);
     } else {

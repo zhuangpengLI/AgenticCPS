@@ -1,6 +1,6 @@
 import SocialApi from '@/sheep/api/member/social';
 import AuthUtil from '@/sheep/api/member/auth';
-import UserApi from '@/sheep/api/member/user';
+import sheep from '@/sheep';
 
 const socialType = 40; // 社交类型 - 支付宝小程序
 
@@ -17,74 +17,73 @@ function load() {
 
 //支付宝小程序静默授权登录
 const login = async () => {
-  return new Promise(async (resolve,reject)=>{
+  try {
     // 1. 获取支付宝的code
     const codeResult = await uni.login({
       provider: 'alipay',
       scopes: 'auth_user',
     });
-    if(codeResult.errMsg !== 'login:ok'){
-      return resolve(false);
+    if (codeResult.errMsg !== 'login:ok' || !codeResult.code) {
+      showLoginError(codeResult.errMsg);
+      return false;
     }
 
     // 2. 社交登录
     const loginResult = await AuthUtil.socialLogin(socialType, codeResult.code, 'default');
     if (loginResult.code === 0) {
+      await sheep.$store('user').establishSession(loginResult.data);
       setOpenid(loginResult.data.openid);
-      return resolve(true);
-    } else {
-      return resolve(false);
+      return true;
     }
-  })
+
+    showLoginError();
+    return false;
+  } catch (error) {
+    showLoginError(error?.errMsg);
+    return false;
+  }
 }
 
-// 支付宝小程序手机号授权登录
-const mobileLogin = async (e) =>{
-  return new Promise(async (resolve, reject) => {
-    if (e.errMsg !== 'getPhoneNumber:ok') {
-      return resolve(false);
-    }
-
-    // 1. 获得支付宝 code
-    const codeResult = await uni.login();
-    if (codeResult.errMsg !== 'login:ok') {
-      return resolve(false);
-    }
-
-    // TODO 2. 一键登录
-    // const loginResult = await AuthUtil.weixinMiniAppLogin(e.code, codeResult.code, 'default');
-    // if (loginResult.code === 0) {
-    //   setOpenid(loginResult.data.openid);
-    //   return resolve(true);
-    // } else {
-    //   return resolve(false);
-    // }
-    // TODO 芋艿：shareInfo: uni.getStorageSync('shareLog') || {},
+function showLoginError(detail) {
+  uni.showToast({
+    icon: 'none',
+    title: detail ? `支付宝登录失败：${detail}` : '支付宝登录失败，请稍后重试',
   });
 }
 
+// 支付宝小程序手机号授权登录
+const mobileLogin = async () => {
+  uni.showToast({
+    icon: 'none',
+    title: '支付宝手机号快捷登录暂未开放，请使用短信登录',
+  });
+  return false;
+};
+
 
 // 支付宝小程序绑定
-const bind = () => {
-  return new Promise(async (resolve, reject) => {
+const bind = async () => {
+  try {
     // 1. 获得支付宝小程序 code
     const codeResult = await uni.login({
       provider: 'alipay',
       scopes: 'auth_user',
     });
     if (codeResult.errMsg !== 'login:ok') {
-      return resolve(false);
+      return false;
     }
 
     // 2. 绑定账号
     const bindResult = await SocialApi.socialBind(socialType, codeResult.code, 'default');
     if (bindResult.code === 0) {
       setOpenid(bindResult.data);
-      return resolve(true);
-    } else {
-      return resolve(false);
+      return true;
     }
-  });
+    return false;
+  } catch (error) {
+    uni.showToast({ icon: 'none', title: '支付宝绑定失败，请稍后重试' });
+    return false;
+  }
 };
 
 // 支付宝小程序解除绑定
@@ -94,15 +93,12 @@ const unbind = async (openid) => {
 };
 
 // 绑定用户手机号
-const bindUserPhoneNumber = (e) => {
-  return new Promise(async (resolve, reject) => {
-    // todo 待完善
-    // const { code } = await UserApi.updateUserMobileByWeixin(e.code);
-    // if (code === 0) {
-    //   resolve(true);
-    // }
-    resolve(false);
+const bindUserPhoneNumber = async () => {
+  uni.showToast({
+    icon: 'none',
+    title: '支付宝手机号绑定暂未开放，请稍后重试',
   });
+  return false;
 };
 
 // 设置 openid 到本地存储，目前只有 pay 支付时会使用
@@ -180,9 +176,9 @@ function subscribeMessage(event, callback = undefined){
   let tmplIds = [];
   if (typeof event === 'string') {
     const temp = subscribeEventList.find(item => item.title.includes(event));
-  }
-  if (temp) {
-    tmplIds.push(temp.id);
+    if (temp) {
+      tmplIds.push(temp.id);
+    }
   }
   if (typeof event === 'object') {
     event.forEach((e) => {

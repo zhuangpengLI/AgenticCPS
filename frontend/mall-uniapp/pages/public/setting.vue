@@ -123,12 +123,14 @@
         if (!res.confirm) {
           return;
         }
-        const { code } = await AuthUtil.logout();
-        if (code !== 0) {
-          return;
+        try {
+          await AuthUtil.logout();
+        } catch (error) {
+          console.warn('服务端退出失败，继续清理本地会话:', error);
+        } finally {
+          await sheep.$store('user').logout();
+          sheep.$router.go('/pages/index/user');
         }
-        sheep.$store('user').logout();
-        sheep.$router.go('/pages/index/user');
       },
     });
   }
@@ -142,12 +144,14 @@
         if (!res.confirm) {
           return;
         }
-        const { code } = await AuthUtil.logout();
-        if (code !== 0) {
-          return;
+        try {
+          await AuthUtil.logout();
+        } catch (error) {
+          console.warn('服务端退出失败，继续清理本地会话:', error);
+        } finally {
+          await sheep.$store('user').logout();
+          sheep.$router.go('/pages/index/user');
         }
-        sheep.$store('user').logout();
-        sheep.$router.go('/pages/index/user');
       },
     });
   }

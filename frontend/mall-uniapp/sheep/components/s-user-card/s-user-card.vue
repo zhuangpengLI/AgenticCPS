@@ -13,7 +13,7 @@
         </view>
         <view>
           <view class="nickname-box ss-flex ss-col-center">
-            <view class="nick-name ss-m-r-20">{{ userInfo?.nickname || nickname }}</view>
+            <view class="nick-name ss-m-r-20">{{ isLogin ? userInfo?.nickname || nickname : nickname }}</view>
           </view>
         </view>
       </view>

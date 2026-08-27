@@ -3,7 +3,7 @@
   <view v-if="template">
     <s-layout
       title="首页"
-      navbar="custom"
+      :navbar="isRebateTemplate ? 'none' : 'custom'"
       tabbar="/pages/index/index"
       :bgStyle="template.page"
       :navbarStyle="template.navigationBar"

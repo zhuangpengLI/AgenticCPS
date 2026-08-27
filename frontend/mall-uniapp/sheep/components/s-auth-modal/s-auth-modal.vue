@@ -201,7 +201,7 @@
     }
     const loginRes = await sheep.$platform.useProvider(provider).login();
     if (loginRes) {
-      const userInfo = await sheep.$store('user').getInfo();
+      const userInfo = sheep.$store('user').userInfo;
       closeAuthModal();
       // 如果用户已经有头像和昵称，不需要再次授权
       if (userInfo.avatar && userInfo.nickname) {

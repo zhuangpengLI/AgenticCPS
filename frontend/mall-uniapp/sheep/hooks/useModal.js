@@ -5,23 +5,25 @@ import { ref } from 'vue';
 import test from '@/sheep/helper/test.js';
 import AuthUtil from '@/sheep/api/member/auth';
 
+const LOGIN_AUTH_TYPES = new Set(['accountLogin', 'smsLogin', 'resetPassword']);
+
 // 打开授权弹框
 export function showAuthModal(type = 'smsLogin') {
   const modal = $store('modal');
-  // #ifdef H5
-  closeAuthModal();
-  setTimeout(() => {
-    modal.$patch((state) => {
-      state.auth = type;
-    });
-  }, 200);
-  // #endif
-
-  // #ifndef H5
+  const currentAuthType = modal.auth;
+  const isDefaultLoginRequest = arguments.length === 0;
+  // 路由守卫与并发 API 可能同时请求登录；已有登录流程时不要重开弹窗或重置表单
+  if (
+    currentAuthType === type ||
+    (isDefaultLoginRequest && LOGIN_AUTH_TYPES.has(currentAuthType))
+  ) {
+    return;
+  }
+  // 登录方式属于同一个弹窗，直接替换内容。H5 若先关闭再延迟打开，
+  // su-popup 的 close 回调会与延迟任务竞态，导致“账号登录”等切换后弹窗消失。
   modal.$patch((state) => {
     state.auth = type;
   });
-  // #endif
 }
 
 // 关闭授权弹框

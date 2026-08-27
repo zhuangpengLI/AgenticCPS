@@ -8,9 +8,7 @@ const AuthUtil = {
       method: 'POST',
       data,
       custom: {
-        showSuccess: true,
         loadingMsg: '登录中',
-        successMsg: '登录成功',
       },
     });
   },
@@ -21,9 +19,7 @@ const AuthUtil = {
       method: 'POST',
       data,
       custom: {
-        showSuccess: true,
         loadingMsg: '登录中',
-        successMsg: '登录成功',
       },
     });
   },
@@ -106,9 +102,7 @@ const AuthUtil = {
         state,
       },
       custom: {
-        showSuccess: true,
         loadingMsg: '登录中',
-        successMsg: '登录成功',
       },
     });
   },

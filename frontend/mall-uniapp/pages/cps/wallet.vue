@@ -141,6 +141,10 @@
       state.pagination.total = data?.total || 0;
       state.loadStatus = state.pagination.list.length < state.pagination.total ? 'more' : 'noMore';
     } catch (error) {
+      if (error?.code === 401) {
+        state.loadStatus = 'more';
+        return;
+      }
       state.errorMessage = '网络异常，请重试';
       state.loadStatus = 'more';
     }
@@ -216,9 +220,13 @@
   }
 
   onLoad(async (options = {}) => {
-    await Promise.all([getAccount(), getDebtSummary()]);
-    if (options.type === 'debt' && hasDebt.value) state.currentTab = 1;
-    getRecordPage();
+    try {
+      await Promise.all([getAccount(), getDebtSummary()]);
+      if (options.type === 'debt' && hasDebt.value) state.currentTab = 1;
+      await getRecordPage();
+    } catch (error) {
+      if (error?.code !== 401) state.errorMessage = '网络异常，请重试';
+    }
   });
   onReachBottom(loadMore);
 </script>

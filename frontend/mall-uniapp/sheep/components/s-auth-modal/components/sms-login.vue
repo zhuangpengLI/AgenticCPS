@@ -126,9 +126,16 @@
       return;
     }
     // 提交数据
-    const { code } = await AuthUtil.smsLogin(state.model);
-    if (code === 0) {
+    const loginResult = await AuthUtil.smsLogin(state.model);
+    if (loginResult?.code === 0) {
+      try {
+        await sheep.$store('user').establishSession(loginResult.data);
+      } catch (error) {
+        sheep.$helper.toast(error?.msg || error?.message || '登录状态校验失败，请重新登录');
+        return;
+      }
       closeAuthModal();
+      sheep.$helper.toast('登录成功');
     }
   }
 </script>

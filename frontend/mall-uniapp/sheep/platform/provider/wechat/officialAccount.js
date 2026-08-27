@@ -2,6 +2,7 @@ import $wxsdk from '@/sheep/libs/sdk-h5-weixin';
 import { getRootUrl } from '@/sheep/helper';
 import AuthUtil from '@/sheep/api/member/auth';
 import SocialApi from '@/sheep/api/member/social';
+import sheep from '@/sheep';
 
 const socialType = 31; // 社交类型 - 微信公众号
 
@@ -24,6 +25,7 @@ async function login(code = '', state = '') {
     // 解密 code 发起登陆
     const loginResult = await AuthUtil.socialLogin(socialType, code, state);
     if (loginResult.code === 0) {
+      await sheep.$store('user').establishSession(loginResult.data);
       setOpenid(loginResult.data.openid);
       return loginResult;
     }

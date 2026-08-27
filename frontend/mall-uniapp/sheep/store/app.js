@@ -1,12 +1,17 @@
 import DiyApi from '@/sheep/api/promotion/diy';
 import { getTenantByWebsite } from '@/sheep/api/infra/tenant';
-import { getTenantId } from '@/sheep/request';
+import {
+  failAuthContextReady,
+  getTenantId,
+  markAuthContextReady,
+  resetAuthContextReady,
+} from '@/sheep/request';
 import { defineStore } from 'pinia';
 import $platform from '@/sheep/platform';
 import $router from '@/sheep/router';
 import user from './user';
 import sys from './sys';
-import { baseUrl, h5Url } from '@/sheep/config';
+import { baseUrl, h5Url, tenantId as configuredTenantId } from '@/sheep/config';
 
 const app = defineStore({
   id: 'app',
@@ -52,19 +57,40 @@ const app = defineStore({
   actions: {
     // 获取Shopro应用配置和模板
     async init(templateId = null) {
-      // 检查网络
-      const networkStatus = await $platform.checkNetwork();
-      if (!networkStatus) {
-        $router.error('NetworkError');
-      }
+      resetAuthContextReady();
+      try {
+        // 检查网络
+        const networkStatus = await $platform.checkNetwork();
+        if (!networkStatus) {
+          $router.error('NetworkError');
+        }
 
-      // 检查配置
-      if (typeof baseUrl === 'undefined') {
-        $router.error('EnvError');
-      }
+        // 检查配置
+        if (typeof baseUrl === 'undefined') {
+          $router.error('EnvError');
+        }
 
-      // 加载租户
-      await adaptTenant();
+        // 加载租户
+        const tenantReady = await adaptTenant();
+        if (!tenantReady) throw new Error('租户上下文初始化失败');
+      } catch (error) {
+        user().resetUserData();
+        failAuthContextReady(error);
+        throw error;
+      }
+      markAuthContextReady();
+
+      // 租户是身份安全边界：装修页面渲染前先清理旧缓存并验证持久化 token
+      const userStore = user();
+      userStore.clearLegacyUserCache();
+      if (userStore.isLogin) {
+        try {
+          await userStore.getInfo();
+        } catch (error) {
+          // 401 会由请求层统一清理会话；网络失败不阻断公开页面使用
+          if (error?.code !== 401) console.error('用户会话恢复失败:', error);
+        }
+      }
 
       // 加载装修配置
       await adaptTemplate(this.template, templateId);
@@ -104,10 +130,9 @@ const app = defineStore({
         const sysStore = sys();
         sysStore.setTheme();
 
-        // 模拟用户登录
-        const userStore = user();
+        // 身份已在租户适配后校验，这里只恢复购物车、分享等登录后副作用
         if (userStore.isLogin) {
-          userStore.loginAfter();
+          await userStore.loginAfter({ refreshUser: false });
         }
         return Promise.resolve(true);
       } else {
@@ -132,6 +157,14 @@ const app = defineStore({
   },
 });
 
+function requireTenantId(value) {
+  const tenantId = Number(value);
+  if (!Number.isSafeInteger(tenantId) || tenantId <= 0) {
+    throw new Error('租户编号无效');
+  }
+  return tenantId;
+}
+
 /** 初始化租户编号 */
 const adaptTenant = async () => {
   // 1. 获取当前租户 ID
@@ -146,11 +179,22 @@ const adaptTenant = async () => {
       // 优先从 URL 查询参数获取 tenantId
       const urlParams = new URLSearchParams(window.location.search);
       newTenantId = urlParams.get('tenantId');
+      if (newTenantId) newTenantId = requireTenantId(newTenantId);
 
       // 如果 URL 参数中没有，则通过 host 获取
       if (!newTenantId && window.location.host) {
-        const { data } = await getTenantByWebsite(window.location.host);
-        newTenantId = data?.id;
+        const tenantResult = await getTenantByWebsite(window.location.host);
+        if (!tenantResult || tenantResult.code !== 0) throw new Error('租户解析失败');
+        if (tenantResult.data?.id) {
+          newTenantId = requireTenantId(tenantResult.data.id);
+        } else if (
+          process.env.NODE_ENV === 'development' &&
+          /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(window.location.host)
+        ) {
+          newTenantId = requireTenantId(configuredTenantId);
+        } else {
+          throw new Error('租户解析结果为空');
+        }
       }
     }
     // #endif
@@ -158,25 +202,27 @@ const adaptTenant = async () => {
     // 2.2 情况二：微信小程序：小程序环境下的处理逻辑 - 根据 appId 获取租户
     // #ifdef MP
     const appId = uni.getAccountInfoSync()?.miniProgram?.appId;
-    if (appId) {
-      const { data } = await getTenantByWebsite(appId);
-      newTenantId = data?.id;
-    }
+    if (!appId) throw new Error('无法获取小程序 AppId');
+    const tenantResult = await getTenantByWebsite(appId);
+    if (!tenantResult || tenantResult.code !== 0) throw new Error('租户解析失败');
+    newTenantId = requireTenantId(tenantResult.data?.id);
     // #endif
 
     // 3. 如果是新租户（不相等），则进行切换
     // noinspection EqualityComparisonWithCoercionJS
     if (newTenantId && newTenantId != oldTenantId) {
-      // 清理掉登录用户的 token
+      // 租户身份发生变化时，必须清理令牌及所有会员缓存，避免跨租户展示旧身份
       const userStore = user();
-      userStore.setToken();
+      userStore.resetUserData();
 
       // 设置新的 tenantId 到本地存储
       uni.setStorageSync('tenant-id', newTenantId);
       console.log('租户 ID 已更新:', `${oldTenantId} -> ${newTenantId}`);
     }
+    return true;
   } catch (error) {
     console.error('adaptTenant 执行失败:', error);
+    return false;
   }
 };
 

@@ -116,26 +116,23 @@
 
   const currentLoginSnapshot = () => {
     const userStore = sheep.$store('user');
-    // Keep the token in the snapshot as well as the derived flag: login state
-    // can flip before storage is persisted, and an old anonymous response must
-    // never replace a member-scoped list.
-    return `${Boolean(userStore.isLogin)}:${uni.getStorageSync('token') || ''}`;
+    return `${Boolean(userStore.isLogin)}:${userStore.authRevision}`;
   };
 
   const requiresLogin = () => {
     const userStore = sheep.$store('user');
-    return !userStore.isLogin || !uni.getStorageSync('token');
+    return !userStore.isLogin;
   };
 
   async function loadActivities() {
     state.loading = true;
     state.error = '';
+    const requestVersion = ++activityRequestVersion;
+    const loginSnapshot = currentLoginSnapshot();
     try {
       const filters = {};
       if (state.platformCode) filters.platformCode = state.platformCode;
       if (state.keyword) filters.keyword = state.keyword;
-      const requestVersion = ++activityRequestVersion;
-      const loginSnapshot = currentLoginSnapshot();
       const res = state.activityId
         ? await CpsMarketingApi.getActivitiesByIds([state.activityId])
         : await CpsMarketingApi.getActivityCenter(filters);

@@ -168,15 +168,23 @@
       state.pagination.total = data?.total || 0;
       state.loadStatus = state.pagination.list.length < state.pagination.total ? 'more' : 'noMore';
     } catch (error) {
+      if (error?.code === 401) {
+        state.loadStatus = 'more';
+        return;
+      }
       state.errorMessage = '网络异常，请重试';
       state.loadStatus = 'more';
     }
   }
   async function getWithdraw(id) {
-    const { code, data } = await CpsWithdrawApi.getWithdraw(id);
-    if (code === 0) {
-      state.currentWithdraw = data;
-      state.showDetailPopup = true;
+    try {
+      const { code, data } = await CpsWithdrawApi.getWithdraw(id);
+      if (code === 0) {
+        state.currentWithdraw = data;
+        state.showDetailPopup = true;
+      }
+    } catch (error) {
+      if (error?.code !== 401) sheep.$helper.toast('提现详情加载失败，请重试');
     }
   }
   function ensureWithdrawIdempotencyKey() {
@@ -234,6 +242,7 @@
       resetPagination(state.pagination);
       await Promise.all([getAccount(), getWithdrawPage()]);
     } catch (error) {
+      if (error?.code === 401) return;
       trackCpsEvent('cps_withdraw_submit', {
         withdrawType: state.form.withdrawType,
         result: 'network_error',
@@ -299,9 +308,12 @@
     return value ? sheep.$helper.timeFormat(value, 'yyyy-mm-dd hh:MM') : '-';
   }
 
-  onLoad(() => {
-    getAccount();
-    getWithdrawPage();
+  onLoad(async () => {
+    try {
+      await Promise.all([getAccount(), getWithdrawPage()]);
+    } catch (error) {
+      if (error?.code !== 401) state.errorMessage = '网络异常，请重试';
+    }
   });
   onReachBottom(loadMore);
 </script>

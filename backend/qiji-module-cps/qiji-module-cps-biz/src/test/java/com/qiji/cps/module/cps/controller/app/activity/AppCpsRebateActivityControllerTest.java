@@ -15,6 +15,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.eq;
@@ -30,6 +33,15 @@ class AppCpsRebateActivityControllerTest {
 
     @Mock
     private CpsRebateActivityService activityService;
+
+    @Test
+    void trustedMemberOverloadDoesNotValidateAdminOnlyMemberField() throws NoSuchMethodException {
+        var method = CpsRebateActivityService.class.getMethod(
+                "generatePromotionContent", CpsRebateActivityPromotionReqVO.class, Long.class);
+        assertFalse(method.getParameters()[0].isAnnotationPresent(Valid.class));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                method.getParameters()[1].isAnnotationPresent(NotNull.class));
+    }
 
     @Test
     void generatePromotionUsesLoginMemberAndDoesNotAcceptAdzoneOrMemberId() {

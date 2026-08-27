@@ -214,6 +214,8 @@
 
   // 组件中使用 onMounted 监听页面加载，不是页面组件不使用 onShow
   onMounted(()=>{
+    // 补偿 H5 直接地址、分享/扫码冷启动等不经过 navigateTo 的进入方式
+    sheep.$router.guardCurrentRoute();
     // #ifdef MP-ALIPAY
     uni.setNavigationBarTitle({
       title: "",

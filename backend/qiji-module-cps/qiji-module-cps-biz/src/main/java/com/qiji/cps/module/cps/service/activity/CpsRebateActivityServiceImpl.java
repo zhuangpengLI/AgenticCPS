@@ -224,7 +224,7 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
 
     @Override
     public CpsRebateActivityPromotionRespVO generatePromotionContent(CpsRebateActivityPromotionReqVO reqVO) {
-        return generatePromotionContent(reqVO, null);
+        return generatePromotionContent(reqVO, reqVO.getMemberId());
     }
 
     @Override
