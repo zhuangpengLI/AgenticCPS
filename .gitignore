@@ -4,3 +4,4 @@
 .pnpm-store/*
 官方文档/
 backend/sql/module/
+releases/*

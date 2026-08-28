@@ -102,7 +102,7 @@ MySQL 初始化 SQL 和应用账号只会在首次创建数据卷时生效。已
 
 ### mall-uniapp H5 发行
 
-当前 mall-uniapp 的 package.json 不包含可独立运行的 uni-app CLI 依赖，因此使用 HBuilderX 发行 H5：打开 `frontend/mall-uniapp`，选择“发行 → 网站-H5”，输出目录通常为 `unpackage/dist/build/h5`。H5 路由 base 已设置为 `/h5/`，在开发环境访问 `http://localhost:3000/h5/`，部署后访问管理端同源的 `/h5/`。在源码机器执行部署包脚本前，确认该目录存在 `index.html`。若 HBuilderX 输出到其他目录，可通过环境变量 `SHOPRO_H5_DIST` 指定：
+当前 mall-uniapp 的 package.json 不包含可独立运行的 uni-app CLI 依赖，因此使用 HBuilderX 发行 H5：打开 `frontend/mall-uniapp`，选择“发行 → 网站-H5”（或执行 `cli publish web --project <项目路径> --webHosting false --ssr false`）。HBuilderX 5.24 默认输出目录为 `unpackage/dist/build/web`，旧版本可能输出到 `unpackage/dist/build/h5`。H5 路由 base 已设置为 `/h5/`，部署后访问管理端同源的 `/h5/`。打包脚本会自动优先识别 `build/web`，也可通过环境变量 `SHOPRO_H5_DIST` 指定：
 
 ```bash
 SHOPRO_H5_DIST=/path/to/h5-dist bash build-package.sh

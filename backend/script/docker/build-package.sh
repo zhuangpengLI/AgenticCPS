@@ -23,7 +23,13 @@ fi
 
 BACKEND_JAR="${BACKEND_ROOT}/qiji-server/target/qiji-server.jar"
 FRONTEND_DIST="${FRONTEND_ROOT}/dist-prod"
-MALL_H5_DIST="${SHOPRO_H5_DIST:-${MALL_ROOT}/unpackage/dist/build/h5}"
+if [[ -n "${SHOPRO_H5_DIST:-}" ]]; then
+  MALL_H5_DIST="${SHOPRO_H5_DIST}"
+elif [[ -f "${MALL_ROOT}/unpackage/dist/build/web/index.html" ]]; then
+  MALL_H5_DIST="${MALL_ROOT}/unpackage/dist/build/web"
+else
+  MALL_H5_DIST="${MALL_ROOT}/unpackage/dist/build/h5"
+fi
 
 if [[ ! -f "${BACKEND_JAR}" ]]; then
   echo "未找到后端构建产物: ${BACKEND_JAR}" >&2

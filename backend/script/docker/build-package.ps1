@@ -38,7 +38,13 @@ if ($SkipBuild) {
 
 $BackendJar = Join-Path $BackendRoot "qiji-server/target/qiji-server.jar"
 $FrontendDist = Join-Path $FrontendRoot "dist-prod"
-$MallH5Dist = if ($env:SHOPRO_H5_DIST) { $env:SHOPRO_H5_DIST } else { Join-Path $MallRoot "unpackage/dist/build/h5" }
+$MallH5Dist = if ($env:SHOPRO_H5_DIST) {
+    $env:SHOPRO_H5_DIST
+} elseif (Test-Path -LiteralPath (Join-Path $MallRoot "unpackage/dist/build/web/index.html") -PathType Leaf) {
+    Join-Path $MallRoot "unpackage/dist/build/web"
+} else {
+    Join-Path $MallRoot "unpackage/dist/build/h5"
+}
 if (-not (Test-Path -LiteralPath $BackendJar -PathType Leaf)) {
     throw "未找到后端构建产物: $BackendJar"
 }
