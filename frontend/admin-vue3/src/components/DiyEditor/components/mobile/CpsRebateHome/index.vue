@@ -2,7 +2,8 @@
   <div class="cps-rebate-home-preview">
     <div class="rebate-hero">
       <div class="hero-kicker">{{ property.kicker }}</div>
-      <div class="hero-title">{{ property.title }}</div>
+      <div class="hero-title">今日高返</div>
+      <div class="hero-amount">{{ property.title }}</div>
       <div class="hero-description">{{ property.description }}</div>
       <div class="hero-search">
         <Icon icon="ep:search" />
@@ -12,87 +13,35 @@
     </div>
 
     <section class="rebate-panel">
-      <div class="section-title">我的返利</div>
-      <div class="quick-grid">
-        <div v-for="item in assetItems" :key="item.title" class="quick-item">
-          <span class="quick-icon">{{ item.icon }}</span>
-          <span>{{ item.title }}</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="rebate-panel discovery-panel">
-      <div class="section-title">发现好物</div>
+      <div class="section-title">快捷入口</div>
       <div class="quick-grid">
         <div v-for="item in discoveryItems" :key="item.title" class="quick-item">
-          <span class="quick-icon">{{ item.icon }}</span>
+          <span class="quick-icon" :class="{ 'quick-icon-ai': item.icon === 'AI' }">{{
+            item.icon
+          }}</span>
           <span>{{ item.title }}</span>
         </div>
       </div>
     </section>
 
-    <section v-if="property.showFeatured" class="rebate-panel featured-panel">
-      <div class="section-title featured-title">为你精选 <span>更多 ›</span></div>
-      <div v-for="item in featuredItems" :key="item.name" class="featured-item">
-        <img class="featured-thumb" :src="resolveMallStaticUrl(item.image)" :alt="item.name" />
-        <span class="featured-info">
-          <strong>{{ item.name }}</strong>
-          <small>券后 {{ item.price }} · 预计返利 {{ item.rebate }}</small>
-        </span>
-        <b>去查券</b>
-      </div>
-    </section>
-
-    <section class="rebate-panel guide-panel">
-      <div class="section-title">如何获得返利</div>
-      <div v-for="(step, index) in steps" :key="step" class="step">
-        <span>{{ index + 1 }}</span>
-        <em>{{ step }}</em>
-      </div>
+    <section class="rebate-panel asset-entry-panel">
+      <div class="section-title">我的返利 <span>进入返利工作台 ›</span></div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { CpsRebateHomeProperty } from './config'
-import { resolveMallStaticUrl } from '@/utils/mallAsset'
 
 defineOptions({ name: 'CpsRebateHome' })
 defineProps<{ property: CpsRebateHomeProperty }>()
 
-const assetItems = [
-  { icon: '单', title: '返利订单' },
-  { icon: '返', title: '返利钱包' },
-  { icon: '提', title: '申请提现' },
-  { icon: 'T', title: '兑换 Token' }
-]
 const discoveryItems = [
-  { icon: '活', title: '返利活动' },
+  { icon: '券', title: '查券返利' },
   { icon: '价', title: '主题好价' },
-  { icon: '迹', title: '返利足迹' },
-  { icon: '智', title: 'AIoT 推荐' }
+  { icon: '活', title: '返利活动' },
+  { icon: 'AI', title: '返利 AI 对话' }
 ]
-const featuredItems = [
-  {
-    image: '/static/img/diy_3c/caidandaohang/bijiben.png',
-    name: '轻薄笔记本电脑 14 英寸',
-    price: '¥3999',
-    rebate: '¥86.50'
-  },
-  {
-    image: '/static/img/diy_3c/caidandaohang/xiangji.png',
-    name: '高清微单数码相机',
-    price: '¥2699',
-    rebate: '¥56.20'
-  },
-  {
-    image: '/static/img/diy_3c/caidandaohang/erji.png',
-    name: '真无线蓝牙耳机 Pro',
-    price: '¥199',
-    rebate: '¥18.60'
-  }
-]
-const steps = ['搜索商品或粘贴商品链接', '查看券后价和预估返利', '领券购买，订单结算后返利到账']
 </script>
 
 <style scoped lang="scss">
@@ -116,8 +65,13 @@ const steps = ['搜索商品或粘贴商品链接', '查看券后价和预估返
 }
 .hero-title {
   margin-top: 8px;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
+}
+.hero-amount {
+  margin-top: 2px;
+  font-size: 24px;
+  font-weight: 800;
 }
 .hero-description {
   margin-top: 6px;
@@ -157,9 +111,7 @@ const steps = ['搜索商品或粘贴商品链接', '查看券后价和预估返
   background: #fff;
   box-shadow: 0 4px 14px rgb(0 0 0 / 6%);
 }
-.discovery-panel,
-.featured-panel,
-.guide-panel {
+.asset-entry-panel {
   margin-top: 10px;
 }
 .section-title {
@@ -193,71 +145,17 @@ const steps = ['搜索商品或粘贴商品链接', '查看券后价和预估返
   font-size: 13px;
   font-weight: 600;
 }
-.featured-title {
+.quick-icon-ai {
+  color: #4d63c8;
+  background: #e0e7ff;
+}
+.asset-entry-panel .section-title {
   display: flex;
   justify-content: space-between;
 }
-.featured-title span {
+.asset-entry-panel .section-title span {
   color: #999;
   font-size: 10px;
   font-weight: 400;
-}
-.featured-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-top: 12px;
-}
-.featured-thumb {
-  width: 36px;
-  height: 36px;
-  border-radius: 7px;
-  background: #fff1ed;
-  object-fit: contain;
-}
-.featured-info {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 4px;
-}
-.featured-info strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-  font-weight: 500;
-}
-.featured-info small {
-  color: #999;
-  font-size: 9px;
-}
-.featured-item > b {
-  color: #f4513b;
-  font-size: 10px;
-  font-weight: 500;
-}
-.step {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  color: #555;
-  font-size: 10px;
-}
-.step span {
-  display: flex;
-  width: 18px;
-  height: 18px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: #fff;
-  background: #f4513b;
-  font-size: 10px;
-}
-.step em {
-  font-style: normal;
 }
 </style>

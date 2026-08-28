@@ -480,12 +480,12 @@
         {
           "path": "index",
           "style": {
-            "navigationBarTitleText": "返利中心"
+            "navigationBarTitleText": "返利工作台"
           },
           "meta": {
             "auth": false,
             "sync": true,
-            "title": "返利中心",
+            "title": "返利工作台",
             "group": "返利中心"
           }
         },
@@ -558,6 +558,18 @@
             "auth": false,
             "sync": true,
             "title": "返利活动",
+            "group": "返利中心"
+          }
+        },
+        {
+          "path": "local-life",
+          "style": {
+            "navigationBarTitleText": "本地生活"
+          },
+          "meta": {
+            "auth": false,
+            "sync": true,
+            "title": "本地生活",
             "group": "返利中心"
           }
         },

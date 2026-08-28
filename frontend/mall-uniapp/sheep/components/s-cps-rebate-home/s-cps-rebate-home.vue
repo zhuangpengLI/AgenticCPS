@@ -3,9 +3,9 @@
     <view class="top-shell">
       <view class="top-row">
         <view class="brand">
-          <view class="brand-mark">返</view>
+          <view class="brand-mark">A</view>
           <view>
-            <text class="brand-name">Agentic 返利</text>
+            <text class="brand-name">AgenticCPS</text>
             <text class="brand-subtitle">先领券，再下单</text>
           </view>
         </view>
@@ -21,26 +21,35 @@
         </view>
       </view>
       <view class="hero-copy">
-        <text class="hero-title">全网优惠，一站查清</text>
-        <text class="hero-desc">比价 · 查券 · 返利，买之前先搜一搜</text>
+        <text class="hero-kicker">{{ content.kicker }}</text>
+        <text class="hero-title">今日高返</text>
+        <text class="hero-amount">{{ content.title }}</text>
+        <text class="hero-desc">{{ content.description }}</text>
       </view>
     </view>
 
-    <view class="transfer-wrap">
-      <view class="tutorial-tip">
-        <text class="tutorial-badge">新手</text>
-        <text>复制商品链接，粘贴后生成你的专属返利链接</text>
-        <text class="tutorial-arrow">›</text>
+    <view class="section-card shortcut-section">
+      <!-- AIoT 推荐已移至返利工作台，首页快捷入口聚焦返利 AI 对话。 -->
+      <view class="section-heading">
+        <view>
+          <text class="section-title">快捷入口</text>
+          <text class="section-subtitle">先查券，再下单，返利更清楚</text>
+        </view>
+        <text class="section-more" @tap="goPage('/pages/cps/goods')">查券 ›</text>
       </view>
-      <s-cps-rebate-transfer
-        :data="{
-          title: '粘贴商品链接',
-          description: '支持商品链接、商品 ID 和口令，自动识别平台',
-          placeholder: '在这里粘贴商品链接或口令',
-          buttonText: '一键查券并转链',
-        }"
-        :styles="{ borderRadius: 16 }"
-      />
+      <view class="shortcut-grid">
+        <view
+          v-for="item in discoveryItems"
+          :key="item.path"
+          class="shortcut-item"
+          @tap="goPage(item.path)"
+        >
+          <view class="shortcut-icon" :class="{ 'shortcut-icon-ai': item.icon === 'AI' }">
+            {{ item.icon }}
+          </view>
+          <text>{{ item.title }}</text>
+        </view>
+      </view>
     </view>
 
     <view class="section-card marketplace-section">
@@ -92,24 +101,12 @@
       <view class="rebate-notice"> 页面展示为活动预估权益，实际返利以平台订单最终结算为准 </view>
     </view>
 
-    <view class="section-card asset-section">
-      <view class="section-heading compact-heading">
+    <view class="section-card asset-entry-section" @tap="goPage(content.centerPath)">
+      <view>
         <text class="section-title">我的返利</text>
-        <text class="section-more" @tap="goPage(content.centerPath)">
-          {{ content.centerTitle }} ›
-        </text>
+        <text class="section-subtitle">订单、钱包、提现和 Token 统一管理</text>
       </view>
-      <view class="asset-grid">
-        <view
-          v-for="item in assetItems"
-          :key="item.path"
-          class="asset-item"
-          @tap="goAsset(item.path)"
-        >
-          <view class="asset-icon">{{ item.icon }}</view>
-          <text>{{ item.title }}</text>
-        </view>
-      </view>
+      <text class="section-more">进入返利工作台 ›</text>
     </view>
   </view>
 </template>
@@ -117,7 +114,6 @@
 <script setup>
   import { computed, onMounted, reactive, ref } from 'vue';
   import sheep from '@/sheep';
-  import { showAuthModal } from '@/sheep/hooks/useModal';
   import CpsMarketingApi from '@/sheep/api/cps/marketing';
 
   const props = defineProps({
@@ -134,8 +130,12 @@
   const keyword = ref('');
   const state = reactive({ activities: [] });
   const content = computed(() => ({
-    searchPlaceholder: props.data.searchPlaceholder || props.data.placeholder || '全网比价',
-    centerTitle: props.data.centerTitle || '返利中心',
+    kicker: props.data.kicker || 'AgenticCPS · 今日高返',
+    title: props.data.title || '最高 ¥186.50',
+    description: props.data.description || '领券下单，订单结算后返利到账',
+    searchPlaceholder:
+      props.data.searchPlaceholder || props.data.placeholder || '搜索商品 / 粘贴商品链接或口令',
+    centerTitle: props.data.centerTitle || '返利工作台',
     centerPath: props.data.centerPath || '/pages/cps/index',
   }));
 
@@ -239,11 +239,11 @@
     },
   ];
 
-  const assetItems = [
-    { icon: '单', title: '返利订单', path: '/pages/cps/order' },
-    { icon: '钱', title: '返利钱包', path: '/pages/cps/wallet' },
-    { icon: '提', title: '申请提现', path: '/pages/cps/withdraw' },
-    { icon: 'T', title: '兑换 Token', path: '/pages/cps/exchange' },
+  const discoveryItems = [
+    { icon: '券', title: '查券返利', path: '/pages/cps/goods' },
+    { icon: '价', title: '主题好价', path: '/pages/cps/deals' },
+    { icon: '活', title: '返利活动', path: '/pages/cps/activity' },
+    { icon: 'AI', title: '返利 AI 对话', path: '/pages/cps/ai-chat' },
   ];
 
   function startSearch(presetKeyword = '') {
@@ -266,6 +266,10 @@
   }
 
   function goLocalService(item) {
+    if (item.platformCode === 'local_life') {
+      sheep.$router.go('/pages/cps/local-life');
+      return;
+    }
     const params = { keyword: encodeURIComponent(item.keyword) };
     if (item.platformCode) params.platformCode = encodeURIComponent(item.platformCode);
     sheep.$router.go('/pages/cps/activity', params);
@@ -293,14 +297,6 @@
     }
   }
 
-  function goAsset(path) {
-    if (!sheep.$store('user').isLogin) {
-      showAuthModal();
-      return;
-    }
-    sheep.$router.go(path);
-  }
-
   function goPage(path) {
     sheep.$router.go(path);
   }
@@ -321,14 +317,15 @@
     margin: 0 -20rpx;
     padding: 20rpx 26rpx 58rpx;
     color: #fff;
-    background: radial-gradient(circle at 94% 10%, rgba(255, 255, 255, 0.22), transparent 30%),
-      linear-gradient(135deg, #10b86d 0%, #00cf73 54%, #00b970 100%);
+    background: radial-gradient(circle at 94% 10%, rgba(255, 255, 255, 0.25), transparent 30%),
+      linear-gradient(135deg, #ff6b21 0%, #ff3d12 54%, #f22d16 100%);
   }
   .top-row,
   .brand,
   .compare-search,
   .section-heading,
-  .asset-grid {
+  .asset-entry-section,
+  .shortcut-grid {
     display: flex;
     align-items: center;
   }
@@ -408,44 +405,27 @@
   .hero-copy {
     margin-top: 38rpx;
   }
+  .hero-kicker {
+    display: block;
+    margin-bottom: 6rpx;
+    font-size: 21rpx;
+    opacity: 0.9;
+  }
   .hero-title {
-    font-size: 42rpx;
+    font-size: 38rpx;
     font-weight: 800;
     letter-spacing: 1rpx;
+  }
+  .hero-amount {
+    display: block;
+    margin-top: 2rpx;
+    font-size: 46rpx;
+    font-weight: 800;
   }
   .hero-desc {
     margin-top: 10rpx;
     font-size: 23rpx;
     opacity: 0.9;
-  }
-  .transfer-wrap {
-    position: relative;
-    z-index: 1;
-    margin-top: -36rpx;
-    overflow: hidden;
-    border: 1rpx solid rgba(19, 191, 109, 0.12);
-    border-radius: 24rpx;
-    background: #fff;
-    box-shadow: 0 14rpx 40rpx rgba(24, 73, 50, 0.1);
-  }
-  .tutorial-tip {
-    display: flex;
-    align-items: center;
-    gap: 10rpx;
-    padding: 20rpx 24rpx 0;
-    color: #8a5a17;
-    font-size: 21rpx;
-  }
-  .tutorial-badge {
-    padding: 5rpx 10rpx;
-    border-radius: 8rpx;
-    color: #ae6d10;
-    background: #fff1d4;
-    font-size: 19rpx;
-  }
-  .tutorial-arrow {
-    margin-left: auto;
-    font-size: 30rpx;
   }
   .section-card {
     margin-top: 20rpx;
@@ -560,13 +540,11 @@
     font-size: 19rpx;
     line-height: 1.5;
   }
-  .compact-heading {
-    margin-bottom: 22rpx;
-  }
-  .asset-grid {
+  .shortcut-grid {
     justify-content: space-between;
+    margin-top: 24rpx;
   }
-  .asset-item {
+  .shortcut-item {
     display: flex;
     width: 25%;
     flex-direction: column;
@@ -575,16 +553,26 @@
     color: #4d5157;
     font-size: 21rpx;
   }
-  .asset-icon {
+  .shortcut-icon {
     display: flex;
-    width: 60rpx;
-    height: 60rpx;
+    width: 64rpx;
+    height: 64rpx;
     align-items: center;
     justify-content: center;
-    border-radius: 18rpx;
-    color: #08ae65;
-    background: #eaf9f2;
-    font-size: 23rpx;
+    border-radius: 20rpx;
+    color: #f4513b;
+    background: #fff0eb;
+    font-size: 25rpx;
     font-weight: 700;
+  }
+  .shortcut-icon-ai {
+    color: #4d63c8;
+    background: #e0e7ff;
+  }
+  .asset-entry-section {
+    justify-content: space-between;
+    gap: 16rpx;
+    padding-top: 24rpx;
+    padding-bottom: 24rpx;
   }
 </style>

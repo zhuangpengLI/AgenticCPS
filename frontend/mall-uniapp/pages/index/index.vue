@@ -9,7 +9,7 @@
       :navbarStyle="template.navigationBar"
       onShareAppMessage
     >
-      <s-cps-rebate-home :data="rebateHomeData" />
+      <s-cps-rebate-home v-if="isRebateTemplate" :data="rebateHomeData" />
       <template v-if="!isRebateTemplate">
         <s-block
           v-for="(item, index) in template.components"
@@ -45,7 +45,7 @@
       (item) => item.id === 'CpsRebateSearch',
     );
     return {
-      centerTitle: '查券返利',
+      centerTitle: '返利工作台',
       centerPath: '/pages/cps/index',
       ...(configuredHome?.property || configuredSearch?.property || {}),
     };

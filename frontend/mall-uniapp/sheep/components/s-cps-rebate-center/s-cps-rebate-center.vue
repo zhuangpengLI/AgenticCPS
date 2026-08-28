@@ -1,26 +1,19 @@
 <template>
-  <view class="cps-rebate-home">
-    <view class="rebate-hero">
+  <view class="cps-rebate-workbench">
+    <view class="workbench-hero">
       <view class="hero-kicker">{{ content.kicker }}</view>
       <view class="hero-title">{{ content.title }}</view>
       <view class="hero-description">{{ content.description }}</view>
-      <view class="search-box">
-        <text class="search-icon _icon-search"></text>
-        <input
-          v-model="keyword"
-          class="search-input"
-          :placeholder="content.searchPlaceholder"
-          confirm-type="search"
-          @confirm="startSearch()"
-        />
-        <button class="ss-reset-button search-button" @tap="startSearch()">
-          {{ content.searchButtonText }}
-        </button>
-      </view>
     </view>
 
     <view class="rebate-panel asset-panel">
-      <view class="section-title">我的返利</view>
+      <view class="section-heading">
+        <view>
+          <view class="section-title">返利资产</view>
+          <view class="section-subtitle">订单、钱包、提现和 Token 统一管理</view>
+        </view>
+        <text class="section-more" @tap="goAsset('/pages/cps/wallet')">明细 ›</text>
+      </view>
       <view class="quick-grid">
         <view
           v-for="item in assetItems"
@@ -35,7 +28,12 @@
     </view>
 
     <view class="rebate-panel tools-panel">
-      <view class="section-title">返利工具</view>
+      <view class="section-heading">
+        <view>
+          <view class="section-title">返利工具</view>
+          <view class="section-subtitle">需要时再使用，不和首页导购入口重复</view>
+        </view>
+      </view>
       <view class="tool-list">
         <view class="tool-item" @tap="goAsset('/pages/cps/transfer')">
           <text class="tool-icon">链</text>
@@ -53,36 +51,30 @@
           </view>
           <text class="tool-arrow">›</text>
         </view>
-      </view>
-    </view>
-
-    <view class="rebate-panel">
-      <view class="section-title">发现好物</view>
-      <view class="quick-grid">
-        <view
-          v-for="item in discoveryItems"
-          :key="item.path"
-          class="quick-item"
-          @tap="goPage(item.path)"
-        >
-          <text class="quick-icon" :class="{ 'quick-icon-aiot': item.icon === '智' }">
-            {{ item.icon }}
-          </text>
-          <text>{{ item.title }}</text>
+        <view class="tool-item aiot-tool" @tap="goTool('/pages/cps/scene')">
+          <text class="tool-icon">智</text>
+          <view class="tool-info">
+            <text class="tool-title">AIoT 场景推荐</text>
+            <text class="tool-description">根据生活场景智能推荐返利好物</text>
+          </view>
+          <text class="tool-arrow">›</text>
         </view>
       </view>
     </view>
 
-    <view v-if="content.showFeatured" class="rebate-panel featured-panel">
-      <view class="section-title featured-title" @tap="goPage('/pages/cps/goods')">
-        <text>为你精选</text>
-        <text class="section-more">更多 ›</text>
+    <view class="rebate-panel featured-panel">
+      <view class="section-heading">
+        <view>
+          <view class="section-title">为你精选</view>
+          <view class="section-subtitle">券后价和预估返利一眼看清</view>
+        </view>
+        <text class="section-more" @tap="goTool('/pages/cps/goods')">更多 ›</text>
       </view>
       <view
         v-for="item in featuredItems"
         :key="item.keyword"
         class="featured-item"
-        @tap="startSearch(item.keyword)"
+        @tap="goTool(`/pages/cps/goods?keyword=${encodeURIComponent(item.keyword)}`)"
       >
         <image class="featured-thumb" :src="sheep.$url.static(item.image)" mode="aspectFit" />
         <view class="featured-info">
@@ -94,18 +86,16 @@
     </view>
 
     <view class="rebate-panel guide-panel">
-      <view class="section-title">如何获得返利</view>
-      <view v-for="(step, index) in steps" :key="step" class="step">
-        <text class="step-no">{{ index + 1 }}</text>
-        <text>{{ step }}</text>
-      </view>
-      <view class="notice">返利金额以订单最终结算为准，退款或失效订单不产生返利。</view>
+      <view class="section-title">返利小贴士</view>
+      <view class="notice"
+        >首页负责找优惠，返利工作台负责管资产。返利金额以订单最终结算为准，退款或失效订单不产生返利。</view
+      >
     </view>
   </view>
 </template>
 
 <script setup>
-  import { computed, ref } from 'vue';
+  import { computed } from 'vue';
   import sheep from '@/sheep';
   import { showAuthModal } from '@/sheep/hooks/useModal';
 
@@ -120,14 +110,10 @@
     },
   });
 
-  const keyword = ref('');
   const content = computed(() => ({
-    kicker: props.data.kicker || 'AgenticCPS · 今日高返',
-    title: props.data.title || '最高 ¥186.50',
-    description: props.data.description || '领券下单，订单结算后返利到账',
-    searchPlaceholder: props.data.searchPlaceholder || '搜商品或粘贴链接/口令',
-    searchButtonText: props.data.searchButtonText || '查优惠',
-    showFeatured: props.data.showFeatured !== false,
+    kicker: props.data.kicker || 'AgenticCPS · 返利工作台',
+    title: props.data.title || '管理每一笔返利',
+    description: props.data.description || '订单、钱包、提现和 Token 集中处理',
   }));
 
   const assetItems = [
@@ -135,12 +121,6 @@
     { icon: '返', title: '返利钱包', path: '/pages/cps/wallet' },
     { icon: '提', title: '申请提现', path: '/pages/cps/withdraw' },
     { icon: 'T', title: '兑换 Token', path: '/pages/cps/exchange' },
-  ];
-  const discoveryItems = [
-    { icon: '券', title: '查券返利', path: '/pages/cps/goods' },
-    { icon: '价', title: '主题好价', path: '/pages/cps/deals' },
-    { icon: '活', title: '返利活动', path: '/pages/cps/activity' },
-    { icon: '智', title: 'AIoT 推荐', path: '/pages/cps/scene' },
   ];
   const featuredItems = [
     {
@@ -165,22 +145,6 @@
       keyword: '蓝牙耳机',
     },
   ];
-  const steps = ['搜索商品或粘贴商品链接', '查看券后价和预估返利', '领券购买，订单结算后返利到账'];
-
-  function startSearch(presetKeyword = '') {
-    const contentValue = (presetKeyword || keyword.value).trim();
-    if (!contentValue) {
-      sheep.$router.go('/pages/cps/goods');
-      return;
-    }
-    const looksLikeContent = /https?:\/\/|\uffe5|\u20ac|tb\.cn|m\.tb|yangkeduo|jd\.com/i.test(
-      contentValue,
-    );
-    sheep.$router.go('/pages/cps/goods', {
-      [looksLikeContent ? 'content' : 'keyword']: encodeURIComponent(contentValue),
-    });
-  }
-
   function goAsset(path) {
     if (!sheep.$store('user').isLogin) {
       showAuthModal();
@@ -188,21 +152,20 @@
     }
     sheep.$router.go(path);
   }
-
-  function goPage(path) {
+  function goTool(path) {
     sheep.$router.go(path);
   }
 </script>
 
 <style lang="scss" scoped>
-  .cps-rebate-home {
+  .cps-rebate-workbench {
     box-sizing: border-box;
     padding: 18rpx 20rpx 24rpx;
     background: #f7f7f8;
     color: #222;
   }
 
-  .rebate-hero {
+  .workbench-hero {
     padding: 34rpx 24rpx 70rpx;
     border-radius: 28rpx;
     color: #fff;
@@ -224,38 +187,6 @@
     opacity: 0.9;
   }
 
-  .search-box {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-    margin-top: 34rpx;
-    padding: 10rpx 12rpx 10rpx 24rpx;
-    border-radius: 44rpx;
-    background: #fff;
-  }
-
-  .search-icon {
-    flex: 0 0 auto;
-    color: #aaa;
-    font-size: 28rpx;
-  }
-  .search-input {
-    min-width: 0;
-    height: 68rpx;
-    flex: 1;
-    color: #333;
-    font-size: 25rpx;
-  }
-  .search-button {
-    flex: 0 0 136rpx;
-    height: 68rpx;
-    line-height: 68rpx;
-    border-radius: 34rpx;
-    color: #fff;
-    background: #f4513b;
-    font-size: 25rpx;
-  }
-
   .rebate-panel {
     margin-top: 20rpx;
     padding: 28rpx;
@@ -269,6 +200,17 @@
   .section-title {
     font-size: 30rpx;
     font-weight: 600;
+  }
+  .section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+  }
+  .section-subtitle {
+    margin-top: 6rpx;
+    color: #999;
+    font-size: 21rpx;
   }
   .quick-grid {
     display: grid;
@@ -299,12 +241,6 @@
     color: #1677ff;
     background: #eaf3ff;
   }
-
-  .featured-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
   .tool-list {
     display: grid;
     gap: 16rpx;
@@ -320,6 +256,48 @@
   }
   .tool-item.ai-tool {
     background: #f2f5ff;
+  }
+  .tool-item.aiot-tool {
+    background: #eef8f4;
+  }
+  .featured-panel {
+    margin-top: 20rpx;
+  }
+  .featured-item {
+    display: flex;
+    align-items: center;
+    gap: 18rpx;
+    padding-top: 22rpx;
+  }
+  .featured-thumb {
+    width: 96rpx;
+    height: 96rpx;
+    flex: 0 0 96rpx;
+    border-radius: 16rpx;
+    background: #fff4ee;
+  }
+  .featured-info {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 9rpx;
+  }
+  .featured-name {
+    overflow: hidden;
+    color: #333;
+    font-size: 26rpx;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .featured-meta {
+    color: #999;
+    font-size: 21rpx;
+  }
+  .featured-action {
+    flex: 0 0 auto;
+    color: #f4513b;
+    font-size: 23rpx;
   }
   .tool-icon {
     display: flex;
@@ -337,6 +315,10 @@
   .ai-tool .tool-icon {
     color: #4d63c8;
     background: #e0e7ff;
+  }
+  .aiot-tool .tool-icon {
+    color: #16865c;
+    background: #dff5e9;
   }
   .tool-info {
     display: flex;
@@ -365,68 +347,6 @@
     color: #999;
     font-size: 24rpx;
     font-weight: 400;
-  }
-  .featured-item {
-    display: flex;
-    align-items: center;
-    gap: 20rpx;
-    padding-top: 24rpx;
-  }
-  .featured-thumb {
-    display: flex;
-    width: 92rpx;
-    height: 92rpx;
-    flex: 0 0 92rpx;
-    align-items: center;
-    justify-content: center;
-    border-radius: 16rpx;
-    color: #e95235;
-    background: #fff1ed;
-    font-size: 34rpx;
-  }
-  .featured-info {
-    display: flex;
-    min-width: 0;
-    flex: 1;
-    flex-direction: column;
-    gap: 10rpx;
-  }
-  .featured-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: #333;
-    font-size: 27rpx;
-  }
-  .featured-meta {
-    color: #999;
-    font-size: 22rpx;
-  }
-  .featured-action {
-    flex: 0 0 auto;
-    color: #f4513b;
-    font-size: 24rpx;
-  }
-
-  .step {
-    display: flex;
-    align-items: center;
-    gap: 18rpx;
-    margin-top: 20rpx;
-    color: #555;
-    font-size: 25rpx;
-  }
-  .step-no {
-    display: flex;
-    width: 38rpx;
-    height: 38rpx;
-    flex: 0 0 38rpx;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    color: #fff;
-    background: #f4513b;
-    font-size: 22rpx;
   }
   .notice {
     margin-top: 24rpx;
