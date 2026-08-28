@@ -2,11 +2,101 @@ import { asrUrl } from '@/sheep/config';
 
 let recorder;
 let activeStream;
+let h5Recorder;
+
+function encodeWav(samples, sampleRate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const writeString = (offset, value) => {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset + index, value.charCodeAt(index));
+    }
+  };
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeString(36, 'data');
+  view.setUint32(40, samples.length * 2, true);
+  for (let index = 0; index < samples.length; index += 1) {
+    const sample = Math.max(-1, Math.min(1, samples[index]));
+    view.setInt16(44 + index * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+  }
+  return new Blob([view], { type: 'audio/wav' });
+}
+
+function resample(samples, fromRate, toRate) {
+  if (fromRate === toRate) return samples;
+  const outputLength = Math.round(samples.length * toRate / fromRate);
+  const output = new Float32Array(outputLength);
+  const ratio = fromRate / toRate;
+  for (let index = 0; index < outputLength; index += 1) {
+    const sourceIndex = index * ratio;
+    const left = Math.floor(sourceIndex);
+    const right = Math.min(left + 1, samples.length - 1);
+    const weight = sourceIndex - left;
+    output[index] = samples[left] * (1 - weight) + samples[right] * weight;
+  }
+  return output;
+}
+
+function startH5WavRecording(stream, onStop, onError) {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return false;
+  const context = new AudioContextClass({ sampleRate: 16000 });
+  const source = context.createMediaStreamSource(stream);
+  const processor = context.createScriptProcessor(4096, 1, 1);
+  const chunks = [];
+  processor.onaudioprocess = (event) => {
+    const input = event.inputBuffer.getChannelData(0);
+    chunks.push(new Float32Array(input));
+  };
+  const mute = context.createGain();
+  mute.gain.value = 0;
+  const resumePromise = context.resume?.();
+  resumePromise?.catch?.(() => {});
+  source.connect(processor);
+  processor.connect(mute);
+  mute.connect(context.destination);
+  h5Recorder = {
+    stop: () => {
+      try {
+        source.disconnect();
+        processor.disconnect();
+        mute.disconnect();
+        const samples = new Float32Array(chunks.reduce((total, chunk) => total + chunk.length, 0));
+        let offset = 0;
+        chunks.forEach((chunk) => {
+          samples.set(chunk, offset);
+          offset += chunk.length;
+        });
+        if (!samples.length) throw new Error('录音内容为空');
+        const wavSamples = resample(samples, context.sampleRate, 16000);
+        onStop?.({ blob: encodeWav(wavSamples, 16000), format: 'wav', fileName: 'voice.wav' });
+      } catch (error) {
+        onError?.(error);
+      } finally {
+        context.close?.();
+        activeStream?.getTracks?.().forEach((track) => track.stop());
+        activeStream = null;
+        h5Recorder = null;
+      }
+    },
+  };
+  return true;
+}
 
 /** 跨 H5 / App / 小程序录音，并在结束后把文件交给 onStop。 */
 export function startVoiceRecording({ onStart, onStop, onError } = {}) {
   // #ifdef H5
-  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+  if (!navigator.mediaDevices?.getUserMedia || !(window.AudioContext || window.webkitAudioContext)) {
     onError?.(new Error('当前环境不支持录音'));
     return;
   }
@@ -14,27 +104,13 @@ export function startVoiceRecording({ onStart, onStop, onError } = {}) {
     .getUserMedia({ audio: true })
     .then((stream) => {
       activeStream = stream;
-      const mimeType = MediaRecorder.isTypeSupported?.('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : '';
-      recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-      const chunks = [];
-      recorder.ondataavailable = (event) => event.data?.size && chunks.push(event.data);
-      recorder.onerror = onError;
-      recorder.onstop = () => {
-        try {
-          const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
-          if (!blob.size) throw new Error('录音内容为空');
-          const format = blob.type.includes('mp4') || blob.type.includes('mpeg') ? 'm4a' : 'webm';
-          onStop?.({ blob, format, fileName: `voice.${format}` });
-        } catch (error) {
-          onError?.(error);
-        } finally {
-          activeStream?.getTracks?.().forEach((track) => track.stop());
-          activeStream = null;
-        }
-      };
-      recorder.start();
+      if (!startH5WavRecording(stream, onStop, onError)) {
+        // MediaRecorder is retained as a capability check for older runtimes;
+        // its webm output is not accepted by the SenseVoice endpoint.
+        onError?.(new Error('当前浏览器不支持 WAV 录音，请改用文字输入'));
+        stream.getTracks?.().forEach((track) => track.stop());
+        return;
+      }
       onStart?.();
     })
     .catch(onError);
@@ -61,6 +137,7 @@ export function startVoiceRecording({ onStart, onStop, onError } = {}) {
 }
 
 export function stopVoiceRecording() {
+  h5Recorder?.stop?.();
   recorder?.stop?.();
 }
 
