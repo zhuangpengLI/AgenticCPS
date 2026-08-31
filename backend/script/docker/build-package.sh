@@ -7,18 +7,34 @@ PROJECT_ROOT="$(cd -- "${BACKEND_ROOT}/.." && pwd)"
 FRONTEND_ROOT="${PROJECT_ROOT}/frontend/admin-vue3"
 MALL_ROOT="${PROJECT_ROOT}/frontend/mall-uniapp"
 
+H5_CLI="${SHOPRO_H5_CLI:-${HBUILDERX_CLI_PATH:-}}"
+
 if [[ "${1:-}" == "--skip-build" ]]; then
-  echo "[1/4] 跳过构建，使用已有制品"
+  echo "[1/5] 跳过构建，使用已有制品"
 else
-  echo "[1/4] 构建后端 JAR"
+  echo "[1/5] 构建后端 JAR"
   mvn -f "${BACKEND_ROOT}/pom.xml" clean package -pl qiji-server -am -DskipTests
 
-  echo "[2/4] 构建管理前端"
+  echo "[2/5] 构建管理前端"
   (
     cd "${FRONTEND_ROOT}"
     pnpm install --frozen-lockfile
     pnpm build:docker
   )
+
+  if [[ -n "${SHOPRO_H5_DIST:-}" ]]; then
+    echo "[3/5] 使用 SHOPRO_H5_DIST 指定的 mall-uniapp H5 制品"
+  else
+    echo "[3/5] 构建 mall-uniapp H5"
+    if [[ -z "${H5_CLI}" ]]; then
+      H5_CLI="$(command -v cli.exe || command -v cli.cmd || command -v cli || true)"
+    fi
+    if [[ -z "${H5_CLI}" ]]; then
+      echo "未找到 HBuilderX CLI。请设置 SHOPRO_H5_CLI/HBUILDERX_CLI_PATH 或将 cli 加入 PATH。" >&2
+      exit 1
+    fi
+    "${H5_CLI}" publish web --project "${MALL_ROOT}" --webHosting false --ssr false
+  fi
 fi
 
 BACKEND_JAR="${BACKEND_ROOT}/qiji-server/target/qiji-server.jar"
@@ -44,7 +60,7 @@ if [[ ! -f "${MALL_H5_DIST}/index.html" ]]; then
   exit 1
 fi
 
-echo "[3/4] 归集后端、前端和数据库初始化文件"
+echo "[4/5] 归集后端、前端和数据库初始化文件"
 cp -f "${BACKEND_JAR}" "${SCRIPT_DIR}/backend/qiji-server.jar"
 rm -rf "${SCRIPT_DIR}/frontend/dist"
 rm -rf "${SCRIPT_DIR}/frontend/mall-h5"
@@ -56,7 +72,7 @@ cp -f "${BACKEND_ROOT}/sql/mysql/quartz.sql" "${SCRIPT_DIR}/mysql/init/05-quartz
 cp -f "${BACKEND_ROOT}/sql/module/cps-all-in-one.sql" "${SCRIPT_DIR}/mysql/init/10-cps-all-in-one.sql"
 cp -f "${BACKEND_ROOT}/sql/module/ai-all.sql" "${SCRIPT_DIR}/mysql/init/15-ai-all.sql"
 
-echo "[4/4] 校验部署目录"
+echo "[5/5] 校验部署目录"
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
   (
     cd "${SCRIPT_DIR}"
@@ -67,4 +83,5 @@ else
 fi
 
 echo "部署包准备完成: ${SCRIPT_DIR}"
+echo "移动端 H5 输出目录: ${SCRIPT_DIR}/frontend/mall-h5"
 echo "复制整个 docker 目录到服务器后，执行: bash deploy.sh"

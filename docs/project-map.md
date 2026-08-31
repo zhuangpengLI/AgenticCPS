@@ -554,7 +554,7 @@ pnpm build:prod
 
 ### mall-uniapp H5
 
-打开 `frontend/mall-uniapp`，在 HBuilderX 中运行 H5，开发服务使用 `http://localhost:3000/h5/`；发行 H5 后确认 `unpackage/dist/build/h5/index.html` 存在，再执行 `backend/script/docker/build-package.sh`（或 PowerShell 版本）归集部署制品。部署后通过管理端同源的 `/h5/` 子路径访问，无需额外域名。也可用 `SHOPRO_H5_DIST` 指向其他发行目录。
+打开 `frontend/mall-uniapp`，在 HBuilderX 中运行 H5，开发服务使用 `http://localhost:3000/h5/`。执行 `backend/script/docker/build-package.ps1`（Windows）或 `build-package.sh` 会自动调用 HBuilderX CLI 发行 H5，并与后端、管理后台一起归集部署制品；请将 `cli.exe`/`cli.cmd`/`cli` 加入 PATH，或通过 `-HBuilderXCliPath`、`SHOPRO_H5_CLI` / `HBUILDERX_CLI_PATH` 指定路径。H5 最终固定归集到 `backend/script/docker/frontend/mall-h5`，部署后通过管理端同源的 `/h5/` 子路径访问，无需额外域名。也可用 `SHOPRO_H5_DIST` 指向已有发行目录以跳过 H5 构建。
 
 ### admin-uniapp
 
