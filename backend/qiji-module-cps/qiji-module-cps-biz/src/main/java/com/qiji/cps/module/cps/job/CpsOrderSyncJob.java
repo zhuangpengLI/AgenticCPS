@@ -17,12 +17,14 @@ import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderSyncLogMapper;
 import com.qiji.cps.module.cps.service.order.CpsOrderSyncFailureRecordCommand;
 import com.qiji.cps.module.cps.service.order.CpsOrderSyncFailureRecoveryService;
 import com.qiji.cps.module.cps.service.order.CpsOrderSyncPageService;
+import com.qiji.cps.module.cps.service.order.CpsOrderSyncWindowPlanner;
 import com.qiji.cps.module.cps.service.platform.CpsPlatformService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -116,27 +118,32 @@ public class CpsOrderSyncJob implements JobHandler {
             return "没有已启用的平台";
         }
 
-        // 时间窗口
+        // 时间窗口：大淘客普通日期最多 3 小时，任务参数 hours 可为 30 天，必须拆分后逐段请求。
         LocalDateTime endTime = LocalDateTime.now();
         LocalDateTime startTime = endTime.minusHours(hours);
-        String startTimeStr = startTime.format(DTF);
-        String endTimeStr = endTime.format(DTF);
-
-        log.info("[CpsOrderSyncJob] 开始同步，时间窗口: {} ~ {}，queryType={}，平台数={}",
-                startTimeStr, endTimeStr, queryType, platforms.size());
+        // Existing checkpoints are keyed by platform/scene/queryType (not window),
+        // therefore execute non-overlapping windows here. The planner supports
+        // overlap for the forthcoming persisted batch/window orchestration.
+        List<CpsOrderSyncWindowPlanner.Window> windows = CpsOrderSyncWindowPlanner.plan(
+                startTime, endTime, Duration.ZERO, date -> false);
+        log.info("[CpsOrderSyncJob] 开始同步，时间窗口: {} ~ {}，拆分为 {} 段，queryType={}，平台数={}",
+                startTime.format(DTF), endTime.format(DTF), windows.size(), queryType, platforms.size());
 
         // 统计汇总
         int totalNew = 0, totalUpdate = 0, totalSkip = 0, totalFailed = 0;
         List<String> resultLines = new ArrayList<>();
 
-        for (CpsPlatformDO platform : platforms) {
-            String platformCode = platform.getPlatformCode();
-            CpsOrderSyncLogDO syncLog = CpsOrderSyncLogDO.builder()
+        for (CpsOrderSyncWindowPlanner.Window window : windows) {
+            String startTimeStr = window.start().format(DTF);
+            String endTimeStr = window.end().format(DTF);
+            for (CpsPlatformDO platform : platforms) {
+                String platformCode = platform.getPlatformCode();
+                CpsOrderSyncLogDO syncLog = CpsOrderSyncLogDO.builder()
                     .platformCode(platformCode)
                     .syncType(1)
                     .queryType(queryType)
-                    .queryStartTime(startTime)
-                    .queryEndTime(endTime)
+                    .queryStartTime(window.start())
+                    .queryEndTime(window.end())
                     .syncStartTime(LocalDateTime.now())
                     .totalCount(0)
                     .newCount(0)
@@ -144,11 +151,11 @@ public class CpsOrderSyncJob implements JobHandler {
                     .skipCount(0)
                     .build();
 
-            long t0 = System.currentTimeMillis();
-            try {
+                long t0 = System.currentTimeMillis();
+                try {
                 CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
                 PlatformSyncResult platformResult = syncPlatform(platform, client, queryType,
-                        startTimeStr, endTimeStr, endTime);
+                        startTimeStr, endTimeStr, window.end());
 
                 int total = platformResult.totalCount();
                 int newCount = platformResult.newCount();
@@ -176,22 +183,24 @@ public class CpsOrderSyncJob implements JobHandler {
                 resultLines.add(line);
                 log.info("[CpsOrderSyncJob] 平台 {} 同步完成: {}", platformCode, line);
 
-            } catch (Exception e) {
+                } catch (Exception e) {
                 log.error("[CpsOrderSyncJob] 平台 {} 同步失败", platformCode, e);
                 syncLog.setSyncStatus(2);
                 syncLog.setErrorMsg(StrUtil.subWithLength(e.getMessage(), 0, 500));
                 totalFailed++;
                 resultLines.add(String.format("[%s] 同步失败: %s", platformCode, e.getMessage()));
-            } finally {
+                } finally {
                 long cost = System.currentTimeMillis() - t0;
                 syncLog.setSyncEndTime(LocalDateTime.now());
                 syncLog.setCostMs(cost);
                 syncLogMapper.insert(syncLog);
+                }
             }
         }
 
+        int totalTasks = windows.size() * platforms.size();
         String summary = String.format("同步完成: 成功%d平台，失败%d平台，新增%d，更新%d，跳过%d%n%s",
-                platforms.size() - totalFailed, totalFailed, totalNew, totalUpdate, totalSkip,
+                totalTasks - totalFailed, totalFailed, totalNew, totalUpdate, totalSkip,
                 String.join("\n", resultLines));
         log.info("[CpsOrderSyncJob] {}", summary);
         return summary;
@@ -263,8 +272,19 @@ public class CpsOrderSyncJob implements JobHandler {
             saveCheckpoint(checkpoint, "initialize fixed query window");
         }
 
-        String queryStartTime = checkpoint.getWatermarkTime() == null
-                ? defaultStartTime : checkpoint.getWatermarkTime().format(DTF);
+        // A completed window starts from the planner's fixed boundary (including
+        // any configured overlap). Only an in-flight window resumes from its
+        // checkpoint watermark to avoid replaying already persisted pages.
+        String queryStartTime;
+        if (checkpoint.getWatermarkTime() != null) {
+            LocalDateTime requestedStart = LocalDateTime.parse(defaultStartTime, DTF);
+            LocalDateTime watermark = checkpoint.getWatermarkTime();
+            // For an in-flight window, the watermark is the exact resume point;
+            // for a completed window, do not move backwards into older windows.
+            queryStartTime = (watermark.isAfter(requestedStart) ? watermark : requestedStart).format(DTF);
+        } else {
+            queryStartTime = defaultStartTime;
+        }
         String fixedQueryEndTimeText = fixedQueryEndTime.format(DTF);
         String positionIndex = checkpoint.getNextCursor();
         int pageNo = checkpoint.getNextPageNo() == null ? 1 : checkpoint.getNextPageNo();

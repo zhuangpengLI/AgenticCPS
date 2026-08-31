@@ -892,6 +892,25 @@ class CpsOrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("manualSync - 指定时间段应按原始起止时间查询平台订单")
+    void manualSync_usesExplicitTimeRange() {
+        LocalDateTime startTime = LocalDateTime.of(2026, 8, 1, 8, 0, 0);
+        LocalDateTime endTime = LocalDateTime.of(2026, 8, 1, 10, 0, 0);
+        when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);
+        when(platformClient.queryOrderPage(any(CpsOrderQueryRequest.class)))
+                .thenReturn(CpsOrderPageResult.page(List.of(), 2, false));
+
+        orderService.manualSync("taobao", 2, 4, startTime, endTime);
+
+        verify(platformClient, times(3)).queryOrderPage(argThat(request ->
+                "2026-08-01 08:00:00".equals(request.getStartTime())
+                        && "2026-08-01 10:00:00".equals(request.getEndTime())
+                        && Integer.valueOf(4).equals(request.getQueryType())));
+        verify(syncLogMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderSyncLogDO>argThat(log ->
+                startTime.equals(log.getQueryStartTime()) && endTime.equals(log.getQueryEndTime())));
+    }
+
+    @Test
     @DisplayName("manualSync - 淘宝长时间窗口应拆成不超过3小时的小窗口")
     void manualSync_splitsTaobaoLongRangeIntoThreeHourWindows() {
         when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);

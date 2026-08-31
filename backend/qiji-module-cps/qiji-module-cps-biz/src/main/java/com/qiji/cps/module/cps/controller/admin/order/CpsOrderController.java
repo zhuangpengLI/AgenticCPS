@@ -30,6 +30,9 @@ import com.qiji.cps.module.cps.service.order.CpsOrderClaimService;
 import com.qiji.cps.module.cps.service.order.CpsOrderService;
 import com.qiji.cps.module.cps.service.order.CpsOrderSyncFailureRecoveryService;
 import com.qiji.cps.module.cps.service.order.CpsPlatformBillReconciliationService;
+import com.qiji.cps.module.cps.service.order.CpsOrderSyncBatchService;
+import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderSyncBatchDO;
+import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderSyncWindowDO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,7 +42,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static com.qiji.cps.framework.common.pojo.CommonResult.success;
 import static com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
@@ -72,6 +77,9 @@ public class CpsOrderController {
 
     @Resource
     private CpsFundsTraceService fundsTraceService;
+
+    @Resource
+    private CpsOrderSyncBatchService syncBatchService;
 
     @GetMapping("/page")
     @Operation(summary = "获取订单分页")
@@ -157,16 +165,77 @@ public class CpsOrderController {
     }
 
     @PostMapping("/sync")
-    @Operation(summary = "手动触发订单同步", description = "立即拉取指定平台最近N小时订单，默认同步最近2小时")
+    @Operation(summary = "手动触发订单同步", description = "立即拉取指定平台订单；可传起止时间，未传时默认同步最近2小时")
     @PreAuthorize("@ss.hasPermission('cps:order:sync')")
     @Parameter(name = "platformCode", description = "平台编码（taobao/jd/pdd/douyin）", required = true)
     @Parameter(name = "hours", description = "向前追溯小时数，默认2", example = "2")
     @Parameter(name = "queryType", description = "查询时间维度：1下单时间 2付款时间 3结算时间 4更新时间，默认1", example = "4")
+    @Parameter(name = "startTime", description = "同步起始时间，格式 yyyy-MM-dd HH:mm:ss")
+    @Parameter(name = "endTime", description = "同步结束时间，格式 yyyy-MM-dd HH:mm:ss")
     public CommonResult<String> manualSync(@RequestParam("platformCode") String platformCode,
                                             @RequestParam(value = "hours", defaultValue = "2") Integer hours,
-                                            @RequestParam(value = "queryType", defaultValue = "1") Integer queryType) {
-        String result = orderService.manualSync(platformCode, hours, queryType);
+                                            @RequestParam(value = "queryType", defaultValue = "1") Integer queryType,
+                                            @RequestParam(value = "startTime", required = false)
+                                            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startTime,
+                                            @RequestParam(value = "endTime", required = false)
+                                            @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endTime) {
+        String result = orderService.manualSync(platformCode, hours, queryType, startTime, endTime);
         return success(result);
+    }
+
+    @PostMapping("/sync/batches")
+    @Operation(summary = "创建订单同步补偿批次")
+    @PreAuthorize("@ss.hasPermission('cps:order:sync')")
+    public CommonResult<CpsOrderSyncBatchDO> createSyncBatch(@RequestBody CpsOrderSyncBatchDO req) {
+        return success(syncBatchService.create(req.getPlatformCode(), req.getVendorCode(), req.getBatchType(),
+                req.getQueryType(), req.getStartTime(), req.getEndTime()));
+    }
+
+    @GetMapping("/sync/batches")
+    @Operation(summary = "查询订单同步批次")
+    @PreAuthorize("@ss.hasPermission('cps:order:query')")
+    public CommonResult<PageResult<CpsOrderSyncBatchDO>> getSyncBatchPage(
+            @RequestParam(defaultValue = "1") int pageNo, @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(required = false) String platformCode, @RequestParam(required = false) String status,
+            @RequestParam(required = false) String batchType, @RequestParam(required = false) Integer queryType) {
+        return success(syncBatchService.page(pageNo, pageSize, platformCode, status, batchType, queryType));
+    }
+
+    @GetMapping("/sync/batches/{id}/windows")
+    @Operation(summary = "查询订单同步窗口")
+    @PreAuthorize("@ss.hasPermission('cps:order:query')")
+    public CommonResult<PageResult<CpsOrderSyncWindowDO>> getSyncBatchWindows(@PathVariable Long id,
+            @RequestParam(defaultValue = "1") int pageNo, @RequestParam(defaultValue = "50") int pageSize) {
+        return success(syncBatchService.windows(id, pageNo, pageSize));
+    }
+
+    @PostMapping("/sync/batches/{id}/{action}")
+    @Operation(summary = "控制订单同步批次")
+    @PreAuthorize("@ss.hasPermission('cps:order:sync')")
+    public CommonResult<Boolean> controlSyncBatch(@PathVariable Long id, @PathVariable String action) {
+        if (!List.of("pause", "resume", "cancel").contains(action)) throw new IllegalArgumentException("不支持的批次操作");
+        syncBatchService.updateStatus(id, switch (action) { case "pause" -> "PAUSED"; case "resume" -> "RUNNING"; default -> "CANCELLED"; });
+        return success(true);
+    }
+
+    @PostMapping("/sync/windows/{id}/replay")
+    @Operation(summary = "重放订单同步窗口")
+    @PreAuthorize("@ss.hasPermission('cps:order:sync')")
+    public CommonResult<Boolean> replaySyncWindow(@PathVariable Long id) {
+        syncBatchService.replayWindow(id); return success(true);
+    }
+
+    @GetMapping("/sync/metrics")
+    @Operation(summary = "查询订单同步指标")
+    @PreAuthorize("@ss.hasPermission('cps:order:query')")
+    public CommonResult<Map<String, Object>> getSyncMetrics() {
+        Map<String, Object> metrics = new java.util.LinkedHashMap<>();
+        metrics.put("runningBatches", syncBatchService.countByStatus("RUNNING"));
+        metrics.put("pendingWindows", 0);
+        metrics.put("retryWindows", 0);
+        metrics.put("deadWindows", 0);
+        metrics.put("successRate", 0D);
+        return success(metrics);
     }
 
     @PostMapping("/sync-failure/replay")

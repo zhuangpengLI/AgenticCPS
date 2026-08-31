@@ -397,13 +397,27 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         int effectiveQueryType = normalizeQueryType(queryType);
         LocalDateTime endTime = LocalDateTime.now();
         LocalDateTime startTime = endTime.minusHours(effectiveHours);
+        return manualSync(platformCode, effectiveHours, effectiveQueryType, startTime, endTime);
+    }
+
+    @Override
+    public String manualSync(String platformCode, Integer hours, Integer queryType,
+                             LocalDateTime startTime, LocalDateTime endTime) {
+        int effectiveHours = (hours == null || hours <= 0) ? 2 : hours;
+        int effectiveQueryType = normalizeQueryType(queryType);
+        LocalDateTime effectiveEndTime = endTime == null ? LocalDateTime.now() : endTime;
+        LocalDateTime effectiveStartTime = startTime == null
+                ? effectiveEndTime.minusHours(effectiveHours) : startTime;
+        if (effectiveStartTime.isAfter(effectiveEndTime)) {
+            throw new IllegalArgumentException("同步起始时间不能晚于结束时间");
+        }
 
         CpsOrderSyncLogDO syncLog = CpsOrderSyncLogDO.builder()
                 .platformCode(platformCode)
                 .syncType(2) // 全量补偿
                 .queryType(effectiveQueryType)
-                .queryStartTime(startTime)
-                .queryEndTime(endTime)
+                .queryStartTime(effectiveStartTime)
+                .queryEndTime(effectiveEndTime)
                 .syncStartTime(LocalDateTime.now())
                 .build();
 
@@ -412,7 +426,7 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         try {
             CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
 
-            List<CpsOrderDTO> orders = pullOrdersByWindow(platformCode, client, effectiveQueryType, startTime, endTime);
+            List<CpsOrderDTO> orders = pullOrdersByWindow(platformCode, client, effectiveQueryType, effectiveStartTime, effectiveEndTime);
             total = orders.size();
             int[] stats = batchSaveOrUpdateOrders(orders);
             newCount = stats[0];

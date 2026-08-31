@@ -339,6 +339,56 @@ CREATE TABLE `cps_platform_bill_diff` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='平台账单对账差异表';
 
 -- ----------------------------
+-- 3.5 维权退款报表导入批次与明细
+-- ----------------------------
+DROP TABLE IF EXISTS `cps_refund_report_detail`;
+DROP TABLE IF EXISTS `cps_refund_report_import`;
+CREATE TABLE `cps_refund_report_import` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '导入批次ID',
+  `import_batch_no` varchar(64) DEFAULT NULL COMMENT '导入批次号（兼容旧字段）',
+  `batch_no` varchar(64) DEFAULT NULL COMMENT '导入批次号',
+  `platform_code` varchar(32) NOT NULL COMMENT '平台编码',
+  `vendor_code` varchar(64) DEFAULT NULL COMMENT '供应商编码',
+  `source_file_name` varchar(255) DEFAULT NULL COMMENT '来源文件名',
+  `file_name` varchar(255) DEFAULT NULL COMMENT '文件名',
+  `source` varchar(32) DEFAULT 'DATAOKE' COMMENT '报表来源',
+  `file_hash` char(64) NOT NULL COMMENT '文件SHA-256摘要',
+  `file_size` bigint DEFAULT NULL COMMENT '文件大小（字节）',
+  `report_period` varchar(32) DEFAULT NULL COMMENT '报表周期',
+  `period_start` datetime DEFAULT NULL, `period_end` datetime DEFAULT NULL,
+  `status` varchar(16) NOT NULL COMMENT 'PROCESSING/SUCCESS/FAILED',
+  `total_rows` int NOT NULL DEFAULT 0 COMMENT '总行数',
+  `matched_rows` int NOT NULL DEFAULT 0 COMMENT '匹配行数',
+  `difference_rows` int NOT NULL DEFAULT 0 COMMENT '差异/待审核行数',
+  `diff_rows` int NOT NULL DEFAULT 0 COMMENT '差异行数',
+  `invalid_rows` int NOT NULL DEFAULT 0 COMMENT '无效行数',
+  `failure_reason` varchar(1000) DEFAULT NULL COMMENT '失败原因',
+  `imported_time` datetime DEFAULT NULL COMMENT '完成时间',
+  `version` int NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+  `creator` varchar(64) DEFAULT NULL, `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updater` varchar(64) DEFAULT NULL, `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` bit(1) NOT NULL DEFAULT b'0', `tenant_id` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_refund_report_file` (`tenant_id`,`platform_code`,`vendor_code`,`file_hash`,`deleted`),
+  KEY `idx_refund_report_status` (`tenant_id`,`status`,`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='维权退款报表导入批次';
+
+CREATE TABLE `cps_refund_report_detail` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '明细ID',
+  `import_id` bigint NOT NULL COMMENT '导入批次ID', `platform_code` varchar(32) NOT NULL, `vendor_code` varchar(64) DEFAULT NULL,
+  `platform_order_id` varchar(128) NOT NULL COMMENT '平台订单号', `refund_type` varchar(64) DEFAULT NULL COMMENT '退款类型',
+  `refund_amount` decimal(18,2) DEFAULT NULL COMMENT '退款金额', `commission_amount` decimal(18,2) DEFAULT NULL COMMENT '退款佣金',
+  `refund_time` datetime DEFAULT NULL, `platform_status` varchar(64) DEFAULT NULL,
+  `order_id` bigint DEFAULT NULL COMMENT '本地订单ID', `match_status` varchar(32) NOT NULL COMMENT 'MATCHED/ORDER_NOT_FOUND/PENDING_REVIEW/AMOUNT_DIFF',
+  `difference_summary` varchar(512) DEFAULT NULL, `raw_summary` varchar(2000) DEFAULT NULL,
+  `idempotency_key` varchar(160) NOT NULL, `version` int NOT NULL DEFAULT 0,
+  `creator` varchar(64) DEFAULT NULL, `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updater` varchar(64) DEFAULT NULL, `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted` bit(1) NOT NULL DEFAULT b'0', `tenant_id` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_refund_report_detail_key` (`tenant_id`,`idempotency_key`,`deleted`),
+  KEY `idx_refund_report_detail_import` (`tenant_id`,`import_id`,`match_status`), KEY `idx_refund_report_detail_order` (`tenant_id`,`platform_code`,`platform_order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='维权退款报表明细与匹配结果';
+
+-- ----------------------------
 -- 4. 返利配置表
 -- ----------------------------
 DROP TABLE IF EXISTS `cps_rebate_config`;
@@ -818,6 +868,43 @@ CREATE TABLE `cps_order_sync_checkpoint` (
   UNIQUE KEY `uk_sync_checkpoint` (`tenant_id`, `platform_code`, `vendor_code`, `order_scene`, `query_type`) USING BTREE,
   KEY `idx_sync_checkpoint_status` (`tenant_id`, `last_sync_status`, `update_time`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单同步成功水位表';
+
+CREATE TABLE `cps_order_sync_policy` (
+  `id` bigint NOT NULL AUTO_INCREMENT, `platform_code` varchar(32) NOT NULL, `vendor_code` varchar(64) NOT NULL DEFAULT 'OFFICIAL',
+  `order_scene` tinyint NOT NULL DEFAULT 0, `enabled` tinyint NOT NULL DEFAULT 1, `lookback_days` int NOT NULL DEFAULT 30,
+  `overlap_minutes` int NOT NULL DEFAULT 5, `max_concurrency` int NOT NULL DEFAULT 1, `rate_limit_per_minute` int NOT NULL DEFAULT 60,
+  `creator` varchar(64) DEFAULT NULL, `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, `updater` varchar(64) DEFAULT NULL,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, `deleted` bit(1) NOT NULL DEFAULT b'0', `tenant_id` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_order_sync_policy` (`tenant_id`,`platform_code`,`vendor_code`,`order_scene`,`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单同步策略';
+
+CREATE TABLE `cps_order_sync_batch` (
+  `id` bigint NOT NULL AUTO_INCREMENT, `batch_no` varchar(64) NOT NULL, `batch_type` varchar(32) NOT NULL, `query_type` tinyint NOT NULL,
+  `platform_code` varchar(32) NOT NULL, `vendor_code` varchar(64) NOT NULL DEFAULT 'OFFICIAL', `start_time` datetime NOT NULL, `end_time` datetime NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'PENDING', `total_windows` int NOT NULL DEFAULT 0, `success_windows` int NOT NULL DEFAULT 0,
+  `failed_windows` int NOT NULL DEFAULT 0, `retry_windows` int NOT NULL DEFAULT 0, `failure_summary` varchar(1000) DEFAULT NULL,
+  `creator` varchar(64) DEFAULT NULL, `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, `updater` varchar(64) DEFAULT NULL,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, `deleted` bit(1) NOT NULL DEFAULT b'0', `tenant_id` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_order_sync_batch_no` (`tenant_id`,`batch_no`), KEY `idx_order_sync_batch_status` (`tenant_id`,`status`,`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单同步补偿批次';
+
+CREATE TABLE `cps_order_sync_window` (
+  `id` bigint NOT NULL AUTO_INCREMENT, `batch_id` bigint NOT NULL, `platform_code` varchar(32) NOT NULL, `vendor_code` varchar(64) NOT NULL DEFAULT 'OFFICIAL',
+  `order_scene` tinyint NOT NULL DEFAULT 0, `query_type` tinyint NOT NULL, `window_start` datetime NOT NULL, `window_end` datetime NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'PENDING', `pagination_mode` varchar(16) DEFAULT NULL, `next_cursor` varchar(512) DEFAULT NULL, `next_page_no` int DEFAULT 1,
+  `retry_count` int NOT NULL DEFAULT 0, `max_retry_count` int NOT NULL DEFAULT 5, `next_retry_time` datetime DEFAULT NULL, `lease_owner` varchar(128) DEFAULT NULL, `lease_until` datetime DEFAULT NULL,
+  `last_error_code` varchar(64) DEFAULT NULL, `last_error_message` varchar(1000) DEFAULT NULL, `creator` varchar(64) DEFAULT NULL, `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updater` varchar(64) DEFAULT NULL, `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, `deleted` bit(1) NOT NULL DEFAULT b'0', `tenant_id` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`), KEY `idx_order_sync_window_claim` (`tenant_id`,`status`,`next_retry_time`,`lease_until`), KEY `idx_order_sync_window_batch` (`tenant_id`,`batch_id`,`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单同步补偿窗口';
+
+CREATE TABLE `cps_order_sync_attempt` (
+  `id` bigint NOT NULL AUTO_INCREMENT, `window_id` bigint NOT NULL, `attempt_no` int NOT NULL, `request_summary` varchar(2000) DEFAULT NULL, `http_status` int DEFAULT NULL,
+  `upstream_code` varchar(64) DEFAULT NULL, `upstream_message` varchar(1000) DEFAULT NULL, `error_category` varchar(32) DEFAULT NULL, `success` tinyint NOT NULL DEFAULT 0,
+  `started_at` datetime NOT NULL, `finished_at` datetime DEFAULT NULL, `cost_ms` bigint DEFAULT NULL, `creator` varchar(64) DEFAULT NULL, `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updater` varchar(64) DEFAULT NULL, `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, `deleted` bit(1) NOT NULL DEFAULT b'0', `tenant_id` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_order_sync_attempt` (`tenant_id`,`window_id`,`attempt_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单同步窗口请求尝试';
 
 DROP TABLE IF EXISTS `cps_rebate_asset_policy`;
 CREATE TABLE `cps_rebate_asset_policy` (

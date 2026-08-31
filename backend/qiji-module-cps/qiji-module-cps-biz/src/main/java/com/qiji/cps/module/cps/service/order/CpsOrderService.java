@@ -5,6 +5,7 @@ import com.qiji.cps.module.cps.client.dto.CpsOrderDTO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderPageReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -95,5 +96,11 @@ public interface CpsOrderService {
      * @return 同步统计信息描述
      */
     String manualSync(String platformCode, Integer hours, Integer queryType);
+
+    /**
+     * 按指定起止时间同步订单；起止时间为空时回退到 hours 窗口。
+     */
+    String manualSync(String platformCode, Integer hours, Integer queryType,
+                      LocalDateTime startTime, LocalDateTime endTime);
 
 }

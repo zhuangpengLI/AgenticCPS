@@ -601,6 +601,37 @@ pnpm build:prod
 | 租户 & 套餐 | ![租户管理](/.image/租户管理.jpg) | ![租户套餐](/.image/租户套餐.png) | - |
 | 菜单 & 角色 | ![菜单管理](/.image/菜单管理.jpg) | ![角色管理](/.image/角色管理.jpg) | - |
 
+### CPS 返利与选品
+
+以下截图覆盖 CPS 的主要使用链路：平台配置、活动运营、选品与榜单、批量转链、AI 导购，以及移动端返利闭环。截图中的商品和订单数据均为演示数据。
+
+#### 管理后台
+
+<table>
+  <tr>
+    <td align="center"><strong>AI 联盟助手</strong><br/><img src="./.image/cps/ai-assistant.png" alt="CPS AI 联盟助手" width="420"/></td>
+    <td align="center"><strong>返利工具箱</strong><br/><img src="./.image/cps/rebate-toolbox.png" alt="CPS 返利工具箱" width="420"/></td>
+    <td align="center"><strong>平台配置中心</strong><br/><img src="./.image/cps/platform-config-center.png" alt="CPS 平台配置中心" width="420"/></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>返利商品广场</strong><br/><img src="./.image/cps/selection-square.png" alt="返利商品广场" width="420"/></td>
+    <td align="center"><strong>选品库</strong><br/><img src="./.image/cps/selection-library.png" alt="CPS 选品库" width="420"/></td>
+    <td align="center"><strong>AI 选品工作台</strong><br/><img src="./.image/cps/ai-selection-workbench.png" alt="CPS AI 选品工作台" width="420"/></td>
+  </tr>
+</table>
+
+#### 移动端
+
+<table>
+  <tr>
+    <td align="center"><strong>返利首页</strong><br/><img src="./.image/cps/mobile-rebate-flow.png" alt="移动端返利首页" width="260"/></td>
+    <td align="center"><strong>返利工作台</strong><br/><img src="./.image/cps/mobile-rebate-flow1.png" alt="移动端返利工作台" width="260"/></td>
+    <td align="center"><strong>我的 / 资产入口</strong><br/><img src="./.image/cps/mobile-rebate-flow2.png" alt="移动端我的与资产入口" width="260"/></td>
+  </tr>
+</table>
+
+> 截图中的商品、活动和账号数据均为演示数据，实际可用功能以当前前端页面和接口为准。
+
 ### 基础设施
 
 | 模块 | 截图 | 截图 | 截图 |
