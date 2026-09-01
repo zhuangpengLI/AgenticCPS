@@ -1753,12 +1753,57 @@ CREATE TABLE IF NOT EXISTS `cps_refund_report_detail` (
   PRIMARY KEY (`id`), UNIQUE KEY `uk_refund_report_detail` (`tenant_id`,`import_id`,`platform_code`,`platform_order_id`), UNIQUE KEY `uk_refund_report_detail_key` (`tenant_id`,`idempotency_key`), KEY `idx_refund_report_detail_match` (`tenant_id`,`match_status`,`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='维权退款报表明细';
 
+-- ============================================================
+-- 修改时间：2026-09-01 10:30:00
+-- 目的：启用默认五分钟订单拉取，并保留订单补偿批次的窗口执行器。
+-- ============================================================
+UPDATE `infra_job`
+SET `deleted` = b'1', `updater` = 'system', `update_time` = NOW()
+WHERE `deleted` = b'0'
+  AND `handler_name` = 'cpsOrderSyncCompensationJob';
+
+UPDATE `infra_job` AS duplicate_job
+INNER JOIN `infra_job` AS retained_job
+    ON retained_job.`handler_name` = duplicate_job.`handler_name`
+   AND retained_job.`deleted` = b'0'
+   AND retained_job.`id` < duplicate_job.`id`
+SET duplicate_job.`deleted` = b'1', duplicate_job.`updater` = 'system', duplicate_job.`update_time` = NOW()
+WHERE duplicate_job.`deleted` = b'0' AND duplicate_job.`handler_name` = 'cpsOrderSyncJob';
+
+UPDATE `infra_job`
+SET `name` = 'CPS大淘客订单同步', `status` = 1,
+    `handler_param` = '{"hours":3,"queryType":4,"platformCode":"taobao"}',
+    `cron_expression` = '0 */5 * * * ?', `retry_count` = 2,
+    `retry_interval` = 60, `monitor_timeout` = 900,
+    `updater` = 'system', `update_time` = NOW()
+WHERE `deleted` = b'0' AND `handler_name` = 'cpsOrderSyncJob';
+
 INSERT INTO `infra_job` (`name`,`status`,`handler_name`,`handler_param`,`cron_expression`,`retry_count`,`retry_interval`,`monitor_timeout`,`creator`,`updater`,`deleted`)
-SELECT 'CPS滚动订单同步', 2, 'cpsOrderSyncCompensationJob', '{"batchType":"ROLLING","queryType":4,"days":30}', '0 */10 * * * ?', 2, 60, 900, 'system', 'system', b'0'
-WHERE NOT EXISTS (SELECT 1 FROM `infra_job` WHERE `handler_name`='cpsOrderSyncCompensationJob' AND `deleted`=b'0' AND `name`='CPS滚动订单同步');
+SELECT 'CPS大淘客订单同步', 1, 'cpsOrderSyncJob', '{"hours":3,"queryType":4,"platformCode":"taobao"}', '0 */5 * * * ?', 2, 60, 900, 'system', 'system', b'0'
+WHERE NOT EXISTS (SELECT 1 FROM `infra_job` WHERE `handler_name`='cpsOrderSyncJob' AND `deleted`=b'0');
+
+UPDATE `infra_job`
+SET `name` = 'CPS订单补偿批次执行', `status` = 1,
+    `handler_param` = '{"limit":10}', `cron_expression` = '0 */1 * * * ?',
+    `retry_count` = 2, `retry_interval` = 60, `monitor_timeout` = 900,
+    `updater` = 'system', `update_time` = NOW()
+WHERE `deleted` = b'0' AND `handler_name` = 'cpsOrderSyncBatchExecutionJob';
+
 INSERT INTO `infra_job` (`name`,`status`,`handler_name`,`handler_param`,`cron_expression`,`retry_count`,`retry_interval`,`monitor_timeout`,`creator`,`updater`,`deleted`)
-SELECT 'CPS夜间支付补偿', 2, 'cpsOrderSyncCompensationJob', '{"batchType":"NIGHTLY","queryType":2,"days":10}', '0 0 2 * * ?', 2, 60, 900, 'system', 'system', b'0'
-WHERE NOT EXISTS (SELECT 1 FROM `infra_job` WHERE `handler_name`='cpsOrderSyncCompensationJob' AND `deleted`=b'0' AND `name`='CPS夜间支付补偿');
+SELECT 'CPS订单补偿批次执行', 1, 'cpsOrderSyncBatchExecutionJob', '{"limit":10}', '0 */1 * * * ?', 2, 60, 900, 'system', 'system', b'0'
+WHERE NOT EXISTS (SELECT 1 FROM `infra_job` WHERE `handler_name`='cpsOrderSyncBatchExecutionJob' AND `deleted`=b'0');
+
+-- ============================================================
+-- 修改时间：2026-09-01 11:00:00
+-- 目的：注册 CPS 返利结算任务，确保平台已结算订单进入返利冻结流程。
+-- ============================================================
+UPDATE `infra_job`
+SET `name` = 'CPS返利结算', `status` = 1,
+    `handler_param` = '{"batchSize":200}', `cron_expression` = '0 0 * * * ?',
+    `retry_count` = 2, `retry_interval` = 60, `monitor_timeout` = 900,
+    `updater` = 'system', `update_time` = NOW()
+WHERE `deleted` = b'0' AND `handler_name` = 'cpsRebateSettleJob';
+
 INSERT INTO `infra_job` (`name`,`status`,`handler_name`,`handler_param`,`cron_expression`,`retry_count`,`retry_interval`,`monitor_timeout`,`creator`,`updater`,`deleted`)
-SELECT 'CPS月度结算补偿', 2, 'cpsOrderSyncCompensationJob', '{"batchType":"MONTHLY","queryType":3,"days":31}', '0 15 2 21 * ?', 2, 60, 900, 'system', 'system', b'0'
-WHERE NOT EXISTS (SELECT 1 FROM `infra_job` WHERE `handler_name`='cpsOrderSyncCompensationJob' AND `deleted`=b'0' AND `name`='CPS月度结算补偿');
+SELECT 'CPS返利结算', 1, 'cpsRebateSettleJob', '{"batchSize":200}', '0 0 * * * ?', 2, 60, 900, 'system', 'system', b'0'
+WHERE NOT EXISTS (SELECT 1 FROM `infra_job` WHERE `handler_name`='cpsRebateSettleJob' AND `deleted`=b'0');

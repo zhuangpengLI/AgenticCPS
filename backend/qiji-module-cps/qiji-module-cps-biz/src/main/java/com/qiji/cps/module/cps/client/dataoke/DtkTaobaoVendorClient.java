@@ -354,9 +354,14 @@ public class DtkTaobaoVendorClient extends AbstractDtkVendorClient
         params.put("startTime", request.getStartTime());
         params.put("endTime", request.getEndTime());
         params.put("pageSize", request.getPageSize());
+        params.put("pageNo", request.getPageNo());
         params.put("version", "v1.0.0");
+        if (request.getOrderStatus() != null) {
+            params.put("tkStatus", request.getOrderStatus());
+        }
         if (request.getPositionIndex() != null) {
             params.put("positionIndex", request.getPositionIndex());
+            params.put("jumpType", 1);
         }
         if (request.getOrderScene() != null) {
             params.put("orderScene", request.getOrderScene());

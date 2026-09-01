@@ -468,6 +468,38 @@ const remainingRouter: AppRouteRecordRaw[] = [
     ]
   },
   {
+    path: '/cps/order',
+    component: Layout,
+    name: 'CpsOrderHidden',
+    meta: { hidden: true },
+    children: [
+      {
+        path: 'sync-monitor',
+        name: 'CpsOrderSyncMonitor',
+        component: () => import('@/views/cps/order/sync-monitor/index.vue'),
+        meta: {
+          title: '同步任务监控',
+          noCache: true,
+          hidden: true,
+          canTo: true,
+          activeMenu: '/cps/order'
+        }
+      },
+      {
+        path: 'review',
+        name: 'CpsOrderReview',
+        component: () => import('@/views/cps/order/review/index.vue'),
+        meta: {
+          title: '审核订单',
+          noCache: true,
+          hidden: true,
+          canTo: true,
+          activeMenu: '/cps/order'
+        }
+      }
+    ]
+  },
+  {
     path: '/pay',
     component: Layout,
     name: 'pay',

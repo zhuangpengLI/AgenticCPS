@@ -89,7 +89,28 @@ class CpsRebateSettleServiceImplTest {
         verify(rebateAccountMapper, never()).updateById(org.mockito.ArgumentMatchers.<com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateAccountDO>any());
         verify(orderMapper).updateRebateFreezeByStatusVersion(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(update ->
                 CpsOrderStatusEnum.SETTLED.getStatus().equals(update.getOrderStatus())
-                        && update.getRebateTime() == null), eq(0));
+                && update.getRebateTime() == null), eq(0));
+    }
+
+    @Test
+    void settledOrderWithoutUpstreamReceiptTimeCanStillCreateRebate() {
+        CpsOrderDO order = order(CpsOrderStatusEnum.SETTLED.getStatus(), LocalDateTime.now());
+        order.setConfirmReceiptTime(null);
+        when(orderMapper.selectForUpdateById(11L)).thenReturn(order);
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(9L);
+        member.setLevelId(3L);
+        when(memberUserApi.getUser(9L)).thenReturn(member);
+        when(rebateConfigService.matchRebateConfig(9L, 3L, "taobao"))
+                .thenReturn(CpsRebateConfigDO.builder().id(7L).rebateRate(new BigDecimal("80")).build());
+        when(moneyConverter.yuanToCent(new BigDecimal("8.00"))).thenReturn(800L);
+        when(assetService.createOrderRebateFreeze(11L, "order-rebate:11"))
+                .thenReturn(com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeRecordDO.builder()
+                        .unfreezeTime(LocalDateTime.now().plusDays(15)).build());
+        when(orderMapper.updateRebateFreezeByStatusVersion(any(CpsOrderDO.class), eq(0))).thenReturn(1);
+
+        assertTrue(service.settleOrder(order));
+        verify(assetService).createOrderRebateFreeze(11L, "order-rebate:11");
     }
 
     @Test

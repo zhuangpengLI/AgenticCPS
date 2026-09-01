@@ -108,6 +108,22 @@ public interface CpsOrderMapper extends BaseMapperX<CpsOrderDO> {
     }
 
     /**
+     * 返利解冻成功后，将订单从平台已结算同步为返利已到账。
+     * 仅允许 settled 订单变更，避免退款/失效订单被回写覆盖。
+     */
+    default int markRebateReceived(Long orderId, LocalDateTime receivedAt) {
+        return update(null, new LambdaUpdateWrapper<CpsOrderDO>()
+                .eq(CpsOrderDO::getId, orderId)
+                .and(w -> w.eq(CpsOrderDO::getOrderStatus, CpsOrderStatusEnum.SETTLED.getStatus())
+                        .or().eq(CpsOrderDO::getOrderStatus, CpsOrderStatusEnum.REBATE_RECEIVED.getStatus()))
+                .set(CpsOrderDO::getOrderStatus, CpsOrderStatusEnum.REBATE_RECEIVED.getStatus())
+                .set(CpsOrderDO::getRebateTime, receivedAt)
+                .set(CpsOrderDO::getActualUnfreezeTime, receivedAt)
+                .set(CpsOrderDO::getRebateFreezeStatus, CpsFreezeStatusEnum.UNFREEZED.getStatus())
+                .setSql("status_version = COALESCE(status_version, 0) + 1"));
+    }
+
+    /**
      * 查询待创建返利资产的订单（平台已结算、有会员归因，且尚未创建V2冻结）。
      *
      * @param statusList 订单状态列表（received / settled）

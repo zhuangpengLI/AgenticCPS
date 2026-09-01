@@ -2139,4 +2139,28 @@ WHERE NOT EXISTS (
   SELECT 1 FROM `infra_job` WHERE `handler_name` = 'cpsAiSavedFilterRefreshJob' AND `deleted` = b'0'
 );
 
+INSERT INTO `infra_job` (`name`, `status`, `handler_name`, `handler_param`, `cron_expression`,
+                         `retry_count`, `retry_interval`, `monitor_timeout`, `creator`, `updater`, `deleted`)
+SELECT 'CPS大淘客订单同步', 1, 'cpsOrderSyncJob', '{"hours":3,"queryType":4,"platformCode":"taobao"}',
+       '0 */5 * * * ?', 2, 60, 900, 'system', 'system', b'0'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `infra_job` WHERE `handler_name` = 'cpsOrderSyncJob' AND `deleted` = b'0'
+);
+
+INSERT INTO `infra_job` (`name`, `status`, `handler_name`, `handler_param`, `cron_expression`,
+                         `retry_count`, `retry_interval`, `monitor_timeout`, `creator`, `updater`, `deleted`)
+SELECT 'CPS订单补偿批次执行', 1, 'cpsOrderSyncBatchExecutionJob', '{"limit":10}',
+       '0 */1 * * * ?', 2, 60, 900, 'system', 'system', b'0'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `infra_job` WHERE `handler_name` = 'cpsOrderSyncBatchExecutionJob' AND `deleted` = b'0'
+);
+
+INSERT INTO `infra_job` (`name`, `status`, `handler_name`, `handler_param`, `cron_expression`,
+                         `retry_count`, `retry_interval`, `monitor_timeout`, `creator`, `updater`, `deleted`)
+SELECT 'CPS返利结算', 1, 'cpsRebateSettleJob', '{"batchSize":200}',
+       '0 0 * * * ?', 2, 60, 900, 'system', 'system', b'0'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `infra_job` WHERE `handler_name` = 'cpsRebateSettleJob' AND `deleted` = b'0'
+);
+
 SET FOREIGN_KEY_CHECKS = 1;

@@ -595,6 +595,9 @@ class AbstractDtkVendorClientTest {
         request.setStartTime("2026-07-06 00:00:00");
         request.setEndTime("2026-07-06 12:00:00");
         request.setPageSize(50);
+        request.setPageNo(2);
+        request.setPositionIndex("PREV_1");
+        request.setOrderStatus(3);
         request.setOrderScene(3);
 
         var orders = client.queryOrders(request, CpsVendorConfig.builder().build());
@@ -602,6 +605,12 @@ class AbstractDtkVendorClientTest {
         assertEquals("/tb-service/get-order-details", client.requestedPath);
         assertEquals(4, client.requestedParams.get("queryType"));
         assertEquals("2026-07-06 00:00:00", client.requestedParams.get("startTime"));
+        assertEquals("2026-07-06 12:00:00", client.requestedParams.get("endTime"));
+        assertEquals(50, client.requestedParams.get("pageSize"));
+        assertEquals(2, client.requestedParams.get("pageNo"));
+        assertEquals(3, client.requestedParams.get("tkStatus"));
+        assertEquals(1, client.requestedParams.get("jumpType"));
+        assertEquals("PREV_1", client.requestedParams.get("positionIndex"));
         assertEquals(3, client.requestedParams.get("orderScene"));
         assertEquals("v1.0.0", client.requestedParams.get("version"));
         assertEquals(1, orders.size());
@@ -616,6 +625,34 @@ class AbstractDtkVendorClientTest {
         assertEquals("2026-07-10 12:00:00", order.getSettleTime());
         assertEquals("NEXT_1", order.getNextPositionIndex());
         assertEquals("2002", order.getExtraFields().get("relationId"));
+    }
+
+    @Test
+    @DisplayName("大淘客淘宝订单四种查询类型均透传 queryType 和时间分页参数")
+    void testTaobaoOrderQuerySupportsAllQueryTypes() {
+        class ParamCapturingClient extends DtkTaobaoVendorClient {
+            Map<String, Object> expose(CpsOrderQueryRequest request) {
+                return buildOrderQueryParams(request, CpsVendorConfig.builder().build());
+            }
+        }
+        ParamCapturingClient client = new ParamCapturingClient();
+        for (int queryType = 1; queryType <= 4; queryType++) {
+            CpsOrderQueryRequest request = new CpsOrderQueryRequest();
+            request.setQueryType(queryType);
+            request.setStartTime("2026-08-31 09:00:00");
+            request.setEndTime("2026-08-31 12:00:00");
+            request.setPageNo(1);
+            request.setPageSize(100);
+            Map<String, Object> params = client.expose(request);
+
+            assertEquals(queryType, params.get("queryType"));
+            assertEquals("2026-08-31 09:00:00", params.get("startTime"));
+            assertEquals("2026-08-31 12:00:00", params.get("endTime"));
+            assertEquals(1, params.get("pageNo"));
+            assertEquals(100, params.get("pageSize"));
+            assertFalse(params.containsKey("tkStatus"));
+            assertFalse(params.containsKey("jumpType"));
+        }
     }
 
     @Test

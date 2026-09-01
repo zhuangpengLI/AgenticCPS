@@ -94,8 +94,8 @@ export interface CpsOrderSyncBatchVO {
   platformCode: string
   vendorCode?: string
   orderScene?: number
-  startTime: string
-  endTime: string
+  startTime: number
+  endTime: number
   status: string
   totalWindows: number
   successWindows: number
@@ -188,17 +188,21 @@ export const deleteCpsOrderList = async (ids: number[]) => {
   return await request.delete({ url: '/cps/order/delete-list', params: { ids: ids.join(',') } })
 }
 
-// 手动触发订单同步
-export const syncCpsOrders = async (
-  platformCode: string,
-  hours = 2,
-  queryType = 1,
-  startTime?: string,
+export interface CpsOrderSyncReqVO {
+  platformCode: string
+  vendorCode?: string
+  hours?: number
+  queryType?: number
+  orderStatus?: number
+  startTime?: string
   endTime?: string
-) => {
+}
+
+// 按平台和 API 供应商手动触发订单同步
+export const syncCpsOrders = async (params: CpsOrderSyncReqVO) => {
   return await request.post({
     url: '/cps/order/sync',
-    params: { platformCode, hours, queryType, startTime, endTime }
+    params
   })
 }
 
@@ -222,6 +226,9 @@ export const resumeOrderSyncBatch = async (batchId: number) =>
 
 export const cancelOrderSyncBatch = async (batchId: number) =>
   await request.post({ url: `/cps/order/sync/batches/${batchId}/cancel` })
+
+export const deleteOrderSyncBatch = async (batchId: number) =>
+  await request.delete({ url: `/cps/order/sync/batches/${batchId}` })
 
 export const replayOrderSyncWindow = async (windowId: number) =>
   await request.post({ url: `/cps/order/sync/windows/${windowId}/replay` })

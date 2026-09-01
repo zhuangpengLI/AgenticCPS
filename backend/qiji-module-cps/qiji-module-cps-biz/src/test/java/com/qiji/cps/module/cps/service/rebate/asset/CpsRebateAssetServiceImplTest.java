@@ -1,6 +1,7 @@
 package com.qiji.cps.module.cps.service.rebate.asset;
 
 import com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeRecordDO;
+import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateAccountDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateAssetLedgerDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateDebtDO;
@@ -12,6 +13,7 @@ import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateAssetLedgerMapper;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateDebtMapper;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateRecordMapper;
 import com.qiji.cps.module.cps.enums.CpsFreezeStatusEnum;
+import com.qiji.cps.module.cps.enums.CpsOrderStatusEnum;
 import com.qiji.cps.module.cps.enums.CpsRebateStatusEnum;
 import com.qiji.cps.module.cps.enums.CpsRebateTypeEnum;
 import com.qiji.cps.module.cps.service.freeze.CpsFreezeService;
@@ -81,6 +83,32 @@ class CpsRebateAssetServiceImplTest {
     }
 
     @Test
+    void createOrderRebateFreezeAllowsSettledOrderWithoutReceiptTime() {
+        CpsOrderDO order = CpsOrderDO.builder().id(24L).memberId(33L).platformCode("taobao")
+                .platformOrderId("P24").orderStatus(CpsOrderStatusEnum.SETTLED.getStatus())
+                .settleTime(java.time.LocalDateTime.now()).build();
+        CpsRebateRecordDO rebate = CpsRebateRecordDO.builder().id(25L).orderId(24L)
+                .rebateAmount(new BigDecimal("10.00")).build();
+        when(ledgerMapper.selectByBusinessAndIdempotencyKey("ORDER_REBATE", "order-rebate:24"))
+                .thenReturn(null);
+        when(orderMapper.selectById(24L)).thenReturn(order);
+        when(rebateRecordMapper.selectByOrderIdAndType(24L, CpsRebateTypeEnum.REBATE.getType()))
+                .thenReturn(rebate);
+        when(moneyConverter.yuanToCent(new BigDecimal("10.00"))).thenReturn(1000L);
+        when(freezeService.getActiveConfig("taobao", 1000L))
+                .thenReturn(com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeConfigDO.builder()
+                        .id(26L).unfreezeDays(15).build());
+        when(accountMapper.selectForUpdateByMemberId(33L)).thenReturn(account(33L, 0, 0, 0));
+        when(accountMapper.updateById(any(CpsRebateAccountDO.class))).thenReturn(1);
+        when(freezeRecordMapper.selectByBusinessId("ORDER_REBATE", "24")).thenReturn(null);
+
+        CpsFreezeRecordDO freeze = service.createOrderRebateFreeze(24L, "order-rebate:24");
+
+        assertEquals(order.getSettleTime(), freeze.getEligibleTime());
+        verify(freezeRecordMapper).insert(any(CpsFreezeRecordDO.class));
+    }
+
+    @Test
     void releaseOrderRebateRepaysOldestDebtBeforeCreditingAvailable() {
         CpsFreezeRecordDO freeze = CpsFreezeRecordDO.builder()
                 .id(40L).memberId(33L).orderId(22L).businessType("ORDER_REBATE")
@@ -97,6 +125,9 @@ class CpsRebateAssetServiceImplTest {
         when(debtMapper.updateById(any(CpsRebateDebtDO.class))).thenReturn(1);
         when(accountMapper.updateById(any(CpsRebateAccountDO.class))).thenReturn(1);
         when(freezeRecordMapper.updateById(any(CpsFreezeRecordDO.class))).thenReturn(1);
+        when(orderMapper.markRebateReceived(eq(22L), any())).thenReturn(1);
+        when(rebateRecordMapper.selectByOrderIdAndType(22L, CpsRebateTypeEnum.REBATE.getType()))
+                .thenReturn(CpsRebateRecordDO.builder().id(44L).orderId(22L).rebateStatus("pending").build());
 
         CpsRebateAssetResult result = service.releaseOrderRebate(40L,
                 CpsAssetOperatorContext.system("release-40", "scheduled release"));
@@ -109,6 +140,7 @@ class CpsRebateAssetServiceImplTest {
         verify(ledgerMapper).insert(argThat((CpsRebateAssetLedgerDO ledger) -> ledger.getAvailableChangeCent() == 300L
                 && ledger.getFrozenChangeCent() == -1000L
                 && ledger.getDebtChangeCent() == -700L));
+        verify(orderMapper).markRebateReceived(eq(22L), any());
     }
 
     @Test
@@ -124,6 +156,7 @@ class CpsRebateAssetServiceImplTest {
         when(accountMapper.selectForUpdateByMemberId(33L)).thenReturn(account(33L, 0, 1000, 0));
         when(accountMapper.updateById(any(CpsRebateAccountDO.class))).thenReturn(1);
         when(freezeRecordMapper.updateById(any(CpsFreezeRecordDO.class))).thenReturn(1);
+        when(orderMapper.markRebateReceived(eq(23L), any())).thenReturn(1);
 
         CpsRebateAssetResult result = service.releaseOrderRebate(41L,
                 CpsAssetOperatorContext.system("release-legacy-41", "legacy release"));

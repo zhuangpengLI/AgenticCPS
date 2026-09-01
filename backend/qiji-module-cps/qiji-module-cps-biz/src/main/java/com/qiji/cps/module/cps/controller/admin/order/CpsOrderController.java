@@ -165,21 +165,30 @@ public class CpsOrderController {
     }
 
     @PostMapping("/sync")
-    @Operation(summary = "手动触发订单同步", description = "立即拉取指定平台订单；可传起止时间，未传时默认同步最近2小时")
+    @Operation(summary = "手动触发订单同步", description = "立即拉取指定平台订单；大淘客只接收开始时间并固定同步后续3小时")
     @PreAuthorize("@ss.hasPermission('cps:order:sync')")
     @Parameter(name = "platformCode", description = "平台编码（taobao/jd/pdd/douyin）", required = true)
+    @Parameter(name = "vendorCode", description = "API 供应商编码；为空时使用平台默认供应商")
     @Parameter(name = "hours", description = "向前追溯小时数，默认2", example = "2")
     @Parameter(name = "queryType", description = "查询时间维度：1下单时间 2付款时间 3结算时间 4更新时间，默认1", example = "4")
+    @Parameter(name = "orderStatus", description = "供应商原始订单状态；为空时同步全部状态")
     @Parameter(name = "startTime", description = "同步起始时间，格式 yyyy-MM-dd HH:mm:ss")
-    @Parameter(name = "endTime", description = "同步结束时间，格式 yyyy-MM-dd HH:mm:ss")
+    @Parameter(name = "endTime", description = "同步结束时间；大淘客传入开始时间时由服务端固定为开始时间加3小时")
     public CommonResult<String> manualSync(@RequestParam("platformCode") String platformCode,
+                                            @RequestParam(value = "vendorCode", required = false) String vendorCode,
                                             @RequestParam(value = "hours", defaultValue = "2") Integer hours,
                                             @RequestParam(value = "queryType", defaultValue = "1") Integer queryType,
+                                            @RequestParam(value = "orderStatus", required = false) Integer orderStatus,
                                             @RequestParam(value = "startTime", required = false)
                                             @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startTime,
                                             @RequestParam(value = "endTime", required = false)
                                             @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endTime) {
-        String result = orderService.manualSync(platformCode, hours, queryType, startTime, endTime);
+        if ("dataoke".equalsIgnoreCase(vendorCode) && startTime != null) {
+            endTime = startTime.plusHours(3);
+            hours = 3;
+        }
+        String result = orderService.manualSync(platformCode, vendorCode, hours, queryType, orderStatus,
+                startTime, endTime);
         return success(result);
     }
 
@@ -225,17 +234,19 @@ public class CpsOrderController {
         syncBatchService.replayWindow(id); return success(true);
     }
 
+    @DeleteMapping("/sync/batches/{id}")
+    @Operation(summary = "删除订单同步补偿批次")
+    @PreAuthorize("@ss.hasPermission('cps:order:sync')")
+    public CommonResult<Boolean> deleteSyncBatch(@PathVariable Long id) {
+        syncBatchService.delete(id);
+        return success(true);
+    }
+
     @GetMapping("/sync/metrics")
     @Operation(summary = "查询订单同步指标")
     @PreAuthorize("@ss.hasPermission('cps:order:query')")
     public CommonResult<Map<String, Object>> getSyncMetrics() {
-        Map<String, Object> metrics = new java.util.LinkedHashMap<>();
-        metrics.put("runningBatches", syncBatchService.countByStatus("RUNNING"));
-        metrics.put("pendingWindows", 0);
-        metrics.put("retryWindows", 0);
-        metrics.put("deadWindows", 0);
-        metrics.put("successRate", 0D);
-        return success(metrics);
+        return success(syncBatchService.metrics());
     }
 
     @PostMapping("/sync-failure/replay")

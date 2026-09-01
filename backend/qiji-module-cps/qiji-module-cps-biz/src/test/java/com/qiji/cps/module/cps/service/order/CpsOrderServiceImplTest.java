@@ -3,9 +3,11 @@ package com.qiji.cps.module.cps.service.order;
 import com.qiji.cps.framework.common.exception.ServiceException;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.CpsPlatformClient;
+import com.qiji.cps.module.cps.client.CpsApiVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsOrderDTO;
 import com.qiji.cps.module.cps.client.dto.CpsOrderPageResult;
 import com.qiji.cps.module.cps.client.dto.CpsOrderQueryRequest;
+import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderAttributionLogDO;
@@ -41,6 +43,7 @@ import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -81,6 +84,8 @@ class CpsOrderServiceImplTest {
     private CpsRebateConfigService rebateConfigService;
     @Mock
     private CpsPlatformClient platformClient;
+    @Mock
+    private CpsApiVendorClient vendorClient;
     @Mock
     private CpsTransferRecordMapper transferRecordMapper;
     @Mock
@@ -892,7 +897,29 @@ class CpsOrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("manualSync - 指定时间段应按原始起止时间查询平台订单")
+    @DisplayName("manualSync - selected vendor routes order status")
+    void manualSync_routesSelectedVendorAndOrderStatus() {
+        when(platformClientFactory.getVendorClient("dataoke", "taobao")).thenReturn(vendorClient);
+        when(platformClientFactory.getVendorConfig("dataoke", "taobao"))
+                .thenReturn(CpsVendorConfig.builder().vendorCode("dataoke").platformCode("taobao").build());
+        when(platformClientFactory.withVendorCode(eq("dataoke"), any())).thenAnswer(invocation ->
+                ((Supplier<?>) invocation.getArgument(1)).get());
+        when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);
+        when(platformClient.queryOrderPage(any(CpsOrderQueryRequest.class)))
+                .thenReturn(CpsOrderPageResult.page(List.of(), 2, false));
+
+        LocalDateTime startTime = LocalDateTime.of(2026, 8, 1, 8, 0, 0);
+        LocalDateTime endTime = LocalDateTime.of(2026, 8, 1, 10, 0, 0);
+        orderService.manualSync("taobao", "dataoke", 2, 4, 3, startTime, endTime);
+
+        verify(platformClientFactory).withVendorCode(eq("dataoke"), any());
+        verify(platformClient, times(3)).queryOrderPage(argThat(request ->
+                Integer.valueOf(4).equals(request.getQueryType())
+                        && Integer.valueOf(3).equals(request.getOrderStatus())));
+    }
+
+    @Test
+    @DisplayName("manualSync - explicit time range uses the requested window")
     void manualSync_usesExplicitTimeRange() {
         LocalDateTime startTime = LocalDateTime.of(2026, 8, 1, 8, 0, 0);
         LocalDateTime endTime = LocalDateTime.of(2026, 8, 1, 10, 0, 0);

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  * <p>定期扫描已收货/已结算且返利未入账的订单，自动完成返利计算与入账。</p>
  *
  * <h3>Quartz 注册方式</h3>
- * 在管理后台【基础设施 - 定时任务】手动添加：
+ * 新库和增量 SQL 会自动注册并启用该任务；如需调整频率，可在管理后台修改：
  * 处理器名字：cpsRebateSettleJob
  * 处理器参数示例：{"batchSize":100}（或留空使用默认值200）
  * CRON 表达式：0 0 * * * ?（每小时执行一次）

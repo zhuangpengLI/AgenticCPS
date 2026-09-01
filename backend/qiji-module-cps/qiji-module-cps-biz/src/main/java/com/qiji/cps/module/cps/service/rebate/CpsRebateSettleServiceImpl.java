@@ -97,9 +97,8 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
             log.debug("[settleOrder] 订单无会员归因，跳过: orderId={}", order.getId());
             return false;
         }
-        if (!CpsOrderStatusEnum.SETTLED.getStatus().equals(order.getOrderStatus())
-                || order.getConfirmReceiptTime() == null || order.getSettleTime() == null) {
-            log.warn("[settleOrder] 订单未同时满足确认收货和平台结算条件: orderId={}", order.getId());
+        if (!isSettlementReady(order)) {
+            log.warn("[settleOrder] 订单未满足平台返利结算前置条件: orderId={}", order.getId());
             return false;
         }
 
@@ -274,6 +273,21 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
         }
 
         return rebateAmount;
+    }
+
+    /**
+     * 平台 settled 状态本身表示平台已完成订单结算，部分淘宝接口不会再返回收货时间。
+     * 对 settled 订单只要求平台结算时间；其他状态仍要求完整的收货与结算时间。
+     */
+    private boolean isSettlementReady(CpsOrderDO order) {
+        if (order == null || order.getSettleTime() == null) {
+            return false;
+        }
+        if (CpsOrderStatusEnum.SETTLED.getStatus().equals(order.getOrderStatus())) {
+            return true;
+        }
+        return CpsOrderStatusEnum.RECEIVED.getStatus().equals(order.getOrderStatus())
+                && order.getConfirmReceiptTime() != null;
     }
 
 }

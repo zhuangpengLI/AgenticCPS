@@ -14,6 +14,7 @@ import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateAssetLedgerMapper;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateDebtMapper;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateRecordMapper;
 import com.qiji.cps.module.cps.enums.CpsFreezeStatusEnum;
+import com.qiji.cps.module.cps.enums.CpsOrderStatusEnum;
 import com.qiji.cps.module.cps.enums.CpsRebateStatusEnum;
 import com.qiji.cps.module.cps.enums.CpsRebateTypeEnum;
 import com.qiji.cps.module.cps.service.freeze.CpsFreezeService;
@@ -70,8 +71,10 @@ public class CpsRebateAssetServiceImpl implements CpsRebateAssetService {
         if (order.getMemberId() == null) {
             throw new IllegalStateException("未归因订单不能创建返利冻结: " + orderId);
         }
-        if (order.getConfirmReceiptTime() == null || order.getSettleTime() == null) {
-            throw new IllegalStateException("订单必须同时具备确认收货和平台结算时间: " + orderId);
+        if (order.getSettleTime() == null
+                || (!CpsOrderStatusEnum.SETTLED.getStatus().equals(order.getOrderStatus())
+                && order.getConfirmReceiptTime() == null)) {
+            throw new IllegalStateException("订单必须具备平台结算时间，非已结算状态还必须具备确认收货时间: " + orderId);
         }
         CpsRebateRecordDO rebate = requireNonNull(rebateRecordMapper.selectByOrderIdAndType(
                 orderId, CpsRebateTypeEnum.REBATE.getType()), "订单返利记录不存在: " + orderId);
@@ -141,8 +144,10 @@ public class CpsRebateAssetServiceImpl implements CpsRebateAssetService {
         if (manual) {
             CpsOrderDO order = requireNonNull(orderMapper.selectById(freeze.getOrderId()),
                     "订单不存在: " + freeze.getOrderId());
-            if (order.getConfirmReceiptTime() == null || order.getSettleTime() == null) {
-                throw new IllegalStateException("手动解冻不能绕过确认收货和平台结算条件");
+            if (order.getSettleTime() == null
+                    || (!CpsOrderStatusEnum.SETTLED.getStatus().equals(order.getOrderStatus())
+                    && order.getConfirmReceiptTime() == null)) {
+                throw new IllegalStateException("手动解冻不能绕过平台结算条件");
             }
         }
         long amountCent = freezeAmountCent(freeze);
@@ -155,9 +160,10 @@ public class CpsRebateAssetServiceImpl implements CpsRebateAssetService {
         Balance after = new Balance(Math.addExact(before.available, amountCent - repaid),
                 before.frozen - amountCent, before.debt - repaid);
         persistAccount(account, after, amountCent);
-        markFreeze(freeze, CpsFreezeStatusEnum.UNFREEZED.getStatus(), LocalDateTime.now(),
+        LocalDateTime releasedAt = LocalDateTime.now();
+        markFreeze(freeze, CpsFreezeStatusEnum.UNFREEZED.getStatus(), releasedAt,
                 manual ? context : null);
-        markOriginalRebateReceived(freeze.getOrderId());
+        markOriginalRebateReceived(freeze.getOrderId(), releasedAt);
         CpsRebateAssetLedgerDO ledger = appendLedger(freeze.getMemberId(), ORDER_REBATE_RELEASE,
                 String.valueOf(freezeRecordId), freeze.getOrderId(), freeze.getPlatformOrderId(),
                 context.idempotencyKey(), before, after, context);
@@ -530,14 +536,22 @@ public class CpsRebateAssetServiceImpl implements CpsRebateAssetService {
         rebateRecordMapper.updateById(original);
     }
 
-    private void markOriginalRebateReceived(Long orderId) {
+    private void markOriginalRebateReceived(Long orderId, LocalDateTime receivedAt) {
         if (orderId == null) return;
         CpsRebateRecordDO rebate = rebateRecordMapper.selectByOrderIdAndType(orderId, CpsRebateTypeEnum.REBATE.getType());
-        if (rebate == null) return;
-        CpsRebateRecordDO update = new CpsRebateRecordDO();
-        update.setId(rebate.getId());
-        update.setRebateStatus(CpsRebateStatusEnum.RECEIVED.getStatus());
-        rebateRecordMapper.updateById(update);
+        if (rebate != null) {
+            CpsRebateRecordDO update = new CpsRebateRecordDO();
+            update.setId(rebate.getId());
+            update.setRebateStatus(CpsRebateStatusEnum.RECEIVED.getStatus());
+            rebateRecordMapper.updateById(update);
+        }
+        int updated = orderMapper.markRebateReceived(orderId, receivedAt);
+        if (updated == 0) {
+            CpsOrderDO current = orderMapper.selectById(orderId);
+            if (current == null || !CpsOrderStatusEnum.REBATE_RECEIVED.getStatus().equals(current.getOrderStatus())) {
+                throw new IllegalStateException("订单返利到账状态回写失败: " + orderId);
+            }
+        }
     }
 
     private void markFreeze(CpsFreezeRecordDO freeze, String status, LocalDateTime actualUnfreezeTime,
@@ -594,6 +608,8 @@ public class CpsRebateAssetServiceImpl implements CpsRebateAssetService {
     }
 
     private static LocalDateTime later(LocalDateTime first, LocalDateTime second) {
+        if (first == null) return second;
+        if (second == null) return first;
         return first.isAfter(second) ? first : second;
     }
 

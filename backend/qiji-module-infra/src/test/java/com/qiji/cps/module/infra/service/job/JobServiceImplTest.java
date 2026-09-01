@@ -24,8 +24,10 @@ import static com.qiji.cps.framework.test.core.util.RandomUtils.randomPojo;
 import static com.qiji.cps.framework.test.core.util.RandomUtils.randomString;
 import static com.qiji.cps.module.infra.enums.ErrorCodeConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @Import(JobServiceImpl.class)
@@ -197,6 +199,25 @@ public class JobServiceImplTest extends BaseDbUnitTest {
         // 校验调用
         verify(schedulerManager).triggerJob(eq(job.getId()),
                 eq(job.getHandlerName()), eq(job.getHandlerParam()));
+    }
+
+    @Test
+    public void testSyncJob_restoresNormalJobsAndKeepsStoppedJobsPaused() throws SchedulerException {
+        JobDO normalJob = randomPojo(JobDO.class, o -> o.setStatus(JobStatusEnum.NORMAL.getStatus()));
+        JobDO stoppedJob = randomPojo(JobDO.class, o -> o.setStatus(JobStatusEnum.STOP.getStatus()));
+        jobMapper.insert(normalJob);
+        jobMapper.insert(stoppedJob);
+
+        jobService.syncJob();
+
+        verify(schedulerManager, times(2)).deleteJob(anyString());
+        verify(schedulerManager).addJob(eq(normalJob.getId()), eq(normalJob.getHandlerName()),
+                eq(normalJob.getHandlerParam()), eq(normalJob.getCronExpression()),
+                eq(normalJob.getRetryCount()), eq(normalJob.getRetryInterval()));
+        verify(schedulerManager).addJob(eq(stoppedJob.getId()), eq(stoppedJob.getHandlerName()),
+                eq(stoppedJob.getHandlerParam()), eq(stoppedJob.getCronExpression()),
+                eq(stoppedJob.getRetryCount()), eq(stoppedJob.getRetryInterval()));
+        verify(schedulerManager).pauseJob(eq(stoppedJob.getHandlerName()));
     }
 
     @Test

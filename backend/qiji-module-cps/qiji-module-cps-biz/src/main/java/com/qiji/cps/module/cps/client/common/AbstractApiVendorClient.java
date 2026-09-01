@@ -219,12 +219,13 @@ public abstract class AbstractApiVendorClient implements CpsApiVendorClient {
         String nextCursor = firstText(response,
                 "/data/positionIndex", "/data/position_index", "/data/nextCursor", "/data/next_cursor",
                 "/positionIndex", "/position_index", "/nextCursor", "/next_cursor", "/data/min_id", "/min_id");
+        Boolean hasMore = firstBoolean(response,
+                "/data/hasMore", "/data/has_more", "/data/hasNext", "/data/has_next",
+                "/hasMore", "/has_more", "/hasNext", "/has_next");
         if (nextCursor != null && !nextCursor.isBlank()) {
-            return CpsOrderPageResult.cursor(orders, nextCursor, true);
+            return CpsOrderPageResult.cursor(orders, nextCursor, hasMore == null || hasMore);
         }
 
-        Boolean hasMore = firstBoolean(response,
-                "/data/hasMore", "/data/has_more", "/hasMore", "/has_more");
         int pageNo = request.getPageNo() == null ? 1 : request.getPageNo();
         if (hasMore != null) {
             return CpsOrderPageResult.page(orders, hasMore ? pageNo + 1 : null, hasMore);

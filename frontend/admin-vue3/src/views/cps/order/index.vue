@@ -75,9 +75,11 @@
           class="!w-240px"
         />
       </el-form-item>
-      <el-form-item class="query-actions">
+      <el-form-item class="query-search-actions">
         <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
         <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
+      </el-form-item>
+      <el-form-item class="query-actions">
         <el-button
           type="danger"
           plain
@@ -86,20 +88,19 @@
         >
           <Icon icon="ep:delete" class="mr-5px" /> 批量删除
         </el-button>
-        <el-dropdown @command="handleSync" class="ml-8px">
-          <el-button type="primary" plain>
-            <Icon icon="ep:refresh-right" class="mr-5px" /> 同步订单
-            <Icon icon="ep:arrow-down" class="ml-5px" />
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="taobao">同步淘宝</el-dropdown-item>
-              <el-dropdown-item command="jd">同步京东</el-dropdown-item>
-              <el-dropdown-item command="pdd">同步拼多多</el-dropdown-item>
-              <el-dropdown-item command="douyin">同步抖音</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+        <el-button plain @click="router.push('/cps/order/sync-monitor')">
+          <Icon icon="ep:data-analysis" class="mr-5px" /> 同步任务监控
+        </el-button>
+        <el-button
+          v-hasPermi="['cps:order:attribution-bind']"
+          plain
+          @click="router.push('/cps/order/review')"
+        >
+          <Icon icon="ep:document-checked" class="mr-5px" /> 审核订单
+        </el-button>
+        <el-button type="primary" plain class="ml-8px" @click="openSyncDialog">
+          <Icon icon="ep:refresh-right" class="mr-5px" /> 同步订单
+        </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -112,9 +113,77 @@
       </el-tag>
       <span class="sync-dialog-hint">{{ syncForm.queryType === 4 ? '订单及状态' : '订单' }}</span>
     </div>
-    <el-form label-width="88px" class="sync-form">
-      <el-form-item label="时间范围" required>
-        <div class="sync-range-picker">
+    <el-form label-width="112px" class="sync-form">
+      <el-form-item label="电商平台" required>
+        <el-select
+          v-model="syncForm.platformCode"
+          class="w-full"
+          filterable
+          placeholder="请选择已接入平台"
+          :loading="syncOptionLoading"
+          @change="loadSyncVendors"
+        >
+          <el-option
+            v-for="platform in syncPlatformOptions"
+            :key="platform.platformCode"
+            :label="platform.platformName || platformLabel(platform.platformCode)"
+            :value="platform.platformCode"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="API 供应商" required>
+        <el-select
+          v-model="syncForm.vendorCode"
+          class="w-full"
+          filterable
+          placeholder="请选择大淘客、聚推客、好单库或官方 API"
+          :loading="syncVendorLoading"
+          :disabled="!syncForm.platformCode"
+        >
+          <el-option
+            v-for="vendor in syncVendorOptions"
+            :key="`${vendor.vendorCode}:${vendor.platformCode}`"
+            :label="syncVendorLabel(vendor)"
+            :value="vendor.vendorCode"
+          />
+        </el-select>
+        <div
+          v-if="syncForm.platformCode && !syncVendorLoading && !syncVendorOptions.length"
+          class="sync-field-tip sync-field-tip--danger"
+        >
+          当前平台没有已启用的 API 供应商，请先完成配置和连接测试。
+        </div>
+      </el-form-item>
+      <el-form-item label="订单同步类型" required>
+        <el-select v-model="syncForm.queryType" class="w-full">
+          <el-option label="全部订单（按下单时间）" :value="1" />
+          <el-option label="付款订单（按付款时间）" :value="2" />
+          <el-option label="结算订单（按结算时间）" :value="3" />
+          <el-option label="状态变更订单（按更新时间）" :value="4" />
+        </el-select>
+        <div class="sync-field-tip">四种方式均按大淘客接口的对应时间字段查询；日常单次不超过 3 小时，大促期间建议不超过 20 分钟，超长范围会由后端自动拆分。</div>
+      </el-form-item>
+      <el-form-item label="供应商状态">
+        <el-input-number
+          v-model="syncForm.orderStatus"
+          :min="0"
+          :max="99"
+          :controls="false"
+          class="w-full"
+          placeholder="可选，填写供应商原始状态码"
+        />
+        <div class="sync-field-tip">留空同步全部状态；不同供应商状态码以其 API 文档为准。</div>
+      </el-form-item>
+      <el-form-item :label="isDataokeSync ? '开始时间' : '时间范围'" required>
+        <el-date-picker
+          v-if="isDataokeSync"
+          v-model="syncForm.startTime"
+          type="datetime"
+          value-format="YYYY-MM-DD HH:mm:ss"
+          placeholder="选择同步开始时间"
+          class="w-full"
+        />
+        <div v-else class="sync-range-picker">
           <el-button-group class="sync-presets">
             <el-button
               v-for="preset in syncPresets"
@@ -135,6 +204,9 @@
             @change="onSyncDateRangeChange"
           />
         </div>
+        <div v-if="syncForm.vendorCode === 'dataoke'" class="sync-field-tip sync-field-tip--warning">
+          大淘客固定同步从开始时间起的 3 小时订单；更早的漏单请创建同步补偿批次，由监控任务分窗口处理。
+        </div>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -142,240 +214,6 @@
       <el-button type="primary" :loading="syncLoading" @click="confirmSync">开始同步</el-button>
     </template>
   </el-dialog>
-
-  <!-- 同步任务监控 -->
-  <ContentWrap class="sync-monitor-wrap">
-    <div class="sync-monitor-header">
-      <div>
-        <div class="sync-monitor-title">同步任务监控</div>
-        <div class="sync-monitor-subtitle">实时、夜间及近30天补偿任务状态</div>
-      </div>
-      <div class="sync-monitor-actions">
-        <el-button size="small" @click="loadSyncMonitor"
-          ><Icon icon="ep:refresh" class="mr-5px" />刷新</el-button
-        >
-        <el-button size="small" type="primary" plain @click="syncBatchDialogVisible = true"
-          ><Icon icon="ep:plus" class="mr-5px" />创建补偿批次</el-button
-        >
-      </div>
-    </div>
-    <div class="sync-metrics-grid">
-      <div
-        ><span>运行中批次</span><b>{{ syncMetrics.runningBatches ?? '-' }}</b></div
-      >
-      <div
-        ><span>待执行窗口</span><b>{{ syncMetrics.pendingWindows ?? '-' }}</b></div
-      >
-      <div
-        ><span>重试窗口</span><b>{{ syncMetrics.retryWindows ?? '-' }}</b></div
-      >
-      <div
-        ><span>死信窗口</span><b class="danger-text">{{ syncMetrics.deadWindows ?? '-' }}</b></div
-      >
-      <div
-        ><span>窗口成功率</span><b>{{ formatRate(syncMetrics.successRate) }}</b></div
-      >
-      <div
-        ><span>最大延迟</span
-        ><b>{{
-          syncMetrics.maxDelayMinutes != null ? `${syncMetrics.maxDelayMinutes}分钟` : '-'
-        }}</b></div
-      >
-    </div>
-    <el-table
-      v-loading="syncBatchLoading"
-      :data="syncBatches"
-      size="small"
-      class="sync-batch-table"
-    >
-      <el-table-column label="批次" prop="id" width="80" />
-      <el-table-column label="平台" width="90"
-        ><template #default="scope">{{
-          platformLabel(scope.row.platformCode)
-        }}</template></el-table-column
-      >
-      <el-table-column label="轨道" width="100"
-        ><template #default="scope">{{
-          syncQueryTypeLabel(scope.row.queryType)
-        }}</template></el-table-column
-      >
-      <el-table-column label="时间范围" min-width="250"
-        ><template #default="scope"
-          >{{ scope.row.startTime }} 至 {{ scope.row.endTime }}</template
-        ></el-table-column
-      >
-      <el-table-column label="进度" width="150"
-        ><template #default="scope"
-          >{{ scope.row.successWindows || 0 }}/{{ scope.row.totalWindows || 0 }}</template
-        ></el-table-column
-      >
-      <el-table-column label="状态" width="110"
-        ><template #default="scope"
-          ><el-tag size="small" :type="syncStatusTagType(scope.row.status)">{{
-            syncStatusLabel(scope.row.status)
-          }}</el-tag></template
-        ></el-table-column
-      >
-      <el-table-column label="操作" fixed="right" width="220">
-        <template #default="scope">
-          <el-button link type="primary" @click="openSyncWindows(scope.row)">窗口</el-button>
-          <el-button
-            v-if="scope.row.status === 'RUNNING'"
-            link
-            type="warning"
-            @click="operateSyncBatch(scope.row, 'pause')"
-            >暂停</el-button
-          >
-          <el-button
-            v-if="scope.row.status === 'PAUSED'"
-            link
-            type="success"
-            @click="operateSyncBatch(scope.row, 'resume')"
-            >恢复</el-button
-          >
-          <el-button
-            v-if="['RUNNING', 'PAUSED'].includes(scope.row.status)"
-            link
-            type="danger"
-            @click="operateSyncBatch(scope.row, 'cancel')"
-            >取消</el-button
-          >
-        </template>
-      </el-table-column>
-    </el-table>
-  </ContentWrap>
-
-  <el-dialog
-    v-model="syncBatchDialogVisible"
-    title="创建同步补偿批次"
-    width="520px"
-    destroy-on-close
-  >
-    <el-form label-width="90px">
-      <el-form-item label="平台" required
-        ><el-select v-model="syncBatchForm.platformCode" class="w-full"
-          ><el-option label="淘宝" value="taobao" /><el-option label="京东" value="jd" /><el-option
-            label="拼多多"
-            value="pdd" /></el-select
-      ></el-form-item>
-      <el-form-item label="同步轨道" required
-        ><el-select v-model="syncBatchForm.queryType" class="w-full"
-          ><el-option :value="2" label="付款订单" /><el-option
-            :value="3"
-            label="结算订单" /><el-option :value="4" label="订单更新时间" /></el-select
-      ></el-form-item>
-      <el-form-item label="时间范围" required
-        ><el-date-picker
-          v-model="syncBatchForm.dateRange"
-          type="datetimerange"
-          value-format="YYYY-MM-DD HH:mm:ss"
-          class="w-full"
-      /></el-form-item>
-    </el-form>
-    <template #footer
-      ><el-button @click="syncBatchDialogVisible = false">取消</el-button
-      ><el-button type="primary" :loading="syncBatchCreating" @click="createSyncBatch"
-        >创建</el-button
-      ></template
-    >
-  </el-dialog>
-
-  <el-dialog v-model="syncWindowDialogVisible" title="同步窗口" width="760px" destroy-on-close>
-    <el-table :data="syncWindows" size="small">
-      <el-table-column label="时间窗口" min-width="240"
-        ><template #default="scope"
-          >{{ scope.row.windowStart }} 至 {{ scope.row.windowEnd }}</template
-        ></el-table-column
-      >
-      <el-table-column label="状态" width="110"
-        ><template #default="scope"
-          ><el-tag size="small" :type="syncStatusTagType(scope.row.status)">{{
-            syncStatusLabel(scope.row.status)
-          }}</el-tag></template
-        ></el-table-column
-      >
-      <el-table-column label="重试" prop="retryCount" width="70" />
-      <el-table-column label="错误" prop="lastErrorMessage" min-width="180" show-overflow-tooltip />
-      <el-table-column label="操作" width="90"
-        ><template #default="scope"
-          ><el-button
-            v-if="scope.row.status === 'DEAD'"
-            link
-            type="primary"
-            @click="replaySyncWindow(scope.row)"
-            >重放</el-button
-          ></template
-        ></el-table-column
-      >
-    </el-table>
-  </el-dialog>
-
-  <ContentWrap v-hasPermi="['cps:order:attribution-bind']">
-    <div class="claim-review-toolbar">
-      <el-select
-        v-model="claimQuery.reviewStatus"
-        class="claim-status-select"
-        @change="getClaimList"
-      >
-        <el-option label="待审核" value="PENDING_REVIEW" />
-        <el-option label="已通过" value="APPROVED" />
-        <el-option label="已拒绝" value="REJECTED" />
-        <el-option label="冲突" value="CONFLICT" />
-      </el-select>
-      <el-input
-        v-model="claimQuery.platformOrderId"
-        clearable
-        class="claim-order-search"
-        placeholder="平台订单号"
-        @keyup.enter="getClaimList"
-      />
-      <el-button type="primary" @click="getClaimList">
-        <Icon icon="ep:search" class="mr-1" />查询
-      </el-button>
-    </div>
-
-    <el-table v-loading="claimLoading" :data="claimList">
-      <el-table-column label="申领ID" prop="id" width="90" />
-      <el-table-column label="平台" width="100">
-        <template #default="scope">{{ platformLabel(scope.row.platformCode) }}</template>
-      </el-table-column>
-      <el-table-column
-        label="平台订单号"
-        prop="platformOrderId"
-        min-width="190"
-        show-overflow-tooltip
-      />
-      <el-table-column label="申领会员" prop="candidateMemberId" width="110" />
-      <el-table-column label="状态" width="110">
-        <template #default="scope">
-          <el-tag :type="claimStatusTagType(scope.row.reviewStatus)" size="small">
-            {{ claimStatusLabel(scope.row.reviewStatus) }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="申领原因" prop="rejectReason" min-width="220" show-overflow-tooltip />
-      <el-table-column label="申领时间" prop="createTime" width="165" :formatter="dateFormatter" />
-      <el-table-column label="操作" fixed="right" width="150">
-        <template #default="scope">
-          <template v-if="scope.row.reviewStatus === 'PENDING_REVIEW'">
-            <el-button type="success" link @click="openClaimReview(scope.row, true)"
-              >通过</el-button
-            >
-            <el-button type="danger" link @click="openClaimReview(scope.row, false)"
-              >拒绝</el-button
-            >
-          </template>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-    </el-table>
-    <Pagination
-      :total="claimTotal"
-      v-model:page="claimQuery.pageNo"
-      v-model:limit="claimQuery.pageSize"
-      @pagination="getClaimList"
-    />
-  </ContentWrap>
 
   <!-- 列表 -->
   <ContentWrap>
@@ -721,88 +559,31 @@
       </el-button>
     </template>
   </el-dialog>
-
-  <el-dialog
-    v-model="claimReviewVisible"
-    :title="claimReviewForm.approved ? '通过订单申领' : '拒绝订单申领'"
-    width="460px"
-    destroy-on-close
-  >
-    <el-form label-width="88px">
-      <el-form-item label="平台单号">
-        <el-input :model-value="claimReviewForm.platformOrderId" disabled />
-      </el-form-item>
-      <el-form-item label="申领会员">
-        <el-input :model-value="claimReviewForm.candidateMemberId" disabled />
-      </el-form-item>
-      <el-form-item label="审核说明" required>
-        <el-input
-          v-model="claimReviewForm.auditNote"
-          type="textarea"
-          :rows="4"
-          maxlength="500"
-          show-word-limit
-          placeholder="请输入联盟后台核验依据"
-        />
-      </el-form-item>
-    </el-form>
-    <template #footer>
-      <el-button @click="claimReviewVisible = false">取消</el-button>
-      <el-button
-        :type="claimReviewForm.approved ? 'success' : 'danger'"
-        :loading="claimReviewLoading"
-        @click="submitClaimReview"
-      >
-        确认{{ claimReviewForm.approved ? '通过' : '拒绝' }}
-      </el-button>
-    </template>
-  </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { dateFormatter } from '@/utils/formatTime'
 import * as OrderApi from '@/api/cps/order'
-import type {
-  CpsOrderClaimPageReqVO,
-  CpsOrderClaimVO,
-  CpsOrderPageReqVO,
-  CpsOrderVO
-} from '@/api/cps/order'
+import type { CpsOrderPageReqVO, CpsOrderVO } from '@/api/cps/order'
+import { CpsApiVendorApi, type CpsApiVendorVO } from '@/api/cps/apiVendor'
+import { CpsPlatformApi, type CpsPlatformVO } from '@/api/cps/platform'
+import { PlatformOnboardingApi } from '@/api/cps/platformOnboarding'
 import { getUserPage, type UserVO } from '@/api/member/user/index'
 import dayjs from 'dayjs'
+import { useRouter } from 'vue-router'
 
 defineOptions({ name: 'CpsOrder' })
 
 type ElTagType = 'primary' | 'success' | 'warning' | 'danger' | 'info'
 
 const message = useMessage()
+const router = useRouter()
 
 const loading = ref(false)
 const total = ref(0)
 const list = ref<CpsOrderVO[]>([])
 const selectedOrderIds = ref<number[]>([])
 const queryFormRef = ref()
-const claimLoading = ref(false)
-const claimTotal = ref(0)
-const claimList = ref<CpsOrderClaimVO[]>([])
-const claimReviewVisible = ref(false)
-const claimReviewLoading = ref(false)
-const claimQuery = reactive<CpsOrderClaimPageReqVO>({
-  pageNo: 1,
-  pageSize: 10,
-  reviewStatus: 'PENDING_REVIEW',
-  platformOrderId: undefined
-})
-const claimReviewForm = reactive<{
-  claimId?: number
-  platformOrderId?: string
-  candidateMemberId?: number
-  approved: boolean
-  auditNote: string
-}>({
-  approved: true,
-  auditNote: ''
-})
 
 const queryParams = reactive<CpsOrderPageReqVO>({
   pageNo: 1,
@@ -815,8 +596,9 @@ const queryParams = reactive<CpsOrderPageReqVO>({
   createTime: undefined
 })
 
-type SyncPresetKey = 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'custom'
+type SyncPresetKey = '3h' | 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'custom'
 const syncPresets: Array<{ key: SyncPresetKey; label: string }> = [
+  { key: '3h', label: '近3小时' },
   { key: 'today', label: '今天' },
   { key: 'yesterday', label: '昨天' },
   { key: '7d', label: '近7天' },
@@ -826,40 +608,36 @@ const syncPresets: Array<{ key: SyncPresetKey; label: string }> = [
 ]
 const syncDialogVisible = ref(false)
 const syncLoading = ref(false)
+const syncOptionLoading = ref(false)
+const syncVendorLoading = ref(false)
+const syncPlatformOptions = ref<CpsPlatformVO[]>([])
+const syncVendorOptions = ref<CpsApiVendorVO[]>([])
 const syncForm = reactive<{
   platformCode: string
+  vendorCode: string
   queryType: number
+  orderStatus?: number
   preset: SyncPresetKey
   dateRange: [string, string] | null
-}>({ platformCode: '', queryType: 1, preset: 'today', dateRange: null })
-
-const syncBatches = ref<OrderApi.CpsOrderSyncBatchVO[]>([])
-const syncBatchLoading = ref(false)
-const syncMetrics = ref<OrderApi.CpsOrderSyncMetricsVO>({
-  runningBatches: 0,
-  pendingWindows: 0,
-  retryWindows: 0,
-  deadWindows: 0,
-  successRate: 0
-})
-const syncBatchDialogVisible = ref(false)
-const syncBatchCreating = ref(false)
-const syncBatchForm = reactive<{
-  platformCode: string
-  queryType: number
-  dateRange: [string, string] | null
+  startTime: string
 }>({
-  platformCode: 'taobao',
+  platformCode: '',
+  vendorCode: '',
   queryType: 4,
-  dateRange: null
+  orderStatus: undefined,
+  preset: '3h',
+  dateRange: null,
+  startTime: ''
 })
-const syncWindowDialogVisible = ref(false)
-const syncWindows = ref<OrderApi.CpsOrderSyncWindowVO[]>([])
+
+const isDataokeSync = computed(() => syncForm.vendorCode === 'dataoke')
 
 const syncDateFormat = 'YYYY-MM-DD HH:mm:ss'
 const presetRange = (key: SyncPresetKey): [string, string] | null => {
   const now = dayjs()
   if (key === 'custom') return syncForm.dateRange
+  if (key === '3h')
+    return [now.subtract(3, 'hour').format(syncDateFormat), now.format(syncDateFormat)]
   if (key === 'today')
     return [now.startOf('day').format(syncDateFormat), now.format(syncDateFormat)]
   if (key === 'yesterday') {
@@ -888,93 +666,6 @@ const selectSyncPreset = (key: SyncPresetKey) => {
 const onSyncDateRangeChange = (value: [string, string] | null) => {
   syncForm.dateRange = value
   syncForm.preset = 'custom'
-}
-
-const syncStatusLabel = (status?: string) =>
-  ({
-    PENDING: '待执行',
-    RUNNING: '执行中',
-    PAUSED: '已暂停',
-    RETRY_WAIT: '等待重试',
-    SUCCESS: '已完成',
-    DEAD: '死信',
-    CANCELLED: '已取消'
-  })[status || ''] ||
-  status ||
-  '-'
-const syncStatusTagType = (status?: string): ElTagType =>
-  (({
-    SUCCESS: 'success',
-    RUNNING: 'primary',
-    PAUSED: 'warning',
-    RETRY_WAIT: 'warning',
-    DEAD: 'danger',
-    CANCELLED: 'info'
-  })[status || ''] as ElTagType) || 'info'
-const syncQueryTypeLabel = (queryType?: number) =>
-  ({ 1: '创建时间', 2: '付款时间', 3: '结算时间', 4: '更新时间' })[queryType || 0] || '-'
-const formatRate = (rate?: number) => (rate == null ? '-' : `${(rate * 100).toFixed(1)}%`)
-const loadSyncMonitor = async () => {
-  syncBatchLoading.value = true
-  try {
-    const [page, metrics] = await Promise.all([
-      OrderApi.getOrderSyncBatchPage({ pageNo: 1, pageSize: 10 }),
-      OrderApi.getOrderSyncMetrics()
-    ])
-    syncBatches.value = page.list || []
-    syncMetrics.value = metrics || syncMetrics.value
-  } catch {
-    // 后端接口尚未部署时不影响订单列表使用
-  } finally {
-    syncBatchLoading.value = false
-  }
-}
-const createSyncBatch = async () => {
-  const [startTime, endTime] = syncBatchForm.dateRange || []
-  if (!startTime || !endTime) return message.warning('请选择时间范围')
-  syncBatchCreating.value = true
-  try {
-    await OrderApi.createOrderSyncBatch({
-      platformCode: syncBatchForm.platformCode,
-      queryType: syncBatchForm.queryType,
-      startTime,
-      endTime,
-      batchType: 'MANUAL'
-    })
-    message.success('同步批次已创建')
-    syncBatchDialogVisible.value = false
-    await loadSyncMonitor()
-  } finally {
-    syncBatchCreating.value = false
-  }
-}
-const operateSyncBatch = async (
-  row: OrderApi.CpsOrderSyncBatchVO,
-  action: 'pause' | 'resume' | 'cancel'
-) => {
-  const fn =
-    action === 'pause'
-      ? OrderApi.pauseOrderSyncBatch
-      : action === 'resume'
-        ? OrderApi.resumeOrderSyncBatch
-        : OrderApi.cancelOrderSyncBatch
-  await fn(row.id)
-  message.success('操作成功')
-  await loadSyncMonitor()
-}
-const openSyncWindows = async (row: OrderApi.CpsOrderSyncBatchVO) => {
-  const data = await OrderApi.getOrderSyncBatchWindows(row.id, { pageNo: 1, pageSize: 100 })
-  syncWindows.value = data.list || []
-  syncWindowDialogVisible.value = true
-}
-const replaySyncWindow = async (row: OrderApi.CpsOrderSyncWindowVO) => {
-  await OrderApi.replayOrderSyncWindow(row.id)
-  message.success('窗口已重新加入队列')
-  if (row.batchId)
-    await openSyncWindows(
-      syncBatches.value.find((batch) => batch.id === row.batchId) ||
-        ({ id: row.batchId } as OrderApi.CpsOrderSyncBatchVO)
-    )
 }
 
 /** 平台标签类型 */
@@ -1071,70 +762,6 @@ const resetQuery = () => {
   handleQuery()
 }
 
-const getClaimList = async () => {
-  claimLoading.value = true
-  try {
-    const data = await OrderApi.getOrderClaimPage(claimQuery)
-    claimList.value = data.list
-    claimTotal.value = data.total
-  } finally {
-    claimLoading.value = false
-  }
-}
-
-const claimStatusLabel = (status?: string) => {
-  const map: Record<string, string> = {
-    PENDING_REVIEW: '待审核',
-    APPROVED: '已通过',
-    REJECTED: '已拒绝',
-    CONFLICT: '冲突',
-    PENDING_SYNC: '等待同步',
-    ASSET_LOCKED: '资金锁定'
-  }
-  return status ? map[status] || status : '-'
-}
-
-const claimStatusTagType = (status?: string): ElTagType => {
-  const map: Record<string, ElTagType> = {
-    PENDING_REVIEW: 'warning',
-    APPROVED: 'success',
-    REJECTED: 'danger',
-    CONFLICT: 'danger',
-    PENDING_SYNC: 'info',
-    ASSET_LOCKED: 'danger'
-  }
-  return status ? map[status] || 'info' : 'info'
-}
-
-const openClaimReview = (claim: CpsOrderClaimVO, approved: boolean) => {
-  claimReviewForm.claimId = claim.id
-  claimReviewForm.platformOrderId = claim.platformOrderId
-  claimReviewForm.candidateMemberId = claim.candidateMemberId
-  claimReviewForm.approved = approved
-  claimReviewForm.auditNote = ''
-  claimReviewVisible.value = true
-}
-
-const submitClaimReview = async () => {
-  if (!claimReviewForm.claimId || !claimReviewForm.auditNote.trim()) {
-    message.warning('请输入审核说明')
-    return
-  }
-  claimReviewLoading.value = true
-  try {
-    const result = await OrderApi.reviewOrderClaim({
-      claimId: claimReviewForm.claimId,
-      approved: claimReviewForm.approved,
-      auditNote: claimReviewForm.auditNote.trim()
-    })
-    message.success(result.message || '审核完成')
-    claimReviewVisible.value = false
-    await Promise.all([getClaimList(), getList()])
-  } finally {
-    claimReviewLoading.value = false
-  }
-}
-
 const attributionSourceLabel = (source?: string) => {
   const map: Record<string, string> = {
     specialId: '会员运营ID',
@@ -1185,17 +812,76 @@ const handleBatchDelete = async () => {
   } catch {}
 }
 
-/** 手动同步 */
-const handleSync = async (command: string) => {
-  syncForm.platformCode = command
-  syncForm.queryType = command === 'taobao' ? 4 : 1
-  syncForm.preset = 'today'
-  syncForm.dateRange = presetRange('today')
-  syncDialogVisible.value = true
+const syncVendorLabel = (vendor: CpsApiVendorVO) => {
+  const typeLabel = vendor.vendorType === 'official' ? '官方 API' : '聚合 API'
+  return `${vendor.vendorName || vendor.vendorCode}（${typeLabel}）`
+}
+
+const loadSyncVendors = async () => {
+  syncForm.vendorCode = ''
+  syncVendorOptions.value = []
+  if (!syncForm.platformCode) return
+  syncVendorLoading.value = true
+  try {
+    const [vendors, descriptors] = await Promise.all([
+      CpsApiVendorApi.getVendorListByPlatform(syncForm.platformCode),
+      PlatformOnboardingApi.getVendorDescriptors(syncForm.platformCode)
+    ])
+    const orderQueryVendors = new Set(
+      (descriptors || [])
+        .filter((descriptor) => descriptor.capabilities?.includes('order_query'))
+        .map((descriptor) => descriptor.vendorCode)
+    )
+    syncVendorOptions.value = (vendors || []).filter(
+      (vendor) => vendor.status === 1 && orderQueryVendors.has(vendor.vendorCode)
+    )
+    const platform = syncPlatformOptions.value.find(
+      (item) => item.platformCode === syncForm.platformCode
+    )
+    const preferred = syncVendorOptions.value.find(
+      (vendor) => vendor.vendorCode === platform?.activeVendorCode
+    )
+    syncForm.vendorCode = preferred?.vendorCode || syncVendorOptions.value[0]?.vendorCode || ''
+  } finally {
+    syncVendorLoading.value = false
+  }
+}
+
+const openSyncDialog = async () => {
+  syncOptionLoading.value = true
+  try {
+    syncPlatformOptions.value = (await CpsPlatformApi.getEnabledPlatformList()) || []
+    const preferredPlatform = syncPlatformOptions.value.find(
+      (platform) => platform.platformCode === queryParams.platformCode
+    )
+    syncForm.platformCode =
+      preferredPlatform?.platformCode || syncPlatformOptions.value[0]?.platformCode || ''
+    syncForm.queryType = 4
+    syncForm.orderStatus = undefined
+    syncForm.preset = '3h'
+    syncForm.dateRange = presetRange('3h')
+    syncForm.startTime = dayjs().subtract(3, 'hour').format(syncDateFormat)
+    syncDialogVisible.value = true
+    await loadSyncVendors()
+  } finally {
+    syncOptionLoading.value = false
+  }
 }
 
 const confirmSync = async () => {
-  const [startTime, endTime] = syncForm.dateRange || []
+  if (!syncForm.platformCode) {
+    message.warning('请选择同步平台')
+    return
+  }
+  if (!syncForm.vendorCode) {
+    message.warning('请选择已启用的 API 供应商')
+    return
+  }
+  const [rangeStartTime, rangeEndTime] = syncForm.dateRange || []
+  const startTime = isDataokeSync.value ? syncForm.startTime : rangeStartTime
+  const endTime = isDataokeSync.value
+    ? dayjs(startTime).add(3, 'hour').format(syncDateFormat)
+    : rangeEndTime
   if (!startTime || !endTime) {
     message.warning('请选择同步时间范围')
     return
@@ -1206,19 +892,21 @@ const confirmSync = async () => {
     message.warning('同步开始时间必须早于结束时间')
     return
   }
-  const hours = Math.max(1, Math.ceil(end.diff(start, 'minute') / 60))
+  const hours = isDataokeSync.value ? 3 : Math.max(1, Math.ceil(end.diff(start, 'minute') / 60))
   try {
     await message.confirm(
-      `确认同步 ${platformLabel(syncForm.platformCode)}\n${start.format(syncDateFormat)} 至 ${end.format(syncDateFormat)}？`
+      `确认通过 ${syncVendorOptions.value.find((item) => item.vendorCode === syncForm.vendorCode)?.vendorName || syncForm.vendorCode} 同步 ${platformLabel(syncForm.platformCode)}订单？\n${start.format(syncDateFormat)} 至 ${end.format(syncDateFormat)}`
     )
     syncLoading.value = true
-    const result = await OrderApi.syncCpsOrders(
-      syncForm.platformCode,
+    const result = await OrderApi.syncCpsOrders({
+      platformCode: syncForm.platformCode,
+      vendorCode: syncForm.vendorCode,
       hours,
-      syncForm.queryType,
-      start.format(syncDateFormat),
-      end.format(syncDateFormat)
-    )
+      queryType: syncForm.queryType,
+      orderStatus: syncForm.orderStatus,
+      startTime: start.format(syncDateFormat),
+      endTime: end.format(syncDateFormat)
+    })
     message.success(result || '同步任务已触发')
     syncDialogVisible.value = false
     await getList()
@@ -1345,8 +1033,6 @@ const createManualBindIdempotencyKey = (orderId: number) => {
 
 onMounted(() => {
   getList()
-  getClaimList()
-  loadSyncMonitor()
 })
 </script>
 
@@ -1386,21 +1072,6 @@ onMounted(() => {
   overflow-wrap: anywhere;
 }
 
-.claim-review-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.claim-status-select {
-  width: 140px;
-}
-
-.claim-order-search {
-  width: min(320px, 100%);
-}
-
 .order-query-form {
   display: flex;
   flex-wrap: wrap;
@@ -1415,7 +1086,11 @@ onMounted(() => {
 
 .query-actions {
   flex: 1 0 100%;
-  justify-content: flex-end;
+  padding-left: 20px;
+}
+
+.query-search-actions {
+  flex: 0 0 auto;
 }
 
 .sync-dialog-platform {
@@ -1453,57 +1128,19 @@ onMounted(() => {
   width: 100%;
 }
 
-.sync-monitor-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.sync-monitor-title {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.sync-monitor-subtitle {
+.sync-field-tip {
   margin-top: 4px;
   color: var(--el-text-color-secondary);
   font-size: 12px;
+  line-height: 1.5;
 }
 
-.sync-monitor-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.sync-metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.sync-metrics-grid > div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
-  border-radius: 6px;
-  background: var(--el-fill-color-light);
-}
-
-.sync-metrics-grid span {
-  color: var(--el-text-color-secondary);
-  font-size: 12px;
-}
-
-.sync-metrics-grid b {
-  font-size: 18px;
-}
-
-.danger-text {
+.sync-field-tip--danger {
   color: var(--el-color-danger);
+}
+
+.sync-field-tip--warning {
+  color: var(--el-color-warning-dark-2);
 }
 
 @media (max-width: 768px) {
@@ -1533,6 +1170,12 @@ onMounted(() => {
   .query-actions {
     display: flex;
     flex-wrap: wrap;
+    gap: 8px;
+    padding-left: 0;
+  }
+
+  .query-search-actions {
+    display: flex;
     gap: 8px;
   }
 

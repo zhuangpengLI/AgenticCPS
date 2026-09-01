@@ -403,6 +403,23 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     @Override
     public String manualSync(String platformCode, Integer hours, Integer queryType,
                              LocalDateTime startTime, LocalDateTime endTime) {
+        return manualSync(platformCode, null, hours, queryType, null, startTime, endTime);
+    }
+
+    @Override
+    public String manualSync(String platformCode, String vendorCode, Integer hours, Integer queryType,
+                             Integer orderStatus, LocalDateTime startTime, LocalDateTime endTime) {
+        if (vendorCode != null && !vendorCode.isBlank()
+                && (platformClientFactory.getVendorClient(vendorCode, platformCode) == null
+                || platformClientFactory.getVendorConfig(vendorCode, platformCode) == null)) {
+            throw new IllegalArgumentException("供应商未配置或不可用: " + vendorCode + "/" + platformCode);
+        }
+        return platformClientFactory.withVendorCode(vendorCode,
+                () -> doManualSync(platformCode, hours, queryType, orderStatus, startTime, endTime));
+    }
+
+    private String doManualSync(String platformCode, Integer hours, Integer queryType, Integer orderStatus,
+                                LocalDateTime startTime, LocalDateTime endTime) {
         int effectiveHours = (hours == null || hours <= 0) ? 2 : hours;
         int effectiveQueryType = normalizeQueryType(queryType);
         LocalDateTime effectiveEndTime = endTime == null ? LocalDateTime.now() : endTime;
@@ -423,10 +440,12 @@ public class CpsOrderServiceImpl implements CpsOrderService {
 
         long t0 = System.currentTimeMillis();
         int total = 0, newCount = 0, updateCount = 0, skipCount = 0;
+        RuntimeException failure = null;
         try {
             CpsPlatformClient client = platformClientFactory.getRequiredClient(platformCode);
 
-            List<CpsOrderDTO> orders = pullOrdersByWindow(platformCode, client, effectiveQueryType, effectiveStartTime, effectiveEndTime);
+            List<CpsOrderDTO> orders = pullOrdersByWindow(platformCode, client, effectiveQueryType, orderStatus,
+                    effectiveStartTime, effectiveEndTime);
             total = orders.size();
             int[] stats = batchSaveOrUpdateOrders(orders);
             newCount = stats[0];
@@ -438,6 +457,8 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             log.error("[manualSync] 平台 {} 手动同步失败", platformCode, e);
             syncLog.setSyncStatus(2); // 失败
             syncLog.setErrorMsg(e.getMessage());
+            failure = e instanceof RuntimeException runtimeException ? runtimeException
+                    : new IllegalStateException("订单同步失败", e);
         } finally {
             long cost = System.currentTimeMillis() - t0;
             syncLog.setSyncEndTime(LocalDateTime.now());
@@ -448,26 +469,31 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             syncLog.setSkipCount(skipCount);
             syncLogMapper.insert(syncLog);
         }
+        if (failure != null) {
+            throw failure;
+        }
 
         return String.format("平台[%s] 手动同步完成: 共%d条，新增%d，更新%d，跳过%d",
                 platformCode, total, newCount, updateCount, skipCount);
     }
 
     private List<CpsOrderDTO> pullOrdersByWindow(String platformCode, CpsPlatformClient client, int queryType,
+                                                  Integer orderStatus,
                                                   LocalDateTime startTime, LocalDateTime endTime) {
         List<CpsOrderDTO> allOrders = new ArrayList<>();
         LocalDateTime windowStart = startTime;
         while (windowStart.isBefore(endTime)) {
             LocalDateTime windowEnd = min(windowStart.plusHours(ORDER_QUERY_WINDOW_HOURS), endTime);
             for (Integer orderScene : resolveOrderScenes(platformCode)) {
-                allOrders.addAll(pullAllOrderPages(client, queryType, orderScene, windowStart, windowEnd));
+                allOrders.addAll(pullAllOrderPages(client, queryType, orderStatus, orderScene, windowStart, windowEnd));
             }
             windowStart = windowEnd;
         }
         return allOrders;
     }
 
-    private List<CpsOrderDTO> pullAllOrderPages(CpsPlatformClient client, int queryType, Integer orderScene,
+    private List<CpsOrderDTO> pullAllOrderPages(CpsPlatformClient client, int queryType, Integer orderStatus,
+                                                Integer orderScene,
                                                 LocalDateTime startTime, LocalDateTime endTime) {
         List<CpsOrderDTO> allOrders = new ArrayList<>();
         String positionIndex = null;
@@ -475,6 +501,7 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         for (int pageCount = 1; pageCount <= ORDER_QUERY_MAX_PAGES; pageCount++) {
             CpsOrderQueryRequest req = new CpsOrderQueryRequest();
             req.setQueryType(queryType);
+            req.setOrderStatus(orderStatus);
             req.setOrderScene(orderScene);
             req.setStartTime(startTime.format(DTF));
             req.setEndTime(endTime.format(DTF));

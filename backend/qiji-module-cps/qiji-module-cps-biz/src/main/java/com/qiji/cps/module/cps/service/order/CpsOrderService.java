@@ -103,4 +103,18 @@ public interface CpsOrderService {
     String manualSync(String platformCode, Integer hours, Integer queryType,
                       LocalDateTime startTime, LocalDateTime endTime);
 
+    /**
+     * 按已配置的 API 供应商、订单状态和时间窗口手动同步订单。
+     *
+     * @param platformCode 平台编码
+     * @param vendorCode API 供应商编码；为空时使用平台默认供应商
+     * @param hours 回溯小时数
+     * @param queryType 查询时间维度（1=下单、2=付款、3=结算、4=更新时间）
+     * @param orderStatus 供应商订单状态筛选；为空时同步全部状态
+     * @param startTime 同步开始时间
+     * @param endTime 同步结束时间
+     */
+    String manualSync(String platformCode, String vendorCode, Integer hours, Integer queryType,
+                      Integer orderStatus, LocalDateTime startTime, LocalDateTime endTime);
+
 }
