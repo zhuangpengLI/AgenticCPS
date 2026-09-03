@@ -115,6 +115,27 @@ class CpsOrderMapperTest {
     }
 
     @Test
+    void markDirectRebateReceivedWritesReceivedStateAndClearsFreezeMetadata() {
+        CpsOrderMapper mapper = mock(CpsOrderMapper.class, CALLS_REAL_METHODS);
+        when(mapper.update(isNull(), any(Wrapper.class))).thenReturn(1);
+
+        assertEquals(1, mapper.markDirectRebateReceived(8L,
+                java.time.LocalDateTime.of(2026, 9, 2, 12, 0), new java.math.BigDecimal("5.00")));
+
+        ArgumentCaptor<Wrapper<CpsOrderDO>> wrapperCaptor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(mapper).update(isNull(), wrapperCaptor.capture());
+        LambdaUpdateWrapper<CpsOrderDO> wrapper = (LambdaUpdateWrapper<CpsOrderDO>) wrapperCaptor.getValue();
+        String sql = wrapper.getSqlSegment();
+        assertTrue(sql.contains("order_status"));
+        assertTrue(sql.contains("settle_time"));
+        assertTrue(wrapper.getSqlSet().contains("real_rebate"));
+        assertTrue(wrapper.getSqlSet().contains("rebate_freeze_status"));
+        assertTrue(wrapper.getSqlSet().contains("plan_unfreeze_time"));
+        assertTrue(wrapper.getSqlSet().contains("actual_unfreeze_time"));
+        assertTrue(wrapper.getParamNameValuePairs().containsValue(new java.math.BigDecimal("5.00")));
+    }
+
+    @Test
     void bindMemberIfUnattributedUsesNullGuardAndWritesAttributionSource() {
         CpsOrderMapper mapper = mock(CpsOrderMapper.class, CALLS_REAL_METHODS);
         when(mapper.update(isNull(), any(Wrapper.class))).thenReturn(1);

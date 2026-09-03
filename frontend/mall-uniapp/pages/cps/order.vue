@@ -29,7 +29,7 @@
         <view class="amount-grid">
           <view
             ><text>付款金额</text
-            ><strong>¥{{ formatMoney(item.payAmount || item.orderAmount) }}</strong></view
+            ><strong>¥{{ formatMoney(orderPayAmount(item)) }}</strong></view
           >
           <view
             ><text>预估返利</text><strong>¥{{ formatMoney(item.estimateRebate) }}</strong></view
@@ -79,7 +79,7 @@
           ><text>付款金额</text
           ><text
             >¥{{
-              formatMoney(state.currentOrder.payAmount || state.currentOrder.orderAmount)
+              formatMoney(orderPayAmount(state.currentOrder))
             }}</text
           ></view
         >
@@ -353,6 +353,28 @@
     if (['refunded', 'invalid'].includes(order.orderStatus)) return '不会到账';
     const expectedTime = order.expectedCreditTime || order.settleTime;
     return expectedTime ? formatTime(expectedTime) : '以平台结算为准';
+  }
+  /**
+   * The app order response exposes the paid amount as `finalPrice` (券后价).
+   * `payAmount`/`orderAmount` are legacy aliases used by older clients and are
+   * not returned by `/cps/order/page`, so prefer the canonical field first.
+   * When syncing an older record without finalPrice, derive the amount from
+   * itemPrice - couponAmount before falling back to the available snapshot.
+   */
+  function orderPayAmount(order = {}) {
+    const explicitAmount = [order.finalPrice, order.payAmount, order.orderAmount].find(
+      (value) => value !== null && value !== undefined && value !== '',
+    );
+    if (explicitAmount !== undefined) return explicitAmount;
+    if (
+      order.itemPrice !== null &&
+      order.itemPrice !== undefined &&
+      order.couponAmount !== null &&
+      order.couponAmount !== undefined
+    ) {
+      return toNumber(order.itemPrice) - toNumber(order.couponAmount);
+    }
+    return order.itemPrice;
   }
   function formatTime(value) {
     return value ? sheep.$helper.timeFormat(value, 'yyyy-mm-dd hh:MM') : '-';

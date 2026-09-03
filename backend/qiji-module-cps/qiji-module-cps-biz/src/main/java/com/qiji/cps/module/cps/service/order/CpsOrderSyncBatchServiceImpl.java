@@ -19,7 +19,11 @@ import java.time.*; import java.util.*;
         }
         String no = "sync-" + UUID.randomUUID().toString().replace("-", "");
         CpsOrderSyncBatchDO batch = CpsOrderSyncBatchDO.builder().batchNo(no).batchType(type == null ? "MANUAL" : type)
-                .queryType(queryType == null ? 4 : queryType).platformCode(platform).vendorCode(vendor == null ? "OFFICIAL" : vendor)
+                // A compensation batch is normally used to recover orders by
+                // payment date.  Update-time (4) is for the rolling status job
+                // and can miss old paid orders whose last update is outside
+                // the selected historical range.
+                .queryType(queryType == null ? 2 : queryType).platformCode(platform).vendorCode(vendor == null ? "OFFICIAL" : vendor)
                 .startTime(start).endTime(end).status("PENDING").totalWindows(0).successWindows(0).failedWindows(0).retryWindows(0).build();
         batchMapper.insert(batch);
         List<CpsOrderSyncWindowPlanner.Window> windows = CpsOrderSyncWindowPlanner.plan(start, end);

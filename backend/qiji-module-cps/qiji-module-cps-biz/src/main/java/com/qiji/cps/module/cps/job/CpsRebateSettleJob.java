@@ -10,7 +10,8 @@ import org.springframework.stereotype.Component;
 /**
  * CPS 返利结算定时任务
  *
- * <p>定期扫描已收货/已结算且返利未入账的订单，自动完成返利计算与入账。</p>
+ * <p>定期扫描已收货/已结算且返利未入账的订单，按阈值执行直接入账或创建冻结。
+ * 冻结记录到期后的实际返利入账由 {@code cpsFreezeUnfreezeJob} 负责。</p>
  *
  * <h3>Quartz 注册方式</h3>
  * 新库和增量 SQL 会自动注册并启用该任务；如需调整频率，可在管理后台修改：
@@ -41,7 +42,7 @@ public class CpsRebateSettleJob implements JobHandler {
             try {
                 String bsStr = param.replaceAll(".*\"batchSize\"\\s*:\\s*(\\d+).*", "$1");
                 if (!bsStr.equals(param)) {
-                    batchSize = Integer.parseInt(bsStr);
+                    batchSize = normalizeBatchSize(Integer.parseInt(bsStr));
                 }
             } catch (Exception e) {
                 log.warn("[CpsRebateSettleJob] 参数解析失败，使用默认值: param={}", param);
@@ -53,9 +54,14 @@ public class CpsRebateSettleJob implements JobHandler {
         int[] stats = rebateSettleService.batchSettle(batchSize);
         int success = stats[0], skip = stats[1], fail = stats[2];
 
-        String result = String.format("返利结算完成: 成功入账=%d，跳过=%d，失败=%d", success, skip, fail);
+        String result = String.format("返利结算完成: 成功处理=%d（含冻结/直接入账），跳过=%d，失败=%d",
+                success, skip, fail);
         log.info("[CpsRebateSettleJob] {}", result);
         return result;
+    }
+
+    private int normalizeBatchSize(int batchSize) {
+        return Math.max(1, Math.min(batchSize, 1000));
     }
 
 }

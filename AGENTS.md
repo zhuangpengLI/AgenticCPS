@@ -165,6 +165,7 @@ Current feature anchors:
 - CPS table names use `cps_*`.
 - CPS SQL lives in `backend/sql/module/cps-all-in-one.sql` and `backend/sql/module/cps-update.sql`.
 - Every update block in `cps-update.sql` must include modification date/time.
+- New incremental SQL update records must be appended to the end of the corresponding `*-update.sql` file; do not insert them in the middle. Use the actual write date and time in the modification comment.
 - Keep full baseline and incremental scripts synchronized.
 - Do not add CPS SQL to `backend/sql/mysql/ruoyi-vue-pro.sql`.
 - Do not create one-off/date-named CPS SQL scripts under `backend/sql/mysql`.

@@ -14,6 +14,7 @@ import com.qiji.cps.module.member.api.user.dto.MemberUserRespDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -72,9 +73,9 @@ class CpsRebateSettleServiceImplTest {
         member.setLevelId(3L);
         when(memberUserApi.getUser(9L)).thenReturn(member);
         when(rebateConfigService.matchRebateConfig(9L, 3L, "taobao"))
-                .thenReturn(CpsRebateConfigDO.builder().id(7L).rebateRate(new BigDecimal("80")).build());
+                .thenReturn(frozenConfig("5.00", 15));
         when(moneyConverter.yuanToCent(new BigDecimal("8.00"))).thenReturn(800L);
-        when(assetService.createOrderRebateFreeze(11L, "order-rebate:11"))
+        when(assetService.createOrderRebateFreeze(11L, "order-rebate:11", 15))
                 .thenReturn(com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeRecordDO.builder()
                         .unfreezeTime(LocalDateTime.now().plusDays(15)).build());
         when(orderMapper.updateRebateFreezeByStatusVersion(any(CpsOrderDO.class), eq(0))).thenReturn(1);
@@ -85,7 +86,7 @@ class CpsRebateSettleServiceImplTest {
                 "pending".equals(record.getRebateStatus())
                         && Long.valueOf(7L).equals(record.getRebateConfigId())
                         && Long.valueOf(3L).equals(record.getMemberLevelIdSnapshot())));
-        verify(assetService).createOrderRebateFreeze(11L, "order-rebate:11");
+        verify(assetService).createOrderRebateFreeze(11L, "order-rebate:11", 15);
         verify(rebateAccountMapper, never()).updateById(org.mockito.ArgumentMatchers.<com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateAccountDO>any());
         verify(orderMapper).updateRebateFreezeByStatusVersion(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(update ->
                 CpsOrderStatusEnum.SETTLED.getStatus().equals(update.getOrderStatus())
@@ -102,15 +103,15 @@ class CpsRebateSettleServiceImplTest {
         member.setLevelId(3L);
         when(memberUserApi.getUser(9L)).thenReturn(member);
         when(rebateConfigService.matchRebateConfig(9L, 3L, "taobao"))
-                .thenReturn(CpsRebateConfigDO.builder().id(7L).rebateRate(new BigDecimal("80")).build());
+                .thenReturn(frozenConfig("5.00", 15));
         when(moneyConverter.yuanToCent(new BigDecimal("8.00"))).thenReturn(800L);
-        when(assetService.createOrderRebateFreeze(11L, "order-rebate:11"))
+        when(assetService.createOrderRebateFreeze(11L, "order-rebate:11", 15))
                 .thenReturn(com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeRecordDO.builder()
                         .unfreezeTime(LocalDateTime.now().plusDays(15)).build());
         when(orderMapper.updateRebateFreezeByStatusVersion(any(CpsOrderDO.class), eq(0))).thenReturn(1);
 
         assertTrue(service.settleOrder(order));
-        verify(assetService).createOrderRebateFreeze(11L, "order-rebate:11");
+        verify(assetService).createOrderRebateFreeze(11L, "order-rebate:11", 15);
     }
 
     @Test
@@ -148,14 +149,125 @@ class CpsRebateSettleServiceImplTest {
         member.setLevelId(3L);
         when(memberUserApi.getUser(9L)).thenReturn(member);
         when(rebateConfigService.matchRebateConfig(9L, 3L, "taobao"))
-                .thenReturn(CpsRebateConfigDO.builder().id(7L).rebateRate(new BigDecimal("80")).build());
+                .thenReturn(frozenConfig("5.00", 15));
         when(moneyConverter.yuanToCent(new BigDecimal("8.00"))).thenReturn(800L);
-        when(assetService.createOrderRebateFreeze(11L, "order-rebate:11"))
+        when(assetService.createOrderRebateFreeze(11L, "order-rebate:11", 15))
                 .thenReturn(com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeRecordDO.builder()
                         .unfreezeTime(LocalDateTime.now().plusDays(15)).build());
         when(orderMapper.updateRebateFreezeByStatusVersion(any(CpsOrderDO.class), eq(0))).thenReturn(0);
 
         assertThrows(IllegalStateException.class, () -> service.settleOrder(order));
+    }
+
+    @Test
+    void rebateEqualToThresholdIsCreditedDirectly() {
+        CpsOrderDO order = order(CpsOrderStatusEnum.SETTLED.getStatus(), LocalDateTime.now());
+        when(orderMapper.selectForUpdateById(11L)).thenReturn(order);
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(9L);
+        member.setLevelId(3L);
+        when(memberUserApi.getUser(9L)).thenReturn(member);
+        when(rebateConfigService.matchRebateConfig(9L, 3L, "taobao"))
+                .thenReturn(frozenConfig("8.00", 15));
+        when(moneyConverter.yuanToCent(new BigDecimal("8.00"))).thenReturn(800L);
+
+        assertTrue(service.settleOrder(order));
+
+        verify(assetService).creditOrderRebate(11L, "order-rebate-credit:11");
+        verify(assetService, never()).createOrderRebateFreeze(anyLong(), anyString(), any());
+    }
+
+    @Test
+    void rebateBelowThresholdIsCreditedDirectlyWithoutFreezeRule() {
+        CpsOrderDO order = order(CpsOrderStatusEnum.SETTLED.getStatus(), LocalDateTime.now());
+        when(orderMapper.selectForUpdateById(11L)).thenReturn(order);
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(9L);
+        member.setLevelId(3L);
+        when(memberUserApi.getUser(9L)).thenReturn(member);
+        // 返利 8 元低于 10 元门槛，即使没有冻结规则也必须直接入账。
+        when(rebateConfigService.matchRebateConfig(9L, 3L, "taobao"))
+                .thenReturn(frozenConfig("10.00", 15));
+        when(moneyConverter.yuanToCent(new BigDecimal("8.00"))).thenReturn(800L);
+
+        assertTrue(service.settleOrder(order));
+
+        verify(assetService).creditOrderRebate(11L, "order-rebate-credit:11");
+        verify(assetService, never()).createOrderRebateFreeze(anyLong(), anyString(), anyInt());
+    }
+
+    @Test
+    void retriesExistingPendingRecordAfterPreviousFreezeFailure() {
+        CpsOrderDO order = order(CpsOrderStatusEnum.SETTLED.getStatus(), LocalDateTime.now());
+        CpsRebateRecordDO pending = CpsRebateRecordDO.builder().id(99L).orderId(11L).memberId(9L)
+                .rebateAmount(new BigDecimal("0.41"))
+                .rebateStatus(com.qiji.cps.module.cps.enums.CpsRebateStatusEnum.PENDING.getStatus()).build();
+        when(orderMapper.selectForUpdateById(11L)).thenReturn(order);
+        when(rebateRecordMapper.selectByOrderIdAndType(11L, "rebate")).thenReturn(pending);
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(9L);
+        member.setLevelId(3L);
+        when(memberUserApi.getUser(9L)).thenReturn(member);
+        when(rebateConfigService.matchRebateConfig(9L, 3L, "taobao"))
+                .thenReturn(frozenConfig("10.00", 7));
+        when(moneyConverter.yuanToCent(new BigDecimal("0.41"))).thenReturn(41L);
+
+        assertTrue(service.settleOrder(order));
+
+        verify(rebateRecordMapper, never()).insert(any(CpsRebateRecordDO.class));
+        verify(assetService).creditOrderRebate(11L, "order-rebate-credit:11");
+    }
+
+    @Test
+    void missingFreezeThresholdCreditsRebateDirectly() {
+        CpsOrderDO order = order(CpsOrderStatusEnum.SETTLED.getStatus(), LocalDateTime.now());
+        when(orderMapper.selectForUpdateById(11L)).thenReturn(order);
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(9L);
+        member.setLevelId(3L);
+        when(memberUserApi.getUser(9L)).thenReturn(member);
+        when(rebateConfigService.matchRebateConfig(9L, 3L, "taobao"))
+                .thenReturn(CpsRebateConfigDO.builder().id(7L).rebateRate(new BigDecimal("80")).build());
+        when(moneyConverter.yuanToCent(new BigDecimal("8.00"))).thenReturn(800L);
+
+        assertTrue(service.settleOrder(order));
+
+        verify(assetService).creditOrderRebate(11L, "order-rebate-credit:11");
+    }
+
+    @Test
+    void zeroOrNegativeThresholdDoesNotFreeze() {
+        CpsOrderDO order = order(CpsOrderStatusEnum.SETTLED.getStatus(), LocalDateTime.now());
+        when(orderMapper.selectForUpdateById(11L)).thenReturn(order);
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(9L);
+        member.setLevelId(3L);
+        when(memberUserApi.getUser(9L)).thenReturn(member);
+        when(rebateConfigService.matchRebateConfig(9L, 3L, "taobao"))
+                .thenReturn(frozenConfig("-1.00", 15));
+        when(moneyConverter.yuanToCent(new BigDecimal("8.00"))).thenReturn(800L);
+
+        assertTrue(service.settleOrder(order));
+
+        verify(assetService).creditOrderRebate(11L, "order-rebate-credit:11");
+        verify(assetService, never()).createOrderRebateFreeze(anyLong(), anyString(), anyInt());
+    }
+
+    @Test
+    void receivedOrderWithPlatformSettlementIsIncludedInScheduledSettlement() {
+        CpsOrderDO order = order(CpsOrderStatusEnum.RECEIVED.getStatus(), LocalDateTime.now());
+        when(orderMapper.selectForUpdateById(11L)).thenReturn(order);
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(9L);
+        member.setLevelId(3L);
+        when(memberUserApi.getUser(9L)).thenReturn(member);
+        when(rebateConfigService.matchRebateConfig(9L, 3L, "taobao"))
+                .thenReturn(frozenConfig("8.00", 15));
+        when(moneyConverter.yuanToCent(new BigDecimal("8.00"))).thenReturn(800L);
+
+        assertTrue(service.settleOrder(order));
+
+        verify(assetService).creditOrderRebate(11L, "order-rebate-credit:11");
     }
 
     @Test
@@ -169,6 +281,10 @@ class CpsRebateSettleServiceImplTest {
 
         assertArrayEquals(new int[]{0, 1, 1}, service.batchSettle(2));
 
+        ArgumentCaptor<List<String>> statuses = ArgumentCaptor.forClass(List.class);
+        verify(orderMapper).selectPendingSettleOrders(statuses.capture(), eq(2));
+        assertTrue(statuses.getValue().contains(CpsOrderStatusEnum.RECEIVED.getStatus()));
+        assertTrue(statuses.getValue().contains(CpsOrderStatusEnum.SETTLED.getStatus()));
         verify(orderMapper).markSettleRetry(eq(11L), contains("待处理"), any(LocalDateTime.class));
         verify(orderMapper).markSettleRetry(eq(12L), contains("member unavailable"), any(LocalDateTime.class));
     }
@@ -191,5 +307,10 @@ class CpsRebateSettleServiceImplTest {
                 .commissionAmount(new BigDecimal("10.00")).finalPrice(new BigDecimal("100.00"))
                 .confirmReceiptTime(LocalDateTime.now().minusDays(1)).settleTime(settleTime)
                 .statusVersion(0).build();
+    }
+
+    private static CpsRebateConfigDO frozenConfig(String threshold, int days) {
+        return CpsRebateConfigDO.builder().id(7L).rebateRate(new BigDecimal("80"))
+                .freezeThresholdAmount(new BigDecimal(threshold)).freezeDays(days).build();
     }
 }

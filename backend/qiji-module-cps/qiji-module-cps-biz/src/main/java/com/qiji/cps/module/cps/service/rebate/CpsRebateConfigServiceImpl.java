@@ -196,6 +196,15 @@ public class CpsRebateConfigServiceImpl implements CpsRebateConfigService {
                 && request.getMinRebateAmount().compareTo(request.getMaxRebateAmount()) > 0) {
             throw exception(REBATE_CONFIG_AMOUNT_RANGE_INVALID);
         }
+        if (request.getFreezeThresholdAmount() != null
+                && request.getFreezeThresholdAmount().signum() > 0
+                && request.getFreezeDays() == null) {
+            throw exception(ONBOARDING_CONFIG_INVALID, "配置冻结阈值后必须填写冻结天数");
+        }
+        if (request.getFreezeDays() != null
+                && (request.getFreezeDays() < 1 || request.getFreezeDays() > 365)) {
+            throw exception(ONBOARDING_CONFIG_INVALID, "冻结天数必须为 1 至 365 天");
+        }
     }
 
     private void validateScopeUnique(Long id, CpsRebateConfigSaveReqVO request) {

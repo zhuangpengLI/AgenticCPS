@@ -36,6 +36,12 @@ server:
       charset: UTF-8 # 必须设置 UTF-8，避免 WebFlux 流式返回（AI 场景）会乱码问题
       force: true
 
+# MCP SSE 传输目前按规范协商到 2024-11-05；新客户端请求更高版本时会记录一条预期的 WARN。
+# 降低该类日志级别可避免把正常的协议降级误判为功能故障，同时保留 ERROR 级别的真实异常。
+logging:
+  level:
+    io.modelcontextprotocol.server.McpAsyncServer: ERROR
+
 --- #################### 接口文档配置 ####################
 
 springdoc:

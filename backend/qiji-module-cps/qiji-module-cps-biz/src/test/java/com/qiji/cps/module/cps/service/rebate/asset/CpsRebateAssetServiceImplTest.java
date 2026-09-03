@@ -109,6 +109,57 @@ class CpsRebateAssetServiceImplTest {
     }
 
     @Test
+    void creditOrderRebateCreditsAvailableWithoutCreatingFreeze() {
+        CpsOrderDO order = CpsOrderDO.builder().id(24L).memberId(33L).platformCode("taobao")
+                .platformOrderId("P24").orderStatus(CpsOrderStatusEnum.SETTLED.getStatus())
+                .settleTime(java.time.LocalDateTime.now()).build();
+        CpsRebateRecordDO rebate = CpsRebateRecordDO.builder().id(25L).orderId(24L)
+                .memberId(33L).rebateAmount(new BigDecimal("5.00"))
+                .rebateStatus(CpsRebateStatusEnum.PENDING.getStatus()).build();
+        when(ledgerMapper.selectByBusinessAndIdempotencyKey("ORDER_REBATE_CREDIT", "credit-24"))
+                .thenReturn(null);
+        when(orderMapper.selectForUpdateById(24L)).thenReturn(order);
+        when(rebateRecordMapper.selectByOrderIdAndType(24L, CpsRebateTypeEnum.REBATE.getType()))
+                .thenReturn(rebate);
+        when(accountMapper.selectForUpdateByMemberId(33L)).thenReturn(account(33L, 0, 0, 0));
+        when(accountMapper.updateById(any(CpsRebateAccountDO.class))).thenReturn(1);
+        when(rebateRecordMapper.updateById(any(CpsRebateRecordDO.class))).thenReturn(1);
+        when(orderMapper.markDirectRebateReceived(eq(24L), any(), eq(new BigDecimal("5.00"))))
+                .thenReturn(1);
+
+        CpsRebateAssetResult result = service.creditOrderRebate(24L, "credit-24");
+
+        assertEquals(500, result.availableBalanceCent());
+        assertEquals(0, result.frozenBalanceCent());
+        verify(freezeRecordMapper, never()).insert(any(CpsFreezeRecordDO.class));
+        verify(rebateRecordMapper).updateById(argThat((CpsRebateRecordDO update) ->
+                CpsRebateStatusEnum.RECEIVED.getStatus().equals(update.getRebateStatus())));
+        verify(ledgerMapper).insert(argThat((CpsRebateAssetLedgerDO ledger) ->
+                ledger.getAvailableChangeCent() == 500L && ledger.getFrozenChangeCent() == 0L));
+    }
+
+    @Test
+    void creditOrderRebateFailsBeforeLedgerWhenOrderStateCannotBeUpdated() {
+        CpsOrderDO order = CpsOrderDO.builder().id(24L).memberId(33L).platformCode("taobao")
+                .platformOrderId("P24").orderStatus(CpsOrderStatusEnum.SETTLED.getStatus())
+                .settleTime(java.time.LocalDateTime.now()).build();
+        CpsRebateRecordDO rebate = CpsRebateRecordDO.builder().id(25L).orderId(24L)
+                .memberId(33L).rebateAmount(new BigDecimal("5.00"))
+                .rebateStatus(CpsRebateStatusEnum.PENDING.getStatus()).build();
+        when(orderMapper.selectForUpdateById(24L)).thenReturn(order);
+        when(rebateRecordMapper.selectByOrderIdAndType(24L, CpsRebateTypeEnum.REBATE.getType()))
+                .thenReturn(rebate);
+        when(accountMapper.selectForUpdateByMemberId(33L)).thenReturn(account(33L, 0, 0, 0));
+        when(accountMapper.updateById(any(CpsRebateAccountDO.class))).thenReturn(1);
+        when(rebateRecordMapper.updateById(any(CpsRebateRecordDO.class))).thenReturn(1);
+        when(orderMapper.markDirectRebateReceived(eq(24L), any(), eq(new BigDecimal("5.00"))))
+                .thenReturn(0);
+
+        assertThrows(IllegalStateException.class, () -> service.creditOrderRebate(24L, "credit-24"));
+        verify(ledgerMapper, never()).insert(any(CpsRebateAssetLedgerDO.class));
+    }
+
+    @Test
     void releaseOrderRebateRepaysOldestDebtBeforeCreditingAvailable() {
         CpsFreezeRecordDO freeze = CpsFreezeRecordDO.builder()
                 .id(40L).memberId(33L).orderId(22L).businessType("ORDER_REBATE")

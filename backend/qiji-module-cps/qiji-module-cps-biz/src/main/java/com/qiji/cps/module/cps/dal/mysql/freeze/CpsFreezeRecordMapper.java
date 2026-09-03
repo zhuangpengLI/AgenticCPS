@@ -25,10 +25,11 @@ public interface CpsFreezeRecordMapper extends BaseMapperX<CpsFreezeRecordDO> {
      * 查询已到达解冻时间且状态为 frozen 的记录（批量自动解冻）
      */
     default List<CpsFreezeRecordDO> selectPendingUnfreeze(int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 1000));
         return selectList(new LambdaQueryWrapperX<CpsFreezeRecordDO>()
                 .eq(CpsFreezeRecordDO::getStatus, CpsFreezeStatusEnum.FROZEN.getStatus())
                 .le(CpsFreezeRecordDO::getUnfreezeTime, LocalDateTime.now())
-                .last("LIMIT " + limit));
+                .last("LIMIT " + safeLimit));
     }
 
     /**

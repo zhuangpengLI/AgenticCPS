@@ -11,6 +11,8 @@ import com.qiji.cps.module.cps.enums.CpsOrderStatusEnum;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -54,6 +56,26 @@ public interface CpsOrderMapper extends BaseMapperX<CpsOrderDO> {
     }
 
     /**
+     * 查询已逻辑删除的订单，用于平台订单再次同步时原地恢复。
+     *
+     * <p>不能直接重新插入：订单唯一键不包含 deleted，且重新插入会丢失原订单关联的
+     * 状态事件、返利记录等审计关系。自定义 SQL 也避免了逻辑删除查询条件自动追加。</p>
+     */
+    @Select("SELECT * FROM cps_order "
+            + "WHERE platform_code = #{platformCode} "
+            + "AND platform_order_id = #{platformOrderId} "
+            + "AND deleted = 1")
+    CpsOrderDO selectDeletedByPlatformOrderId(@Param("platformCode") String platformCode,
+                                              @Param("platformOrderId") String platformOrderId);
+
+    /**
+     * 恢复单条已逻辑删除订单。租户条件由租户拦截器自动追加。
+     */
+    @Update("UPDATE cps_order SET deleted = 0, update_time = NOW() "
+            + "WHERE id = #{id} AND deleted = 1")
+    int restoreDeletedById(@Param("id") Long id);
+
+    /**
      * 在结算事务内锁定并重读当前订单，禁止使用批扫描阶段的陈旧状态做资金变更。
      */
     default CpsOrderDO selectForUpdateById(Long id) {
@@ -94,7 +116,8 @@ public interface CpsOrderMapper extends BaseMapperX<CpsOrderDO> {
         int currentVersion = expectedStatusVersion == null ? 0 : expectedStatusVersion;
         LambdaUpdateWrapper<CpsOrderDO> wrapper = new LambdaUpdateWrapper<CpsOrderDO>()
                 .eq(CpsOrderDO::getId, updateDO.getId())
-                .eq(CpsOrderDO::getOrderStatus, CpsOrderStatusEnum.SETTLED.getStatus())
+                .in(CpsOrderDO::getOrderStatus, CpsOrderStatusEnum.RECEIVED.getStatus(),
+                        CpsOrderStatusEnum.SETTLED.getStatus())
                 .eq(CpsOrderDO::getStatusVersion, currentVersion)
                 .set(CpsOrderDO::getOrderStatus, CpsOrderStatusEnum.SETTLED.getStatus())
                 .set(CpsOrderDO::getRealRebate, updateDO.getRealRebate())
@@ -112,7 +135,14 @@ public interface CpsOrderMapper extends BaseMapperX<CpsOrderDO> {
      * 仅允许 settled 订单变更，避免退款/失效订单被回写覆盖。
      */
     default int markRebateReceived(Long orderId, LocalDateTime receivedAt) {
-        return update(null, new LambdaUpdateWrapper<CpsOrderDO>()
+        return markRebateReceived(orderId, receivedAt, null);
+    }
+
+    /**
+     * 返利直接入账时同时写入实际返利金额；传 null 保持旧调用行为。
+     */
+    default int markRebateReceived(Long orderId, LocalDateTime receivedAt, java.math.BigDecimal realRebate) {
+        LambdaUpdateWrapper<CpsOrderDO> wrapper = new LambdaUpdateWrapper<CpsOrderDO>()
                 .eq(CpsOrderDO::getId, orderId)
                 .and(w -> w.eq(CpsOrderDO::getOrderStatus, CpsOrderStatusEnum.SETTLED.getStatus())
                         .or().eq(CpsOrderDO::getOrderStatus, CpsOrderStatusEnum.REBATE_RECEIVED.getStatus()))
@@ -120,6 +150,30 @@ public interface CpsOrderMapper extends BaseMapperX<CpsOrderDO> {
                 .set(CpsOrderDO::getRebateTime, receivedAt)
                 .set(CpsOrderDO::getActualUnfreezeTime, receivedAt)
                 .set(CpsOrderDO::getRebateFreezeStatus, CpsFreezeStatusEnum.UNFREEZED.getStatus())
+                .setSql("status_version = COALESCE(status_version, 0) + 1");
+        if (realRebate != null) {
+            wrapper.set(CpsOrderDO::getRealRebate, realRebate);
+        }
+        return update(null, wrapper);
+    }
+
+    /** 直接入账订单没有冻结记录，保持冻结字段为空。 */
+    default int markDirectRebateReceived(Long orderId, LocalDateTime receivedAt,
+                                         java.math.BigDecimal realRebate) {
+        return update(null, new LambdaUpdateWrapper<CpsOrderDO>()
+                .eq(CpsOrderDO::getId, orderId)
+                .in(CpsOrderDO::getOrderStatus, CpsOrderStatusEnum.RECEIVED.getStatus(),
+                        CpsOrderStatusEnum.SETTLED.getStatus())
+                .isNotNull(CpsOrderDO::getSettleTime)
+                .set(CpsOrderDO::getOrderStatus, CpsOrderStatusEnum.REBATE_RECEIVED.getStatus())
+                .set(CpsOrderDO::getRealRebate, realRebate)
+                .set(CpsOrderDO::getRebateTime, receivedAt)
+                .set(CpsOrderDO::getRebateFreezeStatus, null)
+                .set(CpsOrderDO::getPlanUnfreezeTime, null)
+                .set(CpsOrderDO::getActualUnfreezeTime, null)
+                .set(CpsOrderDO::getRebateSettleRetryCount, 0)
+                .set(CpsOrderDO::getRebateSettleNextRetryTime, null)
+                .set(CpsOrderDO::getRebateSettleLastError, null)
                 .setSql("status_version = COALESCE(status_version, 0) + 1"));
     }
 

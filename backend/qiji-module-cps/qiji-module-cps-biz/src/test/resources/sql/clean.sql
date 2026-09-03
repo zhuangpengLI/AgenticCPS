@@ -12,6 +12,7 @@ DELETE FROM "cps_rebate_account";
 DELETE FROM "cps_platform_bill_diff";
 DELETE FROM "cps_platform_bill_row";
 DELETE FROM "cps_order_sync_failure";
+DELETE FROM "cps_order_sync_checkpoint";
 DELETE FROM "cps_order_attribution_log";
 DELETE FROM "cps_order_status_event";
 DELETE FROM "cps_order";

@@ -36,6 +36,7 @@ import org.mockito.InjectMocks;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -46,6 +47,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -100,6 +102,12 @@ class CpsOrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("parseDateTime - 占位值--应视为无时间")
+    void parseDateTime_returnsNullForPlaceholder() {
+        assertNull(ReflectionTestUtils.invokeMethod(orderService, "parseDateTime", "--"));
+    }
+
+    @Test
     @DisplayName("saveOrUpdateOrder - 新订单应追加不可变状态事件与原始状态摘要")
     void saveOrUpdateOrder_appendsStatusEventForNewOrder() {
         when(orderMapper.selectByPlatformOrderId("taobao", "TB-EVENT-NEW")).thenReturn(null);
@@ -128,6 +136,61 @@ class CpsOrderServiceImplTest {
         verify(orderMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(order ->
                 order.getRawPlatformStatusSummary() != null
                         && order.getRawPlatformStatusSummary().contains("platformStatus=3")));
+    }
+
+    @Test
+    @DisplayName("saveOrUpdateOrder - 逻辑删除订单再次同步时应恢复原记录并更新")
+    void saveOrUpdateOrder_restoresDeletedOrderBeforeUpdating() {
+        CpsOrderDO deletedOrder = CpsOrderDO.builder()
+                .id(71L)
+                .platformCode("taobao")
+                .platformOrderId("TB-DELETED-1")
+                .orderStatus(CpsOrderStatusEnum.PAID.getStatus())
+                .statusVersion(2)
+                .build();
+        deletedOrder.setDeleted(true);
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-DELETED-1")).thenReturn(null);
+        when(orderMapper.selectDeletedByPlatformOrderId("taobao", "TB-DELETED-1")).thenReturn(deletedOrder);
+        when(orderMapper.restoreDeletedById(71L)).thenReturn(1);
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .platformCode("taobao")
+                .platformOrderId("TB-DELETED-1")
+                .platformStatus(1)
+                .itemId("ITEM-RESTORED")
+                .build();
+
+        assertEquals(2, orderService.saveOrUpdateOrder(dto));
+
+        verify(orderMapper).restoreDeletedById(71L);
+        verify(orderMapper).updateByIdAndStatusVersion(any(CpsOrderDO.class), eq(2));
+        verify(orderMapper, never()).insert(any(CpsOrderDO.class));
+    }
+
+    @Test
+    @DisplayName("saveOrUpdateOrder - 逻辑删除订单恢复失败时不得重新插入")
+    void saveOrUpdateOrder_failsWhenDeletedOrderCannotBeRestored() {
+        CpsOrderDO deletedOrder = CpsOrderDO.builder()
+                .id(72L)
+                .platformCode("taobao")
+                .platformOrderId("TB-DELETED-2")
+                .orderStatus(CpsOrderStatusEnum.PAID.getStatus())
+                .build();
+        deletedOrder.setDeleted(true);
+        when(orderMapper.selectByPlatformOrderId("taobao", "TB-DELETED-2")).thenReturn(null);
+        when(orderMapper.selectDeletedByPlatformOrderId("taobao", "TB-DELETED-2")).thenReturn(deletedOrder);
+        when(orderMapper.restoreDeletedById(72L)).thenReturn(0);
+
+        CpsOrderDTO dto = CpsOrderDTO.builder()
+                .platformCode("taobao")
+                .platformOrderId("TB-DELETED-2")
+                .platformStatus(1)
+                .build();
+
+        assertThrows(IllegalStateException.class, () -> orderService.saveOrUpdateOrder(dto));
+
+        verify(orderMapper, never()).insert(any(CpsOrderDO.class));
+        verify(orderMapper, never()).updateByIdAndStatusVersion(any(CpsOrderDO.class), any(Integer.class));
     }
 
     @Test

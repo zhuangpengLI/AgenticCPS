@@ -5,6 +5,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -41,6 +43,15 @@ public class CpsRebateConfigSaveReqVO {
 
     @Schema(description = "单笔最小返利金额（0表示不限）")
     private BigDecimal minRebateAmount;
+
+    @Schema(description = "冻结阈值（元，实际返利大于该金额才冻结；为空或0表示不冻结）")
+    @DecimalMin(value = "0", message = "冻结阈值不能小于0")
+    private BigDecimal freezeThresholdAmount;
+
+    @Schema(description = "冻结天数（配置冻结阈值时必填）")
+    @Min(value = 1, message = "冻结天数必须大于0")
+    @Max(value = 365, message = "冻结天数不能超过365天")
+    private Integer freezeDays;
 
     @Schema(description = "状态（0禁用 1启用）", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "状态不能为空")

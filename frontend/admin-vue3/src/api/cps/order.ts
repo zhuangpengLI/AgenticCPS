@@ -138,8 +138,8 @@ export interface CpsOrderSyncBatchCreateReqVO {
   orderScene?: number
   batchType?: string
   queryType: number
-  startTime: string
-  endTime: string
+  startTime: string | number
+  endTime: string | number
 }
 
 export interface CpsOrderSyncMetricsVO {

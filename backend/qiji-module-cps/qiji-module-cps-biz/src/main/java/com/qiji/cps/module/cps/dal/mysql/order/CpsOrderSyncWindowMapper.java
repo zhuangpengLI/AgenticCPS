@@ -15,9 +15,13 @@ import java.util.List;
     default List<CpsOrderSyncWindowDO> selectExecutable(LocalDateTime now, int limit) {
         int safeLimit = Math.max(1, Math.min(limit, 100));
         return selectList(new LambdaQueryWrapperX<CpsOrderSyncWindowDO>()
+                // Newly-created windows have no retry timestamp.  Keep them
+                // executable; applying `next_retry_time <= now` to PENDING
+                // rows would make SQL's NULL comparison filter them forever.
                 .and(wrapper -> wrapper.eq(CpsOrderSyncWindowDO::getStatus, "PENDING")
-                        .or().eq(CpsOrderSyncWindowDO::getStatus, "RETRY_WAIT")
-                        .le(CpsOrderSyncWindowDO::getNextRetryTime, now))
+                        .or(retry -> retry.eq(CpsOrderSyncWindowDO::getStatus, "RETRY_WAIT")
+                                .and(time -> time.isNull(CpsOrderSyncWindowDO::getNextRetryTime)
+                                        .or().le(CpsOrderSyncWindowDO::getNextRetryTime, now))))
                 .orderByAsc(CpsOrderSyncWindowDO::getWindowStart).last("LIMIT " + safeLimit));
     }
 }

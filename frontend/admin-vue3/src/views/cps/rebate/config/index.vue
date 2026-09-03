@@ -78,6 +78,16 @@
           {{ scope.row.maxRebateAmount ? `¥${formatAmount(scope.row.maxRebateAmount)}` : '不限' }}
         </template>
       </el-table-column>
+      <el-table-column label="冻结门槛" align="center" width="110">
+        <template #default="scope">
+          {{ scope.row.freezeThresholdAmount && scope.row.freezeThresholdAmount > 0 ? `>¥${formatAmount(scope.row.freezeThresholdAmount)}` : '直接到账' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="冻结天数" align="center" width="100">
+        <template #default="scope">
+          {{ scope.row.freezeThresholdAmount && scope.row.freezeThresholdAmount > 0 ? `${scope.row.freezeDays ?? '-'} 天` : '-' }}
+        </template>
+      </el-table-column>
       <el-table-column label="优先级" align="center" prop="priority" width="80" />
       <el-table-column label="状态" align="center" width="80">
         <template #default="scope">
@@ -187,6 +197,29 @@
           class="w-full"
         />
       </el-form-item>
+      <el-form-item label="冻结门槛金额" prop="freezeThresholdAmount">
+        <el-input-number
+          v-model="formData.freezeThresholdAmount"
+          :min="0"
+          :precision="2"
+          :step="0.01"
+          placeholder="0 或留空表示不冻结"
+          class="w-full"
+        />
+        <div class="el-form-item-hint text-gray-400 text-xs mt-1">实际返利高于该金额才进入冻结（元）</div>
+      </el-form-item>
+      <el-form-item label="冻结天数" prop="freezeDays">
+        <el-input-number
+          v-model="formData.freezeDays"
+          :min="1"
+          :max="365"
+          :precision="0"
+          :step="1"
+          placeholder="请输入冻结天数"
+          class="w-full"
+        />
+        <div class="el-form-item-hint text-gray-400 text-xs mt-1">冻结期满后自动到账；未设置门槛时不生效</div>
+      </el-form-item>
       <el-form-item label="优先级" prop="priority">
         <el-input-number
           v-model="formData.priority"
@@ -232,9 +265,14 @@ const queryParams = reactive<CpsRebateConfigPageReqVO>({
   status: undefined
 })
 
-const platformTagType = (code?: string) => {
+const platformTagType = (code?: string): 'success' | 'warning' | 'info' | 'danger' | 'primary' => {
   if (!code) return 'info'
-  const map: Record<string, string> = { taobao: 'danger', jd: 'primary', pdd: 'warning', douyin: '' }
+  const map: Record<string, 'success' | 'warning' | 'info' | 'danger' | 'primary'> = {
+    taobao: 'danger',
+    jd: 'primary',
+    pdd: 'warning',
+    douyin: 'info'
+  }
   return map[code] || 'info'
 }
 const platformLabel = (code?: string) => {
@@ -279,6 +317,8 @@ const handleStatusChange = async (row: CpsRebateConfigVO) => {
       memberLevelId: row.memberLevelId,
       maxRebateAmount: row.maxRebateAmount,
       minRebateAmount: row.minRebateAmount,
+      freezeThresholdAmount: row.freezeThresholdAmount,
+      freezeDays: row.freezeDays,
       priority: row.priority
     })
     message.success(row.status === 1 ? '已启用' : '已禁用')
@@ -311,6 +351,8 @@ const formData = reactive<CpsRebateConfigSaveVO>({
   rebateRate: 0,
   minRebateAmount: undefined,
   maxRebateAmount: undefined,
+  freezeThresholdAmount: undefined,
+  freezeDays: undefined,
   status: 1,
   priority: 0
 })
@@ -318,6 +360,24 @@ const formData = reactive<CpsRebateConfigSaveVO>({
 const formRules = {
   rebateRate: [{ required: true, message: '返利比例不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
+}
+
+const validateFreezeSettings = () => {
+  const threshold = formData.freezeThresholdAmount
+  const days = formData.freezeDays
+  if (threshold != null && threshold < 0) {
+    message.error('冻结门槛金额不能小于0')
+    return false
+  }
+  if (days != null && (!Number.isInteger(days) || days < 1 || days > 365)) {
+    message.error('冻结天数必须为1至365的整数')
+    return false
+  }
+  if ((threshold ?? 0) > 0 && days == null) {
+    message.error('设置冻结门槛后请输入冻结天数')
+    return false
+  }
+  return true
 }
 
 const openForm = (row?: CpsRebateConfigVO) => {
@@ -331,6 +391,8 @@ const openForm = (row?: CpsRebateConfigVO) => {
       rebateRate: row.rebateRate,
       minRebateAmount: row.minRebateAmount,
       maxRebateAmount: row.maxRebateAmount,
+      freezeThresholdAmount: row.freezeThresholdAmount,
+      freezeDays: row.freezeDays,
       status: row.status,
       priority: row.priority
     })
@@ -347,12 +409,15 @@ const resetForm = () => {
   formData.rebateRate = 0
   formData.minRebateAmount = undefined
   formData.maxRebateAmount = undefined
+  formData.freezeThresholdAmount = undefined
+  formData.freezeDays = undefined
   formData.status = 1
   formData.priority = 0
   formRef.value?.resetFields()
 }
 
 const handleSubmit = async () => {
+  if (!validateFreezeSettings()) return
   await formRef.value.validate()
   submitLoading.value = true
   try {

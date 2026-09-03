@@ -8,6 +8,8 @@ export interface CpsRebateConfigVO {
   rebateRate: number
   maxRebateAmount?: number
   minRebateAmount?: number
+  freezeThresholdAmount?: number
+  freezeDays?: number
   status: number
   priority: number
   createTime: Date
@@ -22,6 +24,8 @@ export interface CpsRebateConfigSaveVO {
   rebateRate: number
   maxRebateAmount?: number
   minRebateAmount?: number
+  freezeThresholdAmount?: number
+  freezeDays?: number
   status: number
   priority?: number
 }

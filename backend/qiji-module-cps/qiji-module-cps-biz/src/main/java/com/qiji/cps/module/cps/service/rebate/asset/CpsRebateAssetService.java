@@ -6,6 +6,13 @@ public interface CpsRebateAssetService {
 
     CpsFreezeRecordDO createOrderRebateFreeze(Long orderId, String idempotencyKey);
 
+    CpsFreezeRecordDO createOrderRebateFreeze(Long orderId, String idempotencyKey, Integer freezeDays);
+
+    /**
+     * 将订单返利直接记入可用余额，不创建冻结记录。
+     */
+    CpsRebateAssetResult creditOrderRebate(Long orderId, String idempotencyKey);
+
     CpsRebateAssetResult releaseOrderRebate(Long freezeRecordId, CpsAssetOperatorContext operatorContext);
 
     CpsRebateAssetResult manualReleaseOrderRebate(Long freezeRecordId, CpsAssetOperatorContext operatorContext);

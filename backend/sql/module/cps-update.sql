@@ -1807,3 +1807,26 @@ WHERE `deleted` = b'0' AND `handler_name` = 'cpsRebateSettleJob';
 INSERT INTO `infra_job` (`name`,`status`,`handler_name`,`handler_param`,`cron_expression`,`retry_count`,`retry_interval`,`monitor_timeout`,`creator`,`updater`,`deleted`)
 SELECT 'CPS返利结算', 1, 'cpsRebateSettleJob', '{"batchSize":200}', '0 0 * * * ?', 2, 60, 900, 'system', 'system', b'0'
 WHERE NOT EXISTS (SELECT 1 FROM `infra_job` WHERE `handler_name`='cpsRebateSettleJob' AND `deleted`=b'0');
+
+-- ============================================================
+-- 修改时间：2026-09-01 19:29:26
+-- 目的：支持按实际返利金额阈值决定冻结，小额返利可直接入账。
+-- ============================================================
+ALTER TABLE `cps_rebate_config`
+  ADD COLUMN `freeze_threshold_amount` decimal(10,2) NULL DEFAULT NULL COMMENT '冻结阈值（元，实际返利大于该金额才冻结，空或0表示不冻结）' AFTER `min_rebate_amount`,
+  ADD COLUMN `freeze_days` int NULL DEFAULT NULL COMMENT '冻结天数（配置冻结阈值时必填）' AFTER `freeze_threshold_amount`;
+
+-- ============================================================
+-- 修改时间：2026-09-02 15:03:08
+-- 目的：注册 CPS 返利冻结到期自动解冻任务，闭合“冻结 -> 实际返利”生命周期。
+-- ============================================================
+UPDATE `infra_job`
+SET `name` = 'CPS返利冻结自动解冻', `status` = 1,
+    `handler_param` = '{"batchSize":500}', `cron_expression` = '0 0/10 * * * ?',
+    `retry_count` = 2, `retry_interval` = 60, `monitor_timeout` = 900,
+    `updater` = 'system', `update_time` = NOW()
+WHERE `deleted` = b'0' AND `handler_name` = 'cpsFreezeUnfreezeJob';
+
+INSERT INTO `infra_job` (`name`,`status`,`handler_name`,`handler_param`,`cron_expression`,`retry_count`,`retry_interval`,`monitor_timeout`,`creator`,`updater`,`deleted`)
+SELECT 'CPS返利冻结自动解冻', 1, 'cpsFreezeUnfreezeJob', '{"batchSize":500}', '0 0/10 * * * ?', 2, 60, 900, 'system', 'system', b'0'
+WHERE NOT EXISTS (SELECT 1 FROM `infra_job` WHERE `handler_name`='cpsFreezeUnfreezeJob' AND `deleted`=b'0');

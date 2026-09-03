@@ -69,6 +69,10 @@ export interface RebateRuleForm {
   minRebateAmount?: number
   /** API amount values are yuan (the backend VO uses BigDecimal). */
   maxRebateAmount?: number
+  /** Actual rebate above this amount is frozen; API amount values are yuan. */
+  freezeThresholdAmount?: number
+  /** Number of days to keep qualifying rebate frozen before release. */
+  freezeDays?: number
   status: number
   priority?: number
 }

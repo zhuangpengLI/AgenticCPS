@@ -52,6 +52,16 @@ public class CpsRebateConfigDO extends TenantBaseDO {
      * 单笔最小返利金额（0表示不限）
      */
     private BigDecimal minRebateAmount;
+
+    /**
+     * 触发冻结的实际返利金额阈值（元）。实际返利严格大于该值时冻结；为空或0表示不冻结。
+     */
+    private BigDecimal freezeThresholdAmount;
+
+    /**
+     * 返利冻结天数；配置冻结阈值时必填。
+     */
+    private Integer freezeDays;
     /**
      * 状态（0禁用 1启用）
      */

@@ -15,6 +15,18 @@ AgenticCPS 使用 Spring AI MCP Server 暴露 CPS / CPX 工具。以当前代码
 - 配置来源：`backend/qiji-server/src/main/resources/application.yaml`
 - 本地端口来源：`backend/qiji-server/src/main/resources/application-local.yaml`
 
+### 协议版本提示说明
+
+SSE 传输由当前 Spring AI MCP SDK 宣布支持 `2024-11-05`。Codex/mcp-remote
+可能会先以 `2025-06-18`（或更高版本）发送 `initialize`，服务端随后按 MCP
+规范协商到 `2024-11-05`，日志中会出现 `Client requested unsupported protocol
+version`。这是正常的版本降级，不会阻止工具发现或调用；仅表示新版本专属能力
+不可用。项目已将该类的日志阈值设为 `ERROR`，真正的服务端异常仍会记录。
+
+如未来需要启用 `2025-06-18` 的 Streamable HTTP，应单独迁移到
+`spring.ai.mcp.server.protocol: STREAMABLE` 并同步更新客户端 URL；不要在保持
+现有 `/sse` 接入时伪造 SSE 对新协议的支持。
+
 旧需求文档中曾出现 `/mcp/cps` 作为 Streamable HTTP 入口；当前可运行配置没有声明该路径，外部 Agent 接入时优先使用 `/sse`。
 
 ## 2. 启动 AgenticCPS 后端

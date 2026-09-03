@@ -27,7 +27,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -290,6 +292,34 @@ class CpsOrderSyncJobTest {
         verify(checkpointMapper).updateById(checkpointCaptor.capture());
         assertEquals(fixedEndTime, checkpointCaptor.getValue().getWatermarkTime());
         assertEquals(null, checkpointCaptor.getValue().getQueryEndTime());
+    }
+
+    @Test
+    void completedCheckpointStartsNextRunFromRequestedWindowInsteadOfOldWatermark() throws Exception {
+        CpsOrderSyncCheckpointDO checkpoint = CpsOrderSyncCheckpointDO.builder()
+                .id(100L)
+                .platformCode("jd")
+                .vendorCode("jingdong")
+                .orderScene(0)
+                .queryType("4")
+                .nextPageNo(null)
+                .watermarkTime(LocalDateTime.now().minusMinutes(1))
+                .queryEndTime(null)
+                .lastSyncStatus("SUCCESS")
+                .version(1)
+                .build();
+        when(checkpointMapper.selectByKey("jd", "jingdong", 0, "4")).thenReturn(checkpoint);
+        when(client.queryOrderPage(any())).thenReturn(CpsOrderPageResult.page(List.of(), null, false));
+
+        job.execute("{\"hours\":1,\"queryType\":4}");
+
+        ArgumentCaptor<CpsOrderQueryRequest> requestCaptor = ArgumentCaptor.forClass(CpsOrderQueryRequest.class);
+        verify(client).queryOrderPage(requestCaptor.capture());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime requestStart = LocalDateTime.parse(requestCaptor.getValue().getStartTime(), formatter);
+        LocalDateTime requestEnd = LocalDateTime.parse(requestCaptor.getValue().getEndTime(), formatter);
+        assertTrue(Duration.between(requestStart, requestEnd).toMinutes() >= 50,
+                "completed checkpoint must not collapse the next run to the old watermark");
     }
 
     @Test

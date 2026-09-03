@@ -12,7 +12,7 @@
         <el-button @click="loadSyncMonitor"
           ><Icon icon="ep:refresh" class="mr-5px" />刷新</el-button
         >
-        <el-button type="primary" plain @click="syncBatchDialogVisible = true">
+        <el-button type="primary" plain @click="openSyncBatchDialog">
           <Icon icon="ep:plus" class="mr-5px" />创建补偿批次
         </el-button>
       </div>
@@ -115,16 +115,41 @@
   >
     <el-form label-width="90px">
       <el-form-item label="平台" required
-        ><el-select v-model="syncBatchForm.platformCode" class="w-full"
+        ><el-select
+          v-model="syncBatchForm.platformCode"
+          class="w-full"
+          @change="loadSyncBatchVendors"
           ><el-option label="淘宝" value="taobao" /><el-option label="京东" value="jd" /><el-option
             label="拼多多"
             value="pdd" /></el-select
       ></el-form-item>
+      <el-form-item label="API 供应商" required
+        ><el-select
+          v-model="syncBatchForm.vendorCode"
+          class="w-full"
+          filterable
+          :loading="syncBatchVendorLoading"
+          :disabled="!syncBatchForm.platformCode"
+          placeholder="请选择已启用的 API 供应商"
+          ><el-option
+            v-for="vendor in syncBatchVendorOptions"
+            :key="`${vendor.vendorCode}:${vendor.platformCode}`"
+            :label="syncBatchVendorLabel(vendor)"
+            :value="vendor.vendorCode" /></el-select
+        ><div
+          v-if="
+            syncBatchForm.platformCode && !syncBatchVendorLoading && !syncBatchVendorOptions.length
+          "
+          class="sync-field-tip sync-field-tip--danger"
+          >当前平台没有已启用的 API 供应商，请先完成配置和连接测试。</div
+        ></el-form-item
+      >
       <el-form-item label="同步轨道" required
         ><el-select v-model="syncBatchForm.queryType" class="w-full"
-          ><el-option :value="2" label="付款订单" /><el-option
+          ><el-option :value="1" label="创建订单" /><el-option :value="2" label="付款订单" /><el-option
             :value="3"
             label="结算订单" /><el-option :value="4" label="订单更新时间" /></el-select
+        ><div class="sync-field-tip">历史补偿建议按创建或付款时间查询；更新时间仅用于状态增量同步。</div
       ></el-form-item>
       <el-form-item label="时间范围" required
         ><el-date-picker
@@ -219,6 +244,8 @@
 
 <script setup lang="ts">
 import * as OrderApi from '@/api/cps/order'
+import { CpsApiVendorApi, type CpsApiVendorVO } from '@/api/cps/apiVendor'
+import { PlatformOnboardingApi } from '@/api/cps/platformOnboarding'
 import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 
@@ -238,11 +265,17 @@ const syncMetrics = ref<OrderApi.CpsOrderSyncMetricsVO>({
 })
 const syncBatchDialogVisible = ref(false)
 const syncBatchCreating = ref(false)
+const syncBatchVendorLoading = ref(false)
+const syncBatchVendorOptions = ref<CpsApiVendorVO[]>([])
 const syncBatchForm = reactive<{
   platformCode: string
+  vendorCode: string
   queryType: number
   dateRange: [string, string] | null
-}>({ platformCode: 'taobao', queryType: 4, dateRange: null })
+// Historical compensation should be keyed by payment time.  An order's
+// update time can be days later (or absent), so the old default of queryType=4
+// made an otherwise valid 30-day payment range appear empty.
+}>({ platformCode: 'taobao', vendorCode: '', queryType: 2, dateRange: null })
 const syncWindowDialogVisible = ref(false)
 const syncWindows = ref<OrderApi.CpsOrderSyncWindowVO[]>([])
 const syncWindowsLoading = ref(false)
@@ -298,6 +331,40 @@ const formatWindowPointLabel = (window: OrderApi.CpsOrderSyncWindowVO) =>
 const windowStatusClass = (window: OrderApi.CpsOrderSyncWindowVO) =>
   window.status === 'SUCCESS' ? 'is-success' : 'is-pending'
 
+const syncBatchVendorLabel = (vendor: CpsApiVendorVO) => {
+  const typeLabel = vendor.vendorType === 'official' ? '官方 API' : '聚合 API'
+  return `${vendor.vendorName || vendor.vendorCode}（${typeLabel}）`
+}
+
+const loadSyncBatchVendors = async () => {
+  syncBatchForm.vendorCode = ''
+  syncBatchVendorOptions.value = []
+  if (!syncBatchForm.platformCode) return
+  syncBatchVendorLoading.value = true
+  try {
+    const [vendors, descriptors] = await Promise.all([
+      CpsApiVendorApi.getVendorListByPlatform(syncBatchForm.platformCode),
+      PlatformOnboardingApi.getVendorDescriptors(syncBatchForm.platformCode)
+    ])
+    const orderQueryVendors = new Set(
+      (descriptors || [])
+        .filter((descriptor) => descriptor.capabilities?.includes('order_query'))
+        .map((descriptor) => descriptor.vendorCode)
+    )
+    syncBatchVendorOptions.value = (vendors || []).filter(
+      (vendor) => vendor.status === 1 && orderQueryVendors.has(vendor.vendorCode)
+    )
+    syncBatchForm.vendorCode = syncBatchVendorOptions.value[0]?.vendorCode || ''
+  } finally {
+    syncBatchVendorLoading.value = false
+  }
+}
+
+const openSyncBatchDialog = async () => {
+  syncBatchDialogVisible.value = true
+  await loadSyncBatchVendors()
+}
+
 const loadSyncMonitor = async () => {
   syncBatchLoading.value = true
   try {
@@ -312,13 +379,14 @@ const loadSyncMonitor = async () => {
   }
 }
 const createSyncBatch = async () => {
+  if (!syncBatchForm.vendorCode) return message.warning('请选择已启用的 API 供应商')
   const [startTime, endTime] = syncBatchForm.dateRange || []
   if (!startTime || !endTime) return message.warning('请选择时间范围')
   syncBatchCreating.value = true
   try {
     await OrderApi.createOrderSyncBatch({
       platformCode: syncBatchForm.platformCode,
-      vendorCode: syncBatchForm.platformCode === 'taobao' ? 'dataoke' : undefined,
+      vendorCode: syncBatchForm.vendorCode,
       queryType: syncBatchForm.queryType,
       startTime: dayjs(startTime).valueOf(),
       endTime: dayjs(endTime).valueOf(),
@@ -435,6 +503,15 @@ onMounted(loadSyncMonitor)
   font-size: 18px;
 }
 .danger-text {
+  color: var(--el-color-danger);
+}
+.sync-field-tip {
+  margin-top: 4px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.sync-field-tip--danger {
   color: var(--el-color-danger);
 }
 .sync-window-panel {

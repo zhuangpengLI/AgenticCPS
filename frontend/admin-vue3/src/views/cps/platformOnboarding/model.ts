@@ -74,6 +74,8 @@ const normalizePayload = (draft: PlatformOnboardingDraft): PlatformOnboardingSav
       rebateRate: rule.rebateRate,
       minRebateAmount: rule.minRebateAmount,
       maxRebateAmount: rule.maxRebateAmount,
+      freezeThresholdAmount: rule.freezeThresholdAmount,
+      freezeDays: rule.freezeDays,
       status: rule.status ?? 1,
       priority: rule.priority ?? 0
     }))

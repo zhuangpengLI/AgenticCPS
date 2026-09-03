@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Import(CpsOrderMapperDbTest.TenantTestConfiguration.class)
@@ -60,6 +61,24 @@ class CpsOrderMapperDbTest extends BaseDbUnitTest {
         TenantContextHolder.setTenantId(2L);
         assertDoesNotThrow(() -> orderMapper.insert(newOrder("taobao", "SAME-ORDER")));
         assertEquals(3L, orderMapper.selectCount(null));
+    }
+
+    @Test
+    void logicallyDeletedOrderCanBeFoundAndRestoredWithoutCreatingDuplicate() {
+        TenantContextHolder.setTenantId(1L);
+        CpsOrderDO order = newOrder("taobao", "RESTORE-ORDER");
+        orderMapper.insert(order);
+
+        orderMapper.deleteById(order.getId());
+
+        assertNull(orderMapper.selectByPlatformOrderId("taobao", "RESTORE-ORDER"));
+        CpsOrderDO deleted = orderMapper.selectDeletedByPlatformOrderId("taobao", "RESTORE-ORDER");
+        assertEquals(order.getId(), deleted.getId());
+        assertEquals(Boolean.TRUE, deleted.getDeleted());
+
+        assertEquals(1, orderMapper.restoreDeletedById(order.getId()));
+        assertEquals(order.getId(), orderMapper.selectByPlatformOrderId("taobao", "RESTORE-ORDER").getId());
+        assertEquals(1L, orderMapper.selectCount(null));
     }
 
     @Test

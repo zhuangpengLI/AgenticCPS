@@ -35,6 +35,7 @@ import java.util.List;
 public class CpsRebateAssetServiceImpl implements CpsRebateAssetService {
 
     static final String ORDER_REBATE = "ORDER_REBATE";
+    static final String ORDER_REBATE_CREDIT = "ORDER_REBATE_CREDIT";
     static final String ORDER_REBATE_RELEASE = "ORDER_REBATE_RELEASE";
     static final String ORDER_REFUND = "ORDER_REFUND";
     static final String REBATE_INCOMING = "REBATE_INCOMING";
@@ -59,8 +60,17 @@ public class CpsRebateAssetServiceImpl implements CpsRebateAssetService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public CpsFreezeRecordDO createOrderRebateFreeze(Long orderId, String idempotencyKey) {
+        return createOrderRebateFreeze(orderId, idempotencyKey, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CpsFreezeRecordDO createOrderRebateFreeze(Long orderId, String idempotencyKey, Integer freezeDaysOverride) {
         requirePositive(orderId, "订单ID");
         requireText(idempotencyKey, "幂等键");
+        if (freezeDaysOverride != null && (freezeDaysOverride < 1 || freezeDaysOverride > 365)) {
+            throw new IllegalArgumentException("冻结天数必须为 1 至 365 天");
+        }
         CpsRebateAssetLedgerDO replay = ledgerMapper.selectByBusinessAndIdempotencyKey(ORDER_REBATE, idempotencyKey);
         if (replay != null) {
             return freezeRecordMapper.selectById(replay.getBusinessId());
@@ -80,10 +90,15 @@ public class CpsRebateAssetServiceImpl implements CpsRebateAssetService {
                 orderId, CpsRebateTypeEnum.REBATE.getType()), "订单返利记录不存在: " + orderId);
         long amountCent = moneyConverter.yuanToCent(rebate.getRebateAmount());
         requirePositive(amountCent, "返利金额");
-        CpsFreezeConfigDO config = requireNonNull(freezeService.getActiveConfig(order.getPlatformCode(), amountCent),
-                "没有可匹配的冻结规则: " + order.getPlatformCode());
-        if (config.getUnfreezeDays() == null || config.getUnfreezeDays() < 0) {
-            throw new IllegalStateException("冻结规则天数非法: " + config.getId());
+        CpsFreezeConfigDO config = freezeService.getActiveConfig(order.getPlatformCode(), amountCent);
+        if (config == null && freezeDaysOverride == null) {
+            throw new IllegalStateException("没有可匹配的冻结规则: " + order.getPlatformCode());
+        }
+        Integer freezeDays = freezeDaysOverride != null
+                ? freezeDaysOverride : config.getUnfreezeDays();
+        if (freezeDays == null || freezeDays < 1) {
+            throw new IllegalStateException("冻结规则天数非法: "
+                    + (config == null ? freezeDays : config.getId()));
         }
         LocalDateTime eligibleTime = later(order.getConfirmReceiptTime(), order.getSettleTime());
 
@@ -103,8 +118,8 @@ public class CpsRebateAssetServiceImpl implements CpsRebateAssetService {
                 .memberId(order.getMemberId()).orderId(orderId).platformOrderId(order.getPlatformOrderId())
                 .businessType(ORDER_REBATE).businessId(String.valueOf(orderId)).idempotencyKey(idempotencyKey)
                 .freezeAmount(moneyConverter.centToYuan(amountCent)).amountCent(amountCent)
-                .freezeConfigId(config.getId()).freezeDaysSnapshot(config.getUnfreezeDays())
-                .eligibleTime(eligibleTime).unfreezeTime(eligibleTime.plusDays(config.getUnfreezeDays()))
+                .freezeConfigId(config == null ? null : config.getId()).freezeDaysSnapshot(freezeDays)
+                .eligibleTime(eligibleTime).unfreezeTime(eligibleTime.plusDays(freezeDays))
                 .status(CpsFreezeStatusEnum.FROZEN.getStatus()).build();
         freezeRecordMapper.insert(freeze);
         CpsRebateRecordDO rebateUpdate = new CpsRebateRecordDO();
@@ -116,6 +131,70 @@ public class CpsRebateAssetServiceImpl implements CpsRebateAssetService {
                 order.getPlatformOrderId(), idempotencyKey, before, after,
                 CpsAssetOperatorContext.system(idempotencyKey, "平台结算后创建订单返利冻结"));
         return freeze;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CpsRebateAssetResult creditOrderRebate(Long orderId, String idempotencyKey) {
+        requirePositive(orderId, "订单ID");
+        requireText(idempotencyKey, "幂等键");
+        CpsRebateAssetLedgerDO replay = ledgerMapper.selectByBusinessAndIdempotencyKey(
+                ORDER_REBATE_CREDIT, idempotencyKey);
+        if (replay != null) return result(replay, orderId, true);
+        policyService.assertWritable();
+
+        CpsOrderDO order = requireNonNull(orderMapper.selectForUpdateById(orderId), "订单不存在: " + orderId);
+        // 并发请求可能在第一次幂等查询后才提交流水；拿到行锁后必须再次检查，
+        // 否则第二个请求会把已完成的订单误判为非法状态并抛错。
+        replay = ledgerMapper.selectByBusinessAndIdempotencyKey(ORDER_REBATE_CREDIT, idempotencyKey);
+        if (replay != null) return result(replay, orderId, true);
+        boolean settled = CpsOrderStatusEnum.SETTLED.getStatus().equals(order.getOrderStatus());
+        boolean receivedAfterPlatformSettlement = CpsOrderStatusEnum.RECEIVED.getStatus().equals(order.getOrderStatus())
+                && order.getSettleTime() != null && order.getConfirmReceiptTime() != null;
+        if (order.getMemberId() == null
+                || ((!settled || order.getSettleTime() == null) && !receivedAfterPlatformSettlement)) {
+            throw new IllegalStateException("只有平台已结算订单才能直接入账: " + orderId);
+        }
+        CpsFreezeRecordDO existingFreeze = freezeRecordMapper.selectByBusinessId(
+                ORDER_REBATE, String.valueOf(orderId));
+        if (existingFreeze != null) {
+            throw new IllegalStateException("订单已有返利冻结记录，不能直接入账: " + orderId);
+        }
+        CpsRebateRecordDO rebate = requireNonNull(rebateRecordMapper.selectByOrderIdAndType(
+                orderId, CpsRebateTypeEnum.REBATE.getType()), "订单返利记录不存在: " + orderId);
+        if (!order.getMemberId().equals(rebate.getMemberId())) {
+            throw new IllegalStateException("订单与返利记录会员不一致: " + orderId);
+        }
+        if (!CpsRebateStatusEnum.PENDING.getStatus().equals(rebate.getRebateStatus())) {
+            throw new IllegalStateException("订单返利记录不是待入账状态: " + orderId);
+        }
+        long amountCent = moneyConverter.yuanToCent(rebate.getRebateAmount());
+        requirePositive(amountCent, "返利金额");
+
+        CpsRebateAccountDO account = lockOrCreateAccount(order.getMemberId());
+        replay = ledgerMapper.selectByBusinessAndIdempotencyKey(ORDER_REBATE_CREDIT, idempotencyKey);
+        if (replay != null) return result(replay, orderId, true);
+        Balance before = balance(account);
+        long repaid = repayOutstandingDebt(order.getMemberId(), Math.min(amountCent, before.debt));
+        Balance after = new Balance(Math.addExact(before.available, amountCent - repaid),
+                before.frozen, before.debt - repaid);
+        persistAccount(account, after, amountCent);
+
+        CpsRebateRecordDO rebateUpdate = new CpsRebateRecordDO();
+        rebateUpdate.setId(rebate.getId());
+        rebateUpdate.setRebateStatus(CpsRebateStatusEnum.RECEIVED.getStatus());
+        if (rebateRecordMapper.updateById(rebateUpdate) != 1) {
+            throw new IllegalStateException("返利记录直接入账状态更新失败: " + orderId);
+        }
+        LocalDateTime receivedAt = LocalDateTime.now();
+        int updated = orderMapper.markDirectRebateReceived(orderId, receivedAt, rebate.getRebateAmount());
+        if (updated == 0) {
+            throw new IllegalStateException("订单返利直接入账状态回写失败: " + orderId);
+        }
+        CpsRebateAssetLedgerDO ledger = appendLedger(order.getMemberId(), ORDER_REBATE_CREDIT,
+                String.valueOf(orderId), orderId, order.getPlatformOrderId(), idempotencyKey,
+                before, after, CpsAssetOperatorContext.system(idempotencyKey, "小额订单返利直接入账"));
+        return result(ledger, orderId, false);
     }
 
     @Override

@@ -33,6 +33,12 @@ public class CpsRebateConfigRespVO {
     @Schema(description = "单笔最小返利金额（0表示不限）")
     private BigDecimal minRebateAmount;
 
+    @Schema(description = "冻结阈值（元，实际返利大于该金额才冻结）")
+    private BigDecimal freezeThresholdAmount;
+
+    @Schema(description = "冻结天数")
+    private Integer freezeDays;
+
     @Schema(description = "状态（0禁用 1启用）")
     private Integer status;
 

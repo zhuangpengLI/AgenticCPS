@@ -36,7 +36,7 @@ import java.util.List;
  *   <li>扫描已收货/已结算且未入账的订单</li>
  *   <li>按返利配置优先级计算应得返利金额</li>
  *   <li>写入返利记录（{@code cps_rebate_record}）</li>
- *   <li>更新订单状态为"已到账"，记录 rebate_time</li>
+ *   <li>按实际返利阈值选择直接入账或创建冻结记录；冻结到期后再更新为"已到账"</li>
  *   <li>乐观锁更新返利账户余额（{@code cps_rebate_account}）</li>
  * </ol>
  * </p>
@@ -52,9 +52,10 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
     private static final int SETTLE_ERROR_MAX_LENGTH = 500;
 
     /**
-     * 待结算订单状态：已收货 或 已结算（平台已结算给联盟）
+     * 待结算订单状态：已收货或已结算；已收货订单必须同时具备平台结算时间和确认收货时间。
      */
-    private static final List<String> PENDING_SETTLE_STATUSES = List.of(CpsOrderStatusEnum.SETTLED.getStatus());
+    private static final List<String> PENDING_SETTLE_STATUSES = List.of(
+            CpsOrderStatusEnum.RECEIVED.getStatus(), CpsOrderStatusEnum.SETTLED.getStatus());
 
     @Resource
     private CpsOrderMapper orderMapper;
@@ -105,7 +106,8 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
         // 幂等检查：已有返利记录则跳过
         CpsRebateRecordDO existRecord = rebateRecordMapper.selectByOrderIdAndType(
                 order.getId(), CpsRebateTypeEnum.REBATE.getType());
-        if (existRecord != null) {
+        if (existRecord != null
+                && !CpsRebateStatusEnum.PENDING.getStatus().equals(existRecord.getRebateStatus())) {
             log.debug("[settleOrder] 订单已结算过，跳过: orderId={}, recordId={}", order.getId(), existRecord.getId());
             return false;
         }
@@ -121,7 +123,10 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
             return false;
         }
 
-        BigDecimal rebateAmount = calculateRebateAmount(order, config);
+        // 旧版本可能已写入 pending 记录后在创建冻结阶段失败。重跑时复用该记录金额，
+        // 避免因已有记录直接跳过导致订单永久停留在已结算且实际返利为 0。
+        BigDecimal rebateAmount = existRecord != null && existRecord.getRebateAmount() != null
+                ? existRecord.getRebateAmount() : calculateRebateAmount(order, config);
         if (rebateAmount == null || rebateAmount.compareTo(BigDecimal.ZERO) <= 0) {
             log.warn("[settleOrder] 返利金额计算为0，跳过结算: orderId={}", order.getId());
             return false;
@@ -129,6 +134,12 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
 
         BigDecimal rebateRate = config.getRebateRate();
         String idempotencyKey = "order-rebate:" + order.getId();
+        boolean shouldFreeze = shouldFreeze(rebateAmount, config);
+        if (shouldFreeze && (config.getFreezeDays() == null
+                || config.getFreezeDays() < 1 || config.getFreezeDays() > 365)) {
+            // 不允许用平台其他冻结档位静默兜底，避免冻结天数与返利配置不一致。
+            throw new IllegalStateException("返利配置冻结天数非法: " + order.getId());
+        }
 
         // 3. 写入返利记录
         CpsRebateRecordDO record = CpsRebateRecordDO.builder()
@@ -148,11 +159,23 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
                 .memberLevelIdSnapshot(member.getLevelId())
                 .rebateAmountCent(moneyConverter.yuanToCent(rebateAmount))
                 .idempotencyKey(idempotencyKey)
-                .remark("平台结算后创建冻结返利")
+                .remark(shouldFreeze ? "平台结算后创建冻结返利" : "平台结算后直接入账返利")
                 .build();
-        rebateRecordMapper.insert(record);
+        if (existRecord == null) {
+            rebateRecordMapper.insert(record);
+        } else {
+            record = existRecord;
+        }
 
-        CpsFreezeRecordDO freeze = rebateAssetService.createOrderRebateFreeze(order.getId(), idempotencyKey);
+        if (!shouldFreeze) {
+            rebateAssetService.creditOrderRebate(order.getId(), "order-rebate-credit:" + order.getId());
+            log.info("[settleOrder] 小额订单返利直接入账: orderId={}, memberId={}, rebateAmount={}",
+                    order.getId(), order.getMemberId(), rebateAmount);
+            return true;
+        }
+
+        CpsFreezeRecordDO freeze = rebateAssetService.createOrderRebateFreeze(
+                order.getId(), idempotencyKey, config.getFreezeDays());
 
         CpsOrderDO updateOrder = CpsOrderDO.builder()
                 .id(order.getId())
@@ -273,6 +296,13 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
         }
 
         return rebateAmount;
+    }
+
+    /** 实际返利严格大于正阈值时冻结；未配置阈值或阈值为0时直接入账。 */
+    private boolean shouldFreeze(BigDecimal rebateAmount, CpsRebateConfigDO config) {
+        return config.getFreezeThresholdAmount() != null
+                && config.getFreezeThresholdAmount().signum() > 0
+                && rebateAmount.compareTo(config.getFreezeThresholdAmount()) > 0;
     }
 
     /**

@@ -400,6 +400,8 @@ CREATE TABLE `cps_rebate_config` (
   `rebate_rate`       decimal(10,4) NOT NULL COMMENT '返利比例（百分比）',
   `max_rebate_amount` decimal(10,2)          DEFAULT '0.00' COMMENT '单笔最大返利金额（0表示不限）',
   `min_rebate_amount` decimal(10,2)          DEFAULT '0.00' COMMENT '单笔最小返利金额（0表示不限）',
+  `freeze_threshold_amount` decimal(10,2)    DEFAULT NULL COMMENT '冻结阈值（元，实际返利大于该金额才冻结，空或0表示不冻结）',
+  `freeze_days`        int                   DEFAULT NULL COMMENT '冻结天数（配置冻结阈值时必填）',
   `status`            tinyint       NOT NULL DEFAULT '1' COMMENT '状态（0禁用 1启用）',
   `priority`          int           NOT NULL DEFAULT '0' COMMENT '优先级（数字越大优先级越高）',
   `creator`           varchar(64)            DEFAULT NULL COMMENT '创建人',
@@ -2161,6 +2163,14 @@ SELECT 'CPS返利结算', 1, 'cpsRebateSettleJob', '{"batchSize":200}',
        '0 0 * * * ?', 2, 60, 900, 'system', 'system', b'0'
 WHERE NOT EXISTS (
   SELECT 1 FROM `infra_job` WHERE `handler_name` = 'cpsRebateSettleJob' AND `deleted` = b'0'
+);
+
+INSERT INTO `infra_job` (`name`, `status`, `handler_name`, `handler_param`, `cron_expression`,
+                         `retry_count`, `retry_interval`, `monitor_timeout`, `creator`, `updater`, `deleted`)
+SELECT 'CPS返利冻结自动解冻', 1, 'cpsFreezeUnfreezeJob', '{"batchSize":500}',
+       '0 0/10 * * * ?', 2, 60, 900, 'system', 'system', b'0'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `infra_job` WHERE `handler_name` = 'cpsFreezeUnfreezeJob' AND `deleted` = b'0'
 );
 
 SET FOREIGN_KEY_CHECKS = 1;

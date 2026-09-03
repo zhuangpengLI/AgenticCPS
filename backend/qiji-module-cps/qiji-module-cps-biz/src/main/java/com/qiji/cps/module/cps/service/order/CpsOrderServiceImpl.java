@@ -67,7 +67,11 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final int ORDER_QUERY_WINDOW_HOURS = 3;
     private static final int ORDER_QUERY_PAGE_SIZE = 50;
-    private static final int ORDER_QUERY_MAX_PAGES = 20;
+    // Dataoke accepts pageNo up to 100.  Stopping at 20 silently dropped
+    // orders from busy three-hour windows while still reporting the sync as
+    // successful, which made historical compensation look complete but lose
+    // data.  Exhaust the documented range and fail loudly if more remains.
+    private static final int ORDER_QUERY_MAX_PAGES = 100;
 
     @Resource
     private CpsOrderMapper orderMapper;
@@ -253,6 +257,28 @@ public class CpsOrderServiceImpl implements CpsOrderService {
 
         CpsOrderDO existing = orderMapper.selectByPlatformOrderId(
                 orderDTO.getPlatformCode(), orderDTO.getPlatformOrderId());
+        boolean restoredDeletedOrder = false;
+        if (existing == null) {
+            // 订单采用逻辑删除，唯一键仍占用原平台订单号；同步时必须恢复原行，
+            // 不能走 insert，否则会触发唯一键冲突并丢失历史审计/返利关联。
+            existing = orderMapper.selectDeletedByPlatformOrderId(
+                    orderDTO.getPlatformCode(), orderDTO.getPlatformOrderId());
+            // 查询方法本身限定 deleted=1，不依赖 JDBC BIT 到 Boolean 的类型转换结果。
+            if (existing != null) {
+                int restored = orderMapper.restoreDeletedById(existing.getId());
+                if (restored == 0) {
+                    // 并发同步可能已经先恢复了该订单；重新读取活动行后继续 CAS 更新。
+                    CpsOrderDO activeOrder = orderMapper.selectByPlatformOrderId(
+                            orderDTO.getPlatformCode(), orderDTO.getPlatformOrderId());
+                    if (activeOrder == null) {
+                        throw new IllegalStateException("订单恢复失败: " + existing.getId());
+                    }
+                    existing = activeOrder;
+                } else {
+                    restoredDeletedOrder = true;
+                }
+            }
+        }
         if (existing == null) {
             // 新订单：插入
             AttributionResult attribution = resolveAttribution(orderDTO);
@@ -285,7 +311,8 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             if (Objects.equals(existing.getOrderStatus(), newStatus)
                     && !hasOrderSnapshotChanged(existing, orderDTO)
                     && attribution.memberId() == null
-                    && !shouldFillMemberNickname) {
+                    && !shouldFillMemberNickname
+                    && !restoredDeletedOrder) {
                 if (downgradeRejectReason != null) {
                     appendStatusEvent(existing.getId(), orderDTO, existing.getOrderStatus(), incomingStatus,
                             existing.getOrderStatus(), existing.getStatusVersion(), true, downgradeRejectReason);
@@ -498,6 +525,7 @@ public class CpsOrderServiceImpl implements CpsOrderService {
         List<CpsOrderDTO> allOrders = new ArrayList<>();
         String positionIndex = null;
         int pageNo = 1;
+        boolean hasMore = false;
         for (int pageCount = 1; pageCount <= ORDER_QUERY_MAX_PAGES; pageCount++) {
             CpsOrderQueryRequest req = new CpsOrderQueryRequest();
             req.setQueryType(queryType);
@@ -518,7 +546,8 @@ public class CpsOrderServiceImpl implements CpsOrderService {
             }
             allOrders.addAll(pageOrders);
 
-            if (!pageResult.isHasMore()) {
+            hasMore = pageResult.isHasMore();
+            if (!hasMore) {
                 break;
             }
             if (pageResult.getPaginationMode() == CpsOrderPaginationMode.CURSOR) {
@@ -533,6 +562,10 @@ public class CpsOrderServiceImpl implements CpsOrderService {
                 }
                 pageNo = pageResult.getNextPageNo();
             }
+        }
+        if (hasMore) {
+            throw new IllegalStateException("订单分页超过最大页数 " + ORDER_QUERY_MAX_PAGES
+                    + "，请缩小时间窗口后重试");
         }
         return allOrders;
     }
@@ -1148,7 +1181,7 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     }
 
     private LocalDateTime parseDateTime(String dateStr) {
-        if (dateStr == null || dateStr.isBlank()) {
+        if (dateStr == null || dateStr.isBlank() || "--".equals(dateStr.trim())) {
             return null;
         }
         try {

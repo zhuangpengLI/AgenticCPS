@@ -86,4 +86,17 @@ class CpsOrderSyncBatchServiceImplTest {
         assertThrows(IllegalArgumentException.class,
                 () -> service.create("jd", "OFFICIAL", "MANUAL", 4, epoch, epoch.plusHours(1)));
     }
+
+    @Test
+    void create_defaultsCompensationQueryToPaymentTime() {
+        LocalDateTime start = LocalDateTime.of(2026, 8, 1, 0, 0);
+        CpsOrderSyncBatchDO created = service.create("taobao", "dataoke", "MANUAL", null,
+                start, start.plusHours(3));
+
+        assertEquals(2, created.getQueryType());
+        ArgumentCaptor<CpsOrderSyncWindowDO> windowCaptor =
+                ArgumentCaptor.forClass(CpsOrderSyncWindowDO.class);
+        verify(windowMapper).insert(windowCaptor.capture());
+        assertEquals(2, windowCaptor.getValue().getQueryType());
+    }
 }

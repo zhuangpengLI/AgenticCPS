@@ -10,13 +10,13 @@ import org.springframework.stereotype.Component;
 /**
  * CPS 冻结返利自动解冻定时任务
  *
- * <p>定期扫描已到达解冻时间的冻结记录，自动完成解冻操作，释放对应的返利余额。</p>
+ * <p>定期扫描已到达解冻时间的订单返利冻结记录，自动转为实际返利并释放可用余额。</p>
  *
  * <h3>Quartz 注册方式</h3>
  * 在管理后台【基础设施 - 定时任务】手动添加：
  * 处理器名字：cpsFreezeUnfreezeJob
  * 处理器参数示例：{"batchSize":500}（或留空使用默认值500）
- * CRON 表达式：0 0 2 * * ?（每日凌晨 2 点执行）
+ * CRON 表达式：0 0/10 * * * ?（每 10 分钟执行一次，降低到期返利到账延迟）
  *
  * <h3>参数说明（JSON 格式）</h3>
  * batchSize：每次处理的最大记录数，默认 500
@@ -56,12 +56,16 @@ public class CpsFreezeUnfreezeJob implements JobHandler {
         try {
             String bsStr = param.replaceAll(".*\"batchSize\"\\s*:\\s*(\\d+).*", "$1");
             if (!bsStr.equals(param)) {
-                return Integer.parseInt(bsStr);
+                return normalizeBatchSize(Integer.parseInt(bsStr));
             }
         } catch (Exception e) {
             log.warn("[CpsFreezeUnfreezeJob] 参数解析失败，使用默认值: param={}", param);
         }
         return DEFAULT_BATCH_SIZE;
+    }
+
+    private int normalizeBatchSize(int batchSize) {
+        return Math.max(1, Math.min(batchSize, 1000));
     }
 
 }

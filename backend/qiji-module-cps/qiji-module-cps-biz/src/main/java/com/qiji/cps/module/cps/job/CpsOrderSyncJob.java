@@ -259,7 +259,12 @@ public class CpsOrderSyncJob implements JobHandler {
         }
 
         LocalDateTime fixedQueryEndTime = checkpoint.getQueryEndTime();
+        boolean inFlightWindow = fixedQueryEndTime != null;
         if (fixedQueryEndTime == null) {
+            // queryEndTime is persisted only while a window is in flight. Once
+            // the previous window completed it is cleared, and the next run
+            // must use the current planner boundary instead of reusing the
+            // previous watermark (which would create a zero-width window).
             fixedQueryEndTime = watermarkTime;
             checkpoint.setQueryEndTime(fixedQueryEndTime);
             if (checkpoint.getNextCursor() != null
@@ -272,11 +277,12 @@ public class CpsOrderSyncJob implements JobHandler {
             saveCheckpoint(checkpoint, "initialize fixed query window");
         }
 
-        // A completed window starts from the planner's fixed boundary (including
-        // any configured overlap). Only an in-flight window resumes from its
-        // checkpoint watermark to avoid replaying already persisted pages.
+        // A completed window starts from the planner's requested boundary
+        // (including any configured overlap). Only an in-flight window resumes
+        // from its checkpoint watermark. Reusing the completed watermark here
+        // can collapse the next request into a zero-width time range.
         String queryStartTime;
-        if (checkpoint.getWatermarkTime() != null) {
+        if (inFlightWindow && checkpoint.getWatermarkTime() != null) {
             LocalDateTime requestedStart = LocalDateTime.parse(defaultStartTime, DTF);
             LocalDateTime watermark = checkpoint.getWatermarkTime();
             // For an in-flight window, the watermark is the exact resume point;

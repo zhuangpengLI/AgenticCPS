@@ -208,6 +208,8 @@ public class CpsPlatformOnboardingServiceImpl implements CpsPlatformOnboardingSe
             request.setRebateRate(source.getRebateRate());
             request.setMinRebateAmount(source.getMinRebateAmount());
             request.setMaxRebateAmount(source.getMaxRebateAmount());
+            request.setFreezeThresholdAmount(source.getFreezeThresholdAmount());
+            request.setFreezeDays(source.getFreezeDays());
             request.setStatus(source.getStatus());
             request.setPriority(source.getPriority());
             rebateService.upsertManagedRebateRuleForOnboarding(request);
