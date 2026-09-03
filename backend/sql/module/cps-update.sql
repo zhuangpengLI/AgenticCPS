@@ -1854,3 +1854,11 @@ WHERE `deleted` = b'0'
   AND `max_amount_cent` IS NULL
   AND `unfreeze_days` = 15
   AND `remark` LIKE '%默认配置%';
+
+-- ============================================================
+-- 修改时间：2026-09-03 15:00:00
+-- 目的：移除独立 CPS 数据统计菜单，统计内容统一展示在首页。
+-- ============================================================
+UPDATE `system_menu`
+SET `visible` = b'0', `updater` = '1', `update_time` = NOW()
+WHERE `id` IN (6249, 6250) AND `deleted` = b'0';

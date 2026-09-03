@@ -37,4 +37,38 @@
           AND tenant_id = #{tenantId}
     </select>
 
+    <!-- 趋势统计直接读取订单表，确保历史订单未生成日汇总时仍可展示 -->
+    <select id="selectTrendStatsByDateRange" resultType="map">
+        SELECT
+            DATE(create_time) AS stat_date,
+            COUNT(*) AS order_count,
+            COALESCE(SUM(commission_amount), 0) AS commission_amount,
+            COALESCE(SUM(real_rebate), 0) AS rebate_amount,
+            COALESCE(SUM(commission_amount), 0) - COALESCE(SUM(real_rebate), 0) AS profit_amount,
+            COUNT(DISTINCT member_id) AS active_member_count
+        FROM cps_order
+        WHERE DATE(create_time) BETWEEN #{startDate} AND #{endDate}
+          AND deleted = 0
+          AND tenant_id = #{tenantId}
+          AND (#{platformCode} = 'total' OR platform_code = #{platformCode})
+        GROUP BY DATE(create_time)
+        ORDER BY DATE(create_time)
+    </select>
+
+    <!-- 平台分布直接读取订单表，确保区间内实际订单可见 -->
+    <select id="selectPlatformStatsByDateRange" resultType="map">
+        SELECT
+            platform_code,
+            COUNT(*) AS order_count,
+            COALESCE(SUM(commission_amount), 0) AS commission_amount,
+            COALESCE(SUM(real_rebate), 0) AS rebate_amount,
+            COALESCE(SUM(commission_amount), 0) - COALESCE(SUM(real_rebate), 0) AS profit_amount
+        FROM cps_order
+        WHERE DATE(create_time) BETWEEN #{startDate} AND #{endDate}
+          AND deleted = 0
+          AND tenant_id = #{tenantId}
+        GROUP BY platform_code
+        ORDER BY commission_amount DESC
+    </select>
+
 </mapper>

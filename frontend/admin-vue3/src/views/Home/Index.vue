@@ -12,20 +12,31 @@
     <el-row :gutter="12" class="metric-row">
       <el-col v-for="item in metrics" :key="item.key" :xl="5" :lg="8" :md="12" :sm="12" :xs="24">
         <el-card shadow="never" class="metric-card" :class="`metric-${item.tone}`">
-          <div class="metric-icon"><Icon :icon="item.icon" :size="21" /></div><div><div class="metric-label">{{ item.label }}</div><CountTo class="metric-value" :start-val="0" :end-val="item.value" :duration="900" :decimals="item.decimals" /><div class="metric-foot">较昨日 <span :class="item.change >= 0 ? 'up' : 'down'">{{ item.changeText }}</span></div></div>
+          <div class="metric-icon"><Icon :icon="item.icon" :size="21" /></div><div><div class="metric-label">{{ displayMetricLabel(item.label) }}</div><CountTo class="metric-value" :start-val="0" :end-val="item.value" :duration="900" :decimals="item.decimals" /><div class="metric-foot">{{ selectedRange === 'day' ? '较昨日' : '区间累计' }} <span :class="item.change >= 0 ? 'up' : 'down'">{{ item.changeText }}</span></div></div>
         </el-card>
       </el-col>
     </el-row>
 
+    <el-card shadow="never" class="range-card">
+      <div class="range-toolbar">
+        <span class="range-title">数据统计</span>
+        <el-button-group>
+          <el-button v-for="item in rangeOptions" :key="item.key" :type="selectedRange === item.key ? 'primary' : ''" @click="selectRange(item.key)">
+            {{ item.label }}
+          </el-button>
+        </el-button-group>
+      </div>
+    </el-card>
+
     <el-row :gutter="12" class="main-row">
       <el-col :xl="16" :lg="16" :md="24" :sm="24" :xs="24">
         <el-card shadow="never" class="panel-card trend-card">
-          <template #header><div class="panel-header"><div><div class="panel-title">经营趋势</div><div class="panel-caption">近 7 天 CPS 订单与佣金变化</div></div><el-button link type="primary" @click="router.push('/cps/statistics')">查看完整报表 <Icon icon="ep:arrow-right" /></el-button></div></template>
-          <Echart :options="trendOptions" height="300px" />
+          <template #header><div class="panel-header"><div><div class="panel-title">经营趋势</div><div class="panel-caption">{{ selectedRangeLabel }} CPS 订单与佣金变化</div></div></div></template>
+          <Echart :options="trendChartOptions" height="300px" />
         </el-card>
         <el-row :gutter="12">
           <el-col :span="12" :xs="24"><el-card shadow="never" class="panel-card">
-            <template #header><div class="panel-header"><span class="panel-title">平台佣金分布</span><span class="panel-caption">近 7 天</span></div></template>
+            <template #header><div class="panel-header"><span class="panel-title">平台佣金分布</span><span class="panel-caption">{{ selectedRangeLabel }}</span></div></template>
             <div v-if="platforms.length" class="platform-list"><div v-for="platform in platforms" :key="platform.name" class="platform-item"><div class="platform-name"><span class="platform-dot" :style="{ background: platform.color }"></span>{{ platform.name }} <span class="platform-value">¥ {{ platform.value.toFixed(2) }}</span></div><el-progress :percentage="platform.percent" :show-text="false" :stroke-width="6" :color="platform.color" /></div></div><el-empty v-else description="暂无平台数据" :image-size="60" />
           </el-card></el-col>
           <el-col :span="12" :xs="24"><el-card shadow="never" class="panel-card">
@@ -79,12 +90,17 @@ import { useRouter } from 'vue-router'
 defineOptions({ name: 'Index' })
 const { t } = useI18n(); const router = useRouter(); const userStore = useUserStore(); const avatar = userStore.getUser.avatar; const username = userStore.getUser.nickname
 const updateTime = ref(dayjs().format('MM月DD日 HH:mm')); const pendingCount = ref(3)
+const rangeOptions = [{ key: 'day', label: '当天' }, { key: 'week', label: '本周' }, { key: '30d', label: '近30天' }] as const
+const selectedRange = ref<'day' | 'week' | '30d'>('day')
+const selectedRangeLabel = computed(() => rangeOptions.find((item) => item.key === selectedRange.value)?.label || '当天')
+const displayMetricLabel = (label: string) => selectedRange.value === 'day' ? label : label.replace('今日', selectedRangeLabel.value)
 const mobilePreviewReady = ref(false); const mobilePreviewError = ref(false)
 type Metric = { key: string; label: string; value: number; decimals: number; change: number; changeText: string; icon: string; tone: string }
 const metrics = ref<Metric[]>([
   { key: 'orders', label: '今日订单数', value: 0, decimals: 0, change: 0, changeText: '—', icon: 'ep:shopping-cart', tone: 'blue' }, { key: 'commission', label: '今日佣金（元）', value: 0, decimals: 2, change: 0, changeText: '—', icon: 'ep:money', tone: 'orange' }, { key: 'rebate', label: '今日返利（元）', value: 0, decimals: 2, change: 0, changeText: '—', icon: 'ep:wallet', tone: 'green' }, { key: 'profit', label: '今日利润（元）', value: 0, decimals: 2, change: 0, changeText: '—', icon: 'ep:trend-charts', tone: 'purple' }, { key: 'members', label: '活跃会员数', value: 0, decimals: 0, change: 0, changeText: '实时', icon: 'ep:user', tone: 'cyan' }
 ])
 const trendOptions = ref<EChartsOption>({ tooltip: { trigger: 'axis' }, legend: { data: ['订单数', '佣金（元）'], right: 0 }, grid: { left: 8, right: 12, top: 35, bottom: 8, containLabel: true }, xAxis: { type: 'category', boundaryGap: false, data: [] }, yAxis: [{ type: 'value', name: '金额（元）' }, { type: 'value', name: '订单', splitLine: { show: false } }], series: [] })
+const trendChartOptions = computed(() => trendOptions.value as EChartsOption)
 const platforms = ref<{ name: string; value: number; percent: number; color: string }[]>([]); const colors = ['#2563eb', '#f97316', '#22c55e', '#8b5cf6', '#06b6d4']
 const activities = [{ title: '有 3 笔订单待确认收货', time: '建议及时跟进订单状态', type: 'warning', icon: 'ep:bell' }, { title: '本月返利结算进度 86%', time: '最后同步：刚刚', type: 'success', icon: 'ep:circle-check' }, { title: '平台连接状态正常', time: '淘宝联盟 · 京东 · 多多', type: 'info', icon: 'ep:connection' }]
 const shortcuts = [{ name: '订单管理', icon: 'ep:list', url: '/cps/order', color: '#2563eb' }, { name: '商品选品', icon: 'ep:goods', url: '/cps/goods-square', color: '#f97316' }, { name: '推广链接', icon: 'ep:link', url: '/cps/toolbox', color: '#22c55e' }, { name: '返利结算', icon: 'ep:wallet', url: '/cps/settlement', color: '#8b5cf6' }]
@@ -97,15 +113,50 @@ const mobilePreviewUrl = computed(() => {
   return new URL('pages/cps/index', normalizedBase).toString()
 })
 const money = (value: unknown) => Number(value || 0); const changeText = (today: number, yesterday: number) => !yesterday ? (today ? '新增' : '—') : `${today >= yesterday ? '+' : ''}${(((today - yesterday) / yesterday) * 100).toFixed(1)}%`
-async function loadDashboard() { try { const data = (await CpsStatisticsApi.getDashboard()) as unknown as CpsDashboardVO; const values = [data.todayOrderCount, money(data.todayCommission), money(data.todayRebate), money(data.todayProfit), data.todayActiveMembers]; const previous = [data.yesterdayOrderCount, money(data.yesterdayCommission), money(data.yesterdayRebate), money(data.yesterdayProfit), 0]; const changes = [changeText(values[0], previous[0]), changeText(values[1], previous[1]), changeText(values[2], previous[2]), changeText(values[3], previous[3]), '实时']; metrics.value = metrics.value.map((item, index) => ({ ...item, value: values[index] || 0, change: (values[index] || 0) - previous[index], changeText: changes[index] })) } catch { /* 空态 */ } }
-async function loadTrend() { try { const end = dayjs().format('YYYY-MM-DD'); const start = dayjs().subtract(6, 'day').format('YYYY-MM-DD'); const data = (await CpsStatisticsApi.getTrend({ startDate: start, endDate: end, platformCode: 'total' })) as unknown as CpsTrendVO; trendOptions.value = { ...trendOptions.value, xAxis: { ...(trendOptions.value.xAxis as object), data: data.dates || [] }, series: [{ name: '订单数', type: 'line', smooth: true, yAxisIndex: 1, data: data.orderCounts || [], areaStyle: { opacity: 0.08 }, itemStyle: { color: '#2563eb' } }, { name: '佣金（元）', type: 'line', smooth: true, data: data.commissions || [], itemStyle: { color: '#f97316' } }] } } catch { /* 空图表 */ } }
-async function loadPlatforms() { try { const end = dayjs().format('YYYY-MM-DD'); const start = dayjs().subtract(6, 'day').format('YYYY-MM-DD'); const data = (await CpsStatisticsApi.getPlatformSummary({ startDate: start, endDate: end })) as unknown as CpsPlatformSummaryVO[]; const total = data.reduce((sum, item) => sum + money(item.commissionAmount), 0); platforms.value = data.slice(0, 5).map((item, index) => ({ name: item.platformName || item.platformCode, value: money(item.commissionAmount), percent: total ? Math.round((money(item.commissionAmount) / total) * 100) : 0, color: colors[index] })) } catch { platforms.value = [] } }
+function getRangeDates(): [string, string] {
+  const end = dayjs().format('YYYY-MM-DD')
+  if (selectedRange.value === 'day') return [end, end]
+  if (selectedRange.value === '30d') return [dayjs().subtract(29, 'day').format('YYYY-MM-DD'), end]
+  const day = dayjs().day()
+  const monday = dayjs().subtract(day === 0 ? 6 : day - 1, 'day')
+  return [monday.format('YYYY-MM-DD'), end]
+}
+function applyMetrics(values: number[], previous: number[], memberRealtime = false) {
+  metrics.value = metrics.value.map((item, index) => ({ ...item, value: values[index] || 0, change: (values[index] || 0) - (previous[index] || 0), changeText: memberRealtime && index === 4 ? '实时' : changeText(values[index] || 0, previous[index] || 0) }))
+}
+async function loadDashboard() {
+  try {
+    const data = (await CpsStatisticsApi.getDashboard()) as unknown as CpsDashboardVO
+    if (selectedRange.value === 'day') {
+      const values = [data.todayOrderCount, money(data.todayCommission), money(data.todayRebate), money(data.todayProfit), data.todayActiveMembers]
+      const previous = [data.yesterdayOrderCount, money(data.yesterdayCommission), money(data.yesterdayRebate), money(data.yesterdayProfit), 0]
+      applyMetrics(values, previous, true)
+      return
+    }
+    const [startDate, endDate] = getRangeDates()
+    const trend = (await CpsStatisticsApi.getTrend({ startDate, endDate, platformCode: 'total' })) as unknown as CpsTrendVO
+    const hasToday = (trend.dates || []).includes(endDate)
+    const todayValues = hasToday ? [0, 0, 0, 0] : [data.todayOrderCount, money(data.todayCommission), money(data.todayRebate), money(data.todayProfit)]
+    const values = [
+      (trend.orderCounts || []).reduce((sum, value) => sum + money(value), todayValues[0]),
+      (trend.commissions || []).reduce((sum, value) => sum + money(value), todayValues[1]),
+      (trend.rebates || []).reduce((sum, value) => sum + money(value), todayValues[2]),
+      (trend.profits || []).reduce((sum, value) => sum + money(value), todayValues[3]),
+      data.todayActiveMembers || 0
+    ]
+    applyMetrics(values, [0, 0, 0, 0, 0], true)
+  } catch { /* 空态 */ }
+}
+async function loadTrend() { try { const [startDate, endDate] = getRangeDates(); let data: CpsTrendVO; if (selectedRange.value === 'day') { const dashboard = (await CpsStatisticsApi.getDashboard()) as unknown as CpsDashboardVO; data = { dates: [endDate], orderCounts: [dashboard.todayOrderCount], commissions: [money(dashboard.todayCommission)], rebates: [money(dashboard.todayRebate)], profits: [money(dashboard.todayProfit)] } } else { data = (await CpsStatisticsApi.getTrend({ startDate, endDate, platformCode: 'total' })) as unknown as CpsTrendVO } trendOptions.value = { ...trendOptions.value, xAxis: { type: 'category', boundaryGap: false, data: data.dates || [] }, series: [{ name: '订单数', type: 'line', smooth: true, yAxisIndex: 1, data: data.orderCounts || [], areaStyle: { opacity: 0.08 }, itemStyle: { color: '#2563eb' } }, { name: '佣金（元）', type: 'line', smooth: true, data: data.commissions || [], itemStyle: { color: '#f97316' } }] } as EChartsOption } catch { /* 空图表 */ } }
+async function loadPlatforms() { try { const [startDate, endDate] = getRangeDates(); const data = (await CpsStatisticsApi.getPlatformSummary({ startDate, endDate })) as unknown as CpsPlatformSummaryVO[]; const total = data.reduce((sum, item) => sum + money(item.commissionAmount), 0); platforms.value = data.slice(0, 5).map((item, index) => ({ name: item.platformName || item.platformCode, value: money(item.commissionAmount), percent: total ? Math.round((money(item.commissionAmount) / total) * 100) : 0, color: colors[index] })) } catch { platforms.value = [] } }
+async function selectRange(range: 'day' | 'week' | '30d') { if (selectedRange.value === range) return; selectedRange.value = range; await Promise.all([loadDashboard(), loadTrend(), loadPlatforms()]); updateTime.value = dayjs().format('MM月DD日 HH:mm') }
 function openMobile() { window.open(mobilePreviewUrl.value, '_blank', 'noopener,noreferrer') }
 onMounted(async () => { await Promise.all([loadDashboard(), loadTrend(), loadPlatforms()]); updateTime.value = dayjs().format('MM月DD日 HH:mm') })
 </script>
 
 <style scoped>
 .cps-home { min-height: 100%; padding-bottom: 16px; }.welcome-card, .panel-card, .metric-card { border: 1px solid var(--el-border-color-light); border-radius: 10px; }.welcome-card { background: linear-gradient(115deg, #eff6ff, #fff 62%); }.welcome-content, .welcome-copy, .panel-header { display: flex; align-items: center; justify-content: space-between; }.welcome-copy { justify-content: flex-start; gap: 14px; }.welcome-title { color: #172554; font-size: 19px; font-weight: 600; }.welcome-subtitle, .welcome-date, .panel-caption { color: #64748b; font-size: 12px; }.welcome-subtitle { margin-top: 7px; }.welcome-date { align-self: flex-start; margin-top: 4px; }.metric-row, .main-row { margin-top: 12px; }.metric-card { display: flex; align-items: center; min-height: 105px; padding: 18px; }.metric-icon { display: grid; place-items: center; width: 42px; height: 42px; margin-right: 12px; border-radius: 12px; }.metric-blue .metric-icon { color: #2563eb; background: #dbeafe; }.metric-orange .metric-icon { color: #f97316; background: #ffedd5; }.metric-green .metric-icon { color: #16a34a; background: #dcfce7; }.metric-purple .metric-icon { color: #7c3aed; background: #ede9fe; }.metric-cyan .metric-icon { color: #0891b2; background: #cffafe; }.metric-label { color: #64748b; font-size: 13px; }.metric-value { display: block; margin-top: 4px; color: #0f172a; font-size: 24px; font-weight: 650; }.metric-foot { margin-top: 3px; color: #94a3b8; font-size: 11px; }.up { color: #16a34a; }.down { color: #ef4444; }.panel-card { margin-bottom: 12px; }.panel-card :deep(.el-card__header) { padding: 15px 18px; }.panel-card :deep(.el-card__body) { padding: 16px 18px; }.panel-title { color: #1e293b; font-size: 15px; font-weight: 600; }.trend-card :deep(.el-card__body) { padding-top: 4px; }.platform-item + .platform-item { margin-top: 13px; }.platform-name { color: #475569; font-size: 13px; }.platform-dot { display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; }.platform-value { float: right; color: #334155; font-size: 12px; }.platform-item :deep(.el-progress) { clear: both; padding-top: 5px; }.activity-item { display: flex; gap: 10px; padding: 4px 0 14px; }.activity-item + .activity-item { padding-top: 14px; border-top: 1px solid #f1f5f9; }.activity-mark { display: grid; flex: 0 0 28px; place-items: center; height: 28px; border-radius: 8px; }.mark-warning { color: #d97706; background: #fef3c7; }.mark-success { color: #16a34a; background: #dcfce7; }.mark-info { color: #2563eb; background: #dbeafe; }.activity-title { color: #334155; font-size: 13px; }.activity-time { margin-top: 4px; color: #94a3b8; font-size: 11px; }.mobile-panel :deep(.el-card__body) { padding: 12px; }.phone-stage { display: flex; flex-direction: column; align-items: center; }.phone-shell { width: 238px; padding: 7px; border: 3px solid #1e293b; border-radius: 30px; background: #1e293b; box-shadow: 0 10px 24px rgb(15 23 42 / 16%); }.phone-notch { width: 74px; height: 14px; margin: -1px auto 2px; border-radius: 0 0 10px 10px; background: #1e293b; }.phone-screen { position: relative; overflow: hidden; min-height: 405px; border-radius: 21px; background: #f8fafc; }.phone-topbar { display: flex; justify-content: space-between; padding: 15px 13px 10px; color: #fff; font-size: 12px; background: linear-gradient(135deg, #2563eb, #60a5fa); }.phone-banner { margin: 9px; padding: 14px; border-radius: 12px; color: #fff; background: linear-gradient(135deg, #2563eb, #38bdf8); }.banner-title { font-size: 11px; opacity: .9; }.banner-amount { margin-top: 5px; font-size: 25px; font-weight: 700; }.banner-tip { margin-top: 3px; font-size: 10px; opacity: .8; }.phone-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 3px 9px 8px; }.phone-action { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #475569; font-size: 10px; }.phone-section-title { display: flex; justify-content: space-between; padding: 8px 11px 5px; color: #334155; font-size: 12px; font-weight: 600; }.phone-section-title span { color: #94a3b8; font-size: 10px; font-weight: 400; }.phone-goods { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; padding: 0 9px; }.phone-good { overflow: hidden; border-radius: 8px; background: #fff; }.good-image { display: grid; height: 66px; place-items: center; color: #1e3a8a; font-size: 12px; font-weight: 600; }.good-title { overflow: hidden; padding: 5px 6px 1px; color: #475569; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }.good-price { padding: 1px 6px 7px; color: #ef4444; font-size: 10px; }.phone-tabs { position: absolute; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px 5px 6px; background: rgb(255 255 255 / 95%); border-top: 1px solid #e2e8f0; }.phone-tab { display: flex; flex-direction: column; align-items: center; gap: 2px; color: #94a3b8; font-size: 9px; cursor: pointer; }.phone-tab.active { color: #2563eb; }.phone-tip { margin-top: 9px; color: #94a3b8; font-size: 11px; }.shortcut-card { margin-top: 12px; }.shortcut-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 6px; }.shortcut-item { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #475569; font-size: 12px; cursor: pointer; }.shortcut-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; font-size: 17px; }
+.range-card { margin-top: 12px; border: 1px solid var(--el-border-color-light); border-radius: 10px; }.range-card :deep(.el-card__body) { padding: 12px 16px; }.range-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }.range-title { color: #1e293b; font-size: 15px; font-weight: 600; }
 @media (max-width: 768px) { .welcome-content { display: block; }.welcome-date { margin-top: 12px; }.welcome-title { font-size: 16px; }.metric-card { margin-bottom: 12px; }.phone-shell { width: 260px; } }
 
 /* 首页采用紧凑栅格，避免指标卡片在宽屏下意外换行并产生大片空白 */

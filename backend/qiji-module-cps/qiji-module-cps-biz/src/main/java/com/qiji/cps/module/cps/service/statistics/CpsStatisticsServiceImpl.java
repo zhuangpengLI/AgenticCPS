@@ -18,7 +18,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * CPS 统计数据 Service 实现
@@ -107,27 +106,36 @@ public class CpsStatisticsServiceImpl implements CpsStatisticsService {
 
     @Override
     public List<CpsStatisticsDO> getTrend(LocalDate startDate, LocalDate endDate, String platformCode) {
-        return statisticsMapper.selectTrendList(startDate, endDate, platformCode);
+        Long tenantId = TenantContextHolder.getTenantId();
+        List<Map<String, Object>> rows = orderMapper.selectTrendStatsByDateRange(
+                startDate, endDate, platformCode, tenantId);
+        return rows.stream().map(row -> CpsStatisticsDO.builder()
+                .statDate(toLocalDate(row.get("stat_date")))
+                .platformCode(platformCode)
+                .orderCount(toInt(row.get("order_count")))
+                .commissionAmount(toBigDecimal(row.get("commission_amount")))
+                .rebateAmount(toBigDecimal(row.get("rebate_amount")))
+                .profitAmount(toBigDecimal(row.get("profit_amount")))
+                .activeMemberCount(toInt(row.get("active_member_count")))
+                .build()).toList();
     }
 
     @Override
     public List<CpsPlatformSummaryVO> getPlatformSummary(LocalDate startDate, LocalDate endDate) {
-        List<CpsStatisticsDO> list = statisticsMapper.selectPlatformSummary(startDate, endDate);
-
-        // 按平台聚合（同一平台可能有多天数据，需汇总）
-        Map<String, List<CpsStatisticsDO>> grouped = list.stream()
-                .collect(Collectors.groupingBy(CpsStatisticsDO::getPlatformCode));
-
-        List<CpsPlatformSummaryVO> result = new ArrayList<>();
-        grouped.forEach((code, rows) -> {
+        Long tenantId = TenantContextHolder.getTenantId();
+        List<Map<String, Object>> rows = orderMapper.selectPlatformStatsByDateRange(
+                startDate, endDate, tenantId);
+        List<CpsPlatformSummaryVO> result = new ArrayList<>(rows.size());
+        rows.forEach(row -> {
+            String code = String.valueOf(row.get("platform_code"));
             CpsPlatformSummaryVO vo = new CpsPlatformSummaryVO();
             vo.setPlatformCode(code);
             CpsPlatformCodeEnum enumVal = CpsPlatformCodeEnum.getByCode(code);
             vo.setPlatformName(enumVal != null ? enumVal.getName() : code);
-            vo.setOrderCount(rows.stream().mapToInt(r -> safe(r.getOrderCount())).sum());
-            vo.setCommissionAmount(rows.stream().map(r -> nvl(r.getCommissionAmount())).reduce(BigDecimal.ZERO, BigDecimal::add));
-            vo.setRebateAmount(rows.stream().map(r -> nvl(r.getRebateAmount())).reduce(BigDecimal.ZERO, BigDecimal::add));
-            vo.setProfitAmount(rows.stream().map(r -> nvl(r.getProfitAmount())).reduce(BigDecimal.ZERO, BigDecimal::add));
+            vo.setOrderCount(toInt(row.get("order_count")));
+            vo.setCommissionAmount(toBigDecimal(row.get("commission_amount")));
+            vo.setRebateAmount(toBigDecimal(row.get("rebate_amount")));
+            vo.setProfitAmount(toBigDecimal(row.get("profit_amount")));
             result.add(vo);
         });
         return result;
@@ -206,6 +214,12 @@ public class CpsStatisticsServiceImpl implements CpsStatisticsService {
         if (val == null) return 0;
         if (val instanceof Number) return ((Number) val).intValue();
         try { return Integer.parseInt(val.toString()); } catch (Exception e) { return 0; }
+    }
+
+    private static LocalDate toLocalDate(Object val) {
+        if (val instanceof LocalDate date) return date;
+        if (val instanceof java.sql.Date date) return date.toLocalDate();
+        try { return LocalDate.parse(String.valueOf(val)); } catch (Exception e) { return null; }
     }
 
     private static BigDecimal toBigDecimal(Object val) {

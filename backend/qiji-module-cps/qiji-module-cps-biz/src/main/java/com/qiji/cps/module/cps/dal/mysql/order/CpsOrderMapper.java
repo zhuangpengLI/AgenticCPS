@@ -264,6 +264,21 @@ public interface CpsOrderMapper extends BaseMapperX<CpsOrderDO> {
     Map<String, Object> selectRealtimeDashboard(@Param("statDate") LocalDate statDate,
                                                 @Param("tenantId") Long tenantId);
 
+    /**
+     * 按创建日期聚合订单趋势，直接读取订单表，避免统计汇总任务尚未覆盖历史订单时返回空数据。
+     */
+    List<Map<String, Object>> selectTrendStatsByDateRange(@Param("startDate") LocalDate startDate,
+                                                           @Param("endDate") LocalDate endDate,
+                                                           @Param("platformCode") String platformCode,
+                                                           @Param("tenantId") Long tenantId);
+
+    /**
+     * 按平台聚合指定日期范围内的订单数据。
+     */
+    List<Map<String, Object>> selectPlatformStatsByDateRange(@Param("startDate") LocalDate startDate,
+                                                              @Param("endDate") LocalDate endDate,
+                                                              @Param("tenantId") Long tenantId);
+
     default List<CpsOrderDO> selectListForMarketingFunnel(CpsMarketingFunnelReqVO reqVO) {
         return selectList(new LambdaQueryWrapperX<CpsOrderDO>()
                 .eqIfPresent(CpsOrderDO::getPlatformCode, reqVO.getPlatformCode())
