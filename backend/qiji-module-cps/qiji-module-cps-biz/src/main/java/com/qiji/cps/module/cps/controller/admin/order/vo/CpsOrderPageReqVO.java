@@ -33,6 +33,10 @@ public class CpsOrderPageReqVO extends PageParam {
     @Schema(description = "订单状态", example = "paid")
     private String orderStatus;
 
+    @Schema(description = "归因状态：ATTRIBUTED 已归因，UNATTRIBUTED 未归因；为空时查询全部",
+            example = "UNATTRIBUTED")
+    private String attributionStatus;
+
     @Schema(description = "商品标题", example = "手机")
     private String itemTitle;
 

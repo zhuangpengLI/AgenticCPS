@@ -28,10 +28,6 @@ public class CpsOnboardingRebateRule {
 
     private BigDecimal maxRebateAmount;
 
-    private BigDecimal freezeThresholdAmount;
-
-    private Integer freezeDays;
-
     private Integer status;
 
     private Integer priority;

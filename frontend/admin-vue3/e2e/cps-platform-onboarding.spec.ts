@@ -341,14 +341,10 @@ test.describe('CPS platform onboarding', () => {
 
   test('changes runtime default adzone and validates rebate rules', async ({ page }) => {
     await mockAdminBootstrapAndMenu(page); await mockOnboardingApi(page); await openReconfigureWorkspace(page); await page.getByText('推广位', { exact: true }).click(); await expect(page.getByText('运行时默认推广位只能有一个')).toBeVisible(); await page.getByRole('button', { name: '添加推广位' }).click(); await expect(page.getByRole('dialog', { name: '推广位' })).toBeVisible(); await page.getByRole('button', { name: '取消' }).click(); await page.getByText('返利配置', { exact: true }).click(); await page.getByRole('button', { name: '添加返利规则' }).click(); await expect(page.getByRole('dialog', { name: '返利规则' })).toBeVisible(); await expect(page.getByText('平台工作台仅支持平台默认和会员等级规则')).toBeVisible()
-    await expect(page.getByLabel('冻结门槛金额')).toBeVisible()
-    await expect(page.getByLabel('冻结天数')).toBeVisible()
-    await page.getByLabel('冻结门槛金额').fill('5')
-    await page.getByRole('button', { name: '确定' }).click()
-    await expect(page.getByText('设置冻结门槛后请输入冻结天数')).toBeVisible()
-    await page.getByLabel('冻结天数').fill('15')
-    await page.getByRole('button', { name: '确定' }).click()
-    await expect(page.getByText('> ¥5.00，15 天')).toBeVisible()
+    await expect(page.getByLabel('冻结门槛金额')).toHaveCount(0)
+    await expect(page.getByLabel('冻结天数')).toHaveCount(0)
+    await page.getByRole('button', { name: '取消' }).click()
+    await expect(page.getByText('冻结条件')).toHaveCount(0)
   })
 
   test('surfaces stale draft version conflict without publishing', async ({ page }) => {

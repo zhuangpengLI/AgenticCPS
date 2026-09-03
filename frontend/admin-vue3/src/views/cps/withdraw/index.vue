@@ -8,14 +8,8 @@
       :inline="true"
       label-width="90px"
     >
-      <el-form-item label="会员ID" prop="memberId">
-        <el-input
-          v-model.number="queryParams.memberId"
-          placeholder="请输入会员ID"
-          clearable
-          class="!w-140px"
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="会员名" prop="memberId">
+        <CpsMemberSelect v-model="queryParams.memberId" class-name="!w-180px" />
       </el-form-item>
       <el-form-item label="提现类型" prop="withdrawType">
         <el-select

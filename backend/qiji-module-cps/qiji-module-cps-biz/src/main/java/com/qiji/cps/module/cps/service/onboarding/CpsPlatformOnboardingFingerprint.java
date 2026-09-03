@@ -214,7 +214,7 @@ public class CpsPlatformOnboardingFingerprint {
     private CanonicalRebateRule canonicalRebateRule(CpsOnboardingRebateRule rebateRule,
                                                     String platformCode) {
         if (rebateRule == null) {
-            return new CanonicalRebateRule(null, null, null, null, null, null, null, null, null, null);
+            return new CanonicalRebateRule(null, null, null, null, null, null, null, null);
         }
         return new CanonicalRebateRule(
                 rebateRule.getMemberId(),
@@ -223,8 +223,6 @@ public class CpsPlatformOnboardingFingerprint {
                 normalize(rebateRule.getRebateRate()),
                 normalize(rebateRule.getMinRebateAmount()),
                 normalize(rebateRule.getMaxRebateAmount()),
-                normalize(rebateRule.getFreezeThresholdAmount()),
-                rebateRule.getFreezeDays(),
                 rebateRule.getStatus(),
                 normalizePriority(rebateRule.getPriority()));
     }
@@ -318,8 +316,6 @@ public class CpsPlatformOnboardingFingerprint {
             BigDecimal rebateRate,
             BigDecimal minRebateAmount,
             BigDecimal maxRebateAmount,
-            BigDecimal freezeThresholdAmount,
-            Integer freezeDays,
             Integer status,
             Integer priority) {
     }

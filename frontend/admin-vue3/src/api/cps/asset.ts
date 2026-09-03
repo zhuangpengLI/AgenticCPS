@@ -40,12 +40,39 @@ export interface CpsRebateAssetLedgerVO {
 export interface CpsRebateAssetPolicyVO {
   v2Enabled: boolean
   migrationReady?: boolean
+  migrationApprovalRef?: string
   readOnly: boolean
   largeDebtThresholdCent: number
   reminderIntervalDays: number
   normalReminderDays: number
   largeReminderDays: number
   smsIntervalDays: number
+}
+
+export interface CpsRebateAssetMigrationCheckReportVO {
+  batchNo: string
+  tenantId: number
+  ready: boolean
+  summary: string
+  executedAt: Date | string
+  duplicateAccountCount: number
+  duplicateOrderCount: number
+  duplicateRebateRecordCount: number
+  duplicateLedgerIdempotencyCount: number
+  duplicateFreezeIdempotencyCount: number
+  accountLedgerMismatchCount: number
+  freezeAccountMismatchCount: number
+  missingOpeningBalanceCount: number
+  orphanLedgerCount: number
+  orphanActiveFreezeCount: number
+}
+
+export interface CpsRebateAssetBootstrapRespVO {
+  policy: CpsRebateAssetPolicyVO
+  openingBalanceCount: number
+  migrationReport: CpsRebateAssetMigrationCheckReportVO
+  enabled: boolean
+  nextStep: string
 }
 
 export interface CpsOrderAttributionLogVO {
@@ -104,11 +131,23 @@ export const getAssetLedgerPage = (params: Record<string, any>) =>
 
 export const getAssetPolicy = () => request.get({ url: '/cps/rebate-asset/policy' })
 
+export const initializeAssetPolicy = () =>
+  request.post({ url: '/cps/rebate-asset/policy/initialize' })
+
+export const bootstrapAssetPolicy = () =>
+  request.post({ url: '/cps/rebate-asset/policy/bootstrap' })
+
+export const confirmAssetMigration = (approvalRef: string) =>
+  request.post({ url: '/cps/rebate-asset/policy/confirm-migration', data: { approvalRef } })
+
 export const saveAssetPolicy = (data: CpsRebateAssetPolicyVO) =>
   request.put({ url: '/cps/rebate-asset/policy', data })
 
 export const backfillOpeningBalances = () =>
   request.post({ url: '/cps/rebate-asset/migration/opening-balances' })
+
+export const runMigrationCheck = () =>
+  request.post({ url: '/cps/rebate-asset/migration/check' })
 
 export const getAttributionLogPage = (params: Record<string, any>) =>
   request.get({ url: '/cps/order/attribution-log/page', params })

@@ -5,7 +5,7 @@ import lombok.Value;
 
 import java.time.LocalDateTime;
 
-/** 当前租户资产 V2 迁移预检的结构化结果。 */
+/** 当前租户返利资产迁移预检的结构化结果。 */
 @Value
 @Builder
 public class CpsRebateAssetMigrationCheckReport {

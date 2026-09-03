@@ -4,6 +4,7 @@ import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.framework.common.util.object.BeanUtils;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderBindSpecialIdReqVO;
+import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderManualAttributionReqVO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderClaimReviewReqVO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderAttributionLogPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.order.vo.CpsOrderAttributionLogRespVO;
@@ -288,6 +289,17 @@ public class CpsOrderController {
     @PreAuthorize("@ss.hasPermission('cps:order:attribution-bind')")
     public CommonResult<Boolean> bindSpecialIdToMember(@Valid @RequestBody CpsOrderBindSpecialIdReqVO reqVO) {
         orderService.bindSpecialIdToMember(new CpsOrderManualBindCommand(
+                reqVO.getOrderId(), reqVO.getMemberId(), getLoginUserId(),
+                reqVO.getIdempotencyKey(), reqVO.getAuditNote()));
+        return success(true);
+    }
+
+    @PostMapping("/manual-attribution")
+    @Operation(summary = "手动归属订单会员")
+    @PreAuthorize("@ss.hasPermission('cps:order:attribution-bind')")
+    public CommonResult<Boolean> manuallyAttributeOrder(
+            @Valid @RequestBody CpsOrderManualAttributionReqVO reqVO) {
+        orderService.manuallyAttributeOrder(new CpsOrderManualBindCommand(
                 reqVO.getOrderId(), reqVO.getMemberId(), getLoginUserId(),
                 reqVO.getIdempotencyKey(), reqVO.getAuditNote()));
         return success(true);

@@ -210,8 +210,9 @@ def test_rebate_priority_is_visible_required_and_defaulted():
     assert dialog.index(priority_field) < dialog.index("<el-collapse")
     assert "priority: 0" in dialog
     assert "请输入非负整数优先级" in dialog
-    assert dialog.index('<el-form-item label="冻结门槛金额">') < dialog.index("<el-collapse")
-    assert dialog.index('<el-form-item label="冻结天数">') < dialog.index("<el-collapse")
+    assert '<el-form-item label="冻结门槛金额">' not in dialog
+    assert '<el-form-item label="冻结天数">' not in dialog
+    assert '冻结条件' not in step
     assert "row.priority == null" in step
     assert "row.priority < 0" in step
 

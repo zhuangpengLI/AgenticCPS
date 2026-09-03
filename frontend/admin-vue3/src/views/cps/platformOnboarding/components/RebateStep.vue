@@ -1,19 +1,11 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
   <div>
-    <el-alert title="默认平台返利优先展示；基本配置可设置冻结条件，高级设置可配置会员等级规则。金额输入单位为元。" type="info" show-icon class="mb-12px" />
+    <el-alert title="默认平台返利优先展示；高级设置可配置会员等级规则。金额输入单位为元。" type="info" show-icon class="mb-12px" />
     <el-button type="primary" @click="openEditor()">添加返利规则</el-button>
     <el-table :data="sortedRules" border class="mt-12px">
       <el-table-column label="范围"><template #default="{ row }">{{ row.memberLevelId ? `会员等级 #${row.memberLevelId}` : '平台默认' }}</template></el-table-column>
       <el-table-column prop="rebateRate" label="返利比例"><template #default="{ row }">{{ row.rebateRate }}%</template></el-table-column>
-      <el-table-column label="冻结条件" min-width="180">
-        <template #default="{ row }">
-          <span v-if="row.freezeThresholdAmount != null && row.freezeThresholdAmount > 0">
-            &gt; ¥{{ Number(row.freezeThresholdAmount).toFixed(2) }}，{{ row.freezeDays ?? '-' }} 天
-          </span>
-          <span v-else class="text-gray-400">直接到账</span>
-        </template>
-      </el-table-column>
       <el-table-column prop="priority" label="优先级" />
       <el-table-column label="匹配说明"><template #default="{ row }">{{ row.memberLevelId ? '按会员等级匹配，未命中回退平台默认' : '平台默认规则' }}</template></el-table-column>
       <el-table-column label="操作"><template #default="{ row }"><el-button link @click="openEditor(row, draft.rebateRules.indexOf(row))">编辑</el-button><el-button link type="danger" @click="draft.rebateRules.splice(draft.rebateRules.indexOf(row), 1)">移除</el-button></template></el-table-column>
@@ -50,14 +42,6 @@ const validate = async () => {
     )
   ) {
     ElMessage.error('返利规则优先级必须为非负整数')
-    return false
-  }
-  if (props.draft.rebateRules.some((row) => (
-    (row.freezeThresholdAmount != null && row.freezeThresholdAmount < 0)
-      || (row.freezeDays != null && (!Number.isInteger(row.freezeDays) || row.freezeDays < 1 || row.freezeDays > 365))
-      || ((row.freezeThresholdAmount ?? 0) > 0 && row.freezeDays == null)
-  ))) {
-    ElMessage.error('冻结门槛大于0时必须设置1至365天的冻结时长')
     return false
   }
   const defaults = props.draft.rebateRules.filter((row) => !row.memberId && !row.memberLevelId)

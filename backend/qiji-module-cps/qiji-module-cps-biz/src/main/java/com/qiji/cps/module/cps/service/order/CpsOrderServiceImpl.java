@@ -245,6 +245,60 @@ public class CpsOrderServiceImpl implements CpsOrderService {
                 "BOUND", null, idempotencyKey, "APPROVED", command.auditNote(), command.operatorId());
     }
 
+    /**
+     * 手动归属未归因订单。此流程不建立 special_id 绑定关系，适用于平台没有返回可用
+     * special_id/adzone 的订单；仅允许 member_id 为空的订单，避免覆盖自动归因结果。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = ServiceException.class)
+    public void manuallyAttributeOrder(CpsOrderManualBindCommand command) {
+        if (command == null) {
+            throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "归因请求不能为空");
+        }
+        String idempotencyKey = command.idempotencyKey();
+        if (!isBlank(idempotencyKey) && attributionLogMapper.selectByIdempotencyKey(idempotencyKey) != null) {
+            return;
+        }
+        Long memberId = command.memberId();
+        if (memberId == null || memberId <= 0) {
+            throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "会员ID必须为正数");
+        }
+        CpsOrderDO order = getOrder(command.orderId());
+        if (order.getMemberId() != null) {
+            if (Objects.equals(order.getMemberId(), memberId)) {
+                // 重复提交但幂等键变化时也记录一次人工操作，避免误报为成功改绑。
+                appendManualAttributionLog(order, memberId, memberId, "MANUAL", "ALREADY_BOUND",
+                        "订单已归属于该会员", idempotencyKey, "APPROVED", command.auditNote(), command.operatorId(),
+                        "manual", null);
+                return;
+            }
+            boolean assetAffected = hasRebateAssetActivity(order);
+            String reason = assetAffected
+                    ? "订单已产生返利资产活动，必须通过冲正和重新结算流程改绑"
+                    : "订单已归因，不能通过未归因订单入口直接改绑会员";
+            appendManualAttributionLog(order, memberId, order.getMemberId(), "REBIND", "REJECTED",
+                    reason, idempotencyKey, assetAffected ? "PENDING_COMPENSATION" : "PENDING_REVIEW",
+                    command.auditNote(), command.operatorId(), "manual", null);
+            throw exception(ORDER_ATTRIBUTION_BIND_INVALID, reason);
+        }
+
+        MemberUserRespDTO member = requireMemberForBind(memberId);
+        BigDecimal estimateRebate = calculateEstimateRebate(order.getCommissionAmount(),
+                order.getPlatformCode(), memberId, member);
+        int updated = orderMapper.bindMemberIfUnattributed(order.getId(), memberId, member.getNickname(),
+                estimateRebate, "manual");
+        if (updated != 1) {
+            // 并发自动归因已抢先完成时，禁止覆盖并给调用方明确结果。
+            CpsOrderDO current = orderMapper.selectById(order.getId());
+            if (current != null && Objects.equals(current.getMemberId(), memberId)) {
+                return;
+            }
+            throw exception(ORDER_ATTRIBUTION_BIND_INVALID, "订单已被其他归因操作处理");
+        }
+        appendManualAttributionLog(order, memberId, memberId, "MANUAL", "BOUND", null,
+                idempotencyKey, "APPROVED", command.auditNote(), command.operatorId(), "manual", null);
+    }
+
     // ==================== 订单保存/更新 ====================
 
     @Override
@@ -852,15 +906,24 @@ public class CpsOrderServiceImpl implements CpsOrderService {
     private void appendManualAttributionLog(CpsOrderDO order, Long candidateMemberId, Long attributedMemberId,
                                             String action, String result, String rejectReason, String idempotencyKey,
                                             String reviewStatus, String reviewAuditNote, Long reviewOperatorId) {
+        appendManualAttributionLog(order, candidateMemberId, attributedMemberId, action, result, rejectReason,
+                idempotencyKey, reviewStatus, reviewAuditNote, reviewOperatorId,
+                "specialId", order.getSpecialId());
+    }
+
+    private void appendManualAttributionLog(CpsOrderDO order, Long candidateMemberId, Long attributedMemberId,
+                                            String action, String result, String rejectReason, String idempotencyKey,
+                                            String reviewStatus, String reviewAuditNote, Long reviewOperatorId,
+                                            String attributionSource, String bindingId) {
         attributionLogMapper.insert(CpsOrderAttributionLogDO.builder()
                 .orderId(order.getId())
                 .platformCode(order.getPlatformCode())
                 .platformOrderId(order.getPlatformOrderId())
                 .candidateMemberId(candidateMemberId)
                 .attributedMemberId(attributedMemberId)
-                .attributionSource("specialId")
-                .bindingType("specialId")
-                .bindingId(order.getSpecialId())
+                .attributionSource(attributionSource)
+                .bindingType(attributionSource)
+                .bindingId(bindingId)
                 .action(action)
                 .result(result)
                 .rejectReason(rejectReason)

@@ -37,35 +37,79 @@ public class CpsRebateAssetPolicyServiceImpl implements CpsRebateAssetPolicyServ
 
     @Override
     @Transactional(rollbackFor = Exception.class, isolation = Isolation.SERIALIZABLE)
+    public CpsRebateAssetPolicyDO initializePolicy() {
+        CpsRebateAssetPolicyDO policy = policyMapper.selectCurrentTenant();
+        if (policy == null) {
+            policy = defaultPolicy();
+            policyMapper.insert(policy);
+        } else {
+            normalize(policy);
+        }
+        ensureTenantDefaultFreezeRule();
+        return policy;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.SERIALIZABLE)
+    public CpsRebateAssetPolicyDO confirmMigrationReady(String approvalRef) {
+        String normalizedApprovalRef = approvalRef == null ? "" : approvalRef.trim();
+        if (normalizedApprovalRef.isEmpty()) {
+            throw new IllegalArgumentException("发布B变更单号不能为空");
+        }
+        CpsRebateAssetPolicyDO policy = policyMapper.selectCurrentTenant();
+        if (policy == null) {
+            throw new IllegalStateException("请先初始化租户资产策略");
+        }
+        normalize(policy);
+        if (Boolean.TRUE.equals(policy.getV2Enabled())) {
+            return policy;
+        }
+        CpsRebateAssetMigrationCheckArchiveDO latest =
+                migrationCheckArchiveMapper.selectLatestByTenantId(TenantContextHolder.getRequiredTenantId());
+        if (latest == null || !latest.isReady()) {
+            throw new IllegalStateException("最近一次资产预检未通过，不能确认发布B核验");
+        }
+        policy.setMigrationReady(true);
+        policy.setLatestReadyCheckBatchNo(latest.getBatchNo());
+        policy.setReadyCheckTime(latest.getExecutedAt());
+        policy.setMigrationApprovalRef(normalizedApprovalRef);
+        policyMapper.updateById(policy);
+        return policy;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.SERIALIZABLE)
     public void savePolicy(CpsRebateAssetPolicyDO policy) {
         normalize(policy);
         CpsRebateAssetPolicyDO existing = policyMapper.selectCurrentTenant();
         if (existing == null) {
             if (Boolean.TRUE.equals(policy.getV2Enabled())) {
-                throw new IllegalStateException("资产V2启用前必须先创建策略，并由发布B完成迁移核验");
+                throw new IllegalStateException("返利资产启用前必须先创建策略，并由发布B完成迁移核验");
             }
             policy.setId(null);
             policy.setMigrationReady(false);
             policyMapper.insert(policy);
+            ensureTenantDefaultFreezeRule();
             return;
         }
         if (Boolean.TRUE.equals(existing.getV2Enabled()) && !Boolean.TRUE.equals(policy.getV2Enabled())) {
-            throw new IllegalStateException("资产V2产生写入后禁止回退旧逻辑，请使用只读熔断并向前修复");
+            throw new IllegalStateException("返利资产产生写入后禁止回退旧逻辑，请使用只读熔断并向前修复");
         }
         if (!Boolean.TRUE.equals(existing.getV2Enabled()) && Boolean.TRUE.equals(policy.getV2Enabled())
                 && !Boolean.TRUE.equals(existing.getMigrationReady())) {
-            throw new IllegalStateException("发布B唯一键、期初资产流水和冻结对账尚未核验，禁止启用资产V2");
+            throw new IllegalStateException("发布B唯一键、期初资产流水和冻结对账尚未核验，禁止启用返利资产");
         }
         policy.setId(existing.getId());
         policy.setMigrationReady(existing.getMigrationReady());
         policy.setLatestReadyCheckBatchNo(existing.getLatestReadyCheckBatchNo());
         policy.setReadyCheckTime(existing.getReadyCheckTime());
+        policy.setMigrationApprovalRef(existing.getMigrationApprovalRef());
         if (!Boolean.TRUE.equals(existing.getV2Enabled()) && Boolean.TRUE.equals(policy.getV2Enabled())) {
             validateReleaseBApproval(existing);
             CpsRebateAssetMigrationCheckReport report =
                     migrationCheckService.runCheck("SYSTEM:ASSET_POLICY_ENABLE");
             if (!report.isReady()) {
-                throw new IllegalStateException("启用事务内资产预检发现新差异，禁止启用资产V2");
+                throw new IllegalStateException("启用事务内资产预检发现新差异，禁止启用返利资产");
             }
             policy.setLatestReadyCheckBatchNo(report.getBatchNo());
             policy.setReadyCheckTime(report.getExecutedAt());
@@ -78,7 +122,7 @@ public class CpsRebateAssetPolicyServiceImpl implements CpsRebateAssetPolicyServ
     public void assertWritable() {
         CpsRebateAssetPolicyDO policy = getPolicy();
         if (!Boolean.TRUE.equals(policy.getV2Enabled())) {
-            throw new IllegalStateException("当前租户尚未启用返利资产V2写入");
+            throw new IllegalStateException("当前租户尚未启用返利资产写入");
         }
         if (Boolean.TRUE.equals(policy.getReadOnly())) {
             throw new IllegalStateException("当前租户返利资产已切换为只读模式");
@@ -114,17 +158,34 @@ public class CpsRebateAssetPolicyServiceImpl implements CpsRebateAssetPolicyServ
     }
 
     private void ensureTenantDefaultFreezeRule() {
-        boolean hasFallback = freezeConfigMapper.selectEnabledRules().stream()
-                .anyMatch(rule -> rule.getPlatformCode() == null
+        var enabledRules = freezeConfigMapper.selectEnabledRules();
+        var legacyFallback = enabledRules == null ? null : enabledRules.stream()
+                .filter(rule -> rule.getPlatformCode() == null
                         && (rule.getMinAmountCent() == null || rule.getMinAmountCent() == 0L)
+                        && rule.getMaxAmountCent() == null)
+                .findFirst().orElse(null);
+        if (legacyFallback != null) {
+            if (Objects.equals(legacyFallback.getUnfreezeDays(), 15)
+                    && legacyFallback.getRemark() != null
+                    && legacyFallback.getRemark().contains("默认配置")) {
+                CpsFreezeConfigDO update = CpsFreezeConfigDO.builder().id(legacyFallback.getId())
+                        .minAmountCent(1000L).unfreezeDays(7)
+                        .remark("当前租户全平台返利满10元冻结，资格时间后7天解冻").build();
+                freezeConfigMapper.updateById(update);
+            }
+            return;
+        }
+        boolean hasFallback = enabledRules != null && enabledRules.stream()
+                .anyMatch(rule -> rule.getPlatformCode() == null
+                        && Objects.equals(rule.getMinAmountCent(), 1000L)
                         && rule.getMaxAmountCent() == null);
         if (hasFallback) {
             return;
         }
         freezeConfigMapper.insert(CpsFreezeConfigDO.builder()
-                .platformCode(null).minAmountCent(0L).maxAmountCent(null)
-                .unfreezeDays(15).status(1)
-                .remark("当前租户全平台全金额默认配置-资格时间后15天解冻")
+                .platformCode(null).minAmountCent(1000L).maxAmountCent(null)
+                .unfreezeDays(7).status(1)
+                .remark("当前租户全平台返利满10元冻结，资格时间后7天解冻")
                 .build());
     }
 
@@ -135,7 +196,7 @@ public class CpsRebateAssetPolicyServiceImpl implements CpsRebateAssetPolicyServ
         if (latest == null || !latest.isReady()
                 || !Objects.equals(existing.getLatestReadyCheckBatchNo(), latest.getBatchNo())
                 || !Objects.equals(existing.getReadyCheckTime(), latest.getExecutedAt())) {
-            throw new IllegalStateException("migration_ready 未绑定当前租户最新通过的预检批次，禁止启用资产V2");
+            throw new IllegalStateException("migration_ready 未绑定当前租户最新通过的预检批次，禁止启用返利资产");
         }
     }
 }

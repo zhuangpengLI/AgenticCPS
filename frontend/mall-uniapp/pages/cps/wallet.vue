@@ -195,6 +195,9 @@
         deducted: '已扣减',
         invalid: '已失效',
         refunded: '已退款',
+        received: '已到账',
+        rebate_received: '已到账',
+        // 兼容历史记录中的旧状态值，仅用于展示。
         credited: '已到账',
       }[value] ||
       value ||

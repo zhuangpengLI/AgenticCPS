@@ -40,7 +40,7 @@
           >
         </view>
         <view class="order-foot"
-          ><text>{{ rebateFreezeStatusText(item.rebateFreezeStatus) }}</text
+          ><text>{{ rebateFreezeStatusText(item.rebateFreezeStatus, item.orderStatus) }}</text
           ><text>{{ formatTime(item.payTime || item.createTime) }}</text></view
         >
       </view>
@@ -96,7 +96,7 @@
         >
         <view class="detail-item"
           ><text>到账状态</text
-          ><text>{{ rebateFreezeStatusText(state.currentOrder.rebateFreezeStatus) }}</text></view
+          ><text>{{ rebateFreezeStatusText(state.currentOrder.rebateFreezeStatus, state.currentOrder.orderStatus) }}</text></view
         >
         <view class="detail-item"
           ><text>预计到账</text><text>{{ expectedCreditText(state.currentOrder) }}</text></view
@@ -179,7 +179,8 @@
     { name: '已付款', value: 'paid' },
     { name: '已收货', value: 'received' },
     { name: '已结算', value: 'settled' },
-    { name: '已到账', value: 'credited' },
+    // 后端订单状态枚举使用 rebate_received；credited 是旧版客户端值，不能用于查询。
+    { name: '已到账', value: 'rebate_received' },
     { name: '已退款', value: 'refunded' },
     { name: '已失效', value: 'invalid' },
   ];
@@ -323,9 +324,12 @@
     return (
       {
         created: '已下单',
+        ordered: '已下单',
         paid: '已付款',
         received: '已收货',
         settled: '已结算',
+        rebate_received: '已到账',
+        // 兼容历史接口/缓存中的旧状态值，仅用于展示。
         credited: '已到账',
         refunded: '已退款',
         invalid: '已失效',
@@ -334,13 +338,20 @@
       '待确认'
     );
   }
-  function rebateFreezeStatusText(status) {
+  function rebateFreezeStatusText(status, orderStatus) {
+    // 订单状态是最终到账的权威标记；直接入账订单的冻结状态为空，
+    // 冻结解冻订单的状态为 unfreezed，二者都应展示为“已到账”。
+    if (['rebate_received', 'credited'].includes(orderStatus)) return '已到账';
     return (
       {
-        none: '返利待确认',
+        pending: '待冻结',
         frozen: '待入账',
-        unfrozen: '已解冻',
+        unfreezing: '解冻中',
+        unfreezed: '已解冻',
         deducted: '已扣减',
+        // 兼容历史冻结状态值，仅用于展示。
+        none: '返利待确认',
+        unfrozen: '已解冻',
         credited: '已到账',
         debt: '已形成欠款',
       }[status] ||
@@ -349,7 +360,7 @@
     );
   }
   function expectedCreditText(order) {
-    if (order.orderStatus === 'credited') return '已到账';
+    if (['rebate_received', 'credited'].includes(order.orderStatus)) return '已到账';
     if (['refunded', 'invalid'].includes(order.orderStatus)) return '不会到账';
     const expectedTime = order.expectedCreditTime || order.settleTime;
     return expectedTime ? formatTime(expectedTime) : '以平台结算为准';

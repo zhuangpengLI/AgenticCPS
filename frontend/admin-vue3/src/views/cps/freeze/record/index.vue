@@ -9,13 +9,25 @@
       label-width="80px"
     >
       <el-form-item label="会员ID" prop="memberId">
-        <el-input
-          v-model.number="queryParams.memberId"
-          placeholder="请输入会员ID"
+        <el-select
+          v-model="queryParams.memberId"
+          filterable
+          remote
+          reserve-keyword
           clearable
-          class="!w-160px"
-          @keyup.enter="handleQuery"
-        />
+          placeholder="请选择会员"
+          class="!w-220px"
+          :remote-method="searchMemberOptions"
+          :loading="memberLoading"
+          @focus="loadMemberOptions"
+        >
+          <el-option
+            v-for="member in memberOptions"
+            :key="member.id"
+            :label="formatMemberLabel(member)"
+            :value="member.id"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-140px">
@@ -99,6 +111,7 @@ import {
 } from '@/api/cps/freeze'
 import { formatDate } from '@/utils/formatTime'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { getUser, getUserPage, type UserVO } from '@/api/member/user'
 
 defineOptions({ name: 'CpsFreezeRecord' })
 
@@ -115,6 +128,39 @@ const queryParams = reactive<CpsFreezeRecordPageReqVO>({
 })
 
 const queryFormRef = ref()
+const memberOptions = ref<UserVO[]>([])
+const memberLoading = ref(false)
+
+const formatMemberLabel = (member: UserVO) => {
+  const profile = member.nickname || member.name || member.mobile
+  return profile ? `${member.id}（${profile}）` : String(member.id)
+}
+
+const searchMemberOptions = async (keyword = '') => {
+  const query = keyword.trim()
+  memberLoading.value = true
+  try {
+    let options: UserVO[] = []
+    if (/^\d+$/.test(query)) {
+      const user = await getUser(Number(query))
+      options = user ? [user] : []
+    } else {
+      const data = await getUserPage({ pageNo: 1, pageSize: 20, nickname: query || undefined })
+      options = data?.list || []
+    }
+    const selected = memberOptions.value.find((member) => member.id === queryParams.memberId)
+    if (selected && !options.some((member) => member.id === selected.id)) options.unshift(selected)
+    memberOptions.value = options
+  } catch {
+    memberOptions.value = []
+  } finally {
+    memberLoading.value = false
+  }
+}
+
+const loadMemberOptions = () => {
+  if (!memberOptions.value.length) searchMemberOptions()
+}
 
 const statusMap: Record<string, { label: string; type: string }> = {
   pending: { label: '待冻结', type: 'info' },

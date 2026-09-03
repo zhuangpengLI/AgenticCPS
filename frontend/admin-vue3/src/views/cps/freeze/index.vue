@@ -11,13 +11,20 @@
           label-width="80px"
         >
           <el-form-item label="平台" prop="platformCode">
-            <el-input
+            <el-select
               v-model="configQuery.platformCode"
-              placeholder="请输入平台编码"
+              placeholder="请选择平台"
+              filterable
               clearable
-              class="!w-160px"
-              @keyup.enter="handleConfigQuery"
-            />
+              class="!w-180px"
+            >
+              <el-option
+                v-for="platform in platformOptions"
+                :key="platform.platformCode"
+                :label="`${platform.platformName}（${platform.platformCode}）`"
+                :value="platform.platformCode"
+              />
+            </el-select>
           </el-form-item>
           <el-form-item label="状态" prop="status">
             <el-select v-model="configQuery.status" placeholder="请选择状态" clearable class="!w-120px">
@@ -90,13 +97,25 @@
           label-width="80px"
         >
           <el-form-item label="会员ID" prop="memberId">
-            <el-input
-              v-model.number="recordQuery.memberId"
-              placeholder="请输入会员ID"
+            <el-select
+              v-model="recordQuery.memberId"
+              filterable
+              remote
+              reserve-keyword
               clearable
-              class="!w-160px"
-              @keyup.enter="handleRecordQuery"
-            />
+              placeholder="请选择会员"
+              class="!w-220px"
+              :remote-method="searchMemberOptions"
+              :loading="memberLoading"
+              @focus="loadMemberOptions"
+            >
+              <el-option
+                v-for="member in memberOptions"
+                :key="member.id"
+                :label="formatMemberLabel(member)"
+                :value="member.id"
+              />
+            </el-select>
           </el-form-item>
           <el-form-item label="状态" prop="status">
             <el-select v-model="recordQuery.status" placeholder="请选择状态" clearable class="!w-140px">
@@ -182,17 +201,33 @@
   >
     <el-form ref="configFormRef" :model="configFormData" :rules="configFormRules" label-width="100px">
       <el-form-item label="平台编码" prop="platformCode">
-        <el-input v-model="configFormData.platformCode" placeholder="留空表示全平台默认配置" clearable />
+        <el-select
+          v-model="configFormData.platformCode"
+          placeholder="留空表示全平台默认配置"
+          filterable
+          clearable
+          class="!w-260px"
+        >
+          <el-option label="全平台（默认）" value="" />
+          <el-option
+            v-for="platform in platformOptions"
+            :key="platform.platformCode"
+            :label="`${platform.platformName}（${platform.platformCode}）`"
+            :value="platform.platformCode"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="解冻天数" prop="unfreezeDays">
         <el-input-number v-model="configFormData.unfreezeDays" :min="1" :max="365" />
         <span class="ml-10px text-gray-500">天（收货与平台结算时间取晚后计算）</span>
       </el-form-item>
-      <el-form-item label="金额下限（分）" prop="minAmountCent">
-        <el-input-number v-model="configFormData.minAmountCent" :min="0" :step="100" />
+      <el-form-item label="金额下限" prop="minAmountYuan">
+        <el-input-number v-model="configFormData.minAmountYuan" :min="0" :step="0.01" :precision="2" />
+        <span class="ml-10px text-gray-500">元</span>
       </el-form-item>
-      <el-form-item label="金额上限（分）" prop="maxAmountCent">
-        <el-input-number v-model="configFormData.maxAmountCent" :min="configFormData.minAmountCent + 1" :step="100" />
+      <el-form-item label="金额上限" prop="maxAmountYuan">
+        <el-input-number v-model="configFormData.maxAmountYuan" :min="(configFormData.minAmountYuan ?? 0) + 0.01" :step="0.01" :precision="2" />
+        <span class="ml-10px text-gray-500">元</span>
         <span class="ml-10px text-gray-500">留空表示无上限，区间左闭右开</span>
       </el-form-item>
       <el-form-item label="状态" prop="status">
@@ -224,6 +259,8 @@ import {
   type CpsFreezeConfigSaveVO,
   type CpsFreezeRecordPageReqVO
 } from '@/api/cps/freeze'
+import { CpsPlatformApi, type CpsPlatformVO } from '@/api/cps/platform'
+import { getUser, getUserPage, type UserVO } from '@/api/member/user'
 import { formatDate } from '@/utils/formatTime'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -239,6 +276,7 @@ const configQueryFormRef = ref()
 const configFormRef = ref()
 const configDialogVisible = ref(false)
 const configFormLoading = ref(false)
+const platformOptions = ref<CpsPlatformVO[]>([])
 
 const configQuery = reactive<CpsFreezeConfigPageReqVO>({
   pageNo: 1,
@@ -247,19 +285,29 @@ const configQuery = reactive<CpsFreezeConfigPageReqVO>({
   status: undefined
 })
 
-const configFormData = reactive<CpsFreezeConfigSaveVO>({
+interface FreezeConfigFormData {
+  id?: number
+  platformCode?: string
+  minAmountYuan: number
+  maxAmountYuan?: number
+  unfreezeDays: number
+  status: number
+  remark?: string
+}
+
+const configFormData = reactive<FreezeConfigFormData>({
   id: undefined,
   platformCode: undefined,
-  minAmountCent: 0,
-  maxAmountCent: undefined,
-  unfreezeDays: 15,
+  minAmountYuan: 10,
+  maxAmountYuan: undefined,
+  unfreezeDays: 7,
   status: 1,
   remark: undefined
 })
 
 const configFormRules = {
   unfreezeDays: [{ required: true, message: '解冻天数不能为空', trigger: 'blur' }],
-  minAmountCent: [{ required: true, message: '金额下限不能为空', trigger: 'blur' }],
+  minAmountYuan: [{ required: true, message: '金额下限不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
 }
 
@@ -286,22 +334,36 @@ const resetConfigQuery = () => {
 
 const openConfigForm = (row: any) => {
   if (row) {
-    Object.assign(configFormData, row)
+    Object.assign(configFormData, {
+      ...row,
+      platformCode: row.platformCode || '',
+      minAmountYuan: row.minAmountCent == null ? 0 : row.minAmountCent / 100,
+      maxAmountYuan: row.maxAmountCent == null ? undefined : row.maxAmountCent / 100
+    })
   } else {
-    Object.assign(configFormData, { id: undefined, platformCode: undefined, minAmountCent: 0, maxAmountCent: undefined, unfreezeDays: 15, status: 1, remark: undefined })
+    Object.assign(configFormData, { id: undefined, platformCode: '', minAmountYuan: 10, maxAmountYuan: undefined, unfreezeDays: 7, status: 1, remark: undefined })
   }
   configDialogVisible.value = true
 }
 
 const handleConfigSubmit = async () => {
   await configFormRef.value?.validate()
+  const payload: CpsFreezeConfigSaveVO = {
+    id: configFormData.id,
+    platformCode: configFormData.platformCode || undefined,
+    minAmountCent: Math.round((configFormData.minAmountYuan ?? 0) * 100),
+    maxAmountCent: configFormData.maxAmountYuan == null ? undefined : Math.round(configFormData.maxAmountYuan * 100),
+    unfreezeDays: configFormData.unfreezeDays,
+    status: configFormData.status,
+    remark: configFormData.remark
+  }
   configFormLoading.value = true
   try {
     if (configFormData.id) {
-      await updateCpsFreezeConfig(configFormData)
+      await updateCpsFreezeConfig(payload)
       ElMessage.success('更新成功')
     } else {
-      await createCpsFreezeConfig(configFormData)
+      await createCpsFreezeConfig(payload)
       ElMessage.success('创建成功')
     }
     configDialogVisible.value = false
@@ -323,6 +385,8 @@ const recordLoading = ref(false)
 const recordList = ref([])
 const recordTotal = ref(0)
 const recordQueryFormRef = ref()
+const memberOptions = ref<UserVO[]>([])
+const memberLoading = ref(false)
 
 const recordQuery = reactive<CpsFreezeRecordPageReqVO>({
   pageNo: 1,
@@ -331,6 +395,45 @@ const recordQuery = reactive<CpsFreezeRecordPageReqVO>({
   status: undefined,
   createTime: undefined
 })
+
+const formatMemberLabel = (member: UserVO) => {
+  const profile = member.nickname || member.name || member.mobile
+  return profile ? `${member.id}（${profile}）` : String(member.id)
+}
+
+const searchMemberOptions = async (keyword = '') => {
+  const query = keyword.trim()
+  memberLoading.value = true
+  try {
+    let options: UserVO[] = []
+    if (/^\d+$/.test(query)) {
+      const user = await getUser(Number(query))
+      options = user ? [user] : []
+    } else {
+      const data = await getUserPage({ pageNo: 1, pageSize: 20, nickname: query || undefined })
+      options = data?.list || []
+    }
+    const selected = memberOptions.value.find((member) => member.id === recordQuery.memberId)
+    if (selected && !options.some((member) => member.id === selected.id)) options.unshift(selected)
+    memberOptions.value = options
+  } catch {
+    memberOptions.value = []
+  } finally {
+    memberLoading.value = false
+  }
+}
+
+const loadMemberOptions = () => {
+  if (!memberOptions.value.length) searchMemberOptions()
+}
+
+const loadPlatformOptions = async () => {
+  try {
+    platformOptions.value = (await CpsPlatformApi.getEnabledPlatformList()) || []
+  } catch {
+    platformOptions.value = []
+  }
+}
 
 const statusMap: Record<string, { label: string; type: string }> = {
   pending: { label: '待冻结', type: 'info' },
@@ -377,5 +480,6 @@ const handleManualUnfreeze = async (id: number) => {
 
 onMounted(() => {
   getConfigList()
+  loadPlatformOptions()
 })
 </script>

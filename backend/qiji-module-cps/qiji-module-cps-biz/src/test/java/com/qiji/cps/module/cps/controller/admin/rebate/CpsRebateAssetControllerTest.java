@@ -2,6 +2,8 @@ package com.qiji.cps.module.cps.controller.admin.rebate;
 
 import com.qiji.cps.framework.security.core.util.SecurityFrameworkUtils;
 import com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateDebtAdjustReqVO;
+import com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateAssetMigrationConfirmReqVO;
+import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateAssetPolicyDO;
 import com.qiji.cps.module.cps.service.rebate.asset.CpsAssetOperatorContext;
 import com.qiji.cps.module.cps.service.rebate.asset.CpsDebtAdjustAction;
 import com.qiji.cps.module.cps.service.rebate.asset.CpsRebateAssetQueryService;
@@ -51,6 +53,18 @@ class CpsRebateAssetControllerTest {
             assertEquals(report, controller.runMigrationCheck().getData());
         }
         verify(migrationCheckService).runCheck("9001");
+    }
+
+    @Test
+    void confirmMigrationDelegatesApprovalReference() {
+        CpsRebateAssetMigrationConfirmReqVO request = new CpsRebateAssetMigrationConfirmReqVO();
+        request.setApprovalRef("CHG-20260903-001");
+        CpsRebateAssetPolicyDO policy = CpsRebateAssetPolicyDO.builder()
+                .migrationReady(true).migrationApprovalRef(request.getApprovalRef()).build();
+        when(policyService.confirmMigrationReady(request.getApprovalRef())).thenReturn(policy);
+
+        assertEquals(policy, controller.confirmMigration(request).getData());
+        verify(policyService).confirmMigrationReady(request.getApprovalRef());
     }
 
     @Test

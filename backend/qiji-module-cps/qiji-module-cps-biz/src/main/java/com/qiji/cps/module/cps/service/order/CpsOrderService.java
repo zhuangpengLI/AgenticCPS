@@ -79,6 +79,11 @@ public interface CpsOrderService {
     void bindSpecialIdToMember(CpsOrderManualBindCommand command);
 
     /**
+     * 将尚未归因的订单手动归属到指定会员，不要求订单包含 special_id。
+     */
+    void manuallyAttributeOrder(CpsOrderManualBindCommand command);
+
+    /**
      * 手动触发单个平台订单同步（管理端操作）
      *
      * @param platformCode 平台编码

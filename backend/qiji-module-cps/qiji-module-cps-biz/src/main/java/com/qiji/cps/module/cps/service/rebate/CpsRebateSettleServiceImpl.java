@@ -1,18 +1,19 @@
 package com.qiji.cps.module.cps.service.rebate;
 
-import com.qiji.cps.framework.common.enums.CommonStatusEnum;
-import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
+import com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeConfigDO;
 import com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeRecordDO;
+import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateAccountDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateConfigDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.order.CpsOrderMapper;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateAccountMapper;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateRecordMapper;
-import com.qiji.cps.module.cps.enums.CpsOrderStatusEnum;
 import com.qiji.cps.module.cps.enums.CpsFreezeStatusEnum;
+import com.qiji.cps.module.cps.enums.CpsOrderStatusEnum;
 import com.qiji.cps.module.cps.enums.CpsRebateStatusEnum;
 import com.qiji.cps.module.cps.enums.CpsRebateTypeEnum;
+import com.qiji.cps.module.cps.service.freeze.CpsFreezeService;
 import com.qiji.cps.module.cps.service.rebate.asset.CpsMoneyConverter;
 import com.qiji.cps.module.cps.service.rebate.asset.CpsRebateAssetService;
 import com.qiji.cps.module.member.api.user.MemberUserApi;
@@ -71,6 +72,9 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
 
     @Resource
     private CpsRebateAssetService rebateAssetService;
+
+    @Resource
+    private CpsFreezeService freezeService;
 
     @Resource
     private CpsMoneyConverter moneyConverter;
@@ -134,12 +138,12 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
 
         BigDecimal rebateRate = config.getRebateRate();
         String idempotencyKey = "order-rebate:" + order.getId();
-        boolean shouldFreeze = shouldFreeze(rebateAmount, config);
-        if (shouldFreeze && (config.getFreezeDays() == null
-                || config.getFreezeDays() < 1 || config.getFreezeDays() > 365)) {
-            // 不允许用平台其他冻结档位静默兜底，避免冻结天数与返利配置不一致。
-            throw new IllegalStateException("返利配置冻结天数非法: " + order.getId());
-        }
+        long rebateAmountCent = moneyConverter.yuanToCent(rebateAmount);
+        CpsFreezeConfigDO freezeConfig = freezeService == null
+                ? null : freezeService.getActiveConfig(order.getPlatformCode(), rebateAmountCent);
+        // 兼容未装配统一冻结服务的旧测试/启动场景；正式运行始终以冻结管理规则为准。
+        boolean shouldFreeze = freezeService == null
+                ? shouldFreezeLegacy(rebateAmount, config) : freezeConfig != null;
 
         // 3. 写入返利记录
         CpsRebateRecordDO record = CpsRebateRecordDO.builder()
@@ -174,8 +178,9 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
             return true;
         }
 
-        CpsFreezeRecordDO freeze = rebateAssetService.createOrderRebateFreeze(
-                order.getId(), idempotencyKey, config.getFreezeDays());
+        CpsFreezeRecordDO freeze = freezeService == null
+                ? rebateAssetService.createOrderRebateFreeze(order.getId(), idempotencyKey, config.getFreezeDays())
+                : rebateAssetService.createOrderRebateFreeze(order.getId(), idempotencyKey);
 
         CpsOrderDO updateOrder = CpsOrderDO.builder()
                 .id(order.getId())
@@ -298,8 +303,7 @@ public class CpsRebateSettleServiceImpl implements CpsRebateSettleService {
         return rebateAmount;
     }
 
-    /** 实际返利严格大于正阈值时冻结；未配置阈值或阈值为0时直接入账。 */
-    private boolean shouldFreeze(BigDecimal rebateAmount, CpsRebateConfigDO config) {
+    private boolean shouldFreezeLegacy(BigDecimal rebateAmount, CpsRebateConfigDO config) {
         return config.getFreezeThresholdAmount() != null
                 && config.getFreezeThresholdAmount().signum() > 0
                 && rebateAmount.compareTo(config.getFreezeThresholdAmount()) > 0;

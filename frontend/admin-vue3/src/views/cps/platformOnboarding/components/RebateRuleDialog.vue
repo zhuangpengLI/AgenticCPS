@@ -4,27 +4,6 @@
     <el-form :model="form" label-width="120px">
       <el-form-item label="返利比例" required><el-input-number v-model="form.rebateRate" :min="0" :max="100" :precision="2" /></el-form-item>
       <el-form-item label="优先级" required><el-input-number v-model="form.priority" :min="0" :precision="0" /></el-form-item>
-      <el-form-item label="冻结门槛金额">
-        <el-input-number
-          v-model="form.freezeThresholdAmount"
-          :min="0"
-          :precision="2"
-          :step="0.01"
-          placeholder="0 或留空表示不冻结"
-        />
-        <span class="ml-10px text-gray-500">实际返利高于该金额才冻结（元）</span>
-      </el-form-item>
-      <el-form-item label="冻结天数">
-        <el-input-number
-          v-model="form.freezeDays"
-          :min="1"
-          :max="365"
-          :precision="0"
-          :step="1"
-          placeholder="请输入冻结天数"
-        />
-        <span class="ml-10px text-gray-500">冻结期满后自动到账</span>
-      </el-form-item>
       <el-collapse accordion class="mt-12px">
         <el-collapse-item title="高级设置" name="advanced">
           <el-form-item label="会员等级"><MemberLevelSelect v-model="form.memberLevelId" /></el-form-item>
@@ -48,8 +27,6 @@ const emptyForm = (): RebateRuleForm => ({
   platformCode: props.platformCode,
   status: 1,
   rebateRate: undefined,
-  freezeThresholdAmount: undefined,
-  freezeDays: undefined,
   priority: 0
 })
 const form = reactive<RebateRuleForm>(emptyForm())
@@ -76,19 +53,13 @@ const submit = () => {
     ElMessage.error('请输入非负整数优先级')
     return
   }
-  if (form.freezeThresholdAmount != null && form.freezeThresholdAmount < 0) {
-    ElMessage.error('冻结门槛金额不能小于0')
-    return
+  const rule = { ...form } as RebateRuleForm & {
+    freezeThresholdAmount?: number
+    freezeDays?: number
   }
-  if (form.freezeDays != null && (!Number.isInteger(form.freezeDays) || form.freezeDays < 1 || form.freezeDays > 365)) {
-    ElMessage.error('冻结天数必须为1至365的整数')
-    return
-  }
-  if ((form.freezeThresholdAmount ?? 0) > 0 && form.freezeDays == null) {
-    ElMessage.error('设置冻结门槛后请输入冻结天数')
-    return
-  }
-  emit('save', { ...form })
+  delete rule.freezeThresholdAmount
+  delete rule.freezeDays
+  emit('save', rule)
   visible.value = false
 }
 </script>

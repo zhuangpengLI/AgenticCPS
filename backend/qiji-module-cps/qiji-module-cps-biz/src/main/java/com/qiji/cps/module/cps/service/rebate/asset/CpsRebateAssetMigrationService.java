@@ -49,7 +49,7 @@ public class CpsRebateAssetMigrationService {
                     .frozenBeforeCent(0L).frozenAfterCent(frozen)
                     .debtBeforeCent(0L).debtAfterCent(debt)
                     .operatorType("ADMIN").operatorId(operatorId)
-                    .reason("阶段一资产V2历史账户期初余额回填")
+                    .reason("阶段一返利资产历史账户期初余额回填")
                     .build();
             openingLedger.setTenantId(tenantId);
             try {

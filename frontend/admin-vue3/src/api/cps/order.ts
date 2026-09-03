@@ -42,6 +42,8 @@ export interface CpsOrderPageReqVO {
   platformCode?: string
   memberId?: number
   memberName?: string
+  /** 归因状态：ATTRIBUTED 已归因，UNATTRIBUTED 未归因；为空时查询全部 */
+  attributionStatus?: 'ATTRIBUTED' | 'UNATTRIBUTED' | string
   orderStatus?: string
   itemTitle?: string
   platformOrderId?: string
@@ -49,6 +51,13 @@ export interface CpsOrderPageReqVO {
 }
 
 export interface CpsOrderBindSpecialIdReqVO {
+  orderId: number
+  memberId: number
+  idempotencyKey: string
+  auditNote?: string
+}
+
+export interface CpsOrderManualAttributionReqVO {
   orderId: number
   memberId: number
   idempotencyKey: string
@@ -247,6 +256,11 @@ export const saveOrderSyncPolicy = async (data: CpsOrderSyncPolicyVO) =>
 // 手动绑定订单 special_id 到会员
 export const bindSpecialIdToMember = async (data: CpsOrderBindSpecialIdReqVO) => {
   return await request.post({ url: '/cps/order/bind-special-id-member', data })
+}
+
+/** 手动将订单归属到指定会员（适用于无 special_id 的未归因订单） */
+export const manuallyAttributeOrder = async (data: CpsOrderManualAttributionReqVO) => {
+  return await request.post({ url: '/cps/order/manual-attribution', data })
 }
 
 export const getOrderClaimPage = async (params: CpsOrderClaimPageReqVO) => {

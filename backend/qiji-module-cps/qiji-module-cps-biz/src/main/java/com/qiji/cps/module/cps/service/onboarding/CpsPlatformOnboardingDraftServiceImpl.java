@@ -450,8 +450,6 @@ public class CpsPlatformOnboardingDraftServiceImpl implements CpsPlatformOnboard
                 .rebateRate(source.getRebateRate())
                 .minRebateAmount(source.getMinRebateAmount())
                 .maxRebateAmount(source.getMaxRebateAmount())
-                .freezeThresholdAmount(source.getFreezeThresholdAmount())
-                .freezeDays(source.getFreezeDays())
                 .status(source.getStatus())
                 .priority(source.getPriority())
                 .build();

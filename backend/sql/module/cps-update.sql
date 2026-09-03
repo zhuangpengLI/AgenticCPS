@@ -538,6 +538,7 @@ CREATE TABLE IF NOT EXISTS `cps_rebate_asset_policy` (
   `migration_ready` tinyint NOT NULL DEFAULT 0 COMMENT '发布B唯一键、期初流水与冻结对账是否已核验',
   `latest_ready_check_batch_no` varchar(64) DEFAULT NULL COMMENT '最近一次通过并获发布B批准的预检批次',
   `ready_check_time` datetime DEFAULT NULL COMMENT '上述预检批次执行时间',
+  `migration_approval_ref` varchar(128) DEFAULT NULL COMMENT '发布B变更单/审批单号',
   `read_only` tinyint NOT NULL DEFAULT 0 COMMENT '资产操作只读开关',
   `large_debt_threshold_cent` bigint NOT NULL DEFAULT 10000 COMMENT '大额欠款阈值（分）',
   `reminder_interval_days` int NOT NULL DEFAULT 7 COMMENT '普通站内提醒间隔天数',
@@ -686,7 +687,7 @@ WHERE `deleted` = b'0' AND (`amount_cent` IS NULL OR `amount_cent` <= 0);
 --   ADD UNIQUE KEY `uk_tenant_business_idempotency` (`tenant_id`, `business_type`, `idempotency_key`) USING BTREE;
 --
 -- 完成上述唯一键、每个历史账户OPENING_BALANCE期初流水、历史冻结金额与账户冻结余额对账后，
--- 才可由发布变更单按租户执行（禁止通过管理端直接修改 migration_ready）：
+-- 才可由发布变更单按租户执行；禁止直接改字段，必须使用本 SQL 或管理端受控确认接口：
 -- UPDATE `cps_rebate_asset_policy` policy
 -- JOIN (
 --   SELECT `tenant_id`, `batch_no`, `executed_at`, `ready`
@@ -1830,3 +1831,26 @@ WHERE `deleted` = b'0' AND `handler_name` = 'cpsFreezeUnfreezeJob';
 INSERT INTO `infra_job` (`name`,`status`,`handler_name`,`handler_param`,`cron_expression`,`retry_count`,`retry_interval`,`monitor_timeout`,`creator`,`updater`,`deleted`)
 SELECT 'CPS返利冻结自动解冻', 1, 'cpsFreezeUnfreezeJob', '{"batchSize":500}', '0 0/10 * * * ?', 2, 60, 900, 'system', 'system', b'0'
 WHERE NOT EXISTS (SELECT 1 FROM `infra_job` WHERE `handler_name`='cpsFreezeUnfreezeJob' AND `deleted`=b'0');
+
+-- ============================================================
+-- 修改时间：2026-09-03 00:00:00
+-- 目的：记录资产V2发布B迁移核验的变更单/审批单号，完善受控启用审计链路。
+-- ============================================================
+ALTER TABLE `cps_rebate_asset_policy`
+  ADD COLUMN `migration_approval_ref` varchar(128) DEFAULT NULL COMMENT '发布B变更单/审批单号' AFTER `ready_check_time`;
+
+-- ============================================================
+-- 修改时间：2026-09-03 12:33:02
+-- 目的：统一由冻结管理按返利金额配置冻结规则，默认满10元冻结7天。
+-- ============================================================
+UPDATE `cps_freeze_config`
+SET `min_amount_cent` = 1000,
+    `unfreeze_days` = 7,
+    `remark` = '全平台返利满10元冻结，资格时间后7天解冻',
+    `update_time` = NOW()
+WHERE `deleted` = b'0'
+  AND `platform_code` IS NULL
+  AND (`min_amount_cent` IS NULL OR `min_amount_cent` = 0)
+  AND `max_amount_cent` IS NULL
+  AND `unfreeze_days` = 15
+  AND `remark` LIKE '%默认配置%';

@@ -191,13 +191,15 @@ public class CpsFreezeServiceImpl implements CpsFreezeService {
 
     private boolean isGlobalFallback(CpsFreezeConfigDO config) {
         return Integer.valueOf(1).equals(config.getStatus()) && config.getPlatformCode() == null
-                && (config.getMinAmountCent() == null || config.getMinAmountCent() == 0L)
+                && (config.getMinAmountCent() == null || config.getMinAmountCent() == 0L
+                || config.getMinAmountCent() == 1000L)
                 && config.getMaxAmountCent() == null;
     }
 
     private boolean isGlobalFallback(CpsFreezeConfigSaveReqVO config) {
         return Integer.valueOf(1).equals(config.getStatus()) && config.getPlatformCode() == null
-                && (config.getMinAmountCent() == null || config.getMinAmountCent() == 0L)
+                && (config.getMinAmountCent() == null || config.getMinAmountCent() == 0L
+                || config.getMinAmountCent() == 1000L)
                 && config.getMaxAmountCent() == null;
     }
 

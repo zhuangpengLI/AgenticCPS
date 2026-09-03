@@ -302,20 +302,6 @@ public class CpsPlatformOnboardingValidator {
                 add(errors, "REBATE_AMOUNT_INVALID", base,
                         "返利金额上下限必须非负且最小值不能大于最大值", "rebate");
             }
-            if (negative(rule.getFreezeThresholdAmount())) {
-                add(errors, "REBATE_FREEZE_THRESHOLD_INVALID", base + ".freezeThresholdAmount",
-                        "冻结阈值不能为负数", "rebate");
-            }
-            if (rule.getFreezeDays() != null && (rule.getFreezeDays() < 1 || rule.getFreezeDays() > 365)) {
-                add(errors, "REBATE_FREEZE_DAYS_INVALID", base + ".freezeDays",
-                        "冻结天数必须为1到365", "rebate");
-            }
-            if (rule.getFreezeThresholdAmount() != null
-                    && rule.getFreezeThresholdAmount().signum() > 0
-                    && rule.getFreezeDays() == null) {
-                add(errors, "REBATE_FREEZE_DAYS_REQUIRED", base + ".freezeDays",
-                        "配置冻结阈值后必须填写冻结天数", "rebate");
-            }
             if (!validStatus(rule.getStatus())) {
                 add(errors, "REBATE_STATUS_INVALID", base + ".status",
                         "返利规则状态只能为 0 或 1", "rebate");

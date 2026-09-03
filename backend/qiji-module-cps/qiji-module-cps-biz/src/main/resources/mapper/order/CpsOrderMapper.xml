@@ -11,8 +11,8 @@
             SUM(CASE WHEN order_status NOT IN ('refunded','invalid') THEN 1 ELSE 0 END) AS new_order_count,
             COALESCE(SUM(final_price), 0) AS order_amount,
             COALESCE(SUM(commission_amount), 0) AS commission_amount,
-            COALESCE(SUM(CASE WHEN order_status IN ('settled','credited') THEN commission_amount ELSE 0 END), 0) AS settled_commission_amount,
-            COALESCE(SUM(CASE WHEN order_status IN ('ordered','paid','received') THEN commission_amount ELSE 0 END), 0) AS pending_commission_amount,
+            COALESCE(SUM(CASE WHEN order_status IN ('settled','rebate_received') THEN commission_amount ELSE 0 END), 0) AS settled_commission_amount,
+            COALESCE(SUM(CASE WHEN order_status IN ('created','paid','received') THEN commission_amount ELSE 0 END), 0) AS pending_commission_amount,
             COALESCE(SUM(real_rebate), 0) AS rebate_amount,
             COUNT(DISTINCT member_id) AS active_member_count
         FROM cps_order

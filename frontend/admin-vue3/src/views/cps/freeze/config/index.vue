@@ -9,13 +9,14 @@
       label-width="80px"
     >
       <el-form-item label="平台" prop="platformCode">
-        <el-input
-          v-model="queryParams.platformCode"
-          placeholder="请输入平台编码"
-          clearable
-          class="!w-160px"
-          @keyup.enter="handleQuery"
-        />
+        <el-select v-model="queryParams.platformCode" placeholder="请选择平台" filterable clearable class="!w-180px">
+          <el-option
+            v-for="platform in platformOptions"
+            :key="platform.platformCode"
+            :label="`${platform.platformName}（${platform.platformCode}）`"
+            :value="platform.platformCode"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-120px">
@@ -86,17 +87,27 @@
   >
     <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px">
       <el-form-item label="平台编码" prop="platformCode">
-        <el-input v-model="formData.platformCode" placeholder="留空表示全平台默认配置" clearable />
+        <el-select v-model="formData.platformCode" placeholder="留空表示全平台默认配置" filterable clearable class="!w-260px">
+          <el-option label="全平台（默认）" value="" />
+          <el-option
+            v-for="platform in platformOptions"
+            :key="platform.platformCode"
+            :label="`${platform.platformName}（${platform.platformCode}）`"
+            :value="platform.platformCode"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="解冻天数" prop="unfreezeDays">
         <el-input-number v-model="formData.unfreezeDays" :min="1" :max="365" />
         <span class="ml-10px text-gray-500">天（确认收货后自动解冻）</span>
       </el-form-item>
-      <el-form-item label="金额下限（分）" prop="minAmountCent">
-        <el-input-number v-model="formData.minAmountCent" :min="0" :step="100" />
+      <el-form-item label="金额下限" prop="minAmountYuan">
+        <el-input-number v-model="formData.minAmountYuan" :min="0" :step="0.01" :precision="2" />
+        <span class="ml-10px text-gray-500">元</span>
       </el-form-item>
-      <el-form-item label="金额上限（分）" prop="maxAmountCent">
-        <el-input-number v-model="formData.maxAmountCent" :min="formData.minAmountCent + 1" :step="100" />
+      <el-form-item label="金额上限" prop="maxAmountYuan">
+        <el-input-number v-model="formData.maxAmountYuan" :min="(formData.minAmountYuan ?? 0) + 0.01" :step="0.01" :precision="2" />
+        <span class="ml-10px text-gray-500">元</span>
         <span class="ml-10px text-gray-500">留空表示无上限，区间左闭右开</span>
       </el-form-item>
       <el-form-item label="状态" prop="status">
@@ -127,6 +138,7 @@ import {
 } from '@/api/cps/freeze'
 import { formatDate } from '@/utils/formatTime'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { CpsPlatformApi, type CpsPlatformVO } from '@/api/cps/platform'
 
 defineOptions({ name: 'CpsFreezeConfig' })
 
@@ -135,6 +147,7 @@ const list = ref([])
 const total = ref(0)
 const dialogVisible = ref(false)
 const formLoading = ref(false)
+const platformOptions = ref<CpsPlatformVO[]>([])
 
 const queryParams = reactive<CpsFreezeConfigPageReqVO>({
   pageNo: 1,
@@ -143,19 +156,29 @@ const queryParams = reactive<CpsFreezeConfigPageReqVO>({
   status: undefined
 })
 
-const formData = reactive<CpsFreezeConfigSaveVO>({
+interface FreezeConfigFormData {
+  id?: number
+  platformCode?: string
+  minAmountYuan: number
+  maxAmountYuan?: number
+  unfreezeDays: number
+  status: number
+  remark?: string
+}
+
+const formData = reactive<FreezeConfigFormData>({
   id: undefined,
   platformCode: undefined,
-  minAmountCent: 0,
-  maxAmountCent: undefined,
-  unfreezeDays: 15,
+  minAmountYuan: 10,
+  maxAmountYuan: undefined,
+  unfreezeDays: 7,
   status: 1,
   remark: undefined
 })
 
 const formRules = {
   unfreezeDays: [{ required: true, message: '解冻天数不能为空', trigger: 'blur' }],
-  minAmountCent: [{ required: true, message: '金额下限不能为空', trigger: 'blur' }],
+  minAmountYuan: [{ required: true, message: '金额下限不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
 }
 
@@ -185,22 +208,36 @@ const resetQuery = () => {
 
 const openForm = (row: any) => {
   if (row) {
-    Object.assign(formData, row)
+    Object.assign(formData, {
+      ...row,
+      platformCode: row.platformCode || '',
+      minAmountYuan: row.minAmountCent == null ? 0 : row.minAmountCent / 100,
+      maxAmountYuan: row.maxAmountCent == null ? undefined : row.maxAmountCent / 100
+    })
   } else {
-    Object.assign(formData, { id: undefined, platformCode: undefined, minAmountCent: 0, maxAmountCent: undefined, unfreezeDays: 15, status: 1, remark: undefined })
+    Object.assign(formData, { id: undefined, platformCode: '', minAmountYuan: 10, maxAmountYuan: undefined, unfreezeDays: 7, status: 1, remark: undefined })
   }
   dialogVisible.value = true
 }
 
 const handleSubmit = async () => {
   await formRef.value?.validate()
+  const payload: CpsFreezeConfigSaveVO = {
+    id: formData.id,
+    platformCode: formData.platformCode || undefined,
+    minAmountCent: Math.round((formData.minAmountYuan ?? 0) * 100),
+    maxAmountCent: formData.maxAmountYuan == null ? undefined : Math.round(formData.maxAmountYuan * 100),
+    unfreezeDays: formData.unfreezeDays,
+    status: formData.status,
+    remark: formData.remark
+  }
   formLoading.value = true
   try {
     if (formData.id) {
-      await updateCpsFreezeConfig(formData)
+      await updateCpsFreezeConfig(payload)
       ElMessage.success('更新成功')
     } else {
-      await createCpsFreezeConfig(formData)
+      await createCpsFreezeConfig(payload)
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
@@ -219,5 +256,10 @@ const handleDelete = async (id: number) => {
 
 onMounted(() => {
   getList()
+  CpsPlatformApi.getEnabledPlatformList().then((data) => {
+    platformOptions.value = data || []
+  }).catch(() => {
+    platformOptions.value = []
+  })
 })
 </script>

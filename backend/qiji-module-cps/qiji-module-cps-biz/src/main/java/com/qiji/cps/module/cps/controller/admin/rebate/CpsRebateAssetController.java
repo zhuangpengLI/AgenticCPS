@@ -3,6 +3,8 @@ package com.qiji.cps.module.cps.controller.admin.rebate;
 import com.qiji.cps.framework.common.pojo.CommonResult;
 import com.qiji.cps.framework.common.pojo.PageResult;
 import com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateAssetLedgerPageReqVO;
+import com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateAssetBootstrapRespVO;
+import com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateAssetMigrationConfirmReqVO;
 import com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateAssetPolicySaveReqVO;
 import com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateDebtAdjustReqVO;
 import com.qiji.cps.module.cps.controller.admin.rebate.vo.CpsRebateDebtPageReqVO;
@@ -56,6 +58,46 @@ public class CpsRebateAssetController {
         return success(policyService.getPolicy());
     }
 
+    @PostMapping("/policy/initialize")
+    @Operation(summary = "初始化当前租户资产默认策略")
+    @PreAuthorize("@ss.hasPermission('cps:rebate-asset-policy:update')")
+    public CommonResult<CpsRebateAssetPolicyDO> initializePolicy() {
+        return success(policyService.initializePolicy());
+    }
+
+    @PostMapping("/policy/bootstrap")
+    @Operation(summary = "一键准备返利资产迁移数据并执行预检")
+    @PreAuthorize("@ss.hasPermission('cps:rebate-asset-policy:update')")
+    public CommonResult<CpsRebateAssetBootstrapRespVO> bootstrapPolicy() {
+        String operatorId = String.valueOf(getLoginUserId());
+        CpsRebateAssetPolicyDO policy = policyService.initializePolicy();
+        int openingBalanceCount = 0;
+        if (!Boolean.TRUE.equals(policy.getV2Enabled()) && !Boolean.TRUE.equals(policy.getMigrationReady())) {
+            openingBalanceCount = migrationService.backfillOpeningBalances(operatorId);
+        }
+        CpsRebateAssetMigrationCheckReport report = migrationCheckService.runCheck(operatorId);
+        boolean enabled = false;
+        if (!Boolean.TRUE.equals(policy.getV2Enabled()) && Boolean.TRUE.equals(policy.getMigrationReady())
+                && report.isReady()) {
+            policy.setV2Enabled(true);
+            policyService.savePolicy(policy);
+            enabled = true;
+        }
+        String nextStep = enabled ? "返利资产已启用" : report.isReady()
+                ? "预检通过，请确认发布B变更单后保存策略" : "请处理预检差异后再次点击";
+        return success(CpsRebateAssetBootstrapRespVO.builder().policy(policy)
+                .openingBalanceCount(openingBalanceCount).migrationReport(report)
+                .enabled(enabled).nextStep(nextStep).build());
+    }
+
+    @PostMapping("/policy/confirm-migration")
+    @Operation(summary = "确认发布B迁移核验")
+    @PreAuthorize("@ss.hasPermission('cps:rebate-asset-policy:update')")
+    public CommonResult<CpsRebateAssetPolicyDO> confirmMigration(
+            @Valid @RequestBody CpsRebateAssetMigrationConfirmReqVO reqVO) {
+        return success(policyService.confirmMigrationReady(reqVO.getApprovalRef()));
+    }
+
     @PutMapping("/policy")
     @Operation(summary = "保存当前租户资产策略")
     @PreAuthorize("@ss.hasPermission('cps:rebate-asset-policy:update')")
@@ -78,14 +120,14 @@ public class CpsRebateAssetController {
     }
 
     @PostMapping("/migration/check")
-    @Operation(summary = "执行当前租户资产V2迁移只读预检并归档")
+    @Operation(summary = "执行当前租户返利资产迁移只读预检并归档")
     @PreAuthorize("@ss.hasPermission('cps:rebate-asset-policy:update')")
     public CommonResult<CpsRebateAssetMigrationCheckReport> runMigrationCheck() {
         return success(migrationCheckService.runCheck(String.valueOf(getLoginUserId())));
     }
 
     @GetMapping("/migration/check-archives")
-    @Operation(summary = "查询当前租户资产V2迁移预检归档")
+    @Operation(summary = "查询当前租户返利资产迁移预检归档")
     @PreAuthorize("@ss.hasPermission('cps:rebate-asset-policy:query')")
     public CommonResult<List<CpsRebateAssetMigrationCheckArchiveDO>> getMigrationCheckArchives() {
         return success(migrationCheckService.getArchives());

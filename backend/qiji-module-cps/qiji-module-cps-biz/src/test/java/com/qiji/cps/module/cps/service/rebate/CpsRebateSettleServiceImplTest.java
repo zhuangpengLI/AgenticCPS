@@ -1,5 +1,7 @@
 package com.qiji.cps.module.cps.service.rebate;
 
+import com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeConfigDO;
+import com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeRecordDO;
 import com.qiji.cps.module.cps.dal.dataobject.order.CpsOrderDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateConfigDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateRecordDO;
@@ -9,6 +11,7 @@ import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateRecordMapper;
 import com.qiji.cps.module.cps.enums.CpsOrderStatusEnum;
 import com.qiji.cps.module.cps.service.rebate.asset.CpsRebateAssetService;
 import com.qiji.cps.module.cps.service.rebate.asset.CpsMoneyConverter;
+import com.qiji.cps.module.cps.service.freeze.CpsFreezeService;
 import com.qiji.cps.module.member.api.user.MemberUserApi;
 import com.qiji.cps.module.member.api.user.dto.MemberUserRespDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +38,7 @@ class CpsRebateSettleServiceImplTest {
     @Mock private CpsRebateAccountMapper rebateAccountMapper;
     @Mock private CpsRebateConfigService rebateConfigService;
     @Mock private CpsRebateAssetService assetService;
+    @Mock private CpsFreezeService freezeService;
     @Mock private CpsMoneyConverter moneyConverter;
     @Mock private MemberUserApi memberUserApi;
     @Mock private CpsRebateSettleExecutor settleExecutor;
@@ -91,6 +95,31 @@ class CpsRebateSettleServiceImplTest {
         verify(orderMapper).updateRebateFreezeByStatusVersion(org.mockito.ArgumentMatchers.<CpsOrderDO>argThat(update ->
                 CpsOrderStatusEnum.SETTLED.getStatus().equals(update.getOrderStatus())
                 && update.getRebateTime() == null), eq(0));
+    }
+
+    @Test
+    void centralizedFreezeRuleControlsThresholdAndUsesConfiguredDays() {
+        ReflectionTestUtils.setField(service, "freezeService", freezeService);
+        CpsOrderDO order = order(CpsOrderStatusEnum.SETTLED.getStatus(), LocalDateTime.now());
+        order.setCommissionAmount(new BigDecimal("20.00"));
+        when(orderMapper.selectForUpdateById(11L)).thenReturn(order);
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(9L);
+        member.setLevelId(3L);
+        when(memberUserApi.getUser(9L)).thenReturn(member);
+        when(rebateConfigService.matchRebateConfig(9L, 3L, "taobao"))
+                .thenReturn(CpsRebateConfigDO.builder().id(7L).rebateRate(new BigDecimal("80")).build());
+        when(moneyConverter.yuanToCent(new BigDecimal("16.00"))).thenReturn(1600L);
+        when(freezeService.getActiveConfig("taobao", 1600L))
+                .thenReturn(CpsFreezeConfigDO.builder().id(26L).unfreezeDays(7).build());
+        when(assetService.createOrderRebateFreeze(11L, "order-rebate:11"))
+                .thenReturn(CpsFreezeRecordDO.builder().unfreezeTime(LocalDateTime.now().plusDays(7)).build());
+        when(orderMapper.updateRebateFreezeByStatusVersion(any(CpsOrderDO.class), eq(0))).thenReturn(1);
+
+        assertTrue(service.settleOrder(order));
+
+        verify(assetService).createOrderRebateFreeze(11L, "order-rebate:11");
+        verify(assetService, never()).createOrderRebateFreeze(11L, "order-rebate:11", 15);
     }
 
     @Test

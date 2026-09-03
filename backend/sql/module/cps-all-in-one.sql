@@ -672,9 +672,9 @@ CREATE TABLE `cps_freeze_config` (
   KEY `idx_platform_amount` (`tenant_id`, `platform_code`, `status`, `min_amount_cent`, `max_amount_cent`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='冻结解冻配置表';
 
--- 初始化默认配置（全局15天解冻）
+-- 初始化默认配置（返利满10元冻结7天）
 INSERT INTO `cps_freeze_config` (`platform_code`, `min_amount_cent`, `max_amount_cent`, `unfreeze_days`, `status`, `remark`)
-VALUES (NULL, 0, NULL, 15, 1, '全平台全金额默认配置-资格时间后15天解冻');
+VALUES (NULL, 1000, NULL, 7, 1, '全平台返利满10元冻结，资格时间后7天解冻');
 
 -- ----------------------------
 -- 13. 冻结解冻记录表（Phase7新增）
@@ -915,6 +915,7 @@ CREATE TABLE `cps_rebate_asset_policy` (
   `migration_ready`            tinyint     NOT NULL DEFAULT '0' COMMENT '发布B与最新预检批次已绑定（0否 1是）',
   `latest_ready_check_batch_no` varchar(64)         DEFAULT NULL COMMENT '最近一次通过并获发布B批准的预检批次',
   `ready_check_time`           datetime             DEFAULT NULL COMMENT '上述预检批次执行时间',
+  `migration_approval_ref`     varchar(128)         DEFAULT NULL COMMENT '发布B变更单/审批单号',
   `read_only`                  tinyint     NOT NULL DEFAULT '0' COMMENT '资产操作只读开关（0否 1是）',
   `large_debt_threshold_cent`  bigint      NOT NULL DEFAULT '10000' COMMENT '大额欠款阈值（分，默认100元）',
   `reminder_interval_days`     int         NOT NULL DEFAULT '7' COMMENT '普通站内提醒间隔天数',

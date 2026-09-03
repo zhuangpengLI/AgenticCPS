@@ -36,6 +36,11 @@ public interface CpsOrderMapper extends BaseMapperX<CpsOrderDO> {
                 .likeIfPresent(CpsOrderDO::getItemTitle, reqVO.getItemTitle())
                 .likeIfPresent(CpsOrderDO::getPlatformOrderId, reqVO.getPlatformOrderId())
                 .betweenIfPresent(CpsOrderDO::getCreateTime, reqVO.getCreateTime());
+        if ("UNATTRIBUTED".equalsIgnoreCase(reqVO.getAttributionStatus())) {
+            wrapper.isNull(CpsOrderDO::getMemberId);
+        } else if ("ATTRIBUTED".equalsIgnoreCase(reqVO.getAttributionStatus())) {
+            wrapper.isNotNull(CpsOrderDO::getMemberId);
+        }
         if (reqVO.getMemberName() != null && !reqVO.getMemberName().isBlank()) {
             wrapper.and(w -> {
                 w.like(CpsOrderDO::getMemberNickname, reqVO.getMemberName());
@@ -89,12 +94,25 @@ public interface CpsOrderMapper extends BaseMapperX<CpsOrderDO> {
      */
     default int bindMemberIfUnattributed(Long orderId, Long memberId, String memberNickname,
                                          String attributionSource) {
-        return update(null, new LambdaUpdateWrapper<CpsOrderDO>()
+        return bindMemberIfUnattributed(orderId, memberId, memberNickname, null, attributionSource);
+    }
+
+    /**
+     * 仅在订单尚未归因时绑定会员，并可同时写入按会员规则计算的预计返利。
+     * 使用 member_id IS NULL 条件保证并发人工归因不会覆盖先完成的归因。
+     */
+    default int bindMemberIfUnattributed(Long orderId, Long memberId, String memberNickname,
+                                         java.math.BigDecimal estimateRebate, String attributionSource) {
+        LambdaUpdateWrapper<CpsOrderDO> wrapper = new LambdaUpdateWrapper<CpsOrderDO>()
                 .eq(CpsOrderDO::getId, orderId)
                 .isNull(CpsOrderDO::getMemberId)
                 .set(CpsOrderDO::getMemberId, memberId)
                 .set(CpsOrderDO::getMemberNickname, memberNickname)
-                .set(CpsOrderDO::getAttributionSource, attributionSource));
+                .set(CpsOrderDO::getAttributionSource, attributionSource);
+        if (estimateRebate != null) {
+            wrapper.set(CpsOrderDO::getEstimateRebate, estimateRebate);
+        }
+        return update(null, wrapper);
     }
 
     /**

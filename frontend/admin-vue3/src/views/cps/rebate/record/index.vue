@@ -8,14 +8,8 @@
       :inline="true"
       label-width="90px"
     >
-      <el-form-item label="会员名" prop="memberName">
-        <el-input
-          v-model="queryParams.memberName"
-          placeholder="请输入会员名"
-          clearable
-          class="!w-160px"
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="会员名" prop="memberId">
+        <CpsMemberSelect v-model="queryParams.memberId" class-name="!w-180px" />
       </el-form-item>
       <el-form-item label="平台" prop="platformCode">
         <el-select
@@ -237,7 +231,7 @@ const queryFormRef = ref()
 const queryParams = reactive<CpsRebateRecordPageReqVO>({
   pageNo: 1,
   pageSize: 10,
-  memberName: undefined,
+  memberId: undefined,
   platformCode: undefined,
   rebateType: undefined,
   rebateStatus: undefined,

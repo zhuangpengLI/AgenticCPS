@@ -1,11 +1,12 @@
 package com.qiji.cps.module.cps.service.rebate.asset;
 
 import com.qiji.cps.framework.tenant.core.context.TenantContextHolder;
+import com.qiji.cps.module.cps.dal.dataobject.freeze.CpsFreezeConfigDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateAssetMigrationCheckArchiveDO;
 import com.qiji.cps.module.cps.dal.dataobject.rebate.CpsRebateAssetPolicyDO;
+import com.qiji.cps.module.cps.dal.mysql.freeze.CpsFreezeConfigMapper;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateAssetMigrationCheckArchiveMapper;
 import com.qiji.cps.module.cps.dal.mysql.rebate.CpsRebateAssetPolicyMapper;
-import com.qiji.cps.module.cps.dal.mysql.freeze.CpsFreezeConfigMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,62 @@ class CpsRebateAssetPolicyServiceImplTest {
         assertEquals(30, policy.getNormalReminderDays());
         assertEquals(180, policy.getLargeReminderDays());
         assertEquals(30, policy.getSmsIntervalDays());
+    }
+
+    @Test
+    void initializePolicy_createsDefaultsAndIsSafeToRetry() {
+        when(policyMapper.selectCurrentTenant()).thenReturn(null);
+        when(freezeConfigMapper.selectEnabledRules()).thenReturn(java.util.List.of());
+
+        CpsRebateAssetPolicyDO policy = service.initializePolicy();
+
+        assertFalse(policy.getV2Enabled());
+        verify(policyMapper).insert(policy);
+        verify(freezeConfigMapper).insert(org.mockito.ArgumentMatchers.argThat((CpsFreezeConfigDO config) ->
+                Long.valueOf(1000L).equals(config.getMinAmountCent())
+                        && Integer.valueOf(7).equals(config.getUnfreezeDays())));
+    }
+
+    @Test
+    void confirmMigrationReady_bindsLatestReadyArchiveAndApprovalRef() {
+        LocalDateTime executedAt = LocalDateTime.of(2026, 9, 3, 10, 0);
+        when(policyMapper.selectCurrentTenant()).thenReturn(CpsRebateAssetPolicyDO.builder()
+                .id(9L).v2Enabled(false).migrationReady(false).build());
+        when(archiveMapper.selectLatestByTenantId(7L)).thenReturn(readyArchive("ready-batch", executedAt));
+
+        CpsRebateAssetPolicyDO confirmed = service.confirmMigrationReady("  CHG-20260903-001  ");
+
+        assertTrue(confirmed.getMigrationReady());
+        assertEquals("ready-batch", confirmed.getLatestReadyCheckBatchNo());
+        assertEquals(executedAt, confirmed.getReadyCheckTime());
+        assertEquals("CHG-20260903-001", confirmed.getMigrationApprovalRef());
+        verify(policyMapper).updateById(confirmed);
+    }
+
+    @Test
+    void confirmMigrationReady_rejectsWhenLatestArchiveIsBlocked() {
+        when(policyMapper.selectCurrentTenant()).thenReturn(CpsRebateAssetPolicyDO.builder()
+                .id(9L).v2Enabled(false).migrationReady(false).build());
+        when(archiveMapper.selectLatestByTenantId(7L)).thenReturn(
+                CpsRebateAssetMigrationCheckArchiveDO.builder().ready(false).build());
+
+        assertThrows(IllegalStateException.class, () -> service.confirmMigrationReady("CHG-1"));
+        verify(policyMapper, never()).updateById(any(CpsRebateAssetPolicyDO.class));
+    }
+
+    @Test
+    void savePolicy_appliesDefaultsWhenOptionalFieldsAreOmitted() {
+        when(policyMapper.selectCurrentTenant()).thenReturn(null);
+        when(freezeConfigMapper.selectEnabledRules()).thenReturn(java.util.List.of());
+
+        CpsRebateAssetPolicyDO policy = CpsRebateAssetPolicyDO.builder().build();
+        service.savePolicy(policy);
+
+        assertFalse(policy.getV2Enabled());
+        assertFalse(policy.getReadOnly());
+        assertEquals(10_000L, policy.getLargeDebtThresholdCent());
+        assertEquals(7, policy.getReminderIntervalDays());
+        verify(policyMapper).insert(policy);
     }
 
     @Test

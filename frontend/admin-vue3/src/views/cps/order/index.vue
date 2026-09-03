@@ -28,23 +28,28 @@
           clearable
           class="!w-160px"
         >
-          <el-option label="已下单" value="ordered" />
+          <el-option label="已下单" value="created" />
           <el-option label="已付款" value="paid" />
           <el-option label="已收货" value="received" />
           <el-option label="已结算" value="settled" />
-          <el-option label="已到账" value="credited" />
+          <el-option label="已到账" value="rebate_received" />
           <el-option label="已退款" value="refunded" />
           <el-option label="已失效" value="invalid" />
         </el-select>
       </el-form-item>
-      <el-form-item label="会员名" prop="memberName">
-        <el-input
-          v-model="queryParams.memberName"
-          placeholder="请输入会员名"
+      <el-form-item label="归因状态" prop="attributionStatus">
+        <el-select
+          v-model="queryParams.attributionStatus"
+          placeholder="请选择归因状态"
           clearable
           class="!w-160px"
-          @keyup.enter="handleQuery"
-        />
+        >
+          <el-option label="已归因" value="ATTRIBUTED" />
+          <el-option label="未归因" value="UNATTRIBUTED" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="会员名" prop="memberId">
+        <CpsMemberSelect v-model="queryParams.memberId" class-name="!w-180px" />
       </el-form-item>
       <el-form-item label="平台单号" prop="platformOrderId">
         <el-input
@@ -300,8 +305,17 @@
         width="165"
         :formatter="dateFormatter"
       />
-      <el-table-column label="操作" align="center" fixed="right" width="120">
+      <el-table-column label="操作" align="center" fixed="right" width="220">
         <template #default="scope">
+          <el-button
+            v-if="!scope.row.memberId"
+            v-hasPermi="['cps:order:attribution-bind']"
+            type="warning"
+            link
+            @click="openManualAttribution(scope.row)"
+          >
+            手动归属会员
+          </el-button>
           <el-button
             type="primary"
             link
@@ -512,13 +526,20 @@
 
   <el-dialog
     v-model="bindSpecialIdDialogVisible"
-    title="手动绑定会员"
+    :title="bindSpecialIdMode === 'manual' ? '手动归属会员' : '手动绑定会员'"
     width="420px"
     destroy-on-close
   >
     <el-form label-width="88px">
-      <el-form-item label="special_id">
-        <el-input :model-value="bindSpecialIdForm.specialId" disabled />
+      <el-form-item :label="bindSpecialIdMode === 'manual' ? '平台订单号' : 'special_id'">
+        <el-input
+          :model-value="
+            bindSpecialIdMode === 'manual'
+              ? bindSpecialIdForm.platformOrderId
+              : bindSpecialIdForm.specialId
+          "
+          disabled
+        />
       </el-form-item>
       <el-form-item label="会员">
         <el-select
@@ -589,7 +610,8 @@ const queryParams = reactive<CpsOrderPageReqVO>({
   pageNo: 1,
   pageSize: 10,
   platformCode: undefined,
-  memberName: undefined,
+  memberId: undefined,
+  attributionStatus: undefined,
   orderStatus: undefined,
   itemTitle: undefined,
   platformOrderId: undefined,
@@ -921,11 +943,13 @@ const detailVisible = ref(false)
 const detailLoading = ref(false)
 const bindSpecialIdLoading = ref(false)
 const bindSpecialIdDialogVisible = ref(false)
+const bindSpecialIdMode = ref<'specialId' | 'manual'>('specialId')
 const bindMemberLoading = ref(false)
 const bindMemberOptions = ref<UserVO[]>([])
 const bindSpecialIdForm = reactive<{
   orderId?: number
   specialId?: string
+  platformOrderId?: string
   memberId?: number
   auditNote?: string
 }>({})
@@ -950,6 +974,8 @@ const handleBindSpecialId = async () => {
   }
   bindSpecialIdForm.orderId = detailData.value.id
   bindSpecialIdForm.specialId = detailData.value.specialId
+  bindSpecialIdForm.platformOrderId = detailData.value.platformOrderId
+  bindSpecialIdMode.value = 'specialId'
   bindSpecialIdForm.memberId = undefined
   bindSpecialIdForm.auditNote = undefined
   bindSpecialIdDialogVisible.value = true
@@ -999,13 +1025,19 @@ const handleConfirmBindSpecialId = async () => {
   }
   try {
     bindSpecialIdLoading.value = true
-    await OrderApi.bindSpecialIdToMember({
+    const request = {
       orderId: bindSpecialIdForm.orderId,
       memberId: bindSpecialIdForm.memberId,
       idempotencyKey: createManualBindIdempotencyKey(bindSpecialIdForm.orderId),
       auditNote: bindSpecialIdForm.auditNote?.trim() || undefined
-    })
-    message.success('绑定成功')
+    }
+    if (bindSpecialIdMode.value === 'manual') {
+      await OrderApi.manuallyAttributeOrder(request)
+      message.success('归属成功')
+    } else {
+      await OrderApi.bindSpecialIdToMember(request)
+      message.success('绑定成功')
+    }
     bindSpecialIdDialogVisible.value = false
     detailData.value = await OrderApi.getCpsOrder(bindSpecialIdForm.orderId)
     await getList()
@@ -1029,6 +1061,25 @@ const createManualBindIdempotencyKey = (orderId: number) => {
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`
   return `manual-bind:${orderId}:${randomId}`
+}
+
+/** 从订单列表直接打开手动归属会员弹窗。 */
+const openManualAttribution = async (row: CpsOrderVO) => {
+  detailLoading.value = true
+  try {
+    detailData.value = await OrderApi.getCpsOrder(row.id)
+    if (!detailData.value?.id || detailData.value.memberId) return
+    bindSpecialIdForm.orderId = detailData.value.id
+    bindSpecialIdForm.specialId = detailData.value.specialId
+    bindSpecialIdForm.platformOrderId = detailData.value.platformOrderId
+    bindSpecialIdForm.memberId = undefined
+    bindSpecialIdForm.auditNote = undefined
+    bindSpecialIdMode.value = 'manual'
+    bindSpecialIdDialogVisible.value = true
+    await searchBindMemberOptions('')
+  } finally {
+    detailLoading.value = false
+  }
 }
 
 onMounted(() => {

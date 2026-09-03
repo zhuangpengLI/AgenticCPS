@@ -32,6 +32,8 @@ public class CpsRebateAssetPolicyDO extends TenantBaseDO {
     private String latestReadyCheckBatchNo;
     /** 上述预检批次的执行时间。 */
     private LocalDateTime readyCheckTime;
+    /** 发布 B 变更单/审批单号，用于审计核验凭证。 */
+    private String migrationApprovalRef;
     private Boolean readOnly;
     private Long largeDebtThresholdCent;
     private Integer reminderIntervalDays;

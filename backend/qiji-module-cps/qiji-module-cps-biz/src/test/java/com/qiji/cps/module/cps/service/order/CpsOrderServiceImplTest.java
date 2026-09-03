@@ -926,6 +926,69 @@ class CpsOrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("manuallyAttributeOrder - 未归因订单应通过 CAS 归属会员并记录人工审计")
+    void manuallyAttributeOrder_attributesUnattributedOrderWithAudit() {
+        when(orderMapper.selectById(12L)).thenReturn(CpsOrderDO.builder()
+                .id(12L)
+                .platformCode("jd")
+                .platformOrderId("JD-MANUAL-1")
+                .commissionAmount(new BigDecimal("10.00"))
+                .build());
+        MemberUserRespDTO member = new MemberUserRespDTO();
+        member.setId(1001L);
+        member.setNickname("人工归属会员");
+        member.setLevelId(2L);
+        when(memberUserApi.getUser(1001L)).thenReturn(member);
+        when(rebateConfigService.matchRebateConfig(1001L, 2L, "jd"))
+                .thenReturn(CpsRebateConfigDO.builder()
+                        .rebateRate(new BigDecimal("80.0000"))
+                        .minRebateAmount(BigDecimal.ZERO)
+                        .maxRebateAmount(BigDecimal.ZERO)
+                        .build());
+        when(orderMapper.bindMemberIfUnattributed(eq(12L), eq(1001L), eq("人工归属会员"),
+                eq(new BigDecimal("8.00")), eq("manual"))).thenReturn(1);
+
+        orderService.manuallyAttributeOrder(new CpsOrderManualBindCommand(
+                12L, 1001L, 9001L, "manual-attribution-12", "人工核验订单凭证"));
+
+        verify(orderMapper).bindMemberIfUnattributed(12L, 1001L, "人工归属会员",
+                new BigDecimal("8.00"), "manual");
+        verify(attributionLogMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderAttributionLogDO>argThat(log ->
+                "MANUAL".equals(log.getAction())
+                        && "BOUND".equals(log.getResult())
+                        && "manual".equals(log.getAttributionSource())
+                        && "manual".equals(log.getBindingType())
+                        && Long.valueOf(1001L).equals(log.getAttributedMemberId())
+                        && Long.valueOf(9001L).equals(log.getReviewOperatorId())
+                        && "manual-attribution-12".equals(log.getIdempotencyKey())));
+        verify(adzoneMapper, never()).insert(any(CpsAdzoneDO.class));
+    }
+
+    @Test
+    @DisplayName("manuallyAttributeOrder - 已归因订单不得被未归因入口覆盖并记录拒绝审计")
+    void manuallyAttributeOrder_rejectsAlreadyAttributedOrderWithoutOverwrite() {
+        when(orderMapper.selectById(13L)).thenReturn(CpsOrderDO.builder()
+                .id(13L)
+                .platformCode("pdd")
+                .platformOrderId("PDD-MANUAL-CONFLICT")
+                .memberId(2002L)
+                .build());
+
+        assertThrows(ServiceException.class, () -> orderService.manuallyAttributeOrder(
+                new CpsOrderManualBindCommand(13L, 1001L, 9001L,
+                        "manual-attribution-13", "人工申诉待核验")));
+
+        verify(orderMapper, never()).bindMemberIfUnattributed(any(Long.class), any(Long.class),
+                any(String.class), any(BigDecimal.class), any(String.class));
+        verify(attributionLogMapper).insert(org.mockito.ArgumentMatchers.<CpsOrderAttributionLogDO>argThat(log ->
+                "REBIND".equals(log.getAction())
+                        && "REJECTED".equals(log.getResult())
+                        && "PENDING_REVIEW".equals(log.getReviewStatus())
+                        && Long.valueOf(2002L).equals(log.getAttributedMemberId())
+                        && Long.valueOf(1001L).equals(log.getCandidateMemberId())));
+    }
+
+    @Test
     @DisplayName("manualSync - 状态同步应按更新时间查询平台订单")
     void manualSync_usesUpdateTimeQueryTypeForStatusSync() {
         when(platformClientFactory.getRequiredClient("taobao")).thenReturn(platformClient);
