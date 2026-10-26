@@ -3672,6 +3672,9 @@ WHERE NOT EXISTS (SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' A
 INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
 SELECT 'cps', 'v2.1.6', '2026-10-26 12:00:00', 'cps-update.sql', '初始化美团联盟官方平台配置与API Gateway供应商接入元数据', 'SUCCESS', 0, b'0', 'system', 'system'
 WHERE NOT EXISTS (SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.6' AND `schema_update_time` = '2026-10-26 12:00:00');
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.7', '2026-10-26 17:11:54', 'cps-update.sql', '初始化穿山甲电商联盟（CSJ）抖音电商CPS供应商接入元数据', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.7' AND `schema_update_time` = '2026-10-26 17:11:54');
 COMMIT;
 
 

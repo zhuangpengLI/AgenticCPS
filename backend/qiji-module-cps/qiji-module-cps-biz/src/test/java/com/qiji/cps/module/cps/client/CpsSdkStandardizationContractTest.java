@@ -1,5 +1,6 @@
 package com.qiji.cps.module.cps.client;
 
+import com.qiji.cps.module.cps.client.csj.CsjDouyinVendorClient;
 import com.qiji.cps.module.cps.client.didi.DidiOfficialVendorClient;
 import com.qiji.cps.module.cps.client.didi.DidiPlatformClientAdapter;
 import com.qiji.cps.module.cps.client.didi.DidiUnionClientFactory;
@@ -145,6 +146,30 @@ class CpsSdkStandardizationContractTest {
                     CpsVendorCapability.ORDER_QUERY,
                     CpsVendorCapability.CONNECTION_TEST)), officialClient.getPlatformCode());
         }
+    }
+
+    @Test
+    void csjVendorClient_fulfillsStandardContract() {
+        CsjDouyinVendorClient csjClient = new CsjDouyinVendorClient();
+        assertEquals("csj", csjClient.getVendorCode());
+        assertEquals("douyin", csjClient.getPlatformCode());
+        assertEquals("aggregator", csjClient.getVendorType());
+        assertTrue(csjClient.getCapabilities().containsAll(Set.of(
+                CpsVendorCapability.GOODS_SEARCH,
+                CpsVendorCapability.PROMOTION_LINK,
+                CpsVendorCapability.ORDER_QUERY,
+                CpsVendorCapability.CONNECTION_TEST
+        )));
+
+        CpsVendorDescriptor descriptor = csjClient.describe();
+        assertTrue(descriptor.getConfigSchema().validate(CpsVendorConfig.builder()
+                .appKey("5271412")
+                .appSecret("secret-key")
+                .apiBaseUrl("https://ecom.pangolin-sdk-toutiao.com")
+                .build()).isValid());
+        assertFalse(descriptor.getConfigSchema().validate(CpsVendorConfig.builder()
+                .appKey("5271412")
+                .build()).isValid());
     }
 
     private static final class CouponVendor extends StubVendorClient implements CpsCouponInfoVendorClient {

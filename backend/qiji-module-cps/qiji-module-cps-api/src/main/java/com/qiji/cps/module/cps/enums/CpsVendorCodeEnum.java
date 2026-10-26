@@ -23,6 +23,7 @@ public enum CpsVendorCodeEnum implements ArrayValuable<String> {
     MIAOYOUQUAN("miaoyouquan", "喵有卷", "aggregator"),
     SHIHUIZHU("shihuizhu", "实惠猪", "aggregator"),
     OFFICIAL("official", "官方API", "official"),
+    CSJ("csj", "穿山甲", "aggregator"),
     ;
 
     public static final String[] ARRAYS = Arrays.stream(values()).map(CpsVendorCodeEnum::getCode).toArray(String[]::new);

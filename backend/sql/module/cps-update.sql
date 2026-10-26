@@ -1645,6 +1645,15 @@ WHERE NOT EXISTS (
   SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.5' AND `schema_update_time` = '2026-10-26 11:54:01'
 );
 
+-- ============================================================
+-- 修改时间：2026-10-26 17:11:54
+-- 目的：初始化穿山甲电商联盟（CSJ）抖音电商CPS供应商接入元数据
+-- ============================================================
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.7', '2026-10-26 17:11:54', 'cps-update.sql', '初始化穿山甲电商联盟（CSJ）抖音电商CPS供应商接入元数据', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.7' AND `schema_update_time` = '2026-10-26 17:11:54'
+);
 
 SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================================
@@ -2178,4 +2187,32 @@ INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, 
 SELECT 'cps', 'v2.1.6', '2026-10-26 12:00:00', 'cps-update.sql', '初始化美团联盟官方平台配置与API Gateway供应商接入元数据', 'SUCCESS', 0, b'0', 'system', 'system'
 WHERE NOT EXISTS (
   SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.6' AND `schema_update_time` = '2026-10-26 12:00:00'
+);
+
+
+-- ============================================================
+-- 修改时间：2026-10-26 17:10:00
+-- 目的：初始化穿山甲电商联盟（CSJ/Pangolin）抖音电商CPS供应商接入元数据
+-- 说明：更新 douyin 平台的 supported_vendors 增加 csj，并插入 csj 供应商基础配置（基于 /order/search 与 MD5 签名机制）
+-- ============================================================
+UPDATE `cps_platform`
+ SET `supported_vendors` = CONCAT_WS(',', NULLIF(TRIM(BOTH ',' FROM COALESCE(`supported_vendors`, '')), ''), 'csj'),
+     `update_time` = '2026-10-26 17:10:00'
+ WHERE `tenant_id` = 1
+   AND `platform_code` = 'douyin'
+   AND `deleted` = b'0'
+   AND FIND_IN_SET('csj', REPLACE(COALESCE(`supported_vendors`, ''), ' ', '')) = 0;
+
+INSERT INTO `cps_api_vendor` (`vendor_code`, `vendor_name`, `vendor_type`, `platform_code`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `extra_config`, `priority`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT 'csj', '穿山甲电商联盟', 'aggregator', 'douyin', '', '', 'https://ecom.pangolin-sdk-toutiao.com', NULL, NULL, '{"orderSearchPath":"/order/search","productSearchPath":"/product/search","productLinkPath":"/product/link","signType":"MD5"}', 90, 0, '穿山甲电商联盟（抖音电商CPS/CSJ平台）接入，基于order/search接口与MD5签名机制', 'system', '2026-10-26 17:10:00', 'system', '2026-10-26 17:10:00', b'0', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM `cps_api_vendor`
+  WHERE `tenant_id` = 1 AND `vendor_code` = 'csj' AND `platform_code` = 'douyin' AND `deleted` = b'0'
+);
+
+-- 记录数据库结构版本号
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.7', '2026-10-26 17:10:00', 'cps-update.sql', '初始化穿山甲电商联盟（CSJ）抖音电商CPS供应商接入元数据', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.7' AND `schema_update_time` = '2026-10-26 17:10:00'
 );

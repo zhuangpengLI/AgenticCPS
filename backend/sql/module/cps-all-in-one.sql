@@ -1,7 +1,7 @@
 -- ============================================================
 -- CPS联盟返利系统 - 完整数据库建表脚本（All-in-One）
--- Version: 2.1.6
--- Date: 2026-10-26 12:00:00
+-- Version: 2.1.7
+-- Date: 2026-10-26 17:11:54
 -- Description: 新库全量初始化脚本，整合 CPS 核心表、P0 返利兑换、活动中心、选品库、CPX 扩展表、结构版本与更新时间追踪表、菜单与权限。
 -- Maintenance:
 --   1. 本文件只保存新库全量脚本。
@@ -106,7 +106,7 @@ CREATE TABLE `cps_platform` (
 -- 唯品会由好单库供应商接入；初始保持禁用，待管理员配置供应商凭证后启用。
 INSERT INTO `cps_platform` (`platform_code`, `platform_name`, `platform_logo`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `platform_service_rate`, `sort`, `status`, `extra_config`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`, `active_vendor_code`, `supported_vendors`) VALUES
 ('vip', '唯品会', NULL, NULL, NULL, NULL, NULL, NULL, 0.0000, 70, 0, NULL, '请先配置好单库唯品会供应商凭证，确认账号已开通唯品会权限后再启用', 'system', '2026-08-07 17:30:00', 'system', '2026-08-07 17:30:00', b'0', 1, 'haodanku', 'haodanku'),
-('douyin', '抖音联盟', NULL, NULL, NULL, 'https://openapi-fxg.jinritemai.com', NULL, NULL, 0.0000, 80, 0, NULL, '请先在抖店开放平台创建应用并配置官方 AppKey、AppSecret，账号具备抖客/达人权限后再启用', 'system', '2026-10-26 11:53:00', 'system', '2026-10-26 11:53:00', b'0', 1, 'official', 'official'),
+('douyin', '抖音联盟', NULL, NULL, NULL, 'https://openapi-fxg.jinritemai.com', NULL, NULL, 0.0000, 80, 0, NULL, '请先在抖店开放平台或穿山甲开发者平台配置 AppKey/AppId、AppSecret/SecureKey，具备抖客/分销权限后再启用', 'system', '2026-10-26 11:53:00', 'system', '2026-10-26 17:10:00', b'0', 1, 'official', 'official,csj'),
 ('meituan', '美团联盟', NULL, NULL, NULL, 'https://openapi.meituan.com', NULL, NULL, 0.0000, 85, 0, NULL, '美团联盟官方API Gateway接入，请配置服务商appKey、appSecret与默认推广位SID后再启用', 'system', '2026-10-26 12:00:00', 'system', '2026-10-26 12:00:00', b'0', 1, 'official', 'official');
 
 -- ----------------------------
@@ -1179,6 +1179,7 @@ CREATE TABLE `cps_didi_callback_event` (
 INSERT INTO `cps_api_vendor` (`vendor_code`, `vendor_name`, `vendor_type`, `platform_code`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `extra_config`, `priority`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES
 ('haodanku', '好单库', 'aggregator', 'vip', '', '', 'https://v2.api.haodanku.com', NULL, NULL, '{"searchPath":"/vip_goods_search","convertPath":"/vip_ratesurl"}', 100, 0, '请配置好单库 apikey 和唯品会 PID；普通账号使用 v2 搜索与转链，v3 订单能力按官方权限开通', 'system', '2026-08-07 17:30:00', 'system', '2026-08-11 16:15:00', b'0', 1),
 ('official', '抖音联盟官方', 'official', 'douyin', '', '', 'https://openapi-fxg.jinritemai.com', NULL, NULL, '{"searchPath":"/buyin/kolMaterialsProductsSearch","convertPath":"/buyin/doukeCommandParseAndShare","orderPath":"/buyin/doukeOrderList"}', 100, 0, '抖音电商官方 OpenAPI 接入，支持精选联盟选品、抖客转链与订单同步', 'system', '2026-10-26 11:53:00', 'system', '2026-10-26 11:53:00', b'0', 1),
+('csj', '穿山甲电商联盟', 'aggregator', 'douyin', '', '', 'https://ecom.pangolin-sdk-toutiao.com', NULL, NULL, '{"orderSearchPath":"/order/search","productSearchPath":"/product/search","productLinkPath":"/product/link","signType":"MD5"}', 90, 0, '穿山甲电商联盟（抖音电商CPS/CSJ平台）接入，基于order/search接口与MD5签名机制', 'system', '2026-10-26 17:10:00', 'system', '2026-10-26 17:10:00', b'0', 1),
 ('official', '美团联盟官方', 'official', 'meituan', '', '', 'https://openapi.meituan.com', NULL, NULL, '{"searchPath":"/cps_open/common/api/v1/query_coupon","convertPath":"/cps_open/common/api/v1/get_referral_link","orderPath":"/cps_open/common/api/v1/query_order","platform":1,"bizLine":1,"linkType":1}', 100, 0, '美团开放平台官方 API Gateway (Shepherd鉴权) 接入，支持外卖/闪购/优选/到店卡券搜索、转链与订单同步', 'system', '2026-10-26 12:00:00', 'system', '2026-10-26 12:00:00', b'0', 1);
 
 -- ----------------------------

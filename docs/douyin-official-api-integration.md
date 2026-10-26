@@ -2,6 +2,9 @@
 
 本文档依据抖音电商开放平台（抖店开放平台 `op.jinritemai.com` / 巨量百应开放平台 `buyin.jinritemai.com`）官方开发者规范及 [开发者入驻与资质审核指南 (guide-docs/213/14)](https://op.jinritemai.com/docs/guide-docs/213/14) 编写，涵盖资质申请、API 清单、签名机制、系统实现与后台配置指南。
 
+> [!TIP]
+> 如果您暂无独立软件著作权证书（软著）或希望以个体工商户主体快速接入抖音电商 CPS，可选用字节跳动旗下**穿山甲电商联盟渠道**。详细接口规范、资质要求与后台配置请参考 [《穿山甲电商联盟（抖音电商 CPS）接口接入与资质指南》](file:///docs/douyin-csj-api-integration.md)。
+
 ---
 
 ## 一、 抖音电商开放平台生态与架构概述
