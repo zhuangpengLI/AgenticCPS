@@ -5,6 +5,7 @@ import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
 import com.qiji.cps.module.cps.client.didi.DidiOfficialVendorClient;
 import com.qiji.cps.module.cps.client.official.meituan.MeituanOfficialVendorClient;
+import com.qiji.cps.module.cps.client.csj.CsjDouyinVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
@@ -75,6 +76,9 @@ class CpsRebateActivityServiceImplTest {
 
     @Mock
     private MeituanOfficialVendorClient meituanOfficialVendorClient;
+
+    @Mock
+    private CsjDouyinVendorClient csjDouyinVendorClient;
 
     @Mock
     private CpsAdzoneService adzoneService;
@@ -972,6 +976,42 @@ class CpsRebateActivityServiceImplTest {
         reqVO.setSort(1);
         reqVO.setStatus(1);
         return reqVO;
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 支持穿山甲抖音官方活动转链")
+    void generatePromotionContent_usesCsjOfficialActivityLink() {
+        CpsRebateActivityDO activity = buildActivity(30L, "抖音超值购大促", "douyin", "CPS", 200, 1);
+        activity.setSourceType("csj");
+        activity.setPromotionActivityId("1001");
+        when(activityMapper.selectById(30L)).thenReturn(activity);
+        when(platformClientFactory.getVendorConfig("csj", "douyin")).thenReturn(CpsVendorConfig.builder()
+                .vendorCode("csj")
+                .platformCode("douyin")
+                .appKey("csj-key")
+                .appSecret("csj-secret")
+                .defaultAdzoneId("adzone_douyin_default")
+                .build());
+        when(csjDouyinVendorClient.generatePromotionLink(any(), any())).thenReturn(CpsPromotionLinkResult.builder()
+                .shortUrl("https://haohuo.jinritemai.com/views/material/index?material_id=1001")
+                .longUrl("https://haohuo.jinritemai.com/views/material/index?material_id=1001")
+                .mobileUrl("snssdk1128://ec_goods_detail")
+                .tpwd("8:/ #抖音超值购# 复制打开抖音")
+                .build());
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(30L);
+        reqVO.setChannelTag("test_channel");
+
+        CpsRebateActivityPromotionRespVO resp = service.generatePromotionContent(reqVO, null);
+
+        assertEquals("SUCCESS", resp.getLinkStatus());
+        assertEquals("EXTERNAL_PROMOTION", resp.getLinkType());
+        assertEquals("https://haohuo.jinritemai.com/views/material/index?material_id=1001", resp.getPromotionUrl());
+        assertEquals("8:/ #抖音超值购# 复制打开抖音", resp.getTpwd());
+        assertEquals("snssdk1128://ec_goods_detail", resp.getLongTpwd());
+        assertTrue(resp.getPromotionContent().contains("抖音口令：8:/ #抖音超值购# 复制打开抖音"));
+        verify(csjDouyinVendorClient).generatePromotionLink(any(CpsPromotionLinkRequest.class), any(CpsVendorConfig.class));
     }
 
     private CpsRebateActivityDO buildActivity(Long id, String name, String platformCode, String billingType,

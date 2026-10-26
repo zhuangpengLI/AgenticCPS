@@ -65,7 +65,7 @@ public interface CpsApiVendorService {
     /**
      * 按供应商编码和平台编码稳定键保存平台接入供应商。
      */
-    Long upsertVendorForOnboarding(@Valid CpsApiVendorSaveReqVO saveReqVO);
+    Long upsertVendorForOnboarding(CpsApiVendorSaveReqVO saveReqVO);
 
     /**
      * 删除不再由当前平台接入配置管理的供应商。

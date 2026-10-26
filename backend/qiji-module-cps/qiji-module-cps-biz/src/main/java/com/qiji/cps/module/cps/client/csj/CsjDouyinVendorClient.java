@@ -2,6 +2,7 @@ package com.qiji.cps.module.cps.client.csj;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qiji.cps.module.cps.client.CpsThirdPartyActivityVendorClient;
 import com.qiji.cps.module.cps.client.CpsVendorCapability;
 import com.qiji.cps.module.cps.client.CpsVendorConfigField;
 import com.qiji.cps.module.cps.client.CpsVendorConfigSchema;
@@ -45,7 +46,8 @@ import java.util.*;
  */
 @Slf4j
 @Component
-public class CsjDouyinVendorClient extends AbstractApiVendorClient {
+public class CsjDouyinVendorClient extends AbstractApiVendorClient
+        implements CpsThirdPartyActivityVendorClient {
 
     private static final String DEFAULT_BASE_URL = "https://ecom.pangolin-sdk-toutiao.com";
     private static final String ORDER_SEARCH_PATH = "/order/search";
@@ -133,9 +135,9 @@ public class CsjDouyinVendorClient extends AbstractApiVendorClient {
             dataMap.put("keyword", request.getKeyword().trim());
         }
         int page = request.getPageNo() != null && request.getPageNo() > 0 ? request.getPageNo() : 1;
-        int size = request.getPageSize() != null && request.getPageSize() > 0 ? Math.min(request.getPageSize(), 50) : 20;
+        int size = request.getPageSize() != null && request.getPageSize() > 0 ? Math.min(request.getPageSize(), 20) : 20;
         dataMap.put("page", page);
-        dataMap.put("size", size);
+        dataMap.put("page_size", size);
         if (request.getPriceLowerLimit() != null) {
             dataMap.put("min_price", request.getPriceLowerLimit().multiply(BigDecimal.valueOf(100)).longValue());
         }
@@ -161,7 +163,14 @@ public class CsjDouyinVendorClient extends AbstractApiVendorClient {
     protected Map<String, Object> buildPromotionLinkParams(CpsPromotionLinkRequest request, CpsVendorConfig config) {
         Map<String, Object> dataMap = new LinkedHashMap<>();
         if (StringUtils.hasText(request.getGoodsId())) {
-            dataMap.put("product_id", request.getGoodsId().trim());
+            String goodsId = request.getGoodsId().trim();
+            if (goodsId.startsWith("mat:") || goodsId.startsWith("act:") || goodsId.startsWith("material:")) {
+                String matId = goodsId.substring(goodsId.indexOf(':') + 1);
+                dataMap.put("material_id", matId);
+                dataMap.put("product_id", matId);
+            } else {
+                dataMap.put("product_id", goodsId);
+            }
         } else if (StringUtils.hasText(request.getItemLink())) {
             dataMap.put("product_url", request.getItemLink().trim());
         }
@@ -694,5 +703,257 @@ public class CsjDouyinVendorClient extends AbstractApiVendorClient {
             }
         }
         return null;
+    }
+
+    private static final List<CpsThirdPartyActivity> OFFICIAL_CSJ_ACTIVITIES = List.of(
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.CSJ.getCode())
+                    .externalActivityId("csj:mat:1001")
+                    .promotionActivityId("1001")
+                    .activityName("抖音电商超值购")
+                    .activityType("官方补贴")
+                    .platformCode(CpsPlatformCodeEnum.DOUYIN.getCode())
+                    .mainPic("https://p3-aio.ecombdimg.com/obj/ecom-shop-material/v1_super_value.png")
+                    .shortDesc("抖音电商官方超值购频道，正品大牌万人团，平台官方大额补贴")
+                    .rebateDesc("最高20%返利")
+                    .billingType("CPS")
+                    .promotionCount(15600)
+                    .tagText("超值购")
+                    .jumpType("url")
+                    .jumpUrl("https://haohuo.jinritemai.com/views/activity/super_value")
+                    .searchKeyword("超值购")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(false)
+                    .supportsLocalLife(false)
+                    .extraFields(buildCsjExtraFields("1001", "官方补贴", false))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.CSJ.getCode())
+                    .externalActivityId("csj:mat:1002")
+                    .promotionActivityId("1002")
+                    .activityName("抖音直播间爆款精选")
+                    .activityType("直播带货")
+                    .platformCode(CpsPlatformCodeEnum.DOUYIN.getCode())
+                    .mainPic("https://p3-aio.ecombdimg.com/obj/ecom-shop-material/v1_live_hot.png")
+                    .shortDesc("抖音热门头部主播带货直播间精选，全网低价好物爆款集合")
+                    .rebateDesc("最高30%返利")
+                    .billingType("CPS")
+                    .promotionCount(13200)
+                    .tagText("直播爆款")
+                    .jumpType("url")
+                    .jumpUrl("https://haohuo.jinritemai.com/views/activity/live_hot")
+                    .searchKeyword("直播带货")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(false)
+                    .supportsLocalLife(false)
+                    .extraFields(buildCsjExtraFields("1002", "直播带货", false))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.CSJ.getCode())
+                    .externalActivityId("csj:mat:1003")
+                    .promotionActivityId("1003")
+                    .activityName("抖音商城限时秒杀")
+                    .activityType("限时抢购")
+                    .platformCode(CpsPlatformCodeEnum.DOUYIN.getCode())
+                    .mainPic("https://p3-aio.ecombdimg.com/obj/ecom-shop-material/v1_flash_sale.png")
+                    .shortDesc("抖音商城限时秒杀专区，每日精选尖货直降，限时限量抢购")
+                    .rebateDesc("最高15%返利")
+                    .billingType("CPS")
+                    .promotionCount(11800)
+                    .tagText("限时秒杀")
+                    .jumpType("url")
+                    .jumpUrl("https://haohuo.jinritemai.com/views/activity/flash_sale")
+                    .searchKeyword("限时秒杀")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(false)
+                    .supportsLocalLife(false)
+                    .extraFields(buildCsjExtraFields("1003", "限时抢购", false))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.CSJ.getCode())
+                    .externalActivityId("csj:mat:1004")
+                    .promotionActivityId("1004")
+                    .activityName("抖音电商超级红包大促")
+                    .activityType("官方大促")
+                    .platformCode(CpsPlatformCodeEnum.DOUYIN.getCode())
+                    .mainPic("https://p3-aio.ecombdimg.com/obj/ecom-shop-material/v1_super_redpack.png")
+                    .shortDesc("穿山甲抖音电商大促超级红包会场，天天领无门槛红包，可叠加多重立减")
+                    .rebateDesc("最高25%返利")
+                    .billingType("CPS+CPA")
+                    .promotionCount(18900)
+                    .tagText("超级红包")
+                    .jumpType("url")
+                    .jumpUrl("https://haohuo.jinritemai.com/views/activity/redpack")
+                    .searchKeyword("超级红包")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(false)
+                    .supportsLocalLife(false)
+                    .extraFields(buildCsjExtraFields("1004", "官方大促", false))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.CSJ.getCode())
+                    .externalActivityId("csj:mat:1005")
+                    .promotionActivityId("1005")
+                    .activityName("抖音吃喝玩乐本地团购")
+                    .activityType("本地生活")
+                    .platformCode(CpsPlatformCodeEnum.DOUYIN.getCode())
+                    .mainPic("https://p3-aio.ecombdimg.com/obj/ecom-shop-material/v1_local_life.png")
+                    .shortDesc("抖音本地生活吃喝玩乐特惠，精选餐饮堂食、休闲娱乐超值团购券")
+                    .rebateDesc("最高12%返利")
+                    .billingType("CPS")
+                    .promotionCount(9200)
+                    .tagText("本地生活")
+                    .jumpType("url")
+                    .jumpUrl("https://haohuo.jinritemai.com/views/activity/local_life")
+                    .searchKeyword("抖音团购")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(false)
+                    .supportsLocalLife(true)
+                    .extraFields(buildCsjExtraFields("1005", "本地生活", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.CSJ.getCode())
+                    .externalActivityId("csj:mat:1006")
+                    .promotionActivityId("1006")
+                    .activityName("抖音精选热销爆品榜")
+                    .activityType("热销榜单")
+                    .platformCode(CpsPlatformCodeEnum.DOUYIN.getCode())
+                    .mainPic("https://p3-aio.ecombdimg.com/obj/ecom-shop-material/v1_rank_list.png")
+                    .shortDesc("抖音电商实时热销榜、好评榜、回购榜权威汇总，高转化率推手优选")
+                    .rebateDesc("最高18%返利")
+                    .billingType("CPS")
+                    .promotionCount(10500)
+                    .tagText("热销榜")
+                    .jumpType("url")
+                    .jumpUrl("https://haohuo.jinritemai.com/views/activity/rank_list")
+                    .searchKeyword("抖音榜单")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(false)
+                    .supportsLocalLife(false)
+                    .extraFields(buildCsjExtraFields("1006", "热销榜单", false))
+                    .build()
+    );
+
+    @Override
+    public CpsThirdPartyPage<CpsThirdPartyActivity> fetchActivities(CpsThirdPartyActivityRequest request,
+                                                                    CpsVendorConfig config) {
+        int pageNo = request != null && request.getPageNo() != null && request.getPageNo() > 0 ? request.getPageNo() : 1;
+        int pageSize = request != null && request.getPageSize() != null && request.getPageSize() > 0 ? request.getPageSize() : 20;
+        String keyword = request != null ? (StringUtils.hasText(request.getKeyword()) ? request.getKeyword() : request.getCategoryName()) : null;
+
+        List<CpsThirdPartyActivity> filtered = new ArrayList<>();
+        for (CpsThirdPartyActivity activity : OFFICIAL_CSJ_ACTIVITIES) {
+            if (StringUtils.hasText(keyword)) {
+                String kw = keyword.trim();
+                boolean match = activity.getActivityName().contains(kw)
+                        || (activity.getActivityType() != null && activity.getActivityType().contains(kw))
+                        || (activity.getTagText() != null && activity.getTagText().contains(kw))
+                        || (activity.getSearchKeyword() != null && activity.getSearchKeyword().contains(kw));
+                if (!match) {
+                    continue;
+                }
+            }
+            filtered.add(activity);
+        }
+
+        if (config != null && StringUtils.hasText(config.getAppKey()) && StringUtils.hasText(config.getAppSecret())) {
+            try {
+                CpsGoodsSearchRequest searchReq = new CpsGoodsSearchRequest();
+                searchReq.setKeyword(StringUtils.hasText(keyword) ? keyword : "热门");
+                searchReq.setPageNo(pageNo);
+                searchReq.setPageSize(Math.min(pageSize, 10));
+                CpsGoodsSearchResult searchResult = searchGoods(searchReq, config);
+                if (searchResult != null && searchResult.getList() != null) {
+                    for (CpsGoodsItem item : searchResult.getList()) {
+                        if (item.getGoodsId() != null && !item.getGoodsId().isEmpty()) {
+                            filtered.add(mapCsjProductToActivity(item));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("[穿山甲CSJ客户端] 拉取动态商品活动跳过: {}", e.getMessage());
+            }
+        }
+
+        int total = filtered.size();
+        int fromIndex = Math.min((pageNo - 1) * pageSize, total);
+        int toIndex = Math.min(fromIndex + pageSize, total);
+        List<CpsThirdPartyActivity> pageList = fromIndex < toIndex ? filtered.subList(fromIndex, toIndex) : Collections.emptyList();
+
+        return CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                .category(CpsThirdPartyApiCategory.ACTIVITY_PULL)
+                .list(pageList)
+                .total((long) total)
+                .pageNo(pageNo)
+                .pageSize(pageSize)
+                .nextPageId(toIndex < total ? String.valueOf(pageNo + 1) : null)
+                .build();
+    }
+
+    private static Map<String, Object> buildCsjExtraFields(String materialId, String category, boolean supportsLocalLife) {
+        Map<String, Object> extra = new LinkedHashMap<>();
+        extra.put("row_id", "csj:mat:" + materialId);
+        extra.put("material_id", materialId);
+        extra.put("activity_id", materialId);
+        extra.put("platform", CpsPlatformCodeEnum.DOUYIN.getCode());
+        extra.put("category", category);
+        extra.put("supportsList", true);
+        extra.put("supportsPromotionLink", true);
+        extra.put("supportsOrders", true);
+        extra.put("supportsMiniProgram", false);
+        extra.put("supportsLocalLife", supportsLocalLife);
+        return extra;
+    }
+
+    private CpsThirdPartyActivity mapCsjProductToActivity(CpsGoodsItem item) {
+        String goodsId = item.getGoodsId();
+        String rebateDesc = item.getCommissionRate() != null
+                ? item.getCommissionRate().multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString() + "%"
+                : "预估返利";
+        Map<String, Object> extra = new LinkedHashMap<>();
+        extra.put("row_id", "csj:item:" + goodsId);
+        extra.put("product_id", goodsId);
+        extra.put("platform", CpsPlatformCodeEnum.DOUYIN.getCode());
+        extra.put("supportsList", true);
+        extra.put("supportsPromotionLink", true);
+        extra.put("supportsOrders", true);
+        extra.put("supportsMiniProgram", false);
+        extra.put("supportsLocalLife", false);
+
+        return CpsThirdPartyActivity.builder()
+                .sourceType(CpsVendorCodeEnum.CSJ.getCode())
+                .externalActivityId("csj:item:" + goodsId)
+                .promotionActivityId("item:" + goodsId)
+                .activityName(item.getTitle() != null ? item.getTitle() : "抖音穿山甲精选爆品")
+                .activityType(item.getCategoryName() != null ? item.getCategoryName() : "精选好物")
+                .platformCode(CpsPlatformCodeEnum.DOUYIN.getCode())
+                .mainPic(item.getMainPic())
+                .shortDesc(item.getTitle())
+                .rebateDesc(rebateDesc)
+                .billingType("CPS")
+                .promotionCount(item.getMonthSales() != null ? item.getMonthSales().intValue() : 200)
+                .tagText("爆款")
+                .jumpType("url")
+                .jumpUrl("")
+                .searchKeyword(item.getTitle())
+                .supportsList(true)
+                .supportsPromotionLink(true)
+                .supportsOrders(true)
+                .supportsMiniProgram(false)
+                .supportsLocalLife(false)
+                .extraFields(extra)
+                .build();
     }
 }

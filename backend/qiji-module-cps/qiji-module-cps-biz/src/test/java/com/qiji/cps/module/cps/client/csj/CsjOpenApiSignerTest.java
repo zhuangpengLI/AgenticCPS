@@ -27,12 +27,13 @@ class CsjOpenApiSignerTest {
 
         String secureKey = "test_secure_key_123456";
 
-        // 预期字典序:
-        // app_id=5271412&data={"size":50}&req_id=req-12345&sign_type=MD5&timestamp=1649389006&version=1 + test_secure_key_123456
+        // 预期字典序 (排除 sign, sign_type, version):
+        // app_id=5271412&data={"size":50}&req_id=req-12345&timestamp=1649389006 + test_secure_key_123456
         String sign = CsjOpenApiSigner.generateSign(params, secureKey);
 
         assertNotNull(sign);
         assertEquals(32, sign.length());
+        assertEquals("1fb0f578dad2c142f08de063bfe1cb1b", sign);
         assertEquals(sign.toLowerCase(), sign); // 必须是32位全小写十六进制
 
         // 重复计算必须幂等

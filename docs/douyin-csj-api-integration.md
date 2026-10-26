@@ -47,19 +47,24 @@
   * 企业主体必须提供与营业执照同名的对公银行账户，穿山甲平台将通过**小额微打款（随机金额并填写回填验证码）**核验账户真实性与主体归属。
   * 个体工商户如无对公账户，支持绑定经营者同名个人银行储蓄卡。
 
-### 2. 媒体与流量备案要求（核心前置）
+### 2. 媒体与流量备案要求（核心权限开通前置）
 调用穿山甲电商 API 前，推广载体必须完成平台备案并审核通过：
 * **应用载体形式**：支持移动原生 App（Android / iOS）、微信小程序、H5 移动网页、公众号等。
-* **流量备案登记**：
-  * 须在穿山甲媒体管理平台下载并如实签署《媒体流量备案登记表》。
-  * App 须已上架主流应用市场（华为、小米、应用宝、App Store 等），提供包名（Package Name / Bundle ID）及下载链接。
-  * 小程序需提供 AppID、主体信息与线上运行截图。
-  * 网站/H5 域名需完成工信部 ICP 备案，备案主体须与穿山甲入驻主体一致或提供授权链路证明。
+* **分级权限控制与 100011 报错排查**：
+  * **订单查询（`/order/search`）**：完成账号实名认证与角色绑定后即可正常调用。
+  * **商品搜索（`/product/search`）与转链（`/product/link`）**：受严格准入保护。若未提交审核或审核未通过，调用将直接返回：
+    ```json
+    {"code": 100011, "desc": "暂无业务权限"}
+    ```
+* **开通商品检索与转链权限的必交材料**：
+  * **已上架 App 渠道**：必须已上架主流应用市场（华为、小米、vivo、OPPO、应用宝、Apple App Store 等），必须提供**应用市场正式下载详情页链接**、包名（Package Name / Bundle ID）以及线上运行截图。
+  * **未上架 App 或其他载体（小程序/H5/社群导购）**：必须在穿山甲媒体管理平台下载并如实签署**《媒体流量备案登记表》**，并附带**详细流量说明**（包括推广场景描述、流量获取方式、DAU/MAU 预估、CPS 导购用户点击与跳转抖音链路全流程说明等），提交人工审核。
+  * **申请入口**：登录 [穿山甲媒体管理平台](https://www.csjplatform.com/) -> 进入【电商联盟】/【应用管理】或【接入中心】，选择对应 App ID（例如 `5870276`）提交流量备案材料，审核通过后系统自动下发商品搜索与转链 API 权限。
 
 ### 3. 开发者等级考核与接口权限（V1-V4 阶梯体系）
 穿山甲对电商联盟推手实行等级管理，不同等级享有不同的接口 QPS 频次与佣金权益：
 * **准入初级（V1）**：
-  * 完成实名认证与媒体备案即可获得基础 API 权限（`/order/search`、`/product/search`、`/product/link`）。
+  * 完成实名认证并提交应用市场链接/流量说明审核通过后，即可获得全套基础 API 权限（`/order/search`、`/product/search`、`/product/link`）。
   * 默认接口限频：60 次/分钟（QPS=1~2）。
 * **进阶等级（V2~V4）考核指标**：
   * **GMV 门槛**：月度有效核销结算成交额达到平台进阶要求（如 V2 要求月 GMV $\ge$ 10 万元，V3 要求 $\ge$ 50 万元）。
@@ -90,21 +95,20 @@
 | `sign` | String | 是 | 报文签名值（32 位小写十六进制字符串） |
 
 ### 3. MD5 签名算法与计算规则
-1. **参数提取**：取出请求封包中除 `sign` 之外的所有公共字段（`app_id`, `data`, `req_id`, `sign_type`, `timestamp`, `version`）。
-2. **字典序排序**：按字段名 ASCII 字典序从小到大升序排序。
+1. **参数提取**：取出请求封包中的公共核心字段（`app_id`, `data`, `req_id`, `timestamp`）。
+   > **关键排坑**：穿山甲服务端验签规范中，仅对核心业务与链路追踪参数进行加签，**`version`、`sign_type` 以及 `sign` 自身不参与 MD5 加签计算**（若将其拼接进加签串将直接导致上游报 `100004 sign check fail`）。
+2. **字典序排序**：按字段名 ASCII 字典序从小到大升序排序（即固定为 `app_id`, `data`, `req_id`, `timestamp`）。
 3. **键值拼接**：将排序后的参数按 `key=value&` 格式依次拼接成字符串（空值或 null 不参与拼接）。
-4. **追加密钥**：在拼接串末尾直接追加配置的保密密钥 `secure_key`（例如：`key1=val1&key2=val2...secure_key`）。
+4. **追加密钥**：在拼接串末尾直接追加配置的保密密钥 `secure_key`（例如：`app_id=...&data=...&req_id=...&timestamp=...secure_key`）。
 5. **计算 MD5**：使用 UTF-8 编码对最终字符串计算 MD5 摘要，输出 **32 位小写 Hex 字符串**。
 
 **代码参考实现**（已封装于 `CsjOpenApiSigner.java`）：
 ```java
-// 升序排布并追加 secureKey
+// 核心参数升序排布并追加 secureKey（排除 sign, sign_type, version）
 String signString = "app_id=" + appId
         + "&data=" + compactDataJson
         + "&req_id=" + reqId
-        + "&sign_type=MD5"
         + "&timestamp=" + timestamp
-        + "&version=" + version
         + secureKey;
 
 String sign = DigestUtil.md5Hex(signString.getBytes(StandardCharsets.UTF_8));
@@ -158,21 +162,35 @@ String sign = DigestUtil.md5Hex(signString.getBytes(StandardCharsets.UTF_8));
 ### 2. 商品搜索接口（`/product/search`）
 用于在穿山甲电商货盘中按关键词、分类检索高佣商品。
 
+> [!IMPORTANT]
+> **准入权限说明（核心注意）**：
+> * 该接口受分级准入严格管控。若新创建的应用尚未完成流量备案，直接调用将报错返回：`{"code": 100011, "desc": "暂无业务权限"}`。
+> * **开通办法**：必须在穿山甲媒体管理平台提交**主流应用市场（华为/小米/应用宝/App Store等）的上架详情页链接**，或提交签署的**《媒体流量备案登记表》与详细流量说明**，由平台人工审核开通后方可调用。
+
 * **接口路径**：`/product/search`
 * **请求方式**：`POST`
-* **业务入参**：`keyword`, `page`, `page_size`, `sort_type` (佣金、价格、销量排序)
-* **业务响应**：商品列表，包括 `item_id`, `title`, `price` (分), `commission_rate`, `pic_url`, `sales` 等。
+* **业务入参**（封装在 `data` 紧凑 JSON 中）：
+  * `keyword`: 搜索关键词（可选）
+  * `page`: 页码（从 1 开始）
+  * `page_size`: 每页大小（**严格限制 > 0 且 <= 20**，超限报错 `100002`）
+  * `sort_type`: 排序类型（可选，按价格、佣金率等排序）
+* **业务响应**：商品列表，包括 `product_id`, `product_name`, `price` (分), `commission_rate`, `product_img`, `sales` 等。
 
 ---
 
 ### 3. 商品转链接口（`/product/link`）
 用于将商品转换为带推手标识与自定义追踪信息（`custom_info`）的推广短链、口令与唤起抖音 App 的 DeepLink。
 
+> [!IMPORTANT]
+> **准入权限说明**：
+> * 与商品搜索接口一致，转链接口同样需要完成应用市场链接或《媒体流量备案登记表》审核，否则同样返回 `{"code": 100011, "desc": "暂无业务权限"}`。
+> * 业务入参中必须传入 `product_url` 或商品标识，为空将返回 `{"code": 100002, "desc": "Request parse error, product_url should be nonempty"}`。
+
 * **接口路径**：`/product/link`
 * **请求方式**：`POST`
-* **业务入参**：
-  * `item_id`: 目标商品 ID
-  * `adzone_id`: 推广位 ID（可选）
+* **业务入参**（封装在 `data` 紧凑 JSON 中）：
+  * `product_url`: 目标商品链接（例如：`https://haohuo.jinritemai.com/views/product/item2?id=...`）或 `product_id`
+  * `adzone_id` / `pid`: 推广位 ID（可选）
   * `custom_info`: 渠道追踪信息（用户 ID / 追踪码，长度 $\le 64$）
 * **业务响应**：
   * `click_url`: 推广落地短链接

@@ -90,7 +90,7 @@ class CpsApiVendorServiceImplTest {
     void testCreateVendor_rejectsOfficialSkeletonEnable() throws Exception {
         setVendorClients(List.of(new StubVendorClient("official", "taobao", "official",
                 Set.of(CpsVendorCapability.CONNECTION_TEST))));
-        CpsApiVendorSaveReqVO reqVO = buildOfficialReqVO("taobao", CommonStatusEnum.ENABLE.getStatus());
+        CpsApiVendorSaveReqVO reqVO = buildOfficialReqVO("taobao", 1);
 
         when(vendorMapper.selectByVendorAndPlatform("official", "taobao")).thenReturn(null);
 
@@ -117,7 +117,7 @@ class CpsApiVendorServiceImplTest {
     void testUpdateVendor_rejectsOfficialSkeletonEnable() throws Exception {
         setVendorClients(List.of(new StubVendorClient("official", "jd", "official",
                 Set.of(CpsVendorCapability.CONNECTION_TEST))));
-        CpsApiVendorSaveReqVO reqVO = buildOfficialReqVO("jd", CommonStatusEnum.ENABLE.getStatus());
+        CpsApiVendorSaveReqVO reqVO = buildOfficialReqVO("jd", 1);
         reqVO.setId(1L);
 
         CpsApiVendorDO existing = new CpsApiVendorDO();
@@ -141,6 +141,76 @@ class CpsApiVendorServiceImplTest {
 
         vendorService.deleteVendor(1L);
         verify(vendorMapper).deleteById(1L);
+    }
+
+    @Test
+    @DisplayName("upsertVendorForOnboarding - 备用供应商未配置 API Key 时允许保存")
+    void testUpsertVendorForOnboarding_disabledVendorWithoutAppKey_success() {
+        CpsApiVendorSaveReqVO reqVO = new CpsApiVendorSaveReqVO();
+        reqVO.setVendorCode("official");
+        reqVO.setVendorName("抖音联盟官方");
+        reqVO.setVendorType("official");
+        reqVO.setPlatformCode("douyin");
+        reqVO.setAppKey(null);
+        reqVO.setAppSecret(null);
+        reqVO.setApiBaseUrl("https://openapi-fxg.jinritemai.com");
+        reqVO.setStatus(0);
+
+        when(vendorMapper.selectByVendorAndPlatform("official", "douyin")).thenReturn(null);
+        when(vendorMapper.insert(any(CpsApiVendorDO.class))).thenReturn(1);
+
+        Long id = vendorService.upsertVendorForOnboarding(reqVO);
+        verify(vendorMapper).insert(org.mockito.ArgumentMatchers.<CpsApiVendorDO>argThat(vendor ->
+                "official".equals(vendor.getVendorCode()) &&
+                "douyin".equals(vendor.getPlatformCode()) &&
+                "".equals(vendor.getAppKey()) &&
+                Integer.valueOf(0).equals(vendor.getStatus())
+        ));
+    }
+
+    @Test
+    @DisplayName("upsertVendorForOnboarding - 更新时保留已有 API Key")
+    void testUpsertVendorForOnboarding_preservesExistingAppKey() {
+        CpsApiVendorSaveReqVO reqVO = new CpsApiVendorSaveReqVO();
+        reqVO.setVendorCode("csj");
+        reqVO.setVendorName("穿山甲电商联盟");
+        reqVO.setVendorType("aggregator");
+        reqVO.setPlatformCode("douyin");
+        reqVO.setAppKey(null);
+        reqVO.setAppSecret(null);
+        reqVO.setStatus(0);
+
+        CpsApiVendorDO existing = new CpsApiVendorDO();
+        existing.setId(88L);
+        existing.setVendorCode("csj");
+        existing.setPlatformCode("douyin");
+        existing.setAppKey("existing-key");
+        existing.setAppSecret("existing-secret");
+        existing.setApiBaseUrl("https://ecom.pangolin-sdk-toutiao.com");
+
+        when(vendorMapper.selectByVendorAndPlatform("csj", "douyin")).thenReturn(existing);
+
+        Long id = vendorService.upsertVendorForOnboarding(reqVO);
+        assertEquals(88L, id);
+        verify(vendorMapper).updateById(org.mockito.ArgumentMatchers.<CpsApiVendorDO>argThat(vendor ->
+                "existing-key".equals(vendor.getAppKey()) &&
+                "existing-secret".equals(vendor.getAppSecret())
+        ));
+    }
+
+    @Test
+    @DisplayName("CpsApiVendorSaveReqVO - 验证当 appKey 和 apiBaseUrl 为空时 Bean Validation 通过")
+    void testValidation_emptyAppKeyAndApiBaseUrl_passes() {
+        jakarta.validation.Validator validator = jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator();
+        CpsApiVendorSaveReqVO reqVO = new CpsApiVendorSaveReqVO();
+        reqVO.setVendorCode("official");
+        reqVO.setVendorName("抖音官方");
+        reqVO.setVendorType("official");
+        reqVO.setPlatformCode("douyin");
+        reqVO.setStatus(0);
+
+        var violations = validator.validate(reqVO);
+        assertTrue(violations.isEmpty(), "Should have no violations when appKey and apiBaseUrl are null");
     }
 
     @Test

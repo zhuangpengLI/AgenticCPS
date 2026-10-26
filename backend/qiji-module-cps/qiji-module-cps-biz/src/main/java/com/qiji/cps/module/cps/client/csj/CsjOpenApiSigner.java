@@ -35,7 +35,10 @@ public final class CsjOpenApiSigner {
     /**
      * 计算穿山甲 OpenAPI MD5 签名
      *
-     * @param params    所有入参键值对（内部会自动过滤 null、空值及 "sign" 字段本身）
+     * <p>穿山甲服务端验签规范：公共外层入参中，仅对核心业务与追踪字段（app_id, data, req_id, timestamp 等）进行字典序升序加签，
+     * 自动过滤 null、空值、sign 以及协议声明字段 sign_type、version。</p>
+     *
+     * @param params    所有入参键值对（内部会自动过滤 null、空值、sign 以及 sign_type、version）
      * @param secureKey 穿山甲媒体平台分配的安全密钥（secure_key）
      * @return 32 位小写 MD5 签名字符串
      */
@@ -44,16 +47,19 @@ public final class CsjOpenApiSigner {
             throw new IllegalArgumentException("Params and secureKey must not be empty for CSJ sign calculation");
         }
 
-        // 1. 过滤并按 ASCII 字典序排序
+        // 1. 过滤并按 ASCII 字典序排序（排除 sign、sign_type、version）
         List<String> sortedKeys = new ArrayList<>();
         for (Map.Entry<String, Object> entry : params.entrySet()) {
-            if (entry.getKey() == null || "sign".equalsIgnoreCase(entry.getKey())) {
+            String key = entry.getKey();
+            if (key == null || "sign".equalsIgnoreCase(key)
+                    || "sign_type".equalsIgnoreCase(key)
+                    || "version".equalsIgnoreCase(key)) {
                 continue;
             }
             if (entry.getValue() == null) {
                 continue;
             }
-            sortedKeys.add(entry.getKey());
+            sortedKeys.add(key);
         }
         Collections.sort(sortedKeys);
 

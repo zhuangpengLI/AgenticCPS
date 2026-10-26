@@ -576,6 +576,44 @@ class CpsPlatformOnboardingPublishDbTest extends BaseDbUnitTest {
         assertRebateRecordRowExists(rebateRecord.getId());
     }
 
+    @Test
+    void publish_withDisabledBackupVendorHavingNoApiKey_shouldPublishSuccessfully() {
+        CpsPlatformOnboardingPayload payload = bundle("douyin", "csj", "douyin_default", "30", true);
+        CpsOnboardingVendor disabledBackup = CpsOnboardingVendor.builder()
+                .vendorCode("official")
+                .vendorName("抖音联盟官方")
+                .vendorType("official")
+                .platformCode("douyin")
+                .appKey(null)
+                .appSecret(null)
+                .apiBaseUrl("https://openapi-fxg.jinritemai.com")
+                .priority(50)
+                .status(0)
+                .build();
+        payload.getVendors().add(disabledBackup);
+
+        CpsPlatformOnboardingPublishReqVO request = saveReadyDraft(payload);
+        CpsPlatformOnboardingDetailRespVO response = service.publish(request);
+
+        assertNotNull(response);
+        CpsPlatformDO platform = platformMapper.selectByPlatformCode("douyin");
+        assertNotNull(platform);
+        assertEquals("csj", platform.getActiveVendorCode());
+        assertEquals(1, platform.getStatus());
+
+        List<CpsApiVendorDO> vendors = vendorMapper.selectAllByPlatformCode("douyin");
+        assertEquals(2, vendors.size());
+
+        CpsApiVendorDO csjVendor = vendorMapper.selectByVendorAndPlatform("csj", "douyin");
+        assertNotNull(csjVendor);
+        assertEquals(1, csjVendor.getStatus());
+
+        CpsApiVendorDO officialVendor = vendorMapper.selectByVendorAndPlatform("official", "douyin");
+        assertNotNull(officialVendor);
+        assertEquals(0, officialVendor.getStatus());
+        assertEquals("", officialVendor.getAppKey());
+    }
+
     private void assertOrderRowExists(Long orderId) {
         assertEquals(1, jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM cps_order WHERE id = ? AND deleted = FALSE",

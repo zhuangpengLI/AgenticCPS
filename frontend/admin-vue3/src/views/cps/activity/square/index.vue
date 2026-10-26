@@ -12,6 +12,8 @@
           <span class="sync-label">同步来源</span>
             <el-select v-model="syncForm.vendorCode" class="sync-vendor" size="large">
               <el-option label="全部" value="all" />
+              <el-option label="美团官方" value="official" />
+              <el-option label="穿山甲" value="csj" />
               <el-option label="大淘客" value="dataoke" />
               <el-option label="好单库" value="haodanku" />
               <el-option label="聚推客" value="jutuike" />
@@ -247,6 +249,8 @@
             <el-form-item label="来源类型">
               <el-select v-model="formData.sourceType" class="w-full">
                 <el-option label="运营配置" value="configured" />
+                <el-option label="美团官方" value="official" />
+                <el-option label="穿山甲" value="csj" />
                 <el-option label="大淘客" value="dataoke" />
                 <el-option label="好单库" value="haodanku" />
                 <el-option label="聚推客" value="jutuike" />
@@ -535,6 +539,8 @@ const sortOptions = [
 ]
 const sourceFilterOptions = [
   { label: '全部供应商', value: 'all' },
+  { label: '美团官方', value: 'official' },
+  { label: '穿山甲', value: 'csj' },
   { label: '大淘客', value: 'dataoke' },
   { label: '好单库', value: 'haodanku' },
   { label: '聚推客', value: 'jutuike' },
@@ -735,9 +741,13 @@ const handleSyncActivities = async () => {
   try {
     const currentPlatform =
       queryParams.platformCode === 'hot'
-        ? syncForm.vendorCode === 'dataoke' || syncForm.vendorCode === 'all'
+        ? syncForm.vendorCode === 'dataoke'
           ? 'taobao'
-          : undefined
+          : syncForm.vendorCode === 'official'
+            ? 'meituan'
+            : syncForm.vendorCode === 'csj'
+              ? 'douyin'
+              : undefined
         : queryParams.platformCode
     const result = await CpsRebateActivityApi.syncActivities({
       ...syncForm,
@@ -801,6 +811,10 @@ const normalizePlatformTabs = (tabs: CpsRebateActivityCenterRespVO['tabs']) => {
 
 const sourceLabelMap: Record<string, string> = {
   configured: '运营配置',
+  official: '美团官方',
+  csj: '穿山甲',
+  meituan: '美团官方',
+  douyin: '穿山甲',
   dataoke: '大淘客',
   haodanku: '好单库',
   jutuike: '聚推客'
@@ -814,6 +828,10 @@ type ActivityTagType = 'primary' | 'success' | 'warning' | 'danger' | 'info'
 const sourceTagType = (sourceType?: string) => {
   const map: Record<string, ActivityTagType> = {
     configured: 'info',
+    official: 'warning',
+    csj: 'danger',
+    meituan: 'warning',
+    douyin: 'danger',
     dataoke: 'success',
     haodanku: 'warning',
     jutuike: 'primary'

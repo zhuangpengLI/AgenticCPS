@@ -44,6 +44,8 @@ import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.*;
 @Slf4j
 public class CpsApiVendorServiceImpl implements CpsApiVendorService {
 
+    private static final Integer VENDOR_ENABLE_STATUS = 1;
+
     @Resource
     private CpsApiVendorMapper vendorMapper;
 
@@ -64,6 +66,7 @@ public class CpsApiVendorServiceImpl implements CpsApiVendorService {
         validateVendorEnableReady(createReqVO);
         // 插入
         CpsApiVendorDO vendor = BeanUtils.toBean(createReqVO, CpsApiVendorDO.class);
+        normalizeDatabaseColumns(vendor);
         vendorMapper.insert(vendor);
         cacheInvalidator.evictVendorAfterCommit();
         return vendor.getId();
@@ -80,6 +83,7 @@ public class CpsApiVendorServiceImpl implements CpsApiVendorService {
         validateVendorEnableReady(updateReqVO);
         // 更新
         CpsApiVendorDO updateObj = BeanUtils.toBean(updateReqVO, CpsApiVendorDO.class);
+        normalizeDatabaseColumns(updateObj);
         vendorMapper.updateById(updateObj);
         cacheInvalidator.evictVendorAfterCommit();
     }
@@ -116,7 +120,7 @@ public class CpsApiVendorServiceImpl implements CpsApiVendorService {
 
     @Override
     public List<CpsApiVendorDO> getEnabledVendorList() {
-        return vendorMapper.selectListByStatus(CommonStatusEnum.ENABLE.getStatus());
+        return vendorMapper.selectListByStatus(VENDOR_ENABLE_STATUS);
     }
 
     @Override
@@ -132,6 +136,7 @@ public class CpsApiVendorServiceImpl implements CpsApiVendorService {
             validateVendorConfig(saveReqVO);
             validateVendorEnableReady(saveReqVO);
             CpsApiVendorDO created = BeanUtils.toBean(saveReqVO, CpsApiVendorDO.class);
+            normalizeDatabaseColumns(created);
             vendorMapper.insert(created);
             return created.getId();
         }
@@ -140,6 +145,7 @@ public class CpsApiVendorServiceImpl implements CpsApiVendorService {
         validateVendorConfig(saveReqVO);
         validateVendorEnableReady(saveReqVO);
         CpsApiVendorDO updated = BeanUtils.toBean(saveReqVO, CpsApiVendorDO.class);
+        normalizeDatabaseColumns(updated);
         vendorMapper.updateById(updated);
         return existing.getId();
     }
@@ -208,7 +214,7 @@ public class CpsApiVendorServiceImpl implements CpsApiVendorService {
     }
 
     private void validateVendorEnableReady(CpsApiVendorSaveReqVO reqVO) {
-        if (!CommonStatusEnum.ENABLE.getStatus().equals(reqVO.getStatus())) {
+        if (!VENDOR_ENABLE_STATUS.equals(reqVO.getStatus())) {
             return;
         }
         if (!CpsVendorCodeEnum.OFFICIAL.getCode().equals(reqVO.getVendorCode())) {
@@ -231,7 +237,7 @@ public class CpsApiVendorServiceImpl implements CpsApiVendorService {
 
     private void validateVendorConfig(CpsApiVendorSaveReqVO reqVO) {
         Map<String, String> extraConfig = parseExtraConfigStrict(reqVO.getExtraConfig());
-        if (!CommonStatusEnum.ENABLE.getStatus().equals(reqVO.getStatus())) {
+        if (!VENDOR_ENABLE_STATUS.equals(reqVO.getStatus())) {
             return;
         }
         CpsApiVendorClient client = findVendorClient(reqVO.getVendorCode(), reqVO.getPlatformCode());
@@ -262,11 +268,32 @@ public class CpsApiVendorServiceImpl implements CpsApiVendorService {
 
     private void preserveStoredCredentials(CpsApiVendorSaveReqVO request,
                                            CpsApiVendorDO existing) {
+        if (!StringUtils.hasText(request.getAppKey())) {
+            request.setAppKey(existing.getAppKey());
+        }
         if (!StringUtils.hasText(request.getAppSecret())) {
             request.setAppSecret(existing.getAppSecret());
         }
         if (!StringUtils.hasText(request.getAuthToken())) {
             request.setAuthToken(existing.getAuthToken());
+        }
+        if (!StringUtils.hasText(request.getApiBaseUrl()) && StringUtils.hasText(existing.getApiBaseUrl())) {
+            request.setApiBaseUrl(existing.getApiBaseUrl());
+        }
+    }
+
+    private void normalizeDatabaseColumns(CpsApiVendorDO vendor) {
+        if (vendor == null) {
+            return;
+        }
+        if (vendor.getAppKey() == null) {
+            vendor.setAppKey("");
+        }
+        if (vendor.getAppSecret() == null) {
+            vendor.setAppSecret("");
+        }
+        if (vendor.getApiBaseUrl() == null) {
+            vendor.setApiBaseUrl("");
         }
     }
 

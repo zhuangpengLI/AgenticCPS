@@ -19,6 +19,7 @@ import com.qiji.cps.module.cps.service.rebate.CpsRebateConfigService;
 import com.qiji.cps.module.cps.service.vendor.CpsApiVendorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
@@ -154,7 +155,8 @@ public class CpsPlatformOnboardingServiceImpl implements CpsPlatformOnboardingSe
         for (CpsOnboardingVendor source : safeList(vendors)) {
             CpsApiVendorSaveReqVO request = new CpsApiVendorSaveReqVO();
             request.setVendorCode(source.getVendorCode());
-            request.setVendorName(source.getVendorName());
+            request.setVendorName(StringUtils.hasText(source.getVendorName())
+                    ? source.getVendorName() : source.getVendorCode());
             request.setVendorType(source.getVendorType());
             request.setPlatformCode(platformCode);
             request.setAppKey(source.getAppKey());

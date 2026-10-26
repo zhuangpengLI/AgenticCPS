@@ -12,6 +12,7 @@ import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPro
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivitySaveReqVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityRespVO;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.csj.CsjDouyinVendorClient;
 import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
 import com.qiji.cps.module.cps.client.didi.DidiOfficialVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
@@ -68,12 +69,15 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
     private static final String SOURCE_HAODANKU = "haodanku";
     private static final String SOURCE_JUTUIKE = "jutuike";
     private static final String SOURCE_OFFICIAL = "official";
+    private static final String SOURCE_CSJ = "csj";
     private static final String VENDOR_DATAOKE = "dataoke";
     private static final String VENDOR_HAODANKU = "haodanku";
     private static final String VENDOR_JUTUIKE = "jutuike";
     private static final String VENDOR_OFFICIAL = "official";
+    private static final String VENDOR_CSJ = "csj";
     private static final String PLATFORM_DIDI = "didi";
     private static final String PLATFORM_MEITUAN = "meituan";
+    private static final String PLATFORM_DOUYIN = "douyin";
     private static final String PLATFORM_TAOBAO = "taobao";
     private static final String PLATFORM_ELEME = "eleme";
     private static final String DTK_EXTERNAL_PREFIX = "dtk:";
@@ -116,6 +120,9 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
 
     @Resource
     private MeituanOfficialVendorClient meituanOfficialVendorClient;
+
+    @Resource
+    private CsjDouyinVendorClient csjDouyinVendorClient;
 
     @Resource
     private CpsAdzoneService adzoneService;
@@ -257,6 +264,12 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 || "meituan".equalsIgnoreCase(activity.getSourceType()))) {
             return generateMeituanActivityLink(activity, reqVO, memberId);
         }
+        if (SOURCE_CSJ.equalsIgnoreCase(firstText(activity.getSourceType(), ""))
+                || (PLATFORM_DOUYIN.equalsIgnoreCase(firstText(activity.getPlatformCode(), ""))
+                && (SOURCE_CSJ.equalsIgnoreCase(firstText(activity.getSourceType(), ""))
+                || "csj".equalsIgnoreCase(activity.getSourceType())))) {
+            return generateCsjActivityLink(activity, reqVO, memberId);
+        }
         if ("url".equals(activity.getJumpType())) {
             String promotionUrl = replaceUrlPlaceholders(activity.getJumpUrl(), reqVO);
             if (!isSafeExternalUrl(promotionUrl)) {
@@ -357,6 +370,56 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 : "当前链接没有可信会员归因标识，下单后可通过订单号申请找回";
         return buildExternalPromotion(activity, reqVO, actualAdzoneId, promotionUrl, wxMiniPath, deeplink,
                 "美团联盟官方推广链接已生成", attributionStatus, attributionMessage);
+    }
+
+    private CpsRebateActivityPromotionRespVO generateCsjActivityLink(CpsRebateActivityDO activity,
+                                                                     CpsRebateActivityPromotionReqVO reqVO,
+                                                                     Long memberId) {
+        String materialId = firstText(activity.getPromotionActivityId(),
+                metadataText(activity, "material_id"),
+                metadataText(activity, "activity_id"),
+                activity.getExternalActivityId());
+        String jumpUrl = activity.getJumpUrl();
+        if (!StringUtils.hasText(materialId) && !StringUtils.hasText(jumpUrl)) {
+            return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(), "穿山甲/抖音活动缺少官方物料 ID 或链接");
+        }
+        CpsVendorConfig config = platformClientFactory.getVendorConfig(VENDOR_CSJ, PLATFORM_DOUYIN);
+        if (config == null) {
+            return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(), "未配置穿山甲抖音供应商，无法生成推广链接");
+        }
+        String actualAdzoneId = firstText(reqVO.getAdzoneId(), config.getDefaultAdzoneId());
+        CpsTransferRecordDO sidRecord = memberId == null ? null
+                : createPendingSidRecord(activity, memberId, actualAdzoneId, VENDOR_CSJ, PLATFORM_DOUYIN);
+        String sid = sidRecord == null ? firstText(reqVO.getChannelTag(), actualAdzoneId)
+                : sidRecord.getAttributionToken();
+
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        if (StringUtils.hasText(jumpUrl)) {
+            request.setItemLink(jumpUrl);
+        } else {
+            request.setGoodsId(materialId.startsWith("mat:") || materialId.startsWith("act:") ? materialId : "mat:" + materialId);
+        }
+        request.setAdzoneId(actualAdzoneId);
+        request.setExternalId(sid);
+
+        CpsPromotionLinkResult linkResult = csjDouyinVendorClient.generatePromotionLink(request, config);
+        String promotionUrl = firstSafePromotionUrl(linkResult);
+        if (linkResult == null || (!StringUtils.hasText(promotionUrl) && !StringUtils.hasText(linkResult.getTpwd()))) {
+            return buildFailedPromotion(activity, reqVO, actualAdzoneId, "穿山甲/抖音官方活动转链暂不可用");
+        }
+        if (sidRecord != null) {
+            transferRecordMapper.updateById(CpsTransferRecordDO.builder().id(sidRecord.getId())
+                    .promotionUrl(promotionUrl)
+                    .taoCommand(linkResult.getTpwd())
+                    .status(1).build());
+        }
+        String attributionStatus = sidRecord != null ? ATTRIBUTION_MEMBER_TRACKED
+                : StringUtils.hasText(sid) ? ATTRIBUTION_CHANNEL_TRACKED : ATTRIBUTION_UNTRACKED;
+        String attributionMessage = sidRecord != null ? "已使用可信会员归因标识，订单同步后可自动绑定会员"
+                : StringUtils.hasText(sid) ? "当前链接仅支持渠道跟踪，不能自动绑定具体会员"
+                : "当前链接没有可信会员归因标识，下单后可通过订单号申请找回";
+        return buildExternalPromotion(activity, reqVO, actualAdzoneId, promotionUrl, linkResult.getTpwd(), linkResult.getMobileUrl(),
+                "穿山甲/抖音官方活动推广链接已生成", attributionStatus, attributionMessage);
     }
 
     private CpsRebateActivityPromotionRespVO generateJutuikeActivityLink(CpsRebateActivityDO activity,
@@ -765,7 +828,8 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         appendLine(builder, buildActivityWindowText(activity));
         appendLine(builder, promotionUrl);
         if (StringUtils.hasText(tpwd)) {
-            appendLine(builder, "淘口令：" + tpwd);
+            String label = PLATFORM_DOUYIN.equalsIgnoreCase(firstText(activity.getPlatformCode(), "")) ? "抖音口令：" : "淘口令：";
+            appendLine(builder, label + tpwd);
         }
         if (StringUtils.hasText(actualAdzoneId)) {
             appendLine(builder, "推广位：" + actualAdzoneId);
@@ -877,7 +941,9 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
             return StringUtils.hasText(uri.getSchemeSpecificPart())
                     && ("eleme".equalsIgnoreCase(scheme)
                     || "tbopen".equalsIgnoreCase(scheme)
-                    || "alipays".equalsIgnoreCase(scheme));
+                    || "alipays".equalsIgnoreCase(scheme)
+                    || "snssdk1128".equalsIgnoreCase(scheme)
+                    || "imeituan".equalsIgnoreCase(scheme));
         } catch (IllegalArgumentException ignored) {
             return false;
         }
@@ -1114,6 +1180,8 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 || SOURCE_JUTUIKE.equalsIgnoreCase(sourceType)
                 || SOURCE_HAODANKU.equalsIgnoreCase(sourceType)
                 && HaodankuActivityVendorClient.supportsOfficialActivityPromotionLink(activity.getPlatformCode())
+                || SOURCE_OFFICIAL.equalsIgnoreCase(sourceType)
+                || SOURCE_CSJ.equalsIgnoreCase(sourceType)
                 || "url".equals(activity.getJumpType());
         return metadataBoolean(activity, "supportsPromotionLink", defaultValue);
     }
@@ -1121,6 +1189,8 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
     private boolean supportsOrders(CpsRebateActivityDO activity) {
         String sourceType = firstText(activity.getSourceType(), SOURCE_CONFIGURED);
         boolean defaultValue = SOURCE_JUTUIKE.equalsIgnoreCase(sourceType)
+                || SOURCE_OFFICIAL.equalsIgnoreCase(sourceType)
+                || SOURCE_CSJ.equalsIgnoreCase(sourceType)
                 || SOURCE_HAODANKU.equalsIgnoreCase(sourceType) && PLATFORM_ELEME.equals(normalizePlatformCode(activity.getPlatformCode()));
         return metadataBoolean(activity, "supportsOrders", defaultValue);
     }
