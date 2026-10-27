@@ -3,6 +3,7 @@
     <div class="qlist-hero">
       <div class="brand-line">
         <span class="brand-main">返利商品广场</span>
+        <span class="brand-sub">精选货源 · 主题选品 · 一键转链</span>
       </div>
       <div class="qlist-search">
         <el-input
@@ -41,17 +42,6 @@
             </div>
           </template>
         </el-input>
-        <div class="hero-search-tips">
-          <span
-            v-for="item in headlineKeywords"
-            :key="item.label"
-            :class="['headline-chip', item.tone]"
-            @click="selectKeyword(item.label)"
-          >
-            <Icon :icon="item.icon" />
-            {{ item.label }}
-          </span>
-        </div>
       </div>
     </div>
 
@@ -126,19 +116,58 @@
       </el-tag>
     </div>
 
-    <div v-if="showTaobaoSelection" class="selection-panel" v-loading="metaLoading">
-      <div v-if="goodsSquareThemeOptions.length > 0" class="selection-card topic-card">
-        <span class="selection-label">选品库主题</span>
-        <el-tag
-          v-for="item in goodsSquareThemeOptions"
-          :key="item.value"
-          class="clickable-tag"
-          :type="queryParams.activityTag === item.value ? 'danger' : 'info'"
-          effect="plain"
-          @click="selectTopic(item.value, item.label)"
+    <div class="selection-panel" v-loading="metaLoading">
+      <div class="selection-card topic-card">
+        <span class="selection-label">
+          <Icon icon="ep:collection-tag" />
+          选品库主题
+        </span>
+        <el-select
+          v-model="selectedThemeCode"
+          class="topic-select"
+          placeholder="选择主题进行筛选"
+          clearable
+          filterable
+          @change="handleThemeSelect"
         >
-          {{ item.label }}
-        </el-tag>
+          <el-option
+            v-for="item in goodsSquareThemeOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+        <div v-if="goodsSquareThemeOptions.length > 0" class="topic-chips">
+          <el-tag
+            class="clickable-tag"
+            :type="!queryParams.activityTag ? 'primary' : 'info'"
+            :effect="!queryParams.activityTag ? 'dark' : 'plain'"
+            @click="clearThemeSelect"
+          >
+            全部
+          </el-tag>
+          <el-tag
+            v-for="item in visibleThemeOptions"
+            :key="item.value"
+            class="clickable-tag"
+            :type="queryParams.activityTag === item.value ? 'danger' : 'info'"
+            :effect="queryParams.activityTag === item.value ? 'dark' : 'plain'"
+            @click="selectTopic(item.value, item.label)"
+          >
+            {{ item.label }}
+          </el-tag>
+        </div>
+        <el-button
+          v-if="queryParams.activityTag && isSelectionThemeCode(queryParams.activityTag)"
+          size="small"
+          text
+          type="danger"
+          class="clear-theme-btn"
+          @click="clearThemeSelect"
+        >
+          <Icon icon="ep:circle-close" class="mr-3px" />
+          清除主题
+        </el-button>
       </div>
       <div class="selection-card category-card">
         <span class="selection-label">热门分类</span>
@@ -146,34 +175,12 @@
           v-for="item in categorySegmentOptions"
           :key="item.value"
           :type="queryParams.categoryId === item.value ? 'primary' : 'default'"
+          size="small"
           plain
           @click="selectCategory(String(item.value))"
         >
           {{ item.label }}
         </el-button>
-        <button type="button" class="more-link">+多选</button>
-      </div>
-      <div class="selection-card hot-card">
-        <span class="selection-label hot-label"><Icon icon="ep:hot-water" /> 持续热销</span>
-        <el-tag
-          v-for="item in lastingHotKeywords"
-          :key="item"
-          class="clickable-tag"
-          effect="plain"
-          @click="selectKeyword(item)"
-        >
-          {{ item }}
-        </el-tag>
-        <span class="selection-label hot-label"><Icon icon="ep:trend-charts" /> 短期飙升</span>
-        <el-tag
-          v-for="item in risingKeywords"
-          :key="item"
-          class="clickable-tag"
-          effect="plain"
-          @click="selectKeyword(item)"
-        >
-          {{ item }}
-        </el-tag>
       </div>
       <div class="selection-card ranking-card">
         <span class="selection-label">爆品榜单</span>
@@ -188,18 +195,24 @@
           {{ item.label }}
         </el-tag>
       </div>
-      <div class="selection-card keyword-card">
+      <div v-if="displayHotKeywords.length > 0" class="selection-card keyword-card">
         <span class="selection-label">热词</span>
-        <el-tag
-          v-for="item in displayHotKeywords"
-          :key="item.value"
-          class="clickable-tag"
-          :type="queryParams.keyword === item.label ? 'success' : 'info'"
-          effect="plain"
-          @click="selectKeyword(item.label)"
-        >
-          {{ item.label }}
-        </el-tag>
+        <div class="keyword-tags">
+          <el-tag
+            v-for="item in visibleHotKeywords"
+            :key="item.value"
+            class="clickable-tag"
+            :type="queryParams.keyword === item.label ? 'success' : 'info'"
+            effect="plain"
+            @click="selectKeyword(item.label)"
+          >
+            {{ item.label }}
+          </el-tag>
+        </div>
+        <el-button text size="small" type="primary" class="rotate-hot-btn" @click="rotateHotKeywords">
+          <Icon icon="ep:refresh" class="mr-3px" />
+          换一批
+        </el-button>
       </div>
       <div class="selection-card sort-card">
         <span class="selection-label">排序</span>
@@ -215,16 +228,16 @@
       </div>
     </div>
 
-    <div v-if="showTaobaoSelection" class="advanced-toggle-row">
+    <div class="advanced-toggle-row">
       <el-button text type="primary" @click="showAdvancedFilter = !showAdvancedFilter">
         <Icon :icon="showAdvancedFilter ? 'ep:arrow-up' : 'ep:arrow-down'" class="mr-5px" />
         {{ showAdvancedFilter ? '收起筛选' : '高级筛选' }}
       </el-button>
-      <span class="advanced-toggle-hint">价格、佣金、销量、店铺和商品属性组合筛选</span>
+      <span class="advanced-toggle-hint">价格区间、佣金比例、销量与多维条件组合筛选</span>
     </div>
 
     <el-collapse-transition>
-      <div v-show="showTaobaoSelection && showAdvancedFilter" class="advanced-filter">
+      <div v-show="showAdvancedFilter" class="advanced-filter">
         <el-form :model="queryParams" label-width="96px">
           <el-row :gutter="12">
             <el-col :xs="24" :sm="12" :lg="4">
@@ -555,6 +568,23 @@ const memberOptions = ref<UserVO[]>([])
 const hotKeywordOptions = ref<CpsGoodsSquareMetaItemVO[]>([])
 const searchSuggestionOptions = ref<CpsGoodsSquareMetaItemVO[]>([])
 const goodsSquareThemeOptions = ref<CpsGoodsSquareMetaItemVO[]>([])
+const selectedThemeCode = ref('')
+const visibleThemeOptions = computed(() => goodsSquareThemeOptions.value.slice(0, 8))
+const hotKeywordPage = ref(0)
+const visibleHotKeywords = computed(() => {
+  const all = displayHotKeywords.value
+  if (!all.length) return []
+  const pageSize = 12
+  const start = (hotKeywordPage.value * pageSize) % all.length
+  const end = start + pageSize
+  if (end <= all.length) {
+    return all.slice(start, end)
+  }
+  return [...all.slice(start), ...all.slice(0, end - all.length)]
+})
+const rotateHotKeywords = () => {
+  hotKeywordPage.value++
+}
 let suggestionTimer: ReturnType<typeof setTimeout> | undefined
 
 const routeText = (value: unknown) => {
@@ -564,9 +594,15 @@ const routeText = (value: unknown) => {
   return value as string | undefined
 }
 
+const SEARCHABLE_PLATFORM_CODES = new Set(['taobao', 'jd', 'pdd', 'douyin', 'vip'])
+
+const initialPlatformCode = routeText(route.query.platformCode)
 const queryParams = reactive<CpsGoodsSquareSearchReqVO>({
   keyword: routeText(route.query.keyword) || '今日精选',
-  platformCode: routeText(route.query.platformCode) || 'taobao',
+  platformCode:
+    initialPlatformCode && SEARCHABLE_PLATFORM_CODES.has(initialPlatformCode)
+      ? initialPlatformCode
+      : 'taobao',
   vendorCode: undefined,
   pageNo: 1,
   pageSize: 20,
@@ -600,8 +636,6 @@ const rankingOptions = [
   { value: 'new-potential', label: '新品潜力榜', sortType: 6, keyword: '新品' },
   { value: 'hot-push', label: '热推榜', sortType: 5, keyword: '领券' }
 ]
-const lastingHotKeywords = ['卫生巾', '纸巾', '软辅', '牛奶', '洗衣液']
-const risingKeywords = ['防晒霜', '酱油', '面膜', '拖鞋', '口红']
 
 const linkVisible = ref(false)
 const linkLoading = ref(false)
@@ -627,22 +661,36 @@ const fallbackPlatformOptions: CpsPlatformVO[] = [
   { id: 0, platformCode: 'jd', platformName: '京东', status: 1, createTime: new Date() },
   { id: 0, platformCode: 'pdd', platformName: '拼多多', status: 1, createTime: new Date() },
   { id: 0, platformCode: 'douyin', platformName: '抖音', status: 1, createTime: new Date() },
-  { id: 0, platformCode: 'vip', platformName: '唯品会', status: 1, createTime: new Date() },
-  { id: 0, platformCode: 'meituan', platformName: '美团', status: 1, createTime: new Date() }
+  { id: 0, platformCode: 'vip', platformName: '唯品会', status: 1, createTime: new Date() }
 ]
 
-const showTaobaoSelection = computed(() => queryParams.platformCode === 'taobao')
 const searchPlaceholder = computed(() => {
   return (
     SEARCH_FIELD_OPTIONS.find((item) => item.value === queryParams.searchField)?.placeholder ||
     '请输入关键词/商品加密ID/商品链接'
   )
 })
+const defaultCategories = [
+  { value: '0', label: '全部' },
+  { value: '美食', label: '美食' },
+  { value: '居家日用', label: '居家日用' },
+  { value: '女装', label: '女装' },
+  { value: '美妆', label: '美妆' },
+  { value: '数码家电', label: '数码家电' },
+  { value: '鞋品', label: '鞋品' },
+  { value: '男装', label: '男装' },
+  { value: '内衣', label: '内衣' },
+  { value: '母婴', label: '母婴' },
+  { value: '配饰', label: '配饰' },
+  { value: '箱包', label: '箱包' },
+  { value: '户外运动', label: '户外运动' }
+]
+
 const categorySegmentOptions = computed(() => {
-  const categories = metaInfo.value?.categories?.length
-    ? metaInfo.value.categories
-    : [{ value: '0', label: '全部' }]
-  return categories.map((item) => ({ label: item.label, value: item.value }))
+  if (metaInfo.value?.categories && metaInfo.value.categories.length > 0) {
+    return metaInfo.value.categories.map((item) => ({ label: item.label, value: item.value }))
+  }
+  return defaultCategories
 })
 const displayHotKeywords = computed(() =>
   hotKeywordOptions.value.length > 0 ? hotKeywordOptions.value : metaInfo.value?.hotKeywords || []
@@ -692,7 +740,8 @@ const activeFilterChips = computed(() => {
     })
   }
   if (queryParams.activityTag) {
-    chips.push({ key: 'activityTag', label: `主题：${queryParams.activityTag}` })
+    const theme = goodsSquareThemeOptions.value.find((item) => item.value === queryParams.activityTag)
+    chips.push({ key: 'activityTag', label: `主题：${theme?.label || queryParams.activityTag}` })
   }
   if (queryParams.shopType) {
     chips.push({ key: 'shopType', label: `店铺：${queryParams.shopType}` })
@@ -726,9 +775,8 @@ const getGoodsList = async () => {
   try {
     const data = isSelectionThemeCode(queryParams.activityTag)
       ? await CpsGoodsSquareApi.getSelectionThemeGoods({
-          themeCode: queryParams.activityTag!,
-          pageNo: queryParams.pageNo,
-          pageSize: queryParams.pageSize
+          ...queryParams,
+          themeCode: queryParams.activityTag!
         })
       : await CpsGoodsSquareApi.searchGoods({ ...queryParams })
     goodsList.value = data.list || []
@@ -751,14 +799,10 @@ const loadMeta = async () => {
 }
 
 const loadGoodsSquareThemes = async () => {
-  if (!showTaobaoSelection.value) {
-    goodsSquareThemeOptions.value = []
-    return
-  }
   try {
     const data = await CpsSelectionThemeApi.getThemePage({
       pageNo: 1,
-      pageSize: 20,
+      pageSize: 100,
       status: 'PUBLISHED',
       goodsSquareVisible: 1
     })
@@ -768,16 +812,15 @@ const loadGoodsSquareThemes = async () => {
         value: item.themeCode,
         label: item.themeName
       }))
+    if (queryParams.activityTag && goodsSquareThemeOptions.value.some((t) => t.value === queryParams.activityTag)) {
+      selectedThemeCode.value = queryParams.activityTag
+    }
   } catch {
     goodsSquareThemeOptions.value = []
   }
 }
 
 const handleSearch = () => {
-  if (isSelectionThemeCode(queryParams.activityTag)) {
-    queryParams.activityTag = undefined
-    queryParams.channelCode = undefined
-  }
   queryParams.pageNo = 1
   getGoodsList()
 }
@@ -787,7 +830,9 @@ const handlePlatformChange = async () => {
   queryParams.pageNo = 1
   queryParams.categoryId = '0'
   queryParams.channelCode = undefined
-  queryParams.activityTag = undefined
+  if (!isSelectionThemeCode(queryParams.activityTag)) {
+    queryParams.activityTag = undefined
+  }
   searchSuggestionOptions.value = []
   await loadVendorOptions(queryParams.platformCode || 'taobao')
   await loadMeta()
@@ -885,6 +930,7 @@ const loadSuggestions = async () => {
 }
 
 const handleReset = async () => {
+  selectedThemeCode.value = ''
   Object.assign(queryParams, {
     keyword: '今日精选',
     platformCode: 'taobao',
@@ -954,9 +1000,8 @@ const clearFilterChip = (key: string) => {
       queryParams.couponPriceUpperLimit = undefined
       break
     case 'activityTag':
-      queryParams.activityTag = undefined
-      queryParams.channelCode = undefined
-      break
+      clearThemeSelect()
+      return
     case 'shopType':
       queryParams.shopType = undefined
       queryParams.tmallOnly = undefined
@@ -985,11 +1030,28 @@ const selectKeyword = (keyword: string) => {
   handleSearch()
 }
 
-const selectTopic = (value: string, label: string) => {
+const selectTopic = (value: string, _label?: string) => {
   const selecting = queryParams.activityTag !== value
   queryParams.activityTag = selecting ? value : undefined
+  selectedThemeCode.value = queryParams.activityTag || ''
   queryParams.channelCode = undefined
-  queryParams.keyword = selecting ? label : '今日精选'
+  queryParams.pageNo = 1
+  getGoodsList()
+}
+
+const handleThemeSelect = (val?: string) => {
+  if (val) {
+    const theme = goodsSquareThemeOptions.value.find((t) => t.value === val)
+    selectTopic(val, theme?.label || val)
+  } else {
+    clearThemeSelect()
+  }
+}
+
+const clearThemeSelect = () => {
+  queryParams.activityTag = undefined
+  selectedThemeCode.value = ''
+  queryParams.channelCode = undefined
   queryParams.pageNo = 1
   getGoodsList()
 }
@@ -1131,9 +1193,13 @@ const handleGenerateLink = async () => {
 const loadPlatformOptions = async () => {
   try {
     const data = await CpsPlatformApi.getEnabledPlatformList()
-    platformOptions.value = data?.length ? data : fallbackPlatformOptions
+    const filtered = (data || []).filter((item) => SEARCHABLE_PLATFORM_CODES.has(item.platformCode))
+    platformOptions.value = filtered.length ? filtered : fallbackPlatformOptions
   } catch {
     platformOptions.value = fallbackPlatformOptions
+  }
+  if (!platformOptions.value.some((item) => item.platformCode === queryParams.platformCode)) {
+    queryParams.platformCode = platformOptions.value[0]?.platformCode || 'taobao'
   }
 }
 
@@ -1195,8 +1261,7 @@ const platformLabel = (platformCode?: string) => {
     jd: '京东',
     pdd: '拼多多',
     douyin: '抖音',
-    vip: '唯品会',
-    meituan: '美团'
+    vip: '唯品会'
   }
   return platformCode ? map[platformCode] || platformCode : '-'
 }
@@ -1231,9 +1296,12 @@ const formatCount = (value?: number) => {
 
 onMounted(async () => {
   await loadPlatformOptions()
-  await loadVendorOptions('taobao')
+  await loadVendorOptions(queryParams.platformCode || 'taobao')
   await loadMeta()
   await loadGoodsSquareThemes()
+  if (queryParams.activityTag) {
+    selectedThemeCode.value = queryParams.activityTag
+  }
   await loadHotKeywords()
   await getGoodsList()
 })
@@ -1249,25 +1317,30 @@ onMounted(async () => {
 
 .qlist-hero {
   display: flex;
-  gap: 40px;
-  align-items: flex-start;
+  gap: 32px;
+  align-items: center;
   max-width: 1500px;
   margin: 0 auto;
 }
 
 .brand-line {
   display: flex;
-  align-items: baseline;
-  gap: 20px;
-  margin-top: 10px;
+  flex-direction: column;
+  gap: 4px;
   white-space: nowrap;
 }
 
 .brand-main {
-  font-size: 34px;
+  font-size: 26px;
   font-weight: 800;
-  line-height: 1;
+  line-height: 1.2;
   color: #1d6dff;
+}
+
+.brand-sub {
+  font-size: 13px;
+  font-weight: 500;
+  color: #8a93a3;
 }
 
 .qlist-search {
@@ -1276,8 +1349,8 @@ onMounted(async () => {
 }
 
 .qlist-search :deep(.el-input__wrapper) {
-  height: 54px;
-  padding-left: 24px;
+  height: 48px;
+  padding-left: 20px;
   border-radius: 999px 0 0 999px;
   box-shadow: 0 0 0 2px #2f7dff inset;
 }
@@ -1292,24 +1365,24 @@ onMounted(async () => {
 
 .search-actions {
   display: inline-flex;
-  height: 54px;
+  height: 48px;
   align-items: center;
 }
 
 .image-search-upload,
 .image-search-upload :deep(.el-upload) {
   display: inline-flex;
-  height: 54px;
+  height: 48px;
   align-items: center;
 }
 
 .qlist-search :deep(.el-input-group__append .search-action-btn) {
-  width: 54px;
-  height: 54px;
-  min-width: 54px;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
   padding: 0;
   margin: 0 !important;
-  font-size: 22px;
+  font-size: 20px;
   color: #8a93a3;
   background: transparent;
   border: 0;
@@ -1324,41 +1397,11 @@ onMounted(async () => {
 .search-action-divider {
   display: block;
   width: 1px;
-  height: 30px;
+  height: 26px;
   flex: 0 0 1px;
   background: #2f7dff;
 }
 
-.hero-search-tips {
-  display: flex;
-  min-height: 32px;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  margin-top: 8px;
-}
-
-.headline-chip {
-  display: inline-flex;
-  font-size: 14px;
-  color: #697386;
-  cursor: pointer;
-  align-items: center;
-  gap: 4px;
-}
-
-.headline-chip.danger {
-  color: #ff4d6d;
-}
-
-.headline-chip.warning {
-  color: #f39800;
-}
-
-.headline-chip.success {
-  color: #16c979;
-}
 
 .suggestion-row,
 .search-platform-bar,
@@ -1454,24 +1497,44 @@ onMounted(async () => {
   margin-top: 12px;
 }
 
-.activity-card,
 .topic-card {
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
+  align-items: center;
 }
 
-.topic-card {
-  margin-top: 0;
-  border-top: 1px solid #edf2f7;
-  border-top-right-radius: 0;
-  border-top-left-radius: 0;
+.topic-select {
+  width: 220px;
+}
+
+.topic-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+}
+
+.clear-theme-btn {
+  margin-left: auto;
+}
+
+.keyword-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+}
+
+.rotate-hot-btn {
+  margin-left: auto;
 }
 
 .selection-label {
   display: inline-flex;
-  width: 76px;
+  min-width: 80px;
   font-size: 14px;
-  color: #8a93a3;
+  font-weight: 600;
+  color: #5a6474;
   flex: 0 0 auto;
   align-items: center;
   gap: 4px;

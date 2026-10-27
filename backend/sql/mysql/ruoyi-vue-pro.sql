@@ -3678,6 +3678,9 @@ WHERE NOT EXISTS (SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' A
 INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
 SELECT 'cps', 'v2.1.8', '2026-10-27 09:45:00', 'cps-update.sql', '修复美团官方与穿山甲抖音官方活动主图失效URL', 'SUCCESS', 0, b'0', 'system', 'system'
 WHERE NOT EXISTS (SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.8' AND `schema_update_time` = '2026-10-27 09:45:00');
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.9', '2026-10-27 10:00:00', 'cps-update.sql', '清洗聚推客活动奖励字段HTML标签并同步佣金率', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.9' AND `schema_update_time` = '2026-10-27 10:00:00');
 COMMIT;
 
 

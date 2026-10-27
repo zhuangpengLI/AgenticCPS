@@ -1665,6 +1665,16 @@ WHERE NOT EXISTS (
   SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.8' AND `schema_update_time` = '2026-10-27 09:45:00'
 );
 
+-- ============================================================
+-- 修改时间：2026-10-27 10:00:00
+-- 目的：清洗聚推客活动奖励字段HTML标签并同步佣金率
+-- ============================================================
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.9', '2026-10-27 10:00:00', 'cps-update.sql', '清洗聚推客活动奖励字段HTML标签并同步佣金率', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.9' AND `schema_update_time` = '2026-10-27 10:00:00'
+);
+
 SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================================
 -- Modified: 2026-08-12 18:35:00
@@ -2253,4 +2263,23 @@ INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, 
 SELECT 'cps', 'v2.1.8', '2026-10-27 09:45:00', 'cps-update.sql', '修复美团官方与穿山甲抖音官方活动主图失效URL', 'SUCCESS', 0, b'0', 'system', 'system'
 WHERE NOT EXISTS (
   SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.8' AND `schema_update_time` = '2026-10-27 09:45:00'
+);
+
+
+-- ============================================================
+-- 修改时间：2026-10-27 10:00:00
+-- 目的：清洗聚推客活动奖励中包含的 HTML 标签，更新为真实的佣金率描述
+-- 说明：更新 cps_rebate_activity 中聚推客活动奖励字段，去除富文本样式残留
+-- ============================================================
+UPDATE `cps_rebate_activity`
+SET `rebate_desc` = '以实际转链佣金为准',
+    `update_time` = '2026-10-27 10:00:00'
+WHERE `source_type` = 'jutuike'
+  AND (`rebate_desc` LIKE '%<%' OR `rebate_desc` LIKE '%style=%');
+
+-- 记录数据库结构版本号
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.9', '2026-10-27 10:00:00', 'cps-update.sql', '清洗聚推客活动奖励字段HTML标签并同步佣金率', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.9' AND `schema_update_time` = '2026-10-27 10:00:00'
 );

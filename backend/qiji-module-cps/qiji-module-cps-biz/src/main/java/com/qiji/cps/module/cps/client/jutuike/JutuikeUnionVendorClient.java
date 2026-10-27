@@ -235,7 +235,7 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
                 .mainPic(firstText(item, "img", "poster", "main_pic"))
                 .icon(firstText(item, "icon"))
                 .shortDesc(firstText(item, "desc", "introduce"))
-                .rebateDesc(firstText(item, "attribution_explain", "settlement_time", "note"))
+                .rebateDesc(sanitizeRebateDesc(firstText(item, "commission_rate", "rate", "rebate_desc", "settlement_time", "note", "attribution_explain")))
                 .billingType("CPS")
                 .promotionCount(parseInt(firstText(item, "promotion_num", "goods_num")))
                 .tagText(cateName)
@@ -254,6 +254,24 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
                 .supportsLocalLife(isLocalLifeCategory(cateName))
                 .rawPayload(toRawPayload(item))
                 .build();
+    }
+
+    private static String sanitizeRebateDesc(String text) {
+        if (!StringUtils.hasText(text)) {
+            return "以实际转链佣金为准";
+        }
+        String stripped = text.replaceAll("<[^>]+>", " ")
+                .replace("&nbsp;", " ")
+                .replace("&quot;", "\"")
+                .replace("&amp;", "&")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (stripped.length() > 50) {
+            stripped = stripped.substring(0, 50).trim();
+        }
+        return StringUtils.hasText(stripped) ? stripped : "以实际转链佣金为准";
     }
 
     private Map<String, Object> withCapabilities(Map<String, Object> metadata, boolean supportsList,

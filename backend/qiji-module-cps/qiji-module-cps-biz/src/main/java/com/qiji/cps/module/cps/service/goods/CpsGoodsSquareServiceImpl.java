@@ -32,7 +32,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
+import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -202,8 +204,20 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
 
     @Override
     public CpsGoodsSquareSearchRespVO getSelectionThemeGoods(String themeCode, Integer pageNo, Integer pageSize) {
-        int effectivePageNo = pageNo == null ? 1 : Math.max(pageNo, 1);
-        int effectivePageSize = pageSize == null ? 20 : Math.max(1, Math.min(pageSize, 100));
+        CpsGoodsSquareSearchReqVO reqVO = new CpsGoodsSquareSearchReqVO();
+        reqVO.setPageNo(pageNo);
+        reqVO.setPageSize(pageSize);
+        return getSelectionThemeGoods(themeCode, reqVO);
+    }
+
+    @Override
+    public CpsGoodsSquareSearchRespVO getSelectionThemeGoods(String themeCode, CpsGoodsSquareSearchReqVO reqVO) {
+        int effectivePageNo = (reqVO != null && reqVO.getPageNo() != null) ? Math.max(reqVO.getPageNo(), 1) : 1;
+        int effectivePageSize = (reqVO != null && reqVO.getPageSize() != null)
+                ? Math.max(1, Math.min(reqVO.getPageSize(), 100)) : 20;
+        if (!StringUtils.hasText(themeCode)) {
+            return emptySearchResult(effectivePageNo, effectivePageSize);
+        }
         CpsSelectionThemeDO theme = selectionThemeMapper.selectPublishedGoodsSquareByThemeCode(themeCode);
         if (theme == null) {
             return emptySearchResult(effectivePageNo, effectivePageSize);
@@ -212,15 +226,79 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
         if (items == null || items.isEmpty()) {
             return emptySearchResult(effectivePageNo, effectivePageSize);
         }
+
+        java.util.stream.Stream<CpsSelectionThemeItemDO> stream = items.stream();
+        if (reqVO != null) {
+            String keyword = reqVO.getKeyword();
+            if (StringUtils.hasText(keyword)
+                    && !DEFAULT_KEYWORD.equalsIgnoreCase(keyword.trim())
+                    && (theme.getThemeName() == null || !theme.getThemeName().equalsIgnoreCase(keyword.trim()))) {
+                String kw = keyword.trim().toLowerCase();
+                stream = stream.filter(item ->
+                        (item.getTitle() != null && item.getTitle().toLowerCase().contains(kw))
+                                || (item.getGoodsId() != null && item.getGoodsId().contains(kw))
+                                || (item.getShopName() != null && item.getShopName().toLowerCase().contains(kw))
+                                || (item.getBrandName() != null && item.getBrandName().toLowerCase().contains(kw))
+                                || (item.getSellingPoint() != null && item.getSellingPoint().toLowerCase().contains(kw)));
+            }
+            if (StringUtils.hasText(reqVO.getPlatformCode())) {
+                String pCode = reqVO.getPlatformCode().trim();
+                stream = stream.filter(item -> pCode.equalsIgnoreCase(item.getPlatformCode()));
+            }
+            if (reqVO.getPriceLowerLimit() != null) {
+                stream = stream.filter(item -> item.getActualPrice() != null
+                        && item.getActualPrice().compareTo(reqVO.getPriceLowerLimit()) >= 0);
+            }
+            if (reqVO.getPriceUpperLimit() != null) {
+                stream = stream.filter(item -> item.getActualPrice() != null
+                        && item.getActualPrice().compareTo(reqVO.getPriceUpperLimit()) <= 0);
+            }
+            if (reqVO.getMinCommissionRate() != null) {
+                stream = stream.filter(item -> item.getCommissionRate() != null
+                        && item.getCommissionRate().compareTo(reqVO.getMinCommissionRate()) >= 0);
+            }
+            if (reqVO.getMinMonthSales() != null) {
+                stream = stream.filter(item -> item.getMonthSales() != null
+                        && item.getMonthSales() >= reqVO.getMinMonthSales());
+            }
+            if (Integer.valueOf(1).equals(reqVO.getHasCoupon())) {
+                stream = stream.filter(item -> item.getCouponPrice() != null
+                        && item.getCouponPrice().compareTo(BigDecimal.ZERO) > 0);
+            }
+            if (StringUtils.hasText(reqVO.getCategoryId()) && !"0".equals(reqVO.getCategoryId())) {
+                stream = stream.filter(item -> item.getCategoryName() != null
+                        && item.getCategoryName().contains(reqVO.getCategoryId()));
+            }
+            Integer sortType = reqVO.getSortType();
+            if (sortType != null) {
+                stream = switch (sortType) {
+                    case 1 -> stream.sorted(Comparator.comparing(CpsSelectionThemeItemDO::getMonthSales,
+                            Comparator.nullsLast(Comparator.reverseOrder())));
+                    case 2 -> stream.sorted(Comparator.comparing(CpsSelectionThemeItemDO::getActualPrice,
+                            Comparator.nullsLast(Comparator.naturalOrder())));
+                    case 3 -> stream.sorted(Comparator.comparing(CpsSelectionThemeItemDO::getActualPrice,
+                            Comparator.nullsLast(Comparator.reverseOrder())));
+                    case 4 -> stream.sorted(Comparator.comparing(CpsSelectionThemeItemDO::getCommissionRate,
+                            Comparator.nullsLast(Comparator.reverseOrder())));
+                    case 5 -> stream.sorted(Comparator.comparing(CpsSelectionThemeItemDO::getCouponPrice,
+                            Comparator.nullsLast(Comparator.reverseOrder())));
+                    case 6 -> stream.sorted(Comparator.comparing(CpsSelectionThemeItemDO::getId,
+                            Comparator.nullsLast(Comparator.reverseOrder())));
+                    default -> stream;
+                };
+            }
+        }
+
+        List<CpsSelectionThemeItemDO> filteredItems = stream.toList();
         long offset = (long) (effectivePageNo - 1) * effectivePageSize;
-        int fromIndex = (int) Math.min(offset, items.size());
-        int toIndex = Math.min(fromIndex + effectivePageSize, items.size());
-        List<CpsGoodsSquareGoodsRespVO> list = items.subList(fromIndex, toIndex).stream()
+        int fromIndex = (int) Math.min(offset, filteredItems.size());
+        int toIndex = Math.min(fromIndex + effectivePageSize, filteredItems.size());
+        List<CpsGoodsSquareGoodsRespVO> list = filteredItems.subList(fromIndex, toIndex).stream()
                 .map(item -> toSelectionThemeGoodsResp(item, theme))
                 .toList();
         return CpsGoodsSquareSearchRespVO.builder()
                 .list(list)
-                .total((long) items.size())
+                .total((long) filteredItems.size())
                 .pageNo(effectivePageNo)
                 .pageSize(effectivePageSize)
                 .build();

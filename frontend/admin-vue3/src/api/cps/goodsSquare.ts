@@ -157,7 +157,9 @@ export const CpsGoodsSquareApi = {
     pageSize?: number
   }) => request.get<CpsGoodsSquareSearchRespVO>({ url: '/cps/goods-square/vendor-goods', params }),
 
-  getSelectionThemeGoods: (params: { themeCode: string; pageNo: number; pageSize: number }) =>
+  getSelectionThemeGoods: (
+    params: { themeCode: string; pageNo: number; pageSize: number } & Partial<CpsGoodsSquareSearchReqVO>
+  ) =>
     request.get<CpsGoodsSquareSearchRespVO>({
       url: '/cps/goods-square/selection-theme-goods',
       params

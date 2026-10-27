@@ -22,6 +22,8 @@ public interface CpsGoodsSquareService {
 
     CpsGoodsSquareSearchRespVO getSelectionThemeGoods(String themeCode, Integer pageNo, Integer pageSize);
 
+    CpsGoodsSquareSearchRespVO getSelectionThemeGoods(String themeCode, CpsGoodsSquareSearchReqVO reqVO);
+
     CpsGoodsSquareSearchRespVO searchGoods(@Valid CpsGoodsSquareSearchReqVO reqVO);
 
     CpsGoodsSquareSearchRespVO searchByImage(@Valid CpsGoodsSquareSearchReqVO reqVO);

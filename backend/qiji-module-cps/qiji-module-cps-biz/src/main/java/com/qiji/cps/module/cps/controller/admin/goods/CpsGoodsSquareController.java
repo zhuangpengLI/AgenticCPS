@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -84,10 +85,12 @@ public class CpsGoodsSquareController {
     @Operation(summary = "获取选品库主题商品")
     @PreAuthorize("@ss.hasPermission('cps:goods-square:query')")
     public CommonResult<CpsGoodsSquareSearchRespVO> getSelectionThemeGoods(
-            @RequestParam("themeCode") String themeCode,
-            @RequestParam(value = "pageNo", required = false, defaultValue = "1") Integer pageNo,
-            @RequestParam(value = "pageSize", required = false, defaultValue = "20") Integer pageSize) {
-        return success(goodsSquareService.getSelectionThemeGoods(themeCode, pageNo, pageSize));
+            @RequestParam(value = "themeCode", required = false) String themeCode,
+            CpsGoodsSquareSearchReqVO reqVO) {
+        String effectiveThemeCode = StringUtils.hasText(themeCode)
+                ? themeCode
+                : (reqVO != null ? reqVO.getActivityTag() : null);
+        return success(goodsSquareService.getSelectionThemeGoods(effectiveThemeCode, reqVO));
     }
 
     @GetMapping("/search")

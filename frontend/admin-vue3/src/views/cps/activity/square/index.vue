@@ -157,7 +157,7 @@
             </div>
             <div class="card-meta">
               <span>活动奖励</span>
-              <b>{{ item.rebateDesc || '--' }}</b>
+              <b>{{ formatRebateDesc(item.rebateDesc) }}</b>
             </div>
             <div class="card-meta">
               <span>活动时间</span>
@@ -967,6 +967,20 @@ const handleCardClick = (item: CpsRebateActivityCenterCardVO) => {
       }
     })
   }
+}
+
+const formatRebateDesc = (desc?: string) => {
+  if (!desc) return '--'
+  const text = desc
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return text || '--'
 }
 
 const formatWindow = (item: CpsRebateActivityCenterCardVO) => {

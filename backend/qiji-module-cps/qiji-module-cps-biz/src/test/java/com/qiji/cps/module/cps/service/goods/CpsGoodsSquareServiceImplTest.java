@@ -278,6 +278,62 @@ class CpsGoodsSquareServiceImplTest {
     }
 
     @Test
+    @DisplayName("getSelectionThemeGoods - 支持根据关键词和平台筛选主题商品")
+    void getSelectionThemeGoods_supportsFilteringAndSorting() {
+        CpsSelectionThemeDO theme = CpsSelectionThemeDO.builder()
+                .id(108L)
+                .themeCode("THEME_MULTI_108")
+                .themeName("爆品精选")
+                .vendorCode("dataoke")
+                .build();
+        CpsSelectionThemeItemDO item1 = CpsSelectionThemeItemDO.builder()
+                .themeId(108L)
+                .platformCode("taobao")
+                .goodsId("tb-1")
+                .title("苹果手机壳")
+                .actualPrice(new BigDecimal("19.90"))
+                .commissionRate(new BigDecimal("15.00"))
+                .monthSales(500L)
+                .status("ENABLED")
+                .build();
+        CpsSelectionThemeItemDO item2 = CpsSelectionThemeItemDO.builder()
+                .themeId(108L)
+                .platformCode("jd")
+                .goodsId("jd-2")
+                .title("华为数据线")
+                .actualPrice(new BigDecimal("9.90"))
+                .commissionRate(new BigDecimal("25.00"))
+                .monthSales(1200L)
+                .status("ENABLED")
+                .build();
+        when(selectionThemeMapper.selectPublishedGoodsSquareByThemeCode("THEME_MULTI_108"))
+                .thenReturn(theme);
+        when(selectionThemeItemMapper.selectEnabledListByThemeId(108L)).thenReturn(List.of(item1, item2));
+
+        // 1. Filter by keyword: "华为"
+        CpsGoodsSquareSearchReqVO req1 = new CpsGoodsSquareSearchReqVO();
+        req1.setKeyword("华为");
+        var res1 = service.getSelectionThemeGoods("THEME_MULTI_108", req1);
+        assertEquals(1L, res1.getTotal());
+        assertEquals("jd-2", res1.getList().get(0).getGoodsId());
+
+        // 2. Filter by platformCode: "taobao"
+        CpsGoodsSquareSearchReqVO req2 = new CpsGoodsSquareSearchReqVO();
+        req2.setPlatformCode("taobao");
+        var res2 = service.getSelectionThemeGoods("THEME_MULTI_108", req2);
+        assertEquals(1L, res2.getTotal());
+        assertEquals("tb-1", res2.getList().get(0).getGoodsId());
+
+        // 3. Sort by monthSales (sortType = 1)
+        CpsGoodsSquareSearchReqVO req3 = new CpsGoodsSquareSearchReqVO();
+        req3.setSortType(1);
+        var res3 = service.getSelectionThemeGoods("THEME_MULTI_108", req3);
+        assertEquals(2L, res3.getTotal());
+        assertEquals("jd-2", res3.getList().get(0).getGoodsId());
+        assertEquals("tb-1", res3.getList().get(1).getGoodsId());
+    }
+
+    @Test
     @DisplayName("searchGoods - 非淘宝平台忽略淘系专属筛选")
     void searchGoods_ignoresTaobaoSelectionFiltersForOtherPlatforms() {
         CpsGoodsSquareSearchReqVO reqVO = new CpsGoodsSquareSearchReqVO();

@@ -350,7 +350,7 @@ public class CpsRebateActivitySyncServiceImpl {
                 .platformCode(resolveThirdPartyPlatformCode(request, item))
                 .mainPic(item.getMainPic())
                 .shortDesc(item.getShortDesc())
-                .rebateDesc(truncate(item.getRebateDesc(), REBATE_DESC_MAX_LENGTH))
+                .rebateDesc(cleanRebateDesc(item.getRebateDesc()))
                 .billingType(firstText(item.getBillingType(), "CPS"))
                 .promotionCount(item.getPromotionCount() == null ? 0 : item.getPromotionCount())
                 .sourceType(firstText(item.getSourceType(), request.getVendorCode(),
@@ -497,6 +497,21 @@ public class CpsRebateActivitySyncServiceImpl {
             return csjDouyinVendorClient;
         }
         return null;
+    }
+
+    private String cleanRebateDesc(String rebateDesc) {
+        if (!StringUtils.hasText(rebateDesc)) {
+            return null;
+        }
+        String cleaned = rebateDesc.replaceAll("<[^>]+>", " ")
+                .replace("&nbsp;", " ")
+                .replace("&quot;", "\"")
+                .replace("&amp;", "&")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replaceAll("\\s+", " ")
+                .trim();
+        return truncate(cleaned, REBATE_DESC_MAX_LENGTH);
     }
 
     private boolean requiresVendorConfig(CpsThirdPartyActivityVendorClient vendorClient) {
