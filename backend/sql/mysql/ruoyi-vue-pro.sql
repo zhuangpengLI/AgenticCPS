@@ -3675,6 +3675,9 @@ WHERE NOT EXISTS (SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' A
 INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
 SELECT 'cps', 'v2.1.7', '2026-10-26 17:11:54', 'cps-update.sql', '初始化穿山甲电商联盟（CSJ）抖音电商CPS供应商接入元数据', 'SUCCESS', 0, b'0', 'system', 'system'
 WHERE NOT EXISTS (SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.7' AND `schema_update_time` = '2026-10-26 17:11:54');
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.8', '2026-10-27 09:45:00', 'cps-update.sql', '修复美团官方与穿山甲抖音官方活动主图失效URL', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.8' AND `schema_update_time` = '2026-10-27 09:45:00');
 COMMIT;
 
 

@@ -117,7 +117,16 @@
           @click="handleCardClick(item)"
         >
           <div class="card-cover" :class="`theme-${platformTheme(item.platformCode)}`">
-            <el-image v-if="item.mainPic" :src="item.mainPic" fit="cover" lazy />
+            <el-image v-if="item.mainPic" :src="item.mainPic" fit="cover" lazy>
+              <template #error>
+                <div class="cover-fallback">
+                  <div class="cover-platform">{{
+                    item.platformName || platformLabel(item.platformCode)
+                  }}</div>
+                  <div class="cover-title">{{ item.activityName }}</div>
+                </div>
+              </template>
+            </el-image>
             <div v-else class="cover-fallback">
               <div class="cover-platform">{{
                 item.platformName || platformLabel(item.platformCode)
@@ -1292,6 +1301,13 @@ onMounted(getCenter)
 .card-cover :deep(.el-image) {
   width: 100%;
   height: 100%;
+}
+
+.card-cover :deep(.el-image__error) {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  background: transparent;
 }
 
 .cover-fallback {

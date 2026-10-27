@@ -1655,6 +1655,16 @@ WHERE NOT EXISTS (
   SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.7' AND `schema_update_time` = '2026-10-26 17:11:54'
 );
 
+-- ============================================================
+-- 修改时间：2026-10-27 09:45:00
+-- 目的：修复美团官方与穿山甲抖音官方活动主图失效URL
+-- ============================================================
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.8', '2026-10-27 09:45:00', 'cps-update.sql', '修复美团官方与穿山甲抖音官方活动主图失效URL', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.8' AND `schema_update_time` = '2026-10-27 09:45:00'
+);
+
 SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================================
 -- Modified: 2026-08-12 18:35:00
@@ -2215,4 +2225,32 @@ INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, 
 SELECT 'cps', 'v2.1.7', '2026-10-26 17:10:00', 'cps-update.sql', '初始化穿山甲电商联盟（CSJ）抖音电商CPS供应商接入元数据', 'SUCCESS', 0, b'0', 'system', 'system'
 WHERE NOT EXISTS (
   SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.7' AND `schema_update_time` = '2026-10-26 17:10:00'
+);
+
+
+-- ============================================================
+-- 修改时间：2026-10-27 09:45:00
+-- 目的：修复美团官方与穿山甲抖音官方活动主图失效URL，更新为有效活动主图
+-- 说明：更新 cps_rebate_activity 中美团官方和穿山甲抖音官方活动的主图链接
+-- ============================================================
+UPDATE `cps_rebate_activity` SET `main_pic` = 'https://p1.meituan.net/marketingcpsmedia/9e4470f4ed627e3b9001a6155ae3bd1490318.jpg', `update_time` = '2026-10-27 09:45:00' WHERE `source_type` = 'official' AND `external_activity_id` = 'mt:act:33';
+UPDATE `cps_rebate_activity` SET `main_pic` = 'https://p0.meituan.net/marketingcpsmedia/efefc824b711b0df5c7b9d703daf87c2146349.jpg', `update_time` = '2026-10-27 09:45:00' WHERE `source_type` = 'official' AND `external_activity_id` = 'mt:act:4';
+UPDATE `cps_rebate_activity` SET `main_pic` = 'https://p1.meituan.net/marketingcpsmedia/82ee55b87a75745c73c6f2f472b0c543121899.png', `update_time` = '2026-10-27 09:45:00' WHERE `source_type` = 'official' AND `external_activity_id` = 'mt:act:2';
+UPDATE `cps_rebate_activity` SET `main_pic` = 'https://p0.meituan.net/marketingcpsmedia/d3ddbe27664ab7e6a0ea20b815c2f6a0142667.jpg', `update_time` = '2026-10-27 09:45:00' WHERE `source_type` = 'official' AND `external_activity_id` = 'mt:act:22';
+UPDATE `cps_rebate_activity` SET `main_pic` = 'https://p0.meituan.net/marketingcpsmedia/f34299e8f679c3cb7e9f8d652f3311f0113094.jpg', `update_time` = '2026-10-27 09:45:00' WHERE `source_type` = 'official' AND `external_activity_id` = 'mt:act:43';
+UPDATE `cps_rebate_activity` SET `main_pic` = 'https://p0.meituan.net/marketingcpsmedia/e800ff3136dfcba36c5a8a1f3689aabe241160.png', `update_time` = '2026-10-27 09:45:00' WHERE `source_type` = 'official' AND `external_activity_id` = 'mt:act:7';
+UPDATE `cps_rebate_activity` SET `main_pic` = 'https://p1.meituan.net/marketingcpsmedia/755ed8475934cd8a843e57088752160e180396.jpg', `update_time` = '2026-10-27 09:45:00' WHERE `source_type` = 'official' AND `external_activity_id` = 'mt:act:51';
+
+UPDATE `cps_rebate_activity` SET `main_pic` = 'https://img-haodanku-com.cdn.fudaiapp.com/haodanku/powerful_page/385mT1zdYYf_jgs7jdBDpYuxYXDh', `update_time` = '2026-10-27 09:45:00' WHERE `source_type` = 'csj' AND `external_activity_id` = 'csj:mat:1001';
+UPDATE `cps_rebate_activity` SET `main_pic` = 'https://img-haodanku-com.cdn.fudaiapp.com/haodanku/powerful_page/7wqk9IFqJDm_PXo6IyTW4Zyvsnjq', `update_time` = '2026-10-27 09:45:00' WHERE `source_type` = 'csj' AND `external_activity_id` = 'csj:mat:1002';
+UPDATE `cps_rebate_activity` SET `main_pic` = 'https://img-haodanku-com.cdn.fudaiapp.com/haodanku/powerful_page/MN2STQUjxz0_UmbxkgaLdQyFMpxK', `update_time` = '2026-10-27 09:45:00' WHERE `source_type` = 'csj' AND `external_activity_id` = 'csj:mat:1003';
+UPDATE `cps_rebate_activity` SET `main_pic` = 'https://img-haodanku-com.cdn.fudaiapp.com/haodanku/powerful_page/uqSgCIuT1cZ_heUVw1FtbFvoDO4g', `update_time` = '2026-10-27 09:45:00' WHERE `source_type` = 'csj' AND `external_activity_id` = 'csj:mat:1004';
+UPDATE `cps_rebate_activity` SET `main_pic` = 'https://img-haodanku-com.cdn.fudaiapp.com/haodanku/powerful_page/MItOh6F3bXy_szzXbmwZHacPU2iP', `update_time` = '2026-10-27 09:45:00' WHERE `source_type` = 'csj' AND `external_activity_id` = 'csj:mat:1005';
+UPDATE `cps_rebate_activity` SET `main_pic` = 'https://img-haodanku-com.cdn.fudaiapp.com/haodanku/powerful_page/CNO5Xfwaxvd_8K5YO3FXOsotr3L5', `update_time` = '2026-10-27 09:45:00' WHERE `source_type` = 'csj' AND `external_activity_id` = 'csj:mat:1006';
+
+-- 记录数据库结构版本号
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.8', '2026-10-27 09:45:00', 'cps-update.sql', '修复美团官方与穿山甲抖音官方活动主图失效URL', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.8' AND `schema_update_time` = '2026-10-27 09:45:00'
 );
