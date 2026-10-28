@@ -26,7 +26,7 @@ public final class CpsPlatformOrderStatusMapper {
             case "jd", "jingdong" -> mapJdStatus(platformStatus);
             case "pdd", "pinduoduo" -> mapPddStatus(platformStatus);
             case "douyin" -> mapDouyinStatus(platformStatus);
-            case "didi", "meituan", "local_life", "local-life" -> mapLocalLifeStatus(platformStatus);
+            case "eleme", "didi", "meituan", "local_life", "local-life" -> mapLocalLifeStatus(platformStatus);
             default -> CpsOrderStatusEnum.CREATED.getStatus();
         };
     }

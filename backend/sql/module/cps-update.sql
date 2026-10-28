@@ -1675,6 +1675,16 @@ WHERE NOT EXISTS (
   SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.9' AND `schema_update_time` = '2026-10-27 10:00:00'
 );
 
+-- ============================================================
+-- 修改时间：2026-10-28 11:36:51
+-- 目的：初始化淘宝闪购联盟官方OpenAPI平台配置与SID会员归因
+-- ============================================================
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.10', '2026-10-28 11:36:51', 'cps-update.sql', '初始化淘宝闪购联盟官方OpenAPI平台配置与SID会员归因', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.10' AND `schema_update_time` = '2026-10-28 11:36:51'
+);
+
 SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================================
 -- Modified: 2026-08-12 18:35:00
@@ -2282,4 +2292,67 @@ INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, 
 SELECT 'cps', 'v2.1.9', '2026-10-27 10:00:00', 'cps-update.sql', '清洗聚推客活动奖励字段HTML标签并同步佣金率', 'SUCCESS', 0, b'0', 'system', 'system'
 WHERE NOT EXISTS (
   SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.9' AND `schema_update_time` = '2026-10-27 10:00:00'
+);
+
+-- ============================================================
+-- 修改时间：2026-10-28 11:35:00
+-- 目的：初始化淘宝闪购联盟（eleme）平台配置与官方 TOP OpenAPI 供应商接入元数据（支持官方常驻活动转链、单店推广与正向订单同步）
+-- 说明：插入 eleme 平台与 official、haodanku 供应商基础配置，初始化官方常驻活动物料，可安全重复执行
+-- ============================================================
+INSERT INTO `cps_platform` (`platform_code`, `platform_name`, `platform_logo`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `platform_service_rate`, `sort`, `status`, `extra_config`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`, `active_vendor_code`, `supported_vendors`)
+SELECT 'eleme', '淘宝闪购', 'https://img.alicdn.com/imgextra/i3/O1CN01fUvOcm1fM8VwB8P3C_!!6000000003986-2-tps-750-375.png', NULL, NULL, 'https://eco.taobao.com/router/rest', NULL, NULL, 0.0000, 90, 0, NULL, '阿里本地生活淘宝闪购联盟官方TOP OpenAPI接入，支持常驻官方活动、单店推广转链、导购选品与正向订单同步', 'system', '2026-10-28 11:35:00', 'system', '2026-10-28 11:35:00', b'0', 1, 'official', 'official,haodanku'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `cps_platform`
+  WHERE `tenant_id` = 1 AND `platform_code` = 'eleme' AND `deleted` = b'0'
+);
+
+UPDATE `cps_platform`
+ SET `supported_vendors` = CONCAT_WS(',', NULLIF(TRIM(BOTH ',' FROM COALESCE(`supported_vendors`, '')), ''), 'official'),
+     `update_time` = '2026-10-28 11:35:00'
+ WHERE `tenant_id` = 1
+   AND `platform_code` = 'eleme'
+   AND `deleted` = b'0'
+   AND FIND_IN_SET('official', REPLACE(COALESCE(`supported_vendors`, ''), ' ', '')) = 0;
+
+INSERT INTO `cps_api_vendor` (`vendor_code`, `vendor_name`, `vendor_type`, `platform_code`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `extra_config`, `priority`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT 'official', '淘宝闪购联盟官方', 'official', 'eleme', '', '', 'https://eco.taobao.com/router/rest', NULL, NULL, '{"gatewayUrl":"https://eco.taobao.com/router/rest","officialActivityMethod":"alibaba.alsc.union.eleme.promotion.officialactivity.get","storePromotionMethod":"alibaba.alsc.union.eleme.promotion.storepromotion.get","storeQueryMethod":"alibaba.alsc.union.eleme.promotion.storepromotion.query","orderGetMethod":"alibaba.alsc.union.kbcpx.positive.order.get"}', 100, 0, '阿里本地生活淘宝闪购联盟官方 TOP OpenAPI 接入，支持MD5字典序签名、常驻活动推广、单店推广与正向订单明细同步', 'system', '2026-10-28 11:35:00', 'system', '2026-10-28 11:35:00', b'0', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM `cps_api_vendor`
+  WHERE `tenant_id` = 1 AND `vendor_code` = 'official' AND `platform_code` = 'eleme' AND `deleted` = b'0'
+);
+
+INSERT INTO `cps_api_vendor` (`vendor_code`, `vendor_name`, `vendor_type`, `platform_code`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `extra_config`, `priority`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT 'haodanku', '好单库淘宝闪购', 'aggregator', 'eleme', '', '', 'https://v3.api.haodanku.com', NULL, NULL, '{"convertPath":"/elm_activity_ratesurl","orderPath":"/get_elm_order"}', 90, 0, '好单库聚合供应商淘宝闪购接入，作为官方API的容灾备选', 'system', '2026-10-28 11:35:00', 'system', '2026-10-28 11:35:00', b'0', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM `cps_api_vendor`
+  WHERE `tenant_id` = 1 AND `vendor_code` = 'haodanku' AND `platform_code` = 'eleme' AND `deleted` = b'0'
+);
+
+-- 初始化淘宝闪购官方常驻推广活动
+INSERT INTO `cps_rebate_activity` (`activity_name`, `activity_type`, `platform_code`, `main_pic`, `short_desc`, `rebate_desc`, `billing_type`, `promotion_count`, `source_type`, `external_activity_id`, `promotion_activity_id`, `vendor_metadata`, `tag_text`, `jump_type`, `jump_url`, `search_keyword`, `sort`, `status`, `start_time`, `end_time`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT '淘宝闪购天天领红包', '外卖闪购', 'eleme', 'https://img.alicdn.com/imgextra/i3/O1CN01fUvOcm1fM8VwB8P3C_!!6000000003986-2-tps-750-375.png', '淘宝闪购天天领大额红包，全国流量适用', '天天领大额红包，享闪购CPS高额返佣', 'CPS', 0, 'official', 'eleme:official:10144', '10144', '{"activityId":"10144","trafficType":"全国流量"}', '全国流量', 'url', '', '淘宝闪购', 91, 1, '2026-01-01 00:00:00', '2028-12-31 23:59:59', '官方常驻在线活动', 'system', '2026-10-28 11:35:00', 'system', '2026-10-28 11:35:00', b'0', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM `cps_rebate_activity`
+  WHERE `tenant_id` = 1 AND `source_type` = 'official' AND `external_activity_id` = 'eleme:official:10144' AND `deleted` = b'0'
+);
+
+INSERT INTO `cps_rebate_activity` (`activity_name`, `activity_type`, `platform_code`, `main_pic`, `short_desc`, `rebate_desc`, `billing_type`, `promotion_count`, `source_type`, `external_activity_id`, `promotion_activity_id`, `vendor_metadata`, `tag_text`, `jump_type`, `jump_url`, `search_keyword`, `sort`, `status`, `start_time`, `end_time`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT '浏览店铺做任务', '任务领券', 'eleme', 'https://img.alicdn.com/imgextra/i2/O1CN01s2Zc641H0H5k3Uo9m_!!6000000000699-2-tps-750-375.png', '浏览店铺做任务领红包', '浏览品牌门店领任务红包', 'CPS', 0, 'official', 'eleme:official:10174', '10174', '{"activityId":"10174","trafficType":"全国流量"}', '全国流量', 'url', '', '做任务领红包', 92, 1, '2026-01-01 00:00:00', '2028-12-31 23:59:59', '官方常驻在线活动', 'system', '2026-10-28 11:35:00', 'system', '2026-10-28 11:35:00', b'0', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM `cps_rebate_activity`
+  WHERE `tenant_id` = 1 AND `source_type` = 'official' AND `external_activity_id` = 'eleme:official:10174' AND `deleted` = b'0'
+);
+
+INSERT INTO `cps_rebate_activity` (`activity_name`, `activity_type`, `platform_code`, `main_pic`, `short_desc`, `rebate_desc`, `billing_type`, `promotion_count`, `source_type`, `external_activity_id`, `promotion_activity_id`, `vendor_metadata`, `tag_text`, `jump_type`, `jump_url`, `search_keyword`, `sort`, `status`, `start_time`, `end_time`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT '零售专属会场', '超市零售', 'eleme', 'https://img.alicdn.com/imgextra/i4/O1CN01dE6gY81XvD2wYf6Z6_!!6000000002985-2-tps-750-375.png', '超市便利、生鲜水果零售专属会场', '超市便利、水果生鲜零售会场', 'CPS', 0, 'official', 'eleme:official:10183', '10183', '{"activityId":"10183","trafficType":"全国流量"}', '全国流量', 'url', '', '超市零售', 93, 1, '2026-01-01 00:00:00', '2028-12-31 23:59:59', '官方常驻在线活动', 'system', '2026-10-28 11:35:00', 'system', '2026-10-28 11:35:00', b'0', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM `cps_rebate_activity`
+  WHERE `tenant_id` = 1 AND `source_type` = 'official' AND `external_activity_id` = 'eleme:official:10183' AND `deleted` = b'0'
+);
+
+-- 记录数据库结构版本号
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.10', '2026-10-28 11:35:00', 'cps-update.sql', '初始化淘宝闪购联盟官方OpenAPI平台配置与SID会员归因', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.10' AND `schema_update_time` = '2026-10-28 11:35:00'
 );

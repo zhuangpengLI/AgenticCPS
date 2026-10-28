@@ -12,6 +12,7 @@ import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.client.official.douyin.DouyinOfficialVendorClient;
+import com.qiji.cps.module.cps.client.official.eleme.ElemeOfficialVendorClient;
 import com.qiji.cps.module.cps.client.official.jd.JdOfficialVendorClient;
 import com.qiji.cps.module.cps.client.official.meituan.MeituanOfficialVendorClient;
 import com.qiji.cps.module.cps.client.official.pdd.PddOfficialVendorClient;
@@ -136,7 +137,8 @@ class CpsSdkStandardizationContractTest {
         List<CpsApiVendorClient> fullOfficialClients = List.of(
                 new JdOfficialVendorClient(),
                 new DouyinOfficialVendorClient(),
-                new MeituanOfficialVendorClient()
+                new MeituanOfficialVendorClient(),
+                new ElemeOfficialVendorClient()
         );
 
         for (CpsApiVendorClient officialClient : fullOfficialClients) {

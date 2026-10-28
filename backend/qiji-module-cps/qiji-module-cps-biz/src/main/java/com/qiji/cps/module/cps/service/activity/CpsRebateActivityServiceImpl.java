@@ -21,6 +21,7 @@ import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.client.haodanku.activity.HaodankuActivityVendorClient;
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityClient;
 import com.qiji.cps.module.cps.client.jutuike.JutuikeUnionVendorClient;
+import com.qiji.cps.module.cps.client.official.eleme.ElemeOfficialVendorClient;
 import com.qiji.cps.module.cps.client.official.meituan.MeituanOfficialVendorClient;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
@@ -120,6 +121,9 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
 
     @Resource
     private MeituanOfficialVendorClient meituanOfficialVendorClient;
+
+    @Resource
+    private ElemeOfficialVendorClient elemeOfficialVendorClient;
 
     @Resource
     private CsjDouyinVendorClient csjDouyinVendorClient;
@@ -264,6 +268,11 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 || "meituan".equalsIgnoreCase(activity.getSourceType()))) {
             return generateMeituanActivityLink(activity, reqVO, memberId);
         }
+        if (PLATFORM_ELEME.equalsIgnoreCase(firstText(activity.getPlatformCode(), ""))
+                && (SOURCE_OFFICIAL.equalsIgnoreCase(firstText(activity.getSourceType(), ""))
+                || "eleme".equalsIgnoreCase(activity.getSourceType()))) {
+            return generateElemeOfficialActivityLink(activity, reqVO, memberId);
+        }
         if (SOURCE_CSJ.equalsIgnoreCase(firstText(activity.getSourceType(), ""))
                 || (PLATFORM_DOUYIN.equalsIgnoreCase(firstText(activity.getPlatformCode(), ""))
                 && (SOURCE_CSJ.equalsIgnoreCase(firstText(activity.getSourceType(), ""))
@@ -370,6 +379,54 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 : "当前链接没有可信会员归因标识，下单后可通过订单号申请找回";
         return buildExternalPromotion(activity, reqVO, actualAdzoneId, promotionUrl, wxMiniPath, deeplink,
                 "美团联盟官方推广链接已生成", attributionStatus, attributionMessage);
+    }
+
+    private CpsRebateActivityPromotionRespVO generateElemeOfficialActivityLink(CpsRebateActivityDO activity,
+                                                                               CpsRebateActivityPromotionReqVO reqVO,
+                                                                               Long memberId) {
+        String activityId = firstText(activity.getPromotionActivityId(),
+                metadataText(activity, "activity_id"), activity.getExternalActivityId());
+        if (activityId != null && activityId.startsWith("eleme:official:")) {
+            activityId = activityId.substring("eleme:official:".length());
+        }
+        if (!StringUtils.hasText(activityId)) {
+            activityId = "10144";
+        }
+        CpsVendorConfig config = platformClientFactory.getVendorConfig(VENDOR_OFFICIAL, PLATFORM_ELEME);
+        if (config == null) {
+            return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(), "未配置淘宝闪购官方供应商，无法生成推广链接");
+        }
+        String actualAdzoneId = firstText(reqVO.getAdzoneId(), config.getDefaultAdzoneId());
+        CpsTransferRecordDO sidRecord = memberId == null ? null
+                : createPendingSidRecord(activity, memberId, actualAdzoneId, VENDOR_OFFICIAL, PLATFORM_ELEME);
+        String sid = sidRecord == null ? firstText(reqVO.getChannelTag(), actualAdzoneId)
+                : sidRecord.getAttributionToken();
+
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setGoodsId(activityId);
+        request.setAdzoneId(actualAdzoneId);
+        request.setExternalId(sid);
+
+        CpsPromotionLinkResult linkResult = elemeOfficialVendorClient.generatePromotionLink(request, config);
+        String promotionUrl = firstSafePromotionUrl(linkResult);
+        if (!StringUtils.hasText(promotionUrl) && (linkResult == null || !StringUtils.hasText(linkResult.getTpwd()))) {
+            return buildFailedPromotion(activity, reqVO, actualAdzoneId, "淘宝闪购官方推广链接暂不可用");
+        }
+        if (sidRecord != null) {
+            transferRecordMapper.updateById(CpsTransferRecordDO.builder()
+                    .id(sidRecord.getId())
+                    .promotionUrl(promotionUrl)
+                    .taoCommand(linkResult.getTpwd())
+                    .status(1)
+                    .build());
+        }
+        String attributionStatus = sidRecord != null ? ATTRIBUTION_MEMBER_TRACKED
+                : StringUtils.hasText(sid) ? ATTRIBUTION_CHANNEL_TRACKED : ATTRIBUTION_UNTRACKED;
+        String attributionMessage = sidRecord != null ? "已使用可信会员归因标识，订单同步后可自动绑定会员"
+                : StringUtils.hasText(sid) ? "当前链接仅支持渠道跟踪，不能自动绑定具体会员"
+                : "当前链接没有可信会员归因标识，下单后可通过订单号申请找回";
+        return buildExternalPromotion(activity, reqVO, actualAdzoneId, promotionUrl, linkResult.getTpwd(), null,
+                "淘宝闪购官方推广链接已生成", attributionStatus, attributionMessage);
     }
 
     private CpsRebateActivityPromotionRespVO generateCsjActivityLink(CpsRebateActivityDO activity,

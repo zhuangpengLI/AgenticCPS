@@ -786,7 +786,7 @@ public class CpsOrderServiceImpl implements CpsOrderService {
 
     private AttributionResult resolveByAttributionToken(CpsOrderDTO dto) {
         boolean supportedSidVendor = "jutuike".equalsIgnoreCase(dto.getVendorCode())
-                || "haodanku".equalsIgnoreCase(dto.getVendorCode())
+                || ("haodanku".equalsIgnoreCase(dto.getVendorCode()) || "official".equalsIgnoreCase(dto.getVendorCode()))
                 && "eleme".equalsIgnoreCase(dto.getPlatformCode());
         if (!supportedSidVendor || isBlank(dto.getPlatformCode()) || isBlank(dto.getExternalId())) {
             return null;
