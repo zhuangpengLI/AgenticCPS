@@ -362,7 +362,7 @@ public class JutuikeUnionVendorClient extends AbstractAggregatorVendorClient
         if (category.contains("美团")) {
             return CpsPlatformCodeEnum.MEITUAN.getCode();
         }
-        if (category.contains("饿了么")) {
+        if (category.contains("淘宝闪购") || category.contains("饿了么")) {
             return "eleme";
         }
         if (category.contains("京东")) {

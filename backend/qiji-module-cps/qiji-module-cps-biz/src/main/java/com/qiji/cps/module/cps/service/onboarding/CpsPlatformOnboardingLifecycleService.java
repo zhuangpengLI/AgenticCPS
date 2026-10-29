@@ -9,6 +9,7 @@ import com.qiji.cps.module.cps.controller.admin.onboarding.vo.*;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformPageReqVO;
 import com.qiji.cps.module.cps.controller.admin.platform.vo.CpsPlatformSaveReqVO;
 import com.qiji.cps.module.cps.dal.dataobject.platform.CpsPlatformDO;
+import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import com.qiji.cps.module.cps.enums.onboarding.CpsPlatformOnboardingStatusEnum;
 import com.qiji.cps.module.cps.service.adzone.CpsAdzoneService;
 import com.qiji.cps.module.cps.service.onboarding.model.CpsOnboardingAdzone;
@@ -205,9 +206,12 @@ public class CpsPlatformOnboardingLifecycleService {
                         ? draftPayload : runtimePayload;
         CpsPlatformDO platform = safePlatform(code);
         String name = effectivePayload == null || effectivePayload.getPlatform() == null
-                ? code : effectivePayload.getPlatform().getPlatformName();
+                ? null : effectivePayload.getPlatform().getPlatformName();
         if (platform != null && StringUtils.hasText(platform.getPlatformName())) {
             name = platform.getPlatformName();
+        }
+        if (!StringUtils.hasText(name) || Objects.equals(name, code)) {
+            name = resolveFallbackPlatformName(code);
         }
         List<String> missing = new ArrayList<>();
         if (effectivePayload == null || effectivePayload.getPlatform() == null) {
@@ -269,6 +273,14 @@ public class CpsPlatformOnboardingLifecycleService {
         }
     }
 
+    private String resolveFallbackPlatformName(String code) {
+        CpsPlatformCodeEnum codeEnum = CpsPlatformCodeEnum.getByCode(code);
+        if (codeEnum != null && StringUtils.hasText(codeEnum.getName())) {
+            return codeEnum.getName();
+        }
+        return code;
+    }
+
     private CpsPlatformDO safePlatform(String code) {
         if (platformService == null) {
             return null;
@@ -292,9 +304,12 @@ public class CpsPlatformOnboardingLifecycleService {
         vendors.stream().flatMap(v -> safeList(v.getCapabilities()).stream())
                 .forEach(capabilities::add);
         CpsPlatformDO platform = platformService.getPlatformByCode(code);
+        String platformName = platform != null && StringUtils.hasText(platform.getPlatformName())
+                ? platform.getPlatformName()
+                : resolveFallbackPlatformName(code);
         return CpsPlatformCapabilityRespVO.builder()
                 .platformCode(code)
-                .platformName(platform == null ? code : platform.getPlatformName())
+                .platformName(platformName)
                 .capabilities(List.copyOf(capabilities))
                 .vendors(vendors)
                 .build();

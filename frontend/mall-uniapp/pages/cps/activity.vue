@@ -87,7 +87,7 @@
     JD: '京东',
     PDD: '拼多多',
     MEITUAN: '美团',
-    ELEME: '饿了么',
+    ELEME: '淘宝闪购',
     LOCAL_LIFE: '本地生活',
     FLIGGY: '飞猪旅行',
     DOUYIN: '抖音',

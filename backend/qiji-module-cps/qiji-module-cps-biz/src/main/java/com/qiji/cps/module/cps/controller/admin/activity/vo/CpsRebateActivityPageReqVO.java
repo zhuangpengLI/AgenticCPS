@@ -12,7 +12,7 @@ import lombok.ToString;
 @ToString(callSuper = true)
 public class CpsRebateActivityPageReqVO extends PageParam {
 
-    @Schema(description = "活动名称", example = "饿了么外卖红包")
+    @Schema(description = "活动名称", example = "淘宝闪购外卖红包")
     private String activityName;
 
     @Schema(description = "专题类型", example = "外卖")

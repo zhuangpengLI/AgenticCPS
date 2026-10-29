@@ -378,4 +378,129 @@ class MeituanOfficialVendorClientTest {
         boolean ok = testClient.testConnection(config);
         assertTrue(ok);
     }
+
+    @Test
+    @DisplayName("fetchActivities - 获取美团官方预置推广活动列表")
+    void fetchActivities_returnsDefaultOfficialActivities() {
+        CpsThirdPartyActivityRequest request = CpsThirdPartyActivityRequest.builder()
+                .vendorCode("official")
+                .platformCode("meituan")
+                .pageNo(1)
+                .pageSize(50)
+                .build();
+
+        CpsThirdPartyPage<CpsThirdPartyActivity> result = client.fetchActivities(request, null);
+
+        assertNotNull(result);
+        assertNotNull(result.getList());
+        assertTrue(result.getList().size() >= 21);
+        assertTrue(result.getList().stream().anyMatch(a -> "866".equals(a.getPromotionActivityId()) && a.getActivityName().contains("粉丝应援")));
+        assertTrue(result.getList().stream().anyMatch(a -> "855".equals(a.getPromotionActivityId()) && a.getActivityName().contains("精选商家")));
+        assertTrue(result.getList().stream().anyMatch(a -> "852".equals(a.getPromotionActivityId()) && a.getActivityName().contains("开学季")));
+        assertTrue(result.getList().stream().anyMatch(a -> "850".equals(a.getPromotionActivityId()) && a.getActivityName().contains("神价频道")));
+        assertTrue(result.getList().stream().anyMatch(a -> "33".equals(a.getPromotionActivityId()) && a.getActivityName().contains("天天神券")));
+        assertTrue(result.getList().stream().anyMatch(a -> "104".equals(a.getPromotionActivityId()) && a.getActivityName().contains("拼好饭")));
+        assertTrue(result.getList().stream().anyMatch(a -> "4".equals(a.getPromotionActivityId()) && a.getActivityName().contains("闪购")));
+        assertTrue(result.getList().stream().anyMatch(a -> "43".equals(a.getPromotionActivityId()) && a.getActivityName().contains("小象超市")));
+        assertTrue(result.getList().stream().anyMatch(a -> "111".equals(a.getPromotionActivityId()) && a.getActivityName().contains("买药")));
+        assertTrue(result.getList().stream().anyMatch(a -> "7".equals(a.getPromotionActivityId()) && a.getActivityName().contains("酒店")));
+        assertTrue(result.getList().stream().anyMatch(a -> "51".equals(a.getPromotionActivityId()) && a.getActivityName().contains("打车")));
+        assertTrue(result.getList().stream().anyMatch(a -> "52".equals(a.getPromotionActivityId()) && a.getActivityName().contains("单车")));
+    }
+
+    @Test
+    @DisplayName("fetchActivities - 按关键词过滤活动")
+    void fetchActivities_filtersByKeyword() {
+        CpsThirdPartyActivityRequest request = CpsThirdPartyActivityRequest.builder()
+                .keyword("拼好饭")
+                .pageNo(1)
+                .pageSize(10)
+                .build();
+
+        CpsThirdPartyPage<CpsThirdPartyActivity> result = client.fetchActivities(request, null);
+
+        assertNotNull(result);
+        assertFalse(result.getList().isEmpty());
+        assertTrue(result.getList().stream().allMatch(a -> a.getActivityName().contains("拼好饭") || a.getTagText().contains("拼好饭")));
+    }
+
+    @Test
+    @DisplayName("fetchActivities - 配置后台 Cookie 时在线拉取成功")
+    @SuppressWarnings("unchecked")
+    void fetchActivities_withOnlineCookie_success() throws Exception {
+        HttpClient mockHttpClient = mock(HttpClient.class);
+        HttpResponse<String> mockResponse = (HttpResponse<String>) mock(HttpResponse.class);
+        when(mockResponse.statusCode()).thenReturn(200);
+        when(mockResponse.body()).thenReturn("{\n" +
+                "  \"code\": 0,\n" +
+                "  \"msg\": \"success\",\n" +
+                "  \"data\": {\n" +
+                "    \"total\": 2,\n" +
+                "    \"list\": [\n" +
+                "      {\n" +
+                "        \"materialId\": 866,\n" +
+                "        \"materialName\": \"【限定城市】粉丝应援，美妆专场\",\n" +
+                "        \"listPic\": \"https://p0.meituan.net/beauty.jpg\",\n" +
+                "        \"incomeRate\": \"红包归因1.3%，页面归因0.4%\",\n" +
+                "        \"materialDesc\": \"星妆应援，粉丝专属优惠价格\",\n" +
+                "        \"validStart\": 1700000000,\n" +
+                "        \"validEnd\": 1700100000\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"materialId\": 855,\n" +
+                "        \"materialName\": \"【美团闪购】-精选商家专场\",\n" +
+                "        \"listPic\": \"https://p0.meituan.net/shangou.jpg\",\n" +
+                "        \"incomeRate\": \"会场内商家券0%-8% 页面0%-6%\",\n" +
+                "        \"materialDesc\": \"闪购水果生鲜、超市速达\",\n" +
+                "        \"validStart\": 1700000000,\n" +
+                "        \"validEnd\": 1700200000\n" +
+                "      }\n" +
+                "    ]\n" +
+                "  }\n" +
+                "}");
+        org.mockito.Mockito.doReturn(mockResponse).when(mockHttpClient).send(any(), any());
+
+        MeituanOfficialVendorClient testClient = new MeituanOfficialVendorClient(mockHttpClient);
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .extraConfig(Map.of("cookie", "token=mock_session_token"))
+                .build();
+
+        CpsThirdPartyPage<CpsThirdPartyActivity> result = testClient.fetchActivities(
+                CpsThirdPartyActivityRequest.builder().pageNo(1).pageSize(10).build(), config);
+
+        assertNotNull(result);
+        assertEquals(2, result.getList().size());
+        CpsThirdPartyActivity act1 = result.getList().get(0);
+        assertEquals("866", act1.getPromotionActivityId());
+        assertEquals("【限定城市】粉丝应援，美妆专场", act1.getActivityName());
+        assertEquals("https://p0.meituan.net/beauty.jpg", act1.getMainPic());
+        assertEquals("红包归因1.3%，页面归因0.4%", act1.getRebateDesc());
+
+        CpsThirdPartyActivity act2 = result.getList().get(1);
+        assertEquals("855", act2.getPromotionActivityId());
+        assertEquals("【美团闪购】-精选商家专场", act2.getActivityName());
+    }
+
+    @Test
+    @DisplayName("fetchActivities - 配置 Cookie 在线拉取失败时自动降级到预置活动")
+    @SuppressWarnings("unchecked")
+    void fetchActivities_withOnlineCookie_failureFallsBackToPreset() throws Exception {
+        HttpClient mockHttpClient = mock(HttpClient.class);
+        HttpResponse<String> mockResponse = (HttpResponse<String>) mock(HttpResponse.class);
+        when(mockResponse.statusCode()).thenReturn(200);
+        when(mockResponse.body()).thenReturn("{\"code\":1,\"msg\":\"参数不合法\"}");
+        org.mockito.Mockito.doReturn(mockResponse).when(mockHttpClient).send(any(), any());
+
+        MeituanOfficialVendorClient testClient = new MeituanOfficialVendorClient(mockHttpClient);
+        CpsVendorConfig config = CpsVendorConfig.builder()
+                .extraConfig(Map.of("cookie", "invalid_cookie"))
+                .build();
+
+        CpsThirdPartyPage<CpsThirdPartyActivity> result = testClient.fetchActivities(
+                CpsThirdPartyActivityRequest.builder().pageNo(1).pageSize(20).build(), config);
+
+        assertNotNull(result);
+        assertFalse(result.getList().isEmpty());
+        assertTrue(result.getList().stream().anyMatch(a -> "33".equals(a.getPromotionActivityId())));
+    }
 }

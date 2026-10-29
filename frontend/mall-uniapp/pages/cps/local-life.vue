@@ -123,13 +123,13 @@
   const promos = [
     {
       badge: '最高返10%',
-      title: '饿了么',
+      title: '淘宝闪购',
       subtitle: '红包最高66元',
       action: '领红包',
       art: '🍔',
       artClass: 'eleme-art',
       theme: 'promo-orange',
-      keyword: '饿了么',
+      keyword: '淘宝闪购',
     },
     {
       badge: '领券下单返0.5%',
@@ -302,7 +302,7 @@
 
   const activities = [
     {
-      brand: '饿了么',
+      brand: '淘宝闪购',
       imageTitle: '个护满10起',
       imageSubtitle: '精选好物叠加红包',
       title: '屈臣氏品牌馆',
@@ -311,7 +311,7 @@
       keyword: '屈臣氏',
     },
     {
-      brand: '饿了么',
+      brand: '淘宝闪购',
       imageTitle: '解锁秋天的',
       imageSubtitle: '第一份礼物',
       title: '名创优品品牌馆',
@@ -320,7 +320,7 @@
       keyword: '名创优品',
     },
     {
-      brand: '饿了么',
+      brand: '淘宝闪购',
       imageTitle: '抢超值组合',
       imageSubtitle: '红包马上领',
       title: '天天领红包（全场通用）',
@@ -329,7 +329,7 @@
       keyword: '天天领红包',
     },
     {
-      brand: '饿了么',
+      brand: '淘宝闪购',
       imageTitle: '每日晚8点',
       imageSubtitle: '免单大红包',
       title: '闪购夜宵专享会场',
@@ -338,7 +338,7 @@
       keyword: '夜宵红包',
     },
     {
-      brand: '饿了么',
+      brand: '淘宝闪购',
       imageTitle: '超级人脉大补贴上线',
       imageSubtitle: '拾5~10叠加红包',
       title: '品牌馆',

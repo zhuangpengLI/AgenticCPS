@@ -4,7 +4,7 @@ const PLATFORM_NAMES = {
   pdd: '拼多多',
   douyin: '抖音',
   meituan: '美团',
-  eleme: '饿了么',
+  eleme: '淘宝闪购',
   didi: '滴滴',
   vip: '唯品会',
 };

@@ -965,14 +965,14 @@ class CpsRebateActivityServiceImplTest {
 
     private CpsRebateActivitySaveReqVO buildReqVO() {
         CpsRebateActivitySaveReqVO reqVO = new CpsRebateActivitySaveReqVO();
-        reqVO.setActivityName("饿了么外卖红包");
+        reqVO.setActivityName("淘宝闪购外卖红包");
         reqVO.setActivityType("外卖");
         reqVO.setPlatformCode("eleme");
         reqVO.setMainPic("https://example.com/eleme.png");
         reqVO.setShortDesc("天天领外卖红包");
         reqVO.setRebateDesc("下单后按活动规则返利");
         reqVO.setJumpType("search");
-        reqVO.setSearchKeyword("饿了么");
+        reqVO.setSearchKeyword("淘宝闪购");
         reqVO.setSort(1);
         reqVO.setStatus(1);
         return reqVO;

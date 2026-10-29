@@ -23,6 +23,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -46,6 +47,7 @@ public class MeituanOfficialVendorClient extends AbstractOfficialVendorClient
         implements CpsThirdPartyActivityVendorClient {
 
     static final String DEFAULT_BASE_URL = "https://media.meituan.com/cps_open/common/api/v1";
+    static final String IPC_BASE_URL = "https://media.meituan.com";
     private static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -89,7 +91,8 @@ public class MeituanOfficialVendorClient extends AbstractOfficialVendorClient
                 CpsVendorConfigField.optional("cityId", false),
                 CpsVendorConfigField.optional("linkType", false),
                 CpsVendorConfigField.optional("businessLine", false),
-                CpsVendorConfigField.optional("tradeType", false)
+                CpsVendorConfigField.optional("tradeType", false),
+                CpsVendorConfigField.optional("cookie", false)
         ));
     }
 
@@ -469,6 +472,18 @@ public class MeituanOfficialVendorClient extends AbstractOfficialVendorClient
         return StringUtils.hasText(first) ? first : second;
     }
 
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String v : values) {
+            if (StringUtils.hasText(v)) {
+                return v;
+            }
+        }
+        return null;
+    }
+
     private String text(JsonNode node, String field) {
         return node == null || node.path(field).isMissingNode() || node.path(field).isNull() ? null : node.path(field).asText();
     }
@@ -579,6 +594,98 @@ public class MeituanOfficialVendorClient extends AbstractOfficialVendorClient
     private static final List<CpsThirdPartyActivity> OFFICIAL_MEITUAN_ACTIVITIES = List.of(
             CpsThirdPartyActivity.builder()
                     .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:866")
+                    .promotionActivityId("866")
+                    .activityName("【限定城市】粉丝应援，美妆专场")
+                    .activityType("美妆个护")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p0.meituan.net/marketingcpsmedia/b7d0c325c889f029b3f3607faeb31681132501.jpg")
+                    .shortDesc("星妆应援，粉丝专属优惠价格")
+                    .rebateDesc("红包归因1.3%，页面归因0.4%")
+                    .billingType("CPS")
+                    .promotionCount(8600)
+                    .tagText("美妆专场")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&actId=866")
+                    .searchKeyword("粉丝应援美妆")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("866", "美妆个护", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:855")
+                    .promotionActivityId("855")
+                    .activityName("【美团闪购】-精选商家专场")
+                    .activityType("商超生鲜")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p0.meituan.net/marketingcpsmedia/efefc824b711b0df5c7b9d703daf87c2146349.jpg")
+                    .shortDesc("闪购水果生鲜、超市速达，领神券再下单！")
+                    .rebateDesc("会场内商家券0%-8% 页面0%-6%")
+                    .billingType("CPS")
+                    .promotionCount(15800)
+                    .tagText("精选商家")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&actId=855")
+                    .searchKeyword("闪购精选商家")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("855", "商超生鲜", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:852")
+                    .promotionActivityId("852")
+                    .activityName("【美团闪购】-开学季专场")
+                    .activityType("商超生鲜")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p0.meituan.net/marketingcpsmedia/f34299e8f679c3cb7e9f8d652f3311f0113094.jpg")
+                    .shortDesc("领59-15神券，开学好物，六折备齐！")
+                    .rebateDesc("日百红包2% 页面2%，数码红包0.1%")
+                    .billingType("CPS")
+                    .promotionCount(9200)
+                    .tagText("开学季")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&actId=852")
+                    .searchKeyword("开学季专场")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("852", "商超生鲜", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:850")
+                    .promotionActivityId("850")
+                    .activityName("【美团闪购】-神价频道页")
+                    .activityType("商超生鲜")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p0.meituan.net/marketingcpsmedia/efefc824b711b0df5c7b9d703daf87c2146349.jpg")
+                    .shortDesc("最高享5元无门槛神价频道红包！")
+                    .rebateDesc("爆品专区3%，其他券2%，页面1%")
+                    .billingType("CPS")
+                    .promotionCount(18600)
+                    .tagText("神价频道")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&actId=850")
+                    .searchKeyword("神价频道页")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("850", "商超生鲜", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
                     .externalActivityId("mt:act:33")
                     .promotionActivityId("33")
                     .activityName("美团外卖天天神券")
@@ -599,6 +706,75 @@ public class MeituanOfficialVendorClient extends AbstractOfficialVendorClient
                     .supportsMiniProgram(true)
                     .supportsLocalLife(true)
                     .extraFields(buildMeituanExtraFields("33", "外卖餐饮", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:104")
+                    .promotionActivityId("104")
+                    .activityName("美团外卖拼好饭")
+                    .activityType("外卖餐饮")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p0.meituan.net/marketingcpsmedia/293e41a6f8c9546e8c1fdfac5573dec3122594.png")
+                    .shortDesc("外卖拼单低至9.9元包邮，无套路免配送费，打工人干饭神器")
+                    .rebateDesc("最高5%返利")
+                    .billingType("CPS")
+                    .promotionCount(11200)
+                    .tagText("拼好饭")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=pinhaofan")
+                    .searchKeyword("拼好饭")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("104", "外卖餐饮", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:115")
+                    .promotionActivityId("115")
+                    .activityName("美团外卖下午茶夜宵专区")
+                    .activityType("外卖餐饮")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p1.meituan.net/marketingcpsmedia/a8e03e67c00e1da5e8cfc2eb0dcfd54e125890.jpg")
+                    .shortDesc("奶茶咖啡、烧烤小龙虾限时满减，专属夜宵红包天天送")
+                    .rebateDesc("最高6%返利")
+                    .billingType("CPS")
+                    .promotionCount(7890)
+                    .tagText("下午茶")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=afternoon")
+                    .searchKeyword("下午茶夜宵")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("115", "外卖餐饮", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:101")
+                    .promotionActivityId("101")
+                    .activityName("美团品牌餐饮神券节")
+                    .activityType("外卖餐饮")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p0.meituan.net/marketingcpsmedia/b7d0c325c889f029b3f3607faeb31681132501.jpg")
+                    .shortDesc("大牌餐饮联合让利，肯德基、麦当劳、星巴克大额神券狂欢")
+                    .rebateDesc("最高8%返利")
+                    .billingType("CPS")
+                    .promotionCount(9430)
+                    .tagText("大牌餐饮")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=brandfest")
+                    .searchKeyword("神券节")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("101", "外卖餐饮", true))
                     .build(),
             CpsThirdPartyActivity.builder()
                     .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
@@ -625,26 +801,26 @@ public class MeituanOfficialVendorClient extends AbstractOfficialVendorClient
                     .build(),
             CpsThirdPartyActivity.builder()
                     .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
-                    .externalActivityId("mt:act:2")
-                    .promotionActivityId("2")
-                    .activityName("吃喝玩乐 每日福利")
-                    .activityType("到店餐饮")
+                    .externalActivityId("mt:act:43")
+                    .promotionActivityId("43")
+                    .activityName("小象超市(美团买菜)专享券")
+                    .activityType("即时零售")
                     .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
-                    .mainPic("https://p1.meituan.net/marketingcpsmedia/82ee55b87a75745c73c6f2f472b0c543121899.png")
-                    .shortDesc("美团到店美食团购、大牌秒杀3折起，每周五还可抽大额神券")
-                    .rebateDesc("最高8%返利")
+                    .mainPic("https://p0.meituan.net/marketingcpsmedia/f34299e8f679c3cb7e9f8d652f3311f0113094.jpg")
+                    .shortDesc("小象超市(原美团买菜)每日专享补贴，最快30分钟送达")
+                    .rebateDesc("最高4%返利")
                     .billingType("CPS")
-                    .promotionCount(8420)
-                    .tagText("美食")
+                    .promotionCount(5200)
+                    .tagText("生鲜")
                     .jumpType("url")
-                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=food")
-                    .searchKeyword("美团美食")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=maicai")
+                    .searchKeyword("小象超市")
                     .supportsList(true)
                     .supportsPromotionLink(true)
                     .supportsOrders(true)
                     .supportsMiniProgram(true)
                     .supportsLocalLife(true)
-                    .extraFields(buildMeituanExtraFields("2", "到店餐饮", true))
+                    .extraFields(buildMeituanExtraFields("43", "即时零售", true))
                     .build(),
             CpsThirdPartyActivity.builder()
                     .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
@@ -671,26 +847,141 @@ public class MeituanOfficialVendorClient extends AbstractOfficialVendorClient
                     .build(),
             CpsThirdPartyActivity.builder()
                     .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
-                    .externalActivityId("mt:act:43")
-                    .promotionActivityId("43")
-                    .activityName("小象超市(美团买菜)专享券")
-                    .activityType("即时零售")
+                    .externalActivityId("mt:act:111")
+                    .promotionActivityId("111")
+                    .activityName("美团买药天天满减")
+                    .activityType("医疗健康")
                     .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
-                    .mainPic("https://p0.meituan.net/marketingcpsmedia/f34299e8f679c3cb7e9f8d652f3311f0113094.jpg")
-                    .shortDesc("小象超市(原美团买菜)每日专享补贴，最快30分钟送达")
-                    .rebateDesc("最高4%返利")
+                    .mainPic("https://p0.meituan.net/marketingcpsmedia/c4d87bf898442c554e207908b8b9a9f2134560.jpg")
+                    .shortDesc("24小时急用药送药上门，家庭常备药立减优惠，专属健康红包")
+                    .rebateDesc("最高5%返利")
                     .billingType("CPS")
-                    .promotionCount(5200)
-                    .tagText("生鲜")
+                    .promotionCount(4300)
+                    .tagText("买药")
                     .jumpType("url")
-                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=maicai")
-                    .searchKeyword("小象超市")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=maiyao")
+                    .searchKeyword("美团买药")
                     .supportsList(true)
                     .supportsPromotionLink(true)
                     .supportsOrders(true)
                     .supportsMiniProgram(true)
                     .supportsLocalLife(true)
-                    .extraFields(buildMeituanExtraFields("43", "即时零售", true))
+                    .extraFields(buildMeituanExtraFields("111", "医疗健康", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:2")
+                    .promotionActivityId("2")
+                    .activityName("吃喝玩乐 每日福利")
+                    .activityType("到店餐饮")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p1.meituan.net/marketingcpsmedia/82ee55b87a75745c73c6f2f472b0c543121899.png")
+                    .shortDesc("美团到店美食团购、大牌秒杀3折起，每周五还可抽大额神券")
+                    .rebateDesc("最高8%返利")
+                    .billingType("CPS")
+                    .promotionCount(8420)
+                    .tagText("美食")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=food")
+                    .searchKeyword("美团美食")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("2", "到店餐饮", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:10")
+                    .promotionActivityId("10")
+                    .activityName("美团到店餐饮大牌特惠")
+                    .activityType("到店餐饮")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p0.meituan.net/marketingcpsmedia/5df218080c38865adca035db2bb31980145620.jpg")
+                    .shortDesc("精选堂食代金券低至5折，大牌正餐工作日聚餐优选")
+                    .rebateDesc("最高7%返利")
+                    .billingType("CPS")
+                    .promotionCount(6150)
+                    .tagText("堂食")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=tangshi")
+                    .searchKeyword("堂食特惠")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("10", "到店餐饮", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:23")
+                    .promotionActivityId("23")
+                    .activityName("美团丽人美发美甲SPA")
+                    .activityType("到店综合")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p0.meituan.net/marketingcpsmedia/12ea07c08a9c2e08df0983bf98bcefa1124560.jpg")
+                    .shortDesc("美发剪烫染、美甲美睫、美容SPA大额代金券限时秒杀")
+                    .rebateDesc("最高9%返利")
+                    .billingType("CPS")
+                    .promotionCount(5380)
+                    .tagText("丽人")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=liren")
+                    .searchKeyword("美团丽人")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("23", "到店综合", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:112")
+                    .promotionActivityId("112")
+                    .activityName("美团休闲娱乐特惠")
+                    .activityType("休闲娱乐")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p1.meituan.net/marketingcpsmedia/84ee35b87a75745c73c6f2f472b0c543134567.jpg")
+                    .shortDesc("KTV轰趴、洗浴汗蒸、密室桌游周末聚会专属折扣券")
+                    .rebateDesc("最高8%返利")
+                    .billingType("CPS")
+                    .promotionCount(4920)
+                    .tagText("休闲")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=xiuxian")
+                    .searchKeyword("休闲娱乐")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("112", "休闲娱乐", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:8")
+                    .promotionActivityId("8")
+                    .activityName("美团电影特惠观影")
+                    .activityType("电影演出")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p0.meituan.net/marketingcpsmedia/79bfa50e972f65a78129df62a67e1234125890.jpg")
+                    .shortDesc("院线热映大片在线特惠选座，大额满减券天天领")
+                    .rebateDesc("最高6%返利")
+                    .billingType("CPS")
+                    .promotionCount(6800)
+                    .tagText("电影")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=movie")
+                    .searchKeyword("美团电影")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("8", "电影演出", true))
                     .build(),
             CpsThirdPartyActivity.builder()
                     .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
@@ -717,6 +1008,29 @@ public class MeituanOfficialVendorClient extends AbstractOfficialVendorClient
                     .build(),
             CpsThirdPartyActivity.builder()
                     .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:12")
+                    .promotionActivityId("12")
+                    .activityName("美团门票景区周边游")
+                    .activityType("景区门票")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p0.meituan.net/marketingcpsmedia/35d4fa0e972f65a78129df62a67e5678123450.jpg")
+                    .shortDesc("全国热门5A景区、主题乐园门票立减，亲子游度假首选")
+                    .rebateDesc("最高5%返利")
+                    .billingType("CPS")
+                    .promotionCount(5720)
+                    .tagText("门票")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=menpiao")
+                    .searchKeyword("景区门票")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("12", "景区门票", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
                     .externalActivityId("mt:act:51")
                     .promotionActivityId("51")
                     .activityName("美团打车通勤福利")
@@ -737,6 +1051,29 @@ public class MeituanOfficialVendorClient extends AbstractOfficialVendorClient
                     .supportsMiniProgram(true)
                     .supportsLocalLife(true)
                     .extraFields(buildMeituanExtraFields("51", "打车出行", true))
+                    .build(),
+            CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:52")
+                    .promotionActivityId("52")
+                    .activityName("美团单车畅骑月卡")
+                    .activityType("绿色出行")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic("https://p0.meituan.net/marketingcpsmedia/52ddbe27664ab7e6a0ea20b815c2f6a0142667.jpg")
+                    .shortDesc("美团单车/电单车骑行立减券，周卡月卡折扣天天享")
+                    .rebateDesc("最高6%返利")
+                    .billingType("CPS")
+                    .promotionCount(4120)
+                    .tagText("骑车")
+                    .jumpType("url")
+                    .jumpUrl("https://click.meituan.com/t?t=1&c=1&p=bike")
+                    .searchKeyword("美团单车")
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(buildMeituanExtraFields("52", "绿色出行", true))
                     .build()
     );
 
@@ -747,6 +1084,20 @@ public class MeituanOfficialVendorClient extends AbstractOfficialVendorClient
         int pageSize = request != null && request.getPageSize() != null && request.getPageSize() > 0 ? request.getPageSize() : 20;
         String keyword = request != null ? firstText(request.getKeyword(), request.getCategoryName()) : null;
 
+        // 1. 若配置了美团联盟后台 Cookie，尝试直连物料中心接口拉取最新在线活动
+        String cookie = configValue(config, "cookie");
+        if (StringUtils.hasText(cookie)) {
+            try {
+                CpsThirdPartyPage<CpsThirdPartyActivity> onlinePage = fetchOnlinePcActivities(request, cookie, pageNo, pageSize, keyword);
+                if (onlinePage != null && onlinePage.getList() != null && !onlinePage.getList().isEmpty()) {
+                    return onlinePage;
+                }
+            } catch (Exception e) {
+                log.warn("[美团联盟官方] 调用物料中心 /ipc/pcActivityList 在线拉取失败，降级为内置官方活动: {}", e.getMessage());
+            }
+        }
+
+        // 2. 默认或降级：使用系统全面内置的美团官方物料中心活动列表
         List<CpsThirdPartyActivity> filtered = new ArrayList<>();
         for (CpsThirdPartyActivity activity : OFFICIAL_MEITUAN_ACTIVITIES) {
             if (StringUtils.hasText(keyword)) {
@@ -762,6 +1113,7 @@ public class MeituanOfficialVendorClient extends AbstractOfficialVendorClient
             filtered.add(activity);
         }
 
+        // 3. 若配置了官方 AppKey/AppSecret，通过官方开放 API /query_coupon 动态补充卡券活动
         if (config != null && StringUtils.hasText(config.getAppKey()) && StringUtils.hasText(config.getAppSecret())) {
             try {
                 CpsGoodsSearchRequest searchReq = new CpsGoodsSearchRequest();
@@ -793,6 +1145,138 @@ public class MeituanOfficialVendorClient extends AbstractOfficialVendorClient
                 .pageNo(pageNo)
                 .pageSize(pageSize)
                 .nextPageId(toIndex < total ? String.valueOf(pageNo + 1) : null)
+                .build();
+    }
+
+    CpsThirdPartyPage<CpsThirdPartyActivity> fetchOnlinePcActivities(CpsThirdPartyActivityRequest request,
+                                                                     String cookie,
+                                                                     int pageNo,
+                                                                     int pageSize,
+                                                                     String keyword) throws Exception {
+        // 请求美团联盟后台“物料推广 > 活动推广”真实接口 /ipc/pcQueryMaterialList
+        String url = IPC_BASE_URL + "/ipc/pcQueryMaterialList";
+        Map<String, Object> bodyMap = new LinkedHashMap<>();
+        bodyMap.put("activityId", "");
+        bodyMap.put("materialType", 1);
+        bodyMap.put("pageNum", pageNo);
+        bodyMap.put("pageSize", pageSize);
+
+        String jsonBody = objectMapper.writeValueAsString(bodyMap);
+        HttpRequest httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Content-Type", "application/json;charset=UTF-8")
+                .header("Accept", "application/json, text/plain, */*")
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                .header("Origin", "https://media.meituan.com")
+                .header("Referer", "https://media.meituan.com/pc/index.html")
+                .header("Cookie", cookie)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody, StandardCharsets.UTF_8))
+                .timeout(Duration.ofSeconds(6))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (response.statusCode() != 200 || !StringUtils.hasText(response.body())) {
+            log.warn("[美团联盟官方] 请求物料中心 /ipc/pcQueryMaterialList 状态异常: {}", response.statusCode());
+            return null;
+        }
+
+        JsonNode rootNode = objectMapper.readTree(response.body());
+        int code = rootNode.path("code").asInt(-1);
+        if (code != 0) {
+            log.warn("[美团联盟官方] 请求物料中心 /ipc/pcQueryMaterialList 失败: code={}, msg={}",
+                    code, rootNode.path("msg").asText());
+            return null;
+        }
+
+        JsonNode dataNode = rootNode.path("data");
+        JsonNode listNode = dataNode.path("list");
+        if (!listNode.isArray() && dataNode.path("activityList").isArray()) {
+            listNode = dataNode.path("activityList");
+        }
+        if (!listNode.isArray() || listNode.isEmpty()) {
+            return null;
+        }
+
+        List<CpsThirdPartyActivity> activities = new ArrayList<>();
+        for (JsonNode item : listNode) {
+            String actId = firstNonBlank(
+                    item.path("materialId").asText(null),
+                    item.path("activityId").asText(null)
+            );
+            if (!StringUtils.hasText(actId)) {
+                continue;
+            }
+            String actName = firstNonBlank(
+                    item.path("materialName").asText(null),
+                    item.path("activityName").asText(null),
+                    "美团活动"
+            );
+            if (StringUtils.hasText(keyword)) {
+                String kw = keyword.trim();
+                if (!actName.contains(kw) && !item.path("materialDesc").asText("").contains(kw)) {
+                    continue;
+                }
+            }
+            String actPic = firstNonBlank(
+                    item.path("listPic").asText(null),
+                    item.path("activityPic").asText(null),
+                    ""
+            );
+            String commissionRate = firstNonBlank(
+                    item.path("incomeRate").asText(null),
+                    item.path("commissionRate").asText(null),
+                    "官方返利"
+            );
+            String actDesc = firstNonBlank(
+                    item.path("materialDesc").asText(null),
+                    item.path("activityDesc").asText(null),
+                    actName
+            );
+            long startTime = item.path("validStart").asLong(item.path("activityStartTime").asLong(0));
+            long endTime = item.path("validEnd").asLong(item.path("activityEndTime").asLong(0));
+            String pcJumpLink = item.path("pcJumpLink").asText(null);
+
+            Map<String, Object> extra = buildMeituanExtraFields(actId, "官方活动", true);
+            extra.put("onlineSource", "ipc_pcQueryMaterialList");
+            if (StringUtils.hasText(pcJumpLink)) {
+                extra.put("pcJumpLink", pcJumpLink);
+            }
+
+            activities.add(CpsThirdPartyActivity.builder()
+                    .sourceType(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .externalActivityId("mt:act:" + actId)
+                    .promotionActivityId(actId)
+                    .activityName(actName)
+                    .activityType("官方推广")
+                    .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .mainPic(actPic)
+                    .shortDesc(actDesc)
+                    .rebateDesc(commissionRate)
+                    .billingType("CPS")
+                    .promotionCount(1000)
+                    .tagText("官方物料")
+                    .jumpType("url")
+                    .jumpUrl(StringUtils.hasText(pcJumpLink) ? pcJumpLink : "https://click.meituan.com/t?t=1&c=1&actId=" + actId)
+                    .searchKeyword(actName)
+                    .supportsList(true)
+                    .supportsPromotionLink(true)
+                    .supportsOrders(true)
+                    .supportsMiniProgram(true)
+                    .supportsLocalLife(true)
+                    .extraFields(extra)
+                    .startTime(startTime > 0 ? LocalDateTime.ofInstant(Instant.ofEpochMilli(startTime < 10_000_000_000L ? startTime * 1000 : startTime), SHANGHAI) : null)
+                    .endTime(endTime > 0 ? LocalDateTime.ofInstant(Instant.ofEpochMilli(endTime < 10_000_000_000L ? endTime * 1000 : endTime), SHANGHAI) : null)
+                    .build());
+        }
+
+        long total = dataNode.path("total").asLong(activities.size());
+        return CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                .category(CpsThirdPartyApiCategory.ACTIVITY_PULL)
+                .list(activities)
+                .total(total)
+                .pageNo(pageNo)
+                .pageSize(pageSize)
+                .nextPageId((long) pageNo * pageSize < total ? String.valueOf(pageNo + 1) : null)
                 .build();
     }
 

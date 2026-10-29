@@ -25,7 +25,8 @@ export const PLATFORM_CODE_OPTIONS = [
   { label: '抖音联盟', value: 'douyin' },
   { label: '滴滴联盟', value: 'didi' },
   { label: '唯品会', value: 'vip' },
-  { label: '美团联盟', value: 'meituan' }
+  { label: '美团联盟', value: 'meituan' },
+  { label: '淘宝闪购', value: 'eleme' }
 ]
 
 /** 平台编码对应的中文展示名称，未知平台保留接口名称或原编码 */

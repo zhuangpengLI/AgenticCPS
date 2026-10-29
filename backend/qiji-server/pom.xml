@@ -107,6 +107,22 @@
             <systemPath>${project.basedir}/../qiji-module-cps/qiji-module-cps-biz/lib/jd-api-sdk-java-20260814.jar</systemPath>
         </dependency>
 
+        <!-- 唯品会开放平台（VOP）官方 Java SDK 运行时依赖；随服务 fat jar 一并打包 -->
+        <dependency>
+            <groupId>com.vip.osp</groupId>
+            <artifactId>osp-sdk</artifactId>
+            <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../qiji-module-cps/qiji-module-cps-biz/lib/osp-sdk.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.vip.vop</groupId>
+            <artifactId>vop-sdk</artifactId>
+            <version>20261021</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../qiji-module-cps/qiji-module-cps-biz/lib/vop-sdk.jar</systemPath>
+        </dependency>
+
         <!-- spring boot 配置所需依赖 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

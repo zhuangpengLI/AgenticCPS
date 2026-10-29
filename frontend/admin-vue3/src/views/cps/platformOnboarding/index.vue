@@ -46,7 +46,7 @@
         <el-table-column label="平台" min-width="180">
           <template #default="{ row }">
             <div class="flex items-center gap-2">
-              <span class="font-medium">{{ row.platformName || row.platformCode }}</span>
+              <span class="font-medium">{{ (row.platformName && row.platformName !== row.platformCode) ? row.platformName : getPlatformLabel(row.platformCode, row.platformName) }}</span>
               <el-tag size="small" type="info">{{ row.platformCode }}</el-tag>
             </div>
           </template>
@@ -157,6 +157,7 @@ import {
   type OnboardingPageItem,
   type OnboardingPageReq
 } from '@/api/cps/platformOnboarding'
+import { getPlatformLabel } from '@/api/cps/apiVendor'
 import { dateFormatter } from '@/utils/formatTime'
 import CompletionBadge from './components/CompletionBadge.vue'
 import Workspace from './workspace.vue'

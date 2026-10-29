@@ -3684,6 +3684,12 @@ WHERE NOT EXISTS (SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' A
 INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
 SELECT 'cps', 'v2.1.10', '2026-10-28 11:36:51', 'cps-update.sql', '初始化淘宝闪购联盟官方OpenAPI平台配置与SID会员归因', 'SUCCESS', 0, b'0', 'system', 'system'
 WHERE NOT EXISTS (SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.10' AND `schema_update_time` = '2026-10-28 11:36:51');
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.11', '2026-10-28 17:15:00', 'cps-update.sql', '统一饿了么业务命名为淘宝闪购并更新平台与活动文案', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.11' AND `schema_update_time` = '2026-10-28 17:15:00');
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.12', '2026-10-28 22:01:10', 'cps-update.sql', '初始化唯品会开放平台（VOP）官方OpenAPI供应商配置与推广位PID绑定', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.12' AND `schema_update_time` = '2026-10-28 22:01:10');
 COMMIT;
 
 

@@ -1685,6 +1685,16 @@ WHERE NOT EXISTS (
   SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.10' AND `schema_update_time` = '2026-10-28 11:36:51'
 );
 
+-- ============================================================
+-- 修改时间：2026-10-28 22:01:10
+-- 目的：初始化唯品会开放平台（VOP）官方OpenAPI供应商配置与推广位PID绑定
+-- ============================================================
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.12', '2026-10-28 22:01:10', 'cps-update.sql', '初始化唯品会开放平台（VOP）官方OpenAPI供应商配置与推广位PID绑定', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.12' AND `schema_update_time` = '2026-10-28 22:01:10'
+);
+
 SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================================
 -- Modified: 2026-08-12 18:35:00
@@ -2355,4 +2365,113 @@ INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, 
 SELECT 'cps', 'v2.1.10', '2026-10-28 11:35:00', 'cps-update.sql', '初始化淘宝闪购联盟官方OpenAPI平台配置与SID会员归因', 'SUCCESS', 0, b'0', 'system', 'system'
 WHERE NOT EXISTS (
   SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.10' AND `schema_update_time` = '2026-10-28 11:35:00'
+);
+
+-- ============================================================
+-- 修改时间：2026-10-28 17:15:00
+-- 目的：统一饿了么业务命名为淘宝闪购，更新平台、供应商、历史活动及转链记录名称
+-- 说明：将平台配置中心及活动中饿了么相关词汇统一变更为淘宝闪购，并同步结构版本号
+-- ============================================================
+UPDATE `cps_platform`
+SET `platform_name` = '淘宝闪购',
+    `remark` = REPLACE(`remark`, '饿了么', '淘宝闪购'),
+    `update_time` = '2026-10-28 17:15:00'
+WHERE `platform_code` = 'eleme';
+
+UPDATE `cps_api_vendor`
+SET `vendor_name` = REPLACE(`vendor_name`, '饿了么', '淘宝闪购'),
+    `remark` = REPLACE(`remark`, '饿了么', '淘宝闪购'),
+    `update_time` = '2026-10-28 17:15:00'
+WHERE `platform_code` = 'eleme';
+
+UPDATE `cps_rebate_activity`
+SET `activity_name` = REPLACE(`activity_name`, '饿了么', '淘宝闪购'),
+    `search_keyword` = REPLACE(`search_keyword`, '饿了么', '淘宝闪购'),
+    `short_desc` = REPLACE(`short_desc`, '饿了么', '淘宝闪购'),
+    `rebate_desc` = REPLACE(`rebate_desc`, '饿了么', '淘宝闪购'),
+    `remark` = REPLACE(`remark`, '饿了么', '淘宝闪购'),
+    `update_time` = '2026-10-28 17:15:00'
+WHERE `activity_name` LIKE '%饿了么%'
+   OR `search_keyword` LIKE '%饿了么%'
+   OR `short_desc` LIKE '%饿了么%'
+   OR `rebate_desc` LIKE '%饿了么%'
+   OR `remark` LIKE '%饿了么%'
+   OR `platform_code` = 'eleme';
+
+UPDATE `cps_transfer_record`
+SET `item_title` = REPLACE(`item_title`, '饿了么', '淘宝闪购'),
+    `update_time` = '2026-10-28 17:15:00'
+WHERE `item_title` LIKE '%饿了么%';
+
+-- 记录数据库结构版本号
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.11', '2026-10-28 17:15:00', 'cps-update.sql', '统一饿了么业务命名为淘宝闪购并更新平台与活动文案', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.11' AND `schema_update_time` = '2026-10-28 17:15:00'
+);
+
+-- ============================================================
+-- 修改时间：2026-10-28 21:55:00
+-- 目的：初始化唯品会开放平台（VOP）官方OpenAPI供应商配置结构（安全脱敏规范）
+-- 说明：增加唯品会官方API供应商（official），密钥留空占位由运维环境直接配置或环境变量注入
+-- ============================================================
+UPDATE `cps_platform`
+SET `supported_vendors` = 'official,haodanku',
+    `active_vendor_code` = 'official',
+    `api_base_url` = 'https://vop.vipapis.com/',
+    `default_adzone_id` = '85815982c2a2ec438c94cea28166e505',
+    `status` = 1,
+    `remark` = '唯品会开放平台（VOP）官方SDK与API直连接入，支持商品检索、高佣转链与订单同步',
+    `updater` = 'system',
+    `update_time` = '2026-10-28 21:55:00'
+WHERE `tenant_id` = 1 AND `platform_code` = 'vip' AND `deleted` = b'0';
+
+INSERT INTO `cps_api_vendor` (
+  `vendor_code`, `vendor_name`, `vendor_type`, `platform_code`,
+  `app_key`, `app_secret`, `api_base_url`, `auth_token`,
+  `default_adzone_id`, `extra_config`, `priority`, `status`,
+  `remark`, `creator`, `create_time`, `updater`, `update_time`,
+  `deleted`, `tenant_id`
+)
+SELECT
+  'official', '唯品会联盟官方', 'official', 'vip',
+  '', '', 'https://vop.vipapis.com/', NULL,
+  '85815982c2a2ec438c94cea28166e505',
+  '{"goodsService":"com.vip.adp.api.open.service.UnionGoodsV2Service","urlService":"com.vip.adp.api.open.service.UnionUrlV2Service","orderService":"com.vip.adp.api.open.service.UnionOrderV2Service","pidService":"com.vip.adp.api.open.service.UnionPidV2Service"}',
+  100, 1,
+  '唯品会开放平台官方Java SDK 2.0直连接入，支持HMAC-MD5签名、商品搜索、推广转链、PID推广位管理与订单同步',
+  'system', '2026-10-28 21:55:00', 'system', '2026-10-28 21:55:00',
+  b'0', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM `cps_api_vendor`
+  WHERE `tenant_id` = 1 AND `vendor_code` = 'official' AND `platform_code` = 'vip' AND `deleted` = b'0'
+);
+
+UPDATE `cps_adzone`
+SET `is_default` = 0, `updater` = 'system', `update_time` = '2026-10-28 21:55:00'
+WHERE `tenant_id` = 1 AND `platform_code` = 'vip';
+
+INSERT INTO `cps_adzone` (`platform_code`, `adzone_id`, `adzone_name`, `adzone_type`, `is_default`, `status`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT 'vip', '85815982c2a2ec438c94cea28166e505', '新火支付小位', 'general', 1, 1, 'system', '2026-10-28 21:55:00', 'system', '2026-10-28 21:55:00', b'0', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM `cps_adzone` WHERE `tenant_id` = 1 AND `platform_code` = 'vip' AND `adzone_id` = '85815982c2a2ec438c94cea28166e505' AND `deleted` = b'0'
+);
+
+INSERT INTO `cps_adzone` (`platform_code`, `adzone_id`, `adzone_name`, `adzone_type`, `is_default`, `status`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT 'vip', '7712cd93f3c5536bf14f64984cb47d83', '新火app位', 'general', 0, 1, 'system', '2026-10-28 21:55:00', 'system', '2026-10-28 21:55:00', b'0', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM `cps_adzone` WHERE `tenant_id` = 1 AND `platform_code` = 'vip' AND `adzone_id` = '7712cd93f3c5536bf14f64984cb47d83' AND `deleted` = b'0'
+);
+
+INSERT INTO `cps_adzone` (`platform_code`, `adzone_id`, `adzone_name`, `adzone_type`, `is_default`, `status`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT 'vip', '31469c34447de21261b00e7a0152d5a2', '新火推广', 'general', 0, 1, 'system', '2026-10-28 21:55:00', 'system', '2026-10-28 21:55:00', b'0', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM `cps_adzone` WHERE `tenant_id` = 1 AND `platform_code` = 'vip' AND `adzone_id` = '31469c34447de21261b00e7a0152d5a2' AND `deleted` = b'0'
+);
+
+-- 记录数据库结构版本号
+INSERT INTO `system_schema_version` (`module`, `version`, `schema_update_time`, `script_source`, `description`, `status`, `tenant_id`, `deleted`, `creator`, `updater`)
+SELECT 'cps', 'v2.1.12', '2026-10-28 21:55:00', 'cps-update.sql', '初始化唯品会开放平台（VOP）官方OpenAPI供应商配置与推广位PID绑定', 'SUCCESS', 0, b'0', 'system', 'system'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `system_schema_version` WHERE `module` = 'cps' AND `version` = 'v2.1.12' AND `schema_update_time` = '2026-10-28 21:55:00'
 );

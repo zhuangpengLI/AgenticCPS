@@ -14,7 +14,7 @@ public class CpsRebateActivitySaveReqVO {
     @Schema(description = "主键ID", example = "1")
     private Long id;
 
-    @Schema(description = "活动名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "饿了么外卖红包")
+    @Schema(description = "活动名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "淘宝闪购外卖红包")
     @NotBlank(message = "活动名称不能为空")
     private String activityName;
 

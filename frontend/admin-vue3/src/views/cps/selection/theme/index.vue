@@ -2018,7 +2018,7 @@ const platformLabel = (platformCode?: string) => {
     pdd: '拼多多',
     douyin: '抖音',
     meituan: '美团',
-    eleme: '饿了么',
+    eleme: '淘宝闪购',
     local_life: '本地生活',
     fliggy: '飞猪'
   }

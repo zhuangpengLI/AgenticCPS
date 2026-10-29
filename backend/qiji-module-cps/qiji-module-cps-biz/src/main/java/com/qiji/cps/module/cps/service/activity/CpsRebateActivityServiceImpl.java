@@ -353,10 +353,21 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 : sidRecord.getAttributionToken();
 
         CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
-        if (StringUtils.hasText(jumpUrl)) {
+        String cleanActId = null;
+        if (StringUtils.hasText(actId)) {
+            cleanActId = actId.trim();
+            if (cleanActId.startsWith("mt:act:")) {
+                cleanActId = cleanActId.substring("mt:act:".length());
+            } else if (cleanActId.startsWith("act:")) {
+                cleanActId = cleanActId.substring("act:".length());
+            }
+        }
+        if (StringUtils.hasText(cleanActId) && !cleanActId.startsWith("http://") && !cleanActId.startsWith("https://")) {
+            request.setGoodsId("act:" + cleanActId);
+        } else if (StringUtils.hasText(jumpUrl)) {
             request.setItemLink(jumpUrl);
-        } else {
-            request.setGoodsId("act:" + actId);
+        } else if (StringUtils.hasText(cleanActId)) {
+            request.setItemLink(cleanActId);
         }
         request.setAdzoneId(actualAdzoneId);
         request.setExternalId(sourceId);
@@ -1161,7 +1172,7 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         List.of(
                 new PlatformMeta(PLATFORM_HOT, "热门", null),
                 new PlatformMeta("meituan", "美团", null),
-                new PlatformMeta("eleme", "饿了么", null),
+                new PlatformMeta("eleme", "淘宝闪购", null),
                 new PlatformMeta("douyin", "抖音", null),
                 new PlatformMeta("local_life", "本地生活", null),
                 new PlatformMeta("fliggy", "飞猪旅行", null),
@@ -1281,6 +1292,7 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         return value.contains("本地生活")
                 || value.contains("外卖")
                 || value.contains("美团")
+                || value.contains("淘宝闪购")
                 || value.contains("饿了么")
                 || value.contains("打车")
                 || value.contains("酒店")
@@ -1299,7 +1311,7 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
         return switch (platformCode == null ? "" : platformCode) {
             case PLATFORM_HOT -> new PlatformMeta(PLATFORM_HOT, "热门", null);
             case "meituan" -> new PlatformMeta("meituan", "美团", null);
-            case "eleme" -> new PlatformMeta("eleme", "饿了么", null);
+            case "eleme" -> new PlatformMeta("eleme", "淘宝闪购", null);
             case "douyin" -> new PlatformMeta("douyin", "抖音", null);
             case "local_life" -> new PlatformMeta("local_life", "本地生活", null);
             case "fliggy" -> new PlatformMeta("fliggy", "飞猪旅行", null);

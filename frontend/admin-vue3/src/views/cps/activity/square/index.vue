@@ -558,7 +558,7 @@ const sourceFilterOptions = [
 const platformLabelMap: Record<string, string> = {
   hot: '热门',
   meituan: '美团',
-  eleme: '饿了么',
+  eleme: '淘宝闪购',
   douyin: '抖音',
   local_life: '本地生活',
   fliggy: '飞猪旅行',

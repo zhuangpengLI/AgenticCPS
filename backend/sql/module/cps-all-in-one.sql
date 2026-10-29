@@ -1,7 +1,7 @@
 -- ============================================================
 -- CPS联盟返利系统 - 完整数据库建表脚本（All-in-One）
--- Version: 2.1.10
--- Date: 2026-10-28 11:36:51
+-- Version: 2.1.12
+-- Date: 2026-10-28 22:01:10
 -- Description: 新库全量初始化脚本，整合 CPS 核心表、P0 返利兑换、活动中心、选品库、CPX 扩展表、结构版本与更新时间追踪表、菜单与权限。
 -- Maintenance:
 --   1. 本文件只保存新库全量脚本。
@@ -103,9 +103,9 @@ CREATE TABLE `cps_platform` (
   UNIQUE KEY `uk_cps_platform_active` (`active_unique_key`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='CPS平台配置表';
 
--- 唯品会由好单库供应商接入；初始保持禁用，待管理员配置供应商凭证后启用。
+-- 唯品会开放平台官方直连接入，好单库备用；初始保持禁用，配置凭证后启用。
 INSERT INTO `cps_platform` (`platform_code`, `platform_name`, `platform_logo`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `platform_service_rate`, `sort`, `status`, `extra_config`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`, `active_vendor_code`, `supported_vendors`) VALUES
-('vip', '唯品会', NULL, NULL, NULL, NULL, NULL, NULL, 0.0000, 70, 0, NULL, '请先配置好单库唯品会供应商凭证，确认账号已开通唯品会权限后再启用', 'system', '2026-08-07 17:30:00', 'system', '2026-08-07 17:30:00', b'0', 1, 'haodanku', 'haodanku'),
+('vip', '唯品会', NULL, NULL, NULL, 'https://vop.vipapis.com/', NULL, NULL, 0.0000, 70, 0, NULL, '唯品会开放平台（VOP）官方SDK与API直连接入，请配置 AppKey 与 AppSecret 后启用', 'system', '2026-08-07 17:30:00', 'system', '2026-10-28 21:55:00', b'0', 1, 'official', 'official,haodanku'),
 ('douyin', '抖音联盟', NULL, NULL, NULL, 'https://openapi-fxg.jinritemai.com', NULL, NULL, 0.0000, 80, 0, NULL, '请先在抖店开放平台或穿山甲开发者平台配置 AppKey/AppId、AppSecret/SecureKey，具备抖客/分销权限后再启用', 'system', '2026-10-26 11:53:00', 'system', '2026-10-26 17:10:00', b'0', 1, 'official', 'official,csj'),
 ('meituan', '美团联盟', NULL, NULL, NULL, 'https://openapi.meituan.com', NULL, NULL, 0.0000, 85, 0, NULL, '美团联盟官方API Gateway接入，请配置服务商appKey、appSecret与默认推广位SID后再启用', 'system', '2026-10-26 12:00:00', 'system', '2026-10-26 12:00:00', b'0', 1, 'official', 'official'),
 ('eleme', '淘宝闪购', 'https://img.alicdn.com/imgextra/i3/O1CN01fUvOcm1fM8VwB8P3C_!!6000000003986-2-tps-750-375.png', NULL, NULL, 'https://eco.taobao.com/router/rest', NULL, NULL, 0.0000, 90, 0, NULL, '阿里本地生活淘宝闪购联盟官方TOP OpenAPI接入，支持常驻官方活动、单店推广转链、导购选品与正向订单同步', 'system', '2026-10-28 11:35:00', 'system', '2026-10-28 11:35:00', b'0', 1, 'official', 'official,haodanku');
@@ -1176,9 +1176,10 @@ CREATE TABLE `cps_didi_callback_event` (
   KEY `idx_didi_callback_trace` (`tenant_id`,`trace_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='滴滴联盟回调事件审计表';
 
--- 好单库唯品会配置占位：不内置真实凭证，管理员填写 apikey 后再启用。
+-- 唯品会开放平台官方与好单库供应商配置（密钥留空占位，由运维环境或管理后台配置）。
 INSERT INTO `cps_api_vendor` (`vendor_code`, `vendor_name`, `vendor_type`, `platform_code`, `app_key`, `app_secret`, `api_base_url`, `auth_token`, `default_adzone_id`, `extra_config`, `priority`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`) VALUES
-('haodanku', '好单库', 'aggregator', 'vip', '', '', 'https://v2.api.haodanku.com', NULL, NULL, '{"searchPath":"/vip_goods_search","convertPath":"/vip_ratesurl"}', 100, 0, '请配置好单库 apikey 和唯品会 PID；普通账号使用 v2 搜索与转链，v3 订单能力按官方权限开通', 'system', '2026-08-07 17:30:00', 'system', '2026-08-11 16:15:00', b'0', 1),
+('official', '唯品会联盟官方', 'official', 'vip', '', '', 'https://vop.vipapis.com/', NULL, NULL, '{"goodsService":"com.vip.adp.api.open.service.UnionGoodsV2Service","urlService":"com.vip.adp.api.open.service.UnionUrlV2Service","orderService":"com.vip.adp.api.open.service.UnionOrderV2Service","pidService":"com.vip.adp.api.open.service.UnionPidV2Service"}', 100, 0, '唯品会开放平台官方Java SDK 2.0直连接入，请配置 AppKey 与 AppSecret 后启用', 'system', '2026-10-28 21:55:00', 'system', '2026-10-28 21:55:00', b'0', 1),
+('haodanku', '好单库', 'aggregator', 'vip', '', '', 'https://v2.api.haodanku.com', NULL, NULL, '{"searchPath":"/vip_goods_search","convertPath":"/vip_ratesurl"}', 90, 0, '请配置好单库 apikey 和唯品会 PID；普通账号使用 v2 搜索与转链，v3 订单能力按官方权限开通', 'system', '2026-08-07 17:30:00', 'system', '2026-08-11 16:15:00', b'0', 1),
 ('official', '抖音联盟官方', 'official', 'douyin', '', '', 'https://openapi-fxg.jinritemai.com', NULL, NULL, '{"searchPath":"/buyin/kolMaterialsProductsSearch","convertPath":"/buyin/doukeCommandParseAndShare","orderPath":"/buyin/doukeOrderList"}', 100, 0, '抖音电商官方 OpenAPI 接入，支持精选联盟选品、抖客转链与订单同步', 'system', '2026-10-26 11:53:00', 'system', '2026-10-26 11:53:00', b'0', 1),
 ('csj', '穿山甲电商联盟', 'aggregator', 'douyin', '', '', 'https://ecom.pangolin-sdk-toutiao.com', NULL, NULL, '{"orderSearchPath":"/order/search","productSearchPath":"/product/search","productLinkPath":"/product/link","signType":"MD5"}', 90, 0, '穿山甲电商联盟（抖音电商CPS/CSJ平台）接入，基于order/search接口与MD5签名机制', 'system', '2026-10-26 17:10:00', 'system', '2026-10-26 17:10:00', b'0', 1),
 ('official', '美团联盟官方', 'official', 'meituan', '', '', 'https://openapi.meituan.com', NULL, NULL, '{"searchPath":"/cps_open/common/api/v1/query_coupon","convertPath":"/cps_open/common/api/v1/get_referral_link","orderPath":"/cps_open/common/api/v1/query_order","platform":1,"bizLine":1,"linkType":1}', 100, 0, '美团开放平台官方 API Gateway (Shepherd鉴权) 接入，支持外卖/闪购/优选/到店卡券搜索、转链与订单同步', 'system', '2026-10-26 12:00:00', 'system', '2026-10-26 12:00:00', b'0', 1),

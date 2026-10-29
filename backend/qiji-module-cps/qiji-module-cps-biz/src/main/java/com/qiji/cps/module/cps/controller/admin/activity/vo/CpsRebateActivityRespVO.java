@@ -12,7 +12,7 @@ public class CpsRebateActivityRespVO {
     @Schema(description = "主键ID", example = "1")
     private Long id;
 
-    @Schema(description = "活动名称", example = "饿了么外卖红包")
+    @Schema(description = "活动名称", example = "淘宝闪购外卖红包")
     private String activityName;
 
     @Schema(description = "专题类型", example = "外卖")
