@@ -49,7 +49,17 @@ public class HdkVipVendorClient extends AbstractHdkVendorClient {
     @Override
     protected Map<String, Object> buildSearchParams(CpsGoodsSearchRequest request, CpsVendorConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("keyword", request.getKeyword());
+        String kw = request.getKeyword();
+        if (!org.springframework.util.StringUtils.hasText(kw) || "今日精选".equalsIgnoreCase(kw.trim())) {
+            kw = (org.springframework.util.StringUtils.hasText(request.getCategoryId()) && !"0".equals(request.getCategoryId().trim()))
+                    ? request.getCategoryId().trim() : "特卖";
+        } else if ("link".equalsIgnoreCase(request.getSearchField()) || kw.contains("vip.com")) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?:detail-|goodsId=)(\\d+)").matcher(kw);
+            if (m.find()) {
+                kw = m.group(1);
+            }
+        }
+        params.put("keyword", kw);
         params.put("min_id", request.getPageNo() == null ? 1 : request.getPageNo());
         params.put("min_size", request.getPageSize() == null ? 20 : request.getPageSize());
         return params;
@@ -61,7 +71,7 @@ public class HdkVipVendorClient extends AbstractHdkVendorClient {
         List<CpsGoodsItem> goodsList = new ArrayList<>();
         if (data.isArray()) {
             for (JsonNode item : data) {
-                goodsList.add(CpsGoodsItem.builder()
+                CpsGoodsItem goods = CpsGoodsItem.builder()
                         .goodsId(firstText(item, "goodsid", "goodsId", "goods_id"))
                         .platformCode(getPlatformCode())
                         .vendorCode(getVendorCode())
@@ -69,12 +79,31 @@ public class HdkVipVendorClient extends AbstractHdkVendorClient {
                         .mainPic(firstText(item, "itempic", "goodsMainPicture", "goods_main_picture"))
                         .originalPrice(firstDecimal(item, "itemprice", "marketPrice", "market_price"))
                         .actualPrice(firstDecimal(item, "itemendprice", "vipPrice", "vip_price"))
+                        .couponPrice(firstDecimal(item, "couponmoney", "coupon_money", "couponPrice"))
                         .commissionRate(firstDecimal(item, "tkrates", "commissionRate", "commission_rate"))
                         .commissionAmount(firstDecimal(item, "tkmoney", "commission"))
                         .brandName(firstText(item, "brandname", "brandName", "brand_name"))
                         .monthSales(firstLong(item, "itemsale", "productSales"))
                         .rawPayload(item.toString())
-                        .build());
+                        .build();
+
+                if (request.getMinCommissionRate() != null && goods.getCommissionRate() != null
+                        && goods.getCommissionRate().compareTo(request.getMinCommissionRate()) < 0) {
+                    continue;
+                }
+                if (request.getMinMonthSales() != null && goods.getMonthSales() != null
+                        && goods.getMonthSales() < request.getMinMonthSales()) {
+                    continue;
+                }
+                if (Integer.valueOf(1).equals(request.getHasCoupon())) {
+                    if (goods.getCouponPrice() == null || goods.getCouponPrice().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                        continue;
+                    }
+                }
+                if (Boolean.TRUE.equals(request.getBrandOnly()) && !org.springframework.util.StringUtils.hasText(goods.getBrandName())) {
+                    continue;
+                }
+                goodsList.add(goods);
             }
         }
         return CpsGoodsSearchResult.builder()

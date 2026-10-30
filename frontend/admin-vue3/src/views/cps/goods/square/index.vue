@@ -1063,7 +1063,7 @@ const selectRanking = (item: {
   keyword: string
   sourceCode?: string
 }) => {
-  if (item.sourceCode) {
+  if (item.sourceCode && queryParams.platformCode === 'taobao') {
     selectVendorSource(item.sourceCode, item.label)
     return
   }

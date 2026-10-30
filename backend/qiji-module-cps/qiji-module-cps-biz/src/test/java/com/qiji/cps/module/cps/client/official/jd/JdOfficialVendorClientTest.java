@@ -111,6 +111,23 @@ class JdOfficialVendorClientTest {
     }
 
     @Test
+    void testConnection_shouldPassOnSuccessOrQuotaLimit() {
+        CapturingClient client = new CapturingClient();
+        TestJdOfficialVendorClient vendor = new TestJdOfficialVendorClient(client);
+
+        // Success code 0
+        assertTrue(vendor.testConnection(config(Map.of())));
+        assertEquals("jd.union.open.goods.query", client.lastMethod());
+
+        // Quota limit code 2000 (sign and network verified)
+        client.nextCode = "2000";
+        assertTrue(vendor.testConnection(config(Map.of())));
+
+        // Missing credentials
+        org.junit.jupiter.api.Assertions.assertFalse(vendor.testConnection(CpsVendorConfig.builder().build()));
+    }
+
+    @Test
     void routesJdMarketingAndEffectApisThroughTheOfficialSdk() {
         CapturingClient client = new CapturingClient();
         TestJdOfficialVendorClient vendor = new TestJdOfficialVendorClient(client);
@@ -164,13 +181,15 @@ class JdOfficialVendorClientTest {
 
     private static final class CapturingClient implements JdClient {
         private final List<String> methods = new ArrayList<>();
+        private String nextCode = "0";
 
         @Override
         @SuppressWarnings("unchecked")
         public <T extends AbstractResponse> T execute(JdRequest<T> request) throws Exception {
             methods.add(request.getApiMethod());
             T response = request.getResponseClass().getDeclaredConstructor().newInstance();
-            response.setCode("0");
+            response.setCode(nextCode != null ? nextCode : "0");
+            nextCode = "0";
             return response;
         }
 

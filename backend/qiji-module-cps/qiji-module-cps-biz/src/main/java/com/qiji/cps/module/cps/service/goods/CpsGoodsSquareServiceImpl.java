@@ -26,6 +26,7 @@ import com.qiji.cps.module.cps.dal.dataobject.transfer.CpsTransferRecordDO;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeItemMapper;
 import com.qiji.cps.module.cps.dal.mysql.selection.CpsSelectionThemeMapper;
 import com.qiji.cps.module.cps.dal.mysql.transfer.CpsTransferRecordMapper;
+import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import com.qiji.cps.module.cps.service.selection.CpsSelectionRule;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -85,6 +86,9 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
             } catch (Exception ignored) {
                 meta = null;
             }
+        } else if (CpsPlatformCodeEnum.VIP.getCode().equals(effectivePlatformCode)) {
+            meta = buildVipMeta();
+            usingVendorMeta = true;
         }
         CpsGoodsSelectionMeta mergedMeta = mergeWithDefaultMeta(meta);
         return CpsGoodsSquareMetaRespVO.builder()
@@ -95,6 +99,8 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
                 .taobaoSelectionSupported(PLATFORM_TAOBAO.equals(effectivePlatformCode))
                 .capabilityDesc(PLATFORM_TAOBAO.equals(effectivePlatformCode)
                         ? "淘宝选品库支持热词、类目、活动入口和淘系高级筛选"
+                        : CpsPlatformCodeEnum.VIP.getCode().equals(effectivePlatformCode)
+                        ? "唯品会选品支持特卖精选、热销榜单、品牌特卖与高佣筛选"
                         : "当前平台使用通用商品搜索与转链能力")
                 .activities(toMetaItemRespList(mergedMeta.getActivities()))
                 .hotKeywords(toMetaItemRespList(mergedMeta.getHotKeywords()))
@@ -134,6 +140,9 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
 
     @Override
     public List<CpsGoodsSquareMetaItemRespVO> getHotKeywords(String platformCode, String vendorCode, Integer type) {
+        if (CpsPlatformCodeEnum.VIP.getCode().equals(platformCode)) {
+            return toMetaItemRespList(buildVipMeta().getHotKeywords());
+        }
         List<CpsGoodsSelectionOption> options = callSearchAssist(platformCode, vendorCode,
                 (client, config) -> client.getHotKeywords(type == null ? 1 : type, config));
         if (!isEmpty(options)) {
@@ -146,6 +155,15 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
     public List<CpsGoodsSquareMetaItemRespVO> suggestKeywords(String platformCode, String vendorCode, String keyword, Integer type) {
         if (!StringUtils.hasText(keyword)) {
             return Collections.emptyList();
+        }
+        if (CpsPlatformCodeEnum.VIP.getCode().equals(platformCode)) {
+            String kw = keyword.trim().toLowerCase();
+            List<CpsGoodsSelectionOption> matched = buildVipMeta().getHotKeywords().stream()
+                    .filter(opt -> opt.getLabel().toLowerCase().contains(kw) || kw.contains(opt.getLabel().toLowerCase()))
+                    .toList();
+            if (!matched.isEmpty()) {
+                return toMetaItemRespList(matched);
+            }
         }
         List<CpsGoodsSelectionOption> options = callSearchAssist(platformCode, vendorCode,
                 (client, config) -> client.suggestKeywords(keyword, type == null ? 1 : type, config));
@@ -390,18 +408,19 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
         request.setPriceUpperLimit(reqVO.getPriceUpperLimit());
         request.setSortType(reqVO.getSortType() == null ? 0 : reqVO.getSortType());
         request.setHasCoupon(reqVO.getHasCoupon());
+        request.setChannelCode(reqVO.getChannelCode());
+        request.setCategoryId(reqVO.getCategoryId());
+        request.setMinCommissionRate(reqVO.getMinCommissionRate());
+        request.setMinCommissionAmount(reqVO.getMinCommissionAmount());
+        request.setMinMonthSales(reqVO.getMinMonthSales());
+        request.setCouponAmountMin(reqVO.getCouponAmountMin());
+        request.setCouponPriceUpperLimit(reqVO.getCouponPriceUpperLimit());
+        request.setBrandOnly(reqVO.getBrandOnly());
+        request.setActivityTag(reqVO.getActivityTag());
         if (PLATFORM_TAOBAO.equals(reqVO.getPlatformCode())) {
-            request.setChannelCode(reqVO.getChannelCode());
-            request.setCategoryId(reqVO.getCategoryId());
-            request.setMinCommissionRate(reqVO.getMinCommissionRate());
-            request.setMinCommissionAmount(reqVO.getMinCommissionAmount());
-            request.setMinMonthSales(reqVO.getMinMonthSales());
-            request.setCouponAmountMin(reqVO.getCouponAmountMin());
-            request.setCouponPriceUpperLimit(reqVO.getCouponPriceUpperLimit());
             request.setHotRankMin(reqVO.getHotRankMin());
             request.setCouponExpireDays(reqVO.getCouponExpireDays());
             request.setTmallOnly(reqVO.getTmallOnly());
-            request.setBrandOnly(reqVO.getBrandOnly());
             request.setHaitaoOnly(reqVO.getHaitaoOnly());
             request.setGoldSellerOnly(reqVO.getGoldSellerOnly());
             request.setTchaoshiOnly(reqVO.getTchaoshiOnly());
@@ -413,7 +432,6 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
             request.setGoodsPerformance(reqVO.getGoodsPerformance());
             request.setCommercialOnly(reqVO.getCommercialOnly());
             request.setPreSaleOnly(reqVO.getPreSaleOnly());
-            request.setActivityTag(reqVO.getActivityTag());
         }
         return request;
     }
@@ -530,6 +548,50 @@ public class CpsGoodsSquareServiceImpl implements CpsGoodsSquareService {
                 .sortOptions(isEmpty(vendorMeta.getSortOptions()) ? defaultMeta.getSortOptions() : vendorMeta.getSortOptions())
                 .filterOptions(isEmpty(vendorMeta.getFilterOptions()) ? defaultMeta.getFilterOptions() : vendorMeta.getFilterOptions())
                 .metaSource(firstText(vendorMeta.getMetaSource(), defaultMeta.getMetaSource()))
+                .build();
+    }
+
+    private CpsGoodsSelectionMeta buildVipMeta() {
+        return CpsGoodsSelectionMeta.builder()
+                .activities(List.of(
+                        option("sale", "唯品特卖", "热", null, "品牌特卖精选好货"),
+                        option("brand", "大牌精选", "精", null, "知名品牌折扣特卖"),
+                        option("commission", "高佣优选", "赚", null, "高佣金爆品推荐"),
+                        option("rank", "热销爆款", "爆", null, "唯品会近期热卖热销榜")))
+                .hotKeywords(List.of(
+                        CpsGoodsSelectionOption.of("连衣裙", "连衣裙"),
+                        CpsGoodsSelectionOption.of("护肤套装", "护肤套装"),
+                        CpsGoodsSelectionOption.of("运动鞋", "运动鞋"),
+                        CpsGoodsSelectionOption.of("防晒衣", "防晒衣"),
+                        CpsGoodsSelectionOption.of("面膜", "面膜"),
+                        CpsGoodsSelectionOption.of("口红", "口红"),
+                        CpsGoodsSelectionOption.of("休闲裤", "休闲裤"),
+                        CpsGoodsSelectionOption.of("T恤", "T恤")))
+                .categories(List.of(
+                        CpsGoodsSelectionOption.of("0", "全部"),
+                        CpsGoodsSelectionOption.of("女装", "女装"),
+                        CpsGoodsSelectionOption.of("美妆", "美妆"),
+                        CpsGoodsSelectionOption.of("鞋包", "鞋包"),
+                        CpsGoodsSelectionOption.of("男装", "男装"),
+                        CpsGoodsSelectionOption.of("母婴童装", "母婴童装"),
+                        CpsGoodsSelectionOption.of("运动户外", "运动户外"),
+                        CpsGoodsSelectionOption.of("家居家纺", "家居家纺"),
+                        CpsGoodsSelectionOption.of("数码家电", "数码家电"),
+                        CpsGoodsSelectionOption.of("配饰手表", "配饰手表"),
+                        CpsGoodsSelectionOption.of("食品生鲜", "食品生鲜"),
+                        CpsGoodsSelectionOption.of("内衣", "内衣")))
+                .sortOptions(List.of(
+                        CpsGoodsSelectionOption.of("0", "综合"),
+                        CpsGoodsSelectionOption.of("1", "月销量"),
+                        CpsGoodsSelectionOption.of("2", "券后价升序"),
+                        CpsGoodsSelectionOption.of("3", "券后价降序"),
+                        CpsGoodsSelectionOption.of("4", "佣金比例"),
+                        CpsGoodsSelectionOption.of("5", "折扣力度")))
+                .filterOptions(List.of(
+                        CpsGoodsSelectionOption.of("hasCoupon", "只看有券"),
+                        CpsGoodsSelectionOption.of("brandOnly", "品牌优选"),
+                        CpsGoodsSelectionOption.of("minCommissionRate", "高佣筛选")))
+                .metaSource("vip")
                 .build();
     }
 

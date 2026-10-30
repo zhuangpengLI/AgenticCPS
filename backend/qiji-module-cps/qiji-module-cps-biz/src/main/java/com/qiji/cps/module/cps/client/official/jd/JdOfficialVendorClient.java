@@ -50,6 +50,7 @@ import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -441,7 +442,7 @@ public class JdOfficialVendorClient extends AbstractOfficialVendorClient
         params.put("type", request.getQueryType());
         params.put("startTime", request.getStartTime());
         params.put("endTime", request.getEndTime());
-        params.put("key", request.getPositionIndex());
+        params.put("key", firstNonBlank(request.getPositionIndex(), extra(config, "authKey"), config.getAuthToken()));
         return params;
     }
 
@@ -550,6 +551,47 @@ public class JdOfficialVendorClient extends AbstractOfficialVendorClient
                     .build());
         }
         return orders;
+    }
+
+    @Override
+    public boolean testConnection(CpsVendorConfig config) {
+        if (config == null || !StringUtils.hasText(config.getAppKey()) || !StringUtils.hasText(config.getAppSecret())) {
+            log.warn("[京东联盟官方] 连接测试缺少必要配置参数: appKey 或 appSecret 为空");
+            return false;
+        }
+        try {
+            JdClient client = createClient(config);
+            UnionOpenGoodsQueryRequest request = new UnionOpenGoodsQueryRequest();
+            GoodsReq req = new GoodsReq();
+            req.setKeyword("手机");
+            req.setPageIndex(1);
+            req.setPageSize(1);
+            if (StringUtils.hasText(config.getDefaultAdzoneId())) {
+                req.setPid(config.getDefaultAdzoneId());
+            }
+            request.setGoodsReqDTO(req);
+            UnionOpenGoodsQueryResponse response = client.execute(request);
+            if (response == null) {
+                return false;
+            }
+            String code = response.getCode();
+            // 0: 接口调用完全成功
+            // 2000: 已达到调用上限（代表网关连通性及 AppKey/AppSecret 签名验证完全通过）
+            if ("0".equals(code) || "2000".equals(code)) {
+                return true;
+            }
+            if (response.getQueryResult() != null) {
+                Integer subCode = response.getQueryResult().getCode();
+                if (subCode != null && (subCode == 0 || subCode == 200 || subCode == 400 || subCode == 403)) {
+                    return true;
+                }
+            }
+            log.warn("[京东联盟官方] 连接测试返回未通过: code={}, zhDesc={}", code, response.getZhDesc());
+            return false;
+        } catch (Exception e) {
+            log.warn("[京东联盟官方] 连接测试异常: {}", e.getMessage());
+            return false;
+        }
     }
 
     @Override
@@ -793,7 +835,12 @@ public class JdOfficialVendorClient extends AbstractOfficialVendorClient
 
     protected JdClient createClient(CpsVendorConfig config) {
         String baseUrl = firstNonBlank(config.getApiBaseUrl(), DEFAULT_API_BASE_URL);
-        return new DefaultJdClient(baseUrl, config.getAuthToken(), config.getAppKey(), config.getAppSecret());
+        String token = config.getAuthToken();
+        // 京东联盟 80 位推客授权 Key (authKey) 用于推客与订单接口入参，并非 JOS OAuth accessToken
+        if (token != null && token.length() > 60) {
+            token = null;
+        }
+        return new DefaultJdClient(baseUrl, token, config.getAppKey(), config.getAppSecret());
     }
 
     @Override
@@ -802,7 +849,7 @@ public class JdOfficialVendorClient extends AbstractOfficialVendorClient
             return false;
         }
         String code = root.path("code").asText(null);
-        if ("0".equals(code) || "200".equals(code)) {
+        if ("0".equals(code) || "200".equals(code) || "2000".equals(code)) {
             return true;
         }
         for (String name : List.of("queryResult", "getResult", "createResult")) {

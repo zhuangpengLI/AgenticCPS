@@ -78,7 +78,7 @@ class VipOfficialVendorClientTest {
         request.setKeyword("连衣裙");
         request.setPageNo(2);
         request.setPageSize(20);
-        request.setSortType(2); // COMMISSION desc
+        request.setSortType(4); // COMMISSION desc
 
         CpsGoodsSearchResult result = client.searchGoods(request, baseConfig);
 
@@ -268,6 +268,158 @@ class VipOfficialVendorClientTest {
         verify(orderService).orderList(captor.capture());
         assertEquals((short) 2, captor.getValue().getStatus()); // 4 映射为唯品会状态 2
         assertEquals("default_vip_pid", captor.getValue().getChanTag());
+    }
+
+    @Test
+    void searchGoods_withGoodsIdSearchField_shouldCallGetByGoodsIdsV2() throws Exception {
+        GoodsInfo info = new GoodsInfo();
+        info.setGoodsId("6912345678");
+        info.setGoodsName("唯品会直查商品");
+        info.setVipPrice("99.00");
+        info.setMarketPrice("199.00");
+
+        when(goodsService.getByGoodsIdsV2(any(GetByGoodsIdsRequest.class))).thenReturn(List.of(info));
+
+        CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
+        request.setSearchField("goods_id");
+        request.setKeyword("6912345678");
+        request.setPageNo(1);
+        request.setPageSize(20);
+
+        CpsGoodsSearchResult result = client.searchGoods(request, baseConfig);
+
+        assertNotNull(result);
+        assertEquals(1, result.getList().size());
+        assertEquals("6912345678", result.getList().get(0).getGoodsId());
+        assertEquals("唯品会直查商品", result.getList().get(0).getTitle());
+
+        ArgumentCaptor<GetByGoodsIdsRequest> captor = ArgumentCaptor.forClass(GetByGoodsIdsRequest.class);
+        verify(goodsService).getByGoodsIdsV2(captor.capture());
+        assertEquals(List.of("6912345678"), captor.getValue().getGoodsIds());
+        verify(goodsService, never()).query(any(QueryGoodsRequest.class));
+    }
+
+    @Test
+    void searchGoods_withLinkSearchField_shouldExtractGoodsIdAndCallGetByGoodsIdsV2() throws Exception {
+        GoodsInfo info = new GoodsInfo();
+        info.setGoodsId("6923456789");
+        info.setGoodsName("链接直查商品");
+        info.setVipPrice("129.00");
+
+        when(goodsService.getByGoodsIdsV2(any(GetByGoodsIdsRequest.class))).thenReturn(List.of(info));
+
+        CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
+        request.setSearchField("link");
+        request.setKeyword("https://detail.vip.com/detail-123456-6923456789.html");
+
+        CpsGoodsSearchResult result = client.searchGoods(request, baseConfig);
+
+        assertNotNull(result);
+        assertEquals(1, result.getList().size());
+        assertEquals("6923456789", result.getList().get(0).getGoodsId());
+        verify(goodsService).getByGoodsIdsV2(any(GetByGoodsIdsRequest.class));
+    }
+
+    @Test
+    void searchGoods_withDefaultKeywordAndNoCategory_shouldCallGoodsListV2() throws Exception {
+        GoodsInfo info = new GoodsInfo();
+        info.setGoodsId("VIP_REC_1");
+        info.setGoodsName("精选特卖推荐");
+        info.setVipPrice("88.00");
+
+        GoodsInfoResponseV2 mockResponse = new GoodsInfoResponseV2();
+        mockResponse.setGoodsInfoList(List.of(info));
+        when(goodsService.goodsListV2(any(GoodsInfoRequestV2.class))).thenReturn(mockResponse);
+
+        CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
+        request.setKeyword("今日精选");
+        request.setPageNo(1);
+        request.setPageSize(20);
+
+        CpsGoodsSearchResult result = client.searchGoods(request, baseConfig);
+
+        assertNotNull(result);
+        assertEquals(1, result.getList().size());
+        assertEquals("VIP_REC_1", result.getList().get(0).getGoodsId());
+        verify(goodsService).goodsListV2(any(GoodsInfoRequestV2.class));
+        verify(goodsService, never()).query(any(QueryGoodsRequest.class));
+    }
+
+    @Test
+    void searchGoods_withDefaultKeywordAndCategory_shouldQueryCategory() throws Exception {
+        GoodsInfo info = new GoodsInfo();
+        info.setGoodsId("VIP_CAT_1");
+        info.setGoodsName("女装热卖大衣");
+        info.setVipPrice("299.00");
+
+        GoodsInfoResponse mockResponse = new GoodsInfoResponse();
+        mockResponse.setGoodsInfoList(List.of(info));
+        when(goodsService.query(any(QueryGoodsRequest.class))).thenReturn(mockResponse);
+
+        CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
+        request.setKeyword("今日精选");
+        request.setCategoryId("女装");
+        request.setPageNo(1);
+        request.setPageSize(20);
+
+        CpsGoodsSearchResult result = client.searchGoods(request, baseConfig);
+
+        assertNotNull(result);
+        assertEquals(1, result.getList().size());
+
+        ArgumentCaptor<QueryGoodsRequest> captor = ArgumentCaptor.forClass(QueryGoodsRequest.class);
+        verify(goodsService).query(captor.capture());
+        assertEquals("女装", captor.getValue().getKeyword());
+    }
+
+    @Test
+    void searchGoods_withFilters_shouldFilterInMemory() throws Exception {
+        GoodsInfo match = new GoodsInfo();
+        match.setGoodsId("G_MATCH");
+        match.setGoodsName("有券高佣品牌连衣裙");
+        match.setVipPrice("100.00");
+        match.setCommissionRate("25.0");
+        match.setProductSales("500");
+        match.setBrandName("ONLY");
+        ChannelExclusiveCoupon exclusiveCoupon = new ChannelExclusiveCoupon();
+        exclusiveCoupon.setBuy("20.00");
+        match.setExclusiveCoupon(exclusiveCoupon);
+
+        GoodsInfo noCoupon = new GoodsInfo();
+        noCoupon.setGoodsId("G_NO_COUPON");
+        noCoupon.setGoodsName("无券商品");
+        noCoupon.setVipPrice("100.00");
+        noCoupon.setCommissionRate("25.0");
+        noCoupon.setProductSales("500");
+        noCoupon.setBrandName("ONLY");
+
+        GoodsInfo lowCommission = new GoodsInfo();
+        lowCommission.setGoodsId("G_LOW_COMM");
+        lowCommission.setGoodsName("低佣商品");
+        lowCommission.setVipPrice("100.00");
+        lowCommission.setCommissionRate("5.0");
+        lowCommission.setProductSales("500");
+        lowCommission.setBrandName("ONLY");
+        lowCommission.setExclusiveCoupon(exclusiveCoupon);
+
+        GoodsInfoResponse mockResponse = new GoodsInfoResponse();
+        mockResponse.setGoodsInfoList(List.of(match, noCoupon, lowCommission));
+        when(goodsService.query(any(QueryGoodsRequest.class))).thenReturn(mockResponse);
+
+        CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
+        request.setKeyword("连衣裙");
+        request.setHasCoupon(1);
+        request.setMinCommissionRate(new BigDecimal("20.0"));
+        request.setMinMonthSales(100L);
+        request.setBrandOnly(true);
+        request.setPriceLowerLimit(new BigDecimal("50.00"));
+        request.setPriceUpperLimit(new BigDecimal("150.00"));
+
+        CpsGoodsSearchResult result = client.searchGoods(request, baseConfig);
+
+        assertNotNull(result);
+        assertEquals(1, result.getList().size());
+        assertEquals("G_MATCH", result.getList().get(0).getGoodsId());
     }
 
     @Test

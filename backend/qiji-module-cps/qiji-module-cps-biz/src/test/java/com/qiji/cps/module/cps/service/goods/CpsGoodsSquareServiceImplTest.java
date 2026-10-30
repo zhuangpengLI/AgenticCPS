@@ -34,6 +34,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -334,7 +335,7 @@ class CpsGoodsSquareServiceImplTest {
     }
 
     @Test
-    @DisplayName("searchGoods - 非淘宝平台忽略淘系专属筛选")
+    @DisplayName("searchGoods - 非淘宝平台忽略淘系专属筛选但保留通用筛选")
     void searchGoods_ignoresTaobaoSelectionFiltersForOtherPlatforms() {
         CpsGoodsSquareSearchReqVO reqVO = new CpsGoodsSquareSearchReqVO();
         reqVO.setPlatformCode("jd");
@@ -342,6 +343,8 @@ class CpsGoodsSquareServiceImplTest {
         reqVO.setKeyword("手机");
         reqVO.setCategoryId("10");
         reqVO.setMinCommissionRate(new BigDecimal("20"));
+        reqVO.setTmallOnly(true);
+        reqVO.setHotRankMin(3L);
         when(goodsService.searchGoods(eq("jd"), any(), eq("haodanku"))).thenReturn(CpsGoodsSearchResult.builder()
                 .list(List.of(buildGoodsItem("jd", "goods-2")))
                 .total(1L)
@@ -352,8 +355,10 @@ class CpsGoodsSquareServiceImplTest {
         ArgumentCaptor<com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest> captor =
                 ArgumentCaptor.forClass(com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest.class);
         verify(goodsService).searchGoods(eq("jd"), captor.capture(), eq("haodanku"));
-        assertNull(captor.getValue().getCategoryId());
-        assertNull(captor.getValue().getMinCommissionRate());
+        assertEquals("10", captor.getValue().getCategoryId());
+        assertEquals(new BigDecimal("20"), captor.getValue().getMinCommissionRate());
+        assertNull(captor.getValue().getTmallOnly());
+        assertNull(captor.getValue().getHotRankMin());
     }
 
     @Test
@@ -474,6 +479,80 @@ class CpsGoodsSquareServiceImplTest {
         goods.setTitle("测试商品");
         goods.setSource("dataoke:FRIENDS_CIRCLE");
         return goods;
+    }
+
+    @Test
+    @DisplayName("getMeta - 唯品会选品元数据应返回分类/活动/热词与唯品会特性")
+    void getMeta_vip_shouldReturnVipMetaAndCategories() {
+        var result = service.getMeta("vip", "official");
+
+        assertEquals("vip", result.getPlatformCode());
+        assertEquals("official", result.getVendorCode());
+        assertEquals("vip", result.getMetaSource());
+        assertEquals(true, result.getUsingVendorMeta());
+        assertEquals(false, result.getTaobaoSelectionSupported());
+        assertTrue(result.getCapabilityDesc().contains("唯品会"));
+        assertTrue(result.getCategories().stream().anyMatch(cat -> "女装".equals(cat.getLabel())));
+        assertTrue(result.getHotKeywords().stream().anyMatch(h -> "连衣裙".equals(h.getLabel())));
+        assertTrue(result.getActivities().stream().anyMatch(a -> "唯品特卖".equals(a.getLabel())));
+    }
+
+    @Test
+    @DisplayName("getHotKeywords - 唯品会热搜词应返回唯品会特卖热词")
+    void getHotKeywords_vip_shouldReturnVipHotKeywords() {
+        var result = service.getHotKeywords("vip", "official", 1);
+
+        assertEquals(false, result.isEmpty());
+        assertTrue(result.stream().anyMatch(h -> "连衣裙".equals(h.getLabel())));
+    }
+
+    @Test
+    @DisplayName("suggestKeywords - 唯品会应返回匹配的前缀联想词")
+    void suggestKeywords_vip_shouldMatchVipKeywords() {
+        var result = service.suggestKeywords("vip", "official", "连衣", 1);
+
+        assertEquals(false, result.isEmpty());
+        assertEquals("连衣裙", result.get(0).getLabel());
+    }
+
+    @Test
+    @DisplayName("searchGoods - 唯品会通用筛选字段应正常透传")
+    void searchGoods_vip_shouldPassCommonFilters() {
+        CpsGoodsSquareSearchReqVO reqVO = new CpsGoodsSquareSearchReqVO();
+        reqVO.setPlatformCode("vip");
+        reqVO.setVendorCode("official");
+        reqVO.setKeyword("连衣裙");
+        reqVO.setCategoryId("女装");
+        reqVO.setMinCommissionRate(new BigDecimal("15"));
+        reqVO.setMinMonthSales(200L);
+        reqVO.setBrandOnly(true);
+        reqVO.setPriceLowerLimit(new BigDecimal("50"));
+        reqVO.setPriceUpperLimit(new BigDecimal("300"));
+        reqVO.setSortType(4);
+        reqVO.setHasCoupon(1);
+
+        when(goodsService.searchGoods(eq("vip"), any(), eq("official"))).thenReturn(CpsGoodsSearchResult.builder()
+                .list(List.of(buildGoodsItem("vip", "vip-12345")))
+                .total(1L)
+                .build());
+
+        var result = service.searchGoods(reqVO);
+
+        ArgumentCaptor<com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest> captor =
+                ArgumentCaptor.forClass(com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest.class);
+        verify(goodsService).searchGoods(eq("vip"), captor.capture(), eq("official"));
+
+        assertEquals("连衣裙", captor.getValue().getKeyword());
+        assertEquals("女装", captor.getValue().getCategoryId());
+        assertEquals(new BigDecimal("15"), captor.getValue().getMinCommissionRate());
+        assertEquals(200L, captor.getValue().getMinMonthSales());
+        assertEquals(true, captor.getValue().getBrandOnly());
+        assertEquals(new BigDecimal("50"), captor.getValue().getPriceLowerLimit());
+        assertEquals(new BigDecimal("300"), captor.getValue().getPriceUpperLimit());
+        assertEquals(4, captor.getValue().getSortType());
+        assertEquals(1, captor.getValue().getHasCoupon());
+        assertEquals(1, result.getList().size());
+        assertEquals("vip-12345", result.getList().get(0).getGoodsId());
     }
 
     private static class TestSelectionVendorClient implements CpsApiVendorClient, CpsTaobaoSelectionVendorClient {

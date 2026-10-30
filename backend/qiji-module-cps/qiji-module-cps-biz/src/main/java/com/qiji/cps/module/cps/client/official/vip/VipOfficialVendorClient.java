@@ -145,62 +145,77 @@ public class VipOfficialVendorClient extends AbstractOfficialVendorClient {
             int page = request.getPageNo() != null && request.getPageNo() > 0 ? request.getPageNo() : 1;
             int pageSize = request.getPageSize() != null && request.getPageSize() > 0 ? request.getPageSize() : 20;
 
+            String rawKeyword = request.getKeyword() != null ? request.getKeyword().trim() : "";
+            String searchField = request.getSearchField() != null ? request.getSearchField().trim().toLowerCase() : "";
+
+            // 1. 尝试以商品 ID 或商品链接直查（精准命中）
+            String directGoodsId = resolveDirectGoodsId(searchField, rawKeyword);
+            if (StringUtils.hasText(directGoodsId)) {
+                List<GoodsInfo> directList = queryGoodsByIds(goodsService, hasOauth, List.of(directGoodsId), chanTag, openId);
+                if (directList != null && !directList.isEmpty()) {
+                    List<CpsGoodsItem> items = filterAndMapGoods(directList, request);
+                    return CpsGoodsSearchResult.builder()
+                            .list(items)
+                            .total((long) items.size())
+                            .pageNo(1)
+                            .pageSize(pageSize)
+                            .build();
+                }
+            }
+
+            // 2. 判断是否属于默认检索（空或 "今日精选"）
+            boolean isDefaultSearch = !StringUtils.hasText(rawKeyword) || "今日精选".equalsIgnoreCase(rawKeyword);
+
             List<GoodsInfo> goodsInfoList;
             Long total = null;
 
-            if (StringUtils.hasText(request.getKeyword())) {
-                QueryGoodsRequest queryReq = new QueryGoodsRequest();
-                queryReq.setKeyword(request.getKeyword().trim());
-                queryReq.setPage(page);
-                queryReq.setPageSize(pageSize);
-                queryReq.setRequestId(UUID.randomUUID().toString());
-                queryReq.setChanTag(chanTag);
-                queryReq.setOpenId(openId);
-                queryReq.setRealCall(true);
-                queryReq.setQueryCpsInfo(1);
-                queryReq.setQueryStock(true);
-                queryReq.setQueryActivity(true);
-                if (request.getPriceLowerLimit() != null) {
-                    queryReq.setPriceStart(request.getPriceLowerLimit().toPlainString());
-                }
-                if (request.getPriceUpperLimit() != null) {
-                    queryReq.setPriceEnd(request.getPriceUpperLimit().toPlainString());
-                }
-                mapSortField(request.getSortType(), queryReq);
+            if (isDefaultSearch) {
+                // 如果选择或传入了具体类目（且不是 '0' / '全部'），按类目关键词检索
+                String category = request.getCategoryId();
+                if (StringUtils.hasText(category) && !"0".equals(category.trim())) {
+                    QueryGoodsRequest queryReq = buildQueryGoodsRequest(category.trim(), page, pageSize, chanTag, openId, request);
+                    GoodsInfoResponse response = hasOauth ? goodsService.queryWithOauth(queryReq) : goodsService.query(queryReq);
+                    goodsInfoList = response != null ? response.getGoodsInfoList() : null;
+                    if (response != null && response.getTotal() != null) {
+                        total = response.getTotal().longValue();
+                    }
+                } else {
+                    // 无关键词且无类目，拉取唯品会官方特卖精选推荐流（channelType=0）
+                    GoodsInfoRequestV2 listReq = new GoodsInfoRequestV2();
+                    listReq.setChannelType(0);
+                    listReq.setPageSize(pageSize);
+                    listReq.setOffset((long) (page - 1) * pageSize);
+                    listReq.setRequestId(UUID.randomUUID().toString());
+                    listReq.setChanTag(chanTag);
+                    listReq.setOpenId(openId);
+                    listReq.setRealCall(true);
+                    listReq.setQueryCpsInfo(1);
+                    listReq.setQueryStock(true);
+                    listReq.setQueryActivity(true);
+                    mapSortFieldV2(request.getSortType(), listReq);
 
+                    GoodsInfoResponseV2 response = hasOauth ? goodsService.goodsListV2WithOauth(listReq) : goodsService.goodsListV2(listReq);
+                    goodsInfoList = response != null ? response.getGoodsInfoList() : null;
+                    if (goodsInfoList != null) {
+                        total = Boolean.TRUE.equals(response != null ? response.getLastPage() : null)
+                                ? (long) goodsInfoList.size() : 1000L;
+                    }
+                }
+            } else {
+                // 用户输入了明确关键词检索
+                QueryGoodsRequest queryReq = buildQueryGoodsRequest(rawKeyword, page, pageSize, chanTag, openId, request);
                 GoodsInfoResponse response = hasOauth ? goodsService.queryWithOauth(queryReq) : goodsService.query(queryReq);
                 goodsInfoList = response != null ? response.getGoodsInfoList() : null;
                 if (response != null && response.getTotal() != null) {
                     total = response.getTotal().longValue();
                 }
-            } else {
-                GoodsInfoRequestV2 listReq = new GoodsInfoRequestV2();
-                listReq.setChannelType(0);
-                listReq.setPageSize(pageSize);
-                listReq.setOffset((long) (page - 1) * pageSize);
-                listReq.setRequestId(UUID.randomUUID().toString());
-                listReq.setChanTag(chanTag);
-                listReq.setOpenId(openId);
-                listReq.setRealCall(true);
-                listReq.setQueryCpsInfo(1);
-                listReq.setQueryStock(true);
-                listReq.setQueryActivity(true);
-
-                GoodsInfoResponseV2 response = hasOauth ? goodsService.goodsListV2WithOauth(listReq) : goodsService.goodsListV2(listReq);
-                goodsInfoList = response != null ? response.getGoodsInfoList() : null;
             }
 
             if (goodsInfoList == null) {
                 return buildEmptyResult(request);
             }
 
-            List<CpsGoodsItem> items = new ArrayList<>();
-            for (GoodsInfo info : goodsInfoList) {
-                if (info != null) {
-                    items.add(toGoodsItem(info));
-                }
-            }
-
+            List<CpsGoodsItem> items = filterAndMapGoods(goodsInfoList, request);
             long totalCount = total != null ? total : items.size();
             return CpsGoodsSearchResult.builder()
                     .list(items)
@@ -650,6 +665,8 @@ public class VipOfficialVendorClient extends AbstractOfficialVendorClient {
         BigDecimal couponPrice = null;
         if (info.getExclusiveCoupon() != null && StringUtils.hasText(info.getExclusiveCoupon().getBuy())) {
             couponPrice = parseDecimal(info.getExclusiveCoupon().getBuy());
+        } else if (info.getCouponInfo() != null && StringUtils.hasText(info.getCouponInfo().getFav())) {
+            couponPrice = parseDecimal(info.getCouponInfo().getFav());
         }
 
         Map<String, Object> extra = new LinkedHashMap<>();
@@ -794,22 +811,169 @@ public class VipOfficialVendorClient extends AbstractOfficialVendorClient {
         return extra;
     }
 
+    private String extractGoodsIdFromUrl(String url) {
+        if (!StringUtils.hasText(url)) {
+            return null;
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?:detail-\\d+-|detail-|goodsId=)(\\d+)").matcher(url);
+        if (m.find()) {
+            return m.group(1);
+        }
+        java.util.regex.Matcher numMatcher = java.util.regex.Pattern.compile("(\\d{8,25})").matcher(url);
+        if (numMatcher.find()) {
+            return numMatcher.group(1);
+        }
+        return null;
+    }
+
+    private String resolveDirectGoodsId(String searchField, String rawKeyword) {
+        if (!StringUtils.hasText(rawKeyword)) {
+            return null;
+        }
+        if ("goods_id".equals(searchField)) {
+            return rawKeyword;
+        }
+        if ("link".equals(searchField) || rawKeyword.contains("vip.com") || rawKeyword.contains("detail-")) {
+            String extracted = extractGoodsIdFromUrl(rawKeyword);
+            return StringUtils.hasText(extracted) ? extracted : rawKeyword;
+        }
+        if (rawKeyword.matches("^\\d{8,25}$")) {
+            return rawKeyword;
+        }
+        return null;
+    }
+
+    private List<GoodsInfo> queryGoodsByIds(UnionGoodsV2Service goodsService, boolean hasOauth,
+                                            List<String> goodsIds, String chanTag, String openId) throws OspException {
+        GetByGoodsIdsRequest idsReq = new GetByGoodsIdsRequest();
+        idsReq.setGoodsIds(goodsIds);
+        idsReq.setRequestId(UUID.randomUUID().toString());
+        idsReq.setChanTag(chanTag);
+        idsReq.setOpenId(openId);
+        idsReq.setRealCall(true);
+        idsReq.setQueryDetail(true);
+        idsReq.setQueryCpsInfo(1);
+        idsReq.setQueryStock(true);
+        return hasOauth ? goodsService.getByGoodsIdsV2WithOauth(idsReq) : goodsService.getByGoodsIdsV2(idsReq);
+    }
+
+    private QueryGoodsRequest buildQueryGoodsRequest(String keyword, int page, int pageSize,
+                                                     String chanTag, String openId, CpsGoodsSearchRequest request) {
+        QueryGoodsRequest queryReq = new QueryGoodsRequest();
+        queryReq.setKeyword(keyword);
+        queryReq.setPage(page);
+        queryReq.setPageSize(pageSize);
+        queryReq.setRequestId(UUID.randomUUID().toString());
+        queryReq.setChanTag(chanTag);
+        queryReq.setOpenId(openId);
+        queryReq.setRealCall(true);
+        queryReq.setQueryCpsInfo(1);
+        queryReq.setQueryStock(true);
+        queryReq.setQueryActivity(true);
+        if (request.getPriceLowerLimit() != null) {
+            queryReq.setPriceStart(request.getPriceLowerLimit().toPlainString());
+        }
+        if (request.getPriceUpperLimit() != null) {
+            queryReq.setPriceEnd(request.getPriceUpperLimit().toPlainString());
+        }
+        mapSortField(request.getSortType(), queryReq);
+        return queryReq;
+    }
+
+    private List<CpsGoodsItem> filterAndMapGoods(List<GoodsInfo> goodsInfoList, CpsGoodsSearchRequest request) {
+        List<CpsGoodsItem> items = new ArrayList<>();
+        for (GoodsInfo info : goodsInfoList) {
+            if (info == null) {
+                continue;
+            }
+            CpsGoodsItem item = toGoodsItem(info);
+            if (request.getPriceLowerLimit() != null && item.getActualPrice() != null
+                    && item.getActualPrice().compareTo(request.getPriceLowerLimit()) < 0) {
+                continue;
+            }
+            if (request.getPriceUpperLimit() != null && item.getActualPrice() != null
+                    && item.getActualPrice().compareTo(request.getPriceUpperLimit()) > 0) {
+                continue;
+            }
+            if (request.getMinCommissionRate() != null && item.getCommissionRate() != null
+                    && item.getCommissionRate().compareTo(request.getMinCommissionRate()) < 0) {
+                continue;
+            }
+            if (request.getMinMonthSales() != null && item.getMonthSales() != null
+                    && item.getMonthSales() < request.getMinMonthSales()) {
+                continue;
+            }
+            if (Integer.valueOf(1).equals(request.getHasCoupon())) {
+                if (item.getCouponPrice() == null || item.getCouponPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+            }
+            if (Boolean.TRUE.equals(request.getBrandOnly()) && !StringUtils.hasText(item.getBrandName())) {
+                continue;
+            }
+            items.add(item);
+        }
+        return items;
+    }
+
     private void mapSortField(Integer sortType, QueryGoodsRequest req) {
         if (sortType == null) {
             return;
         }
         switch (sortType) {
-            case 2 -> {
-                req.setFieldName("COMMISSION");
+            case 1 -> { // 月热销
+                req.setFieldName("SALES");
                 req.setOrder(1);
             }
-            case 3 -> {
+            case 2 -> { // 券后价升序
                 req.setFieldName("PRICE");
                 req.setOrder(0);
             }
-            case 4 -> {
+            case 3 -> { // 券后价降序
+                req.setFieldName("PRICE");
+                req.setOrder(1);
+            }
+            case 4 -> { // 佣金比例降序
+                req.setFieldName("COMMISSION");
+                req.setOrder(1);
+            }
+            case 5 -> { // 领券量/折扣
+                req.setFieldName("DISCOUNT");
+                req.setOrder(0);
+            }
+            case 6 -> { // 最新上架
+                req.setFieldName("COMMISSION");
+                req.setOrder(1);
+            }
+            default -> {
+            }
+        }
+    }
+
+    private void mapSortFieldV2(Integer sortType, GoodsInfoRequestV2 req) {
+        if (sortType == null) {
+            return;
+        }
+        switch (sortType) {
+            case 1 -> {
                 req.setFieldName("SALES");
                 req.setOrder(1);
+            }
+            case 2 -> {
+                req.setFieldName("PRICE");
+                req.setOrder(0);
+            }
+            case 3 -> {
+                req.setFieldName("PRICE");
+                req.setOrder(1);
+            }
+            case 4 -> {
+                req.setFieldName("COMMISSION");
+                req.setOrder(1);
+            }
+            case 5 -> {
+                req.setFieldName("DISCOUNT");
+                req.setOrder(0);
             }
             default -> {
             }
