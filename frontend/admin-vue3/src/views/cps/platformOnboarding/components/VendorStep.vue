@@ -9,7 +9,7 @@
       <el-table-column label="角色"><template #default="{ row }">{{ row.vendorCode === draft.primaryVendorCode ? '主供应商' : '备用供应商' }}</template></el-table-column>
       <el-table-column label="状态"><template #default="{ row }"><el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '已启用' : '未启用' }}</el-tag></template></el-table-column>
       <el-table-column label="凭证"><template #default="{ row }">{{ credentialsConfigured(row) ? '已配置（已脱敏）' : '未配置' }}</template></el-table-column>
-      <el-table-column label="操作" width="220"><template #default="{ row, $index }"><el-button link @click="openEditor(row, $index)">编辑</el-button><el-button link type="danger" @click="remove($index)">移除</el-button><el-button link :loading="testingVendorCode === row.vendorCode" @click="emit('test-vendor', row)">测试</el-button></template></el-table-column>
+      <el-table-column label="操作" min-width="260"><template #default="{ row, $index }"><el-button link @click="openEditor(row, $index)">编辑</el-button><el-button link type="danger" @click="remove($index)">移除</el-button><el-button link :loading="testingVendorCode === row.vendorCode" @click="emit('test-vendor', row)">测试</el-button><el-button v-if="row.vendorCode !== draft.primaryVendorCode" link type="primary" title="切换主供应商" @click="setPrimaryVendor(row)">设为主供应商</el-button></template></el-table-column>
     </el-table>
     <el-form-item label="主供应商" class="mt-16px" required><el-select v-model="draft.primaryVendorCode"><el-option v-for="row in draft.vendors" :key="row.vendorCode" :label="`${row.vendorName || row.vendorCode}${row.status === 1 ? '' : '（未启用）'}`" :value="row.vendorCode" /></el-select></el-form-item>
     <CheckResultPanel :result="testResult" />
@@ -19,6 +19,7 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 import { computed, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import type { PlatformOnboardingDraft, VendorDescriptor, VendorForm, OnboardingCheckResult } from '@/api/cps/platformOnboarding'
 import CheckResultPanel from './CheckResultPanel.vue'
 import VendorEditorDialog from './VendorEditorDialog.vue'
@@ -50,6 +51,7 @@ const credentialsConfigured = (vendor: VendorForm) => {
 const openEditor = (vendor?: VendorForm, index = -1) => { editingVendor.value = vendor; editingIndex.value = index; editingDescriptor.value = availableDescriptors.value.find((item) => item.vendorCode === vendor?.vendorCode); dialogVisible.value = true }
 const saveVendor = (vendor: VendorForm) => { if (editingIndex.value >= 0) props.draft.vendors.splice(editingIndex.value, 1, vendor); else props.draft.vendors.push(vendor); if (!props.draft.primaryVendorCode) props.draft.primaryVendorCode = vendor.vendorCode }
 const remove = (index: number) => { const removed = props.draft.vendors.splice(index, 1)[0]; if (removed?.vendorCode === props.draft.primaryVendorCode) props.draft.primaryVendorCode = props.draft.vendors[0]?.vendorCode || '' }
+const setPrimaryVendor = (vendor: VendorForm) => { props.draft.primaryVendorCode = vendor.vendorCode; ElMessage.success(`已切换主供应商为：${vendor.vendorName || vendor.vendorCode}`) }
 const validate = async () => {
   const codes = props.draft.vendors.map((vendor) => vendor.vendorCode.trim())
   const primary = props.draft.vendors.find((vendor) => vendor.vendorCode === props.draft.primaryVendorCode)

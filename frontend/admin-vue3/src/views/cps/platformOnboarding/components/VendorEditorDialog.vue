@@ -1,6 +1,6 @@
 <template>
   <el-dialog v-model="visible" :title="editing ? '编辑供应商' : '添加供应商'" width="640px" destroy-on-close>
-    <el-form :model="form" label-width="120px">
+    <el-form :model="form" label-width="130px">
       <el-form-item label="供应商编码" required>
         <el-select v-if="descriptors?.length" v-model="form.vendorCode" filterable @change="applyDescriptor" :disabled="editing">
           <el-option v-for="item in vendorOptions" :key="item.value" :label="`${item.label}（${item.value}）`" :value="item.value" />
@@ -20,7 +20,7 @@
       </el-form-item>
       <el-form-item v-for="field in fields" :key="field.name" :label="fieldLabel(field.name)" :required="field.required">
         <el-input v-if="field.sensitive" v-model="secretValues[field.name]" type="password" show-password :placeholder="configured(field.name) ? '已配置（留空则保持不变）' : '请输入凭证'" autocomplete="new-password" />
-        <el-input v-else v-model="form[field.name]" />
+        <el-input v-else v-model="form[field.name]" :placeholder="fieldPlaceholder(field.name)" />
       </el-form-item>
       <el-form-item label="优先级"><el-input-number v-model="form.priority" :min="0" /></el-form-item>
       <el-form-item label="启用"><el-switch v-model="enabled" /></el-form-item>
@@ -41,16 +41,37 @@ const activeDescriptor = computed(() => props.descriptors?.find((item) => item.v
   || (props.descriptor?.vendorCode === form.vendorCode ? props.descriptor : undefined))
 const fields = computed<VendorConfigField[]>(() => activeDescriptor.value?.configSchema?.fields || [])
 const FIELD_LABELS: Record<string, string> = {
-  appKey: 'appKey',
-  appSecret: 'appSecret',
-  apiKey: 'apiKey',
+  appKey: '应用标识',
+  appSecret: '应用密钥',
+  apiKey: '应用标识',
   apiBaseUrl: '接口基础地址',
   authToken: '授权令牌',
   defaultAdzoneId: '备用推广位',
   timeoutMs: '请求超时（毫秒）',
   rateLimitPerMinute: '每分钟请求上限',
-  retryMaxAttempts: '最大重试次数'
+  retryMaxAttempts: '最大重试次数',
+  promotionMode: '推广模式',
+  includeBonusOrders: '包含奖励订单',
+  unionId: '联盟ID',
+  platform: '业务平台',
+  bizLine: '业务线',
+  businessLine: '业务线',
+  cityId: '城市ID',
+  linkType: '链接类型',
+  tradeType: '交易类型',
+  cookie: 'Cookie凭证',
+  jdBonusOptType: '奖励订单时间类型',
+  customToken: '自定义Token'
 }
+const FIELD_PLACEHOLDERS: Record<string, string> = {
+  promotionMode: '例如：common(普通) / social(社交) / tool(工具商)',
+  includeBonusOrders: '是否包含奖励订单，例如：true 或 false',
+  unionId: '请输入联盟ID',
+  apiBaseUrl: '请输入接口基础地址',
+  defaultAdzoneId: '请输入备用推广位ID',
+  timeoutMs: '请求超时时间，单位毫秒'
+}
+const fieldPlaceholder = (name: string) => FIELD_PLACEHOLDERS[name] || `请输入${fieldLabel(name)}`
 const fieldLabel = (name: string) => FIELD_LABELS[name] || name
 const emptyForm = () => ({ vendorCode: '', vendorName: '', vendorType: 'aggregator', platformCode: props.platformCode, priority: 0, status: 1 })
 const form = reactive<any>(emptyForm())
@@ -90,6 +111,18 @@ const applyVendorName = (vendorName: string) => {
 const configured = (name: string) => Boolean(props.vendor?.configuredFields?.includes(name) || (props.vendor as any)?.[`${name}Configured`])
 watch(() => props.vendor, (value) => {
   Object.assign(form, emptyForm(), value || {})
+  if (value?.extraConfig) {
+    try {
+      const extra = typeof value.extraConfig === 'string' ? JSON.parse(value.extraConfig) : value.extraConfig
+      if (extra && typeof extra === 'object') {
+        Object.entries(extra).forEach(([k, v]) => {
+          if (form[k] === undefined || form[k] === '') {
+            form[k] = v
+          }
+        })
+      }
+    } catch {}
+  }
   Object.keys(secretValues).forEach((key) => delete secretValues[key])
 }, { immediate: true })
 const submit = () => {

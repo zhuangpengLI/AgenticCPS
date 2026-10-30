@@ -85,8 +85,13 @@ async function mockAdminBootstrapAndMenu(page: Page, permissions = [
   }))
 }
 
-async function mockOnboardingApi(page: Page, options: { testStatus?: 'FAILED' | 'SUCCESS'; runtimeVendor?: string; draftVendor?: string; staleConflict?: boolean; nullRuntimeDefaultAdzone?: boolean; disabledPrimary?: boolean; savedVendorStatuses?: number[]; trace?: string[] } = {}) {
-  let current = detail(options.draftVendor || options.runtimeVendor || 'dataoke', { status: 'DRAFT' })
+async function mockOnboardingApi(page: Page, options: { testStatus?: 'FAILED' | 'SUCCESS'; runtimeVendor?: string; draftVendor?: string; staleConflict?: boolean; nullRuntimeDefaultAdzone?: boolean; disabledPrimary?: boolean; savedVendorStatuses?: number[]; trace?: string[]; extraVendors?: any[]; platformCode?: string } = {}) {
+  let current = detail(options.draftVendor || options.runtimeVendor || 'dataoke', { status: 'DRAFT' }, options.platformCode || 'taobao')
+  if (options.extraVendors) {
+    const p = { ...(current as any).payload }
+    p.vendors = [...p.vendors, ...options.extraVendors]
+    current = { ...current, payload: p, draftPayload: p }
+  }
   if (options.disabledPrimary) {
     const disabledPayload = {
       ...(current as any).draftPayload,
@@ -117,8 +122,43 @@ async function mockOnboardingApi(page: Page, options: { testStatus?: 'FAILED' | 
     }
     if (path.endsWith('/platform-capabilities')) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(platformScenarios.map((item) => ({ platformCode: item.platformCode, platformName: item.platformName, capabilities: ['SEARCH'], vendors: [] })))) })
     if (path.endsWith('/vendor-descriptors')) {
-      const descriptorFor = (vendorCode: string, platformCode: string) => ({ vendorCode, platformCode, vendorType: vendorCode === 'official' ? 'official' : 'aggregator', capabilities: ['SEARCH'], configSchema: { fields: vendorCode === 'haodanku' ? [{ name: 'appKey', required: true, sensitive: true }, { name: 'apiBaseUrl', required: true, sensitive: false }] : [{ name: 'appKey', required: true, sensitive: true }, { name: 'appSecret', required: true, sensitive: true }] }, governancePolicy: { timeoutMillis: 1000, rateLimitPerMinute: 60, circuitBreakerFailureThreshold: 3, circuitBreakerOpenMillis: 1000, tokenRefreshSupported: false, metricsEnabled: true, maskedDiagnosticsEnabled: true, retryPolicy: { maxAttempts: 1, initialBackoffMillis: 1, maxBackoffMillis: 1, idempotentOnly: true, retryOnTimeout: false, retryOnRateLimit: false, retryOnBusinessError: false } } })
-      const descriptors = [descriptorFor('dataoke', 'taobao'), descriptorFor('haodanku', 'taobao'), descriptorFor('dataoke', 'jd'), descriptorFor('dataoke', 'pdd'), descriptorFor('official', 'douyin')]
+      const descriptorFor = (vendorCode: string, platformCode: string) => ({
+        vendorCode,
+        platformCode,
+        vendorType: vendorCode === 'official' ? 'official' : 'aggregator',
+        capabilities: ['SEARCH'],
+        configSchema: {
+          fields: vendorCode === 'haodanku'
+            ? [{ name: 'appKey', required: true, sensitive: true }, { name: 'apiBaseUrl', required: true, sensitive: false }]
+            : vendorCode === 'official' && platformCode === 'jd'
+              ? [
+                  { name: 'appKey', required: true, sensitive: true },
+                  { name: 'appSecret', required: true, sensitive: true },
+                  { name: 'promotionMode', required: false, sensitive: false },
+                  { name: 'includeBonusOrders', required: false, sensitive: false },
+                  { name: 'unionId', required: false, sensitive: false }
+                ]
+              : [{ name: 'appKey', required: true, sensitive: true }, { name: 'appSecret', required: true, sensitive: true }]
+        },
+        governancePolicy: {
+          timeoutMillis: 1000,
+          rateLimitPerMinute: 60,
+          circuitBreakerFailureThreshold: 3,
+          circuitBreakerOpenMillis: 1000,
+          tokenRefreshSupported: false,
+          metricsEnabled: true,
+          maskedDiagnosticsEnabled: true,
+          retryPolicy: { maxAttempts: 1, initialBackoffMillis: 1, maxBackoffMillis: 1, idempotentOnly: true, retryOnTimeout: false, retryOnRateLimit: false, retryOnBusinessError: false }
+        }
+      })
+      const descriptors = [
+        descriptorFor('dataoke', 'taobao'),
+        descriptorFor('haodanku', 'taobao'),
+        descriptorFor('dataoke', 'jd'),
+        descriptorFor('official', 'jd'),
+        descriptorFor('dataoke', 'pdd'),
+        descriptorFor('official', 'douyin')
+      ]
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(descriptors)) })
     }
     if (path.endsWith('/get')) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ok(current)) })
@@ -318,6 +358,68 @@ test.describe('CPS platform onboarding', () => {
     await expect(page.getByLabel('接口基础地址')).toBeVisible()
     await expect(page.getByText('appKey', { exact: true })).toHaveCount(0)
     await expect(page.getByText('apiBaseUrl', { exact: true })).toHaveCount(0)
+  })
+
+  test('switches primary vendor using the table action button', async ({ page }) => {
+    await mockAdminBootstrapAndMenu(page)
+    await mockOnboardingApi(page, {
+      runtimeVendor: 'official',
+      extraVendors: [{
+        vendorCode: 'haodanku',
+        vendorName: '好单库',
+        vendorType: 'aggregator',
+        platformCode: 'taobao',
+        appKeyConfigured: true,
+        apiKeyConfigured: true,
+        appSecretConfigured: false,
+        authTokenConfigured: false,
+        apiBaseUrlConfigured: true,
+        extraConfigConfigured: false,
+        configuredFields: ['appKey', 'apiBaseUrl'],
+        priority: 0,
+        status: 1
+      }]
+    })
+    await openReconfigureWorkspace(page)
+    await page.getByText('API供应商', { exact: true }).click()
+
+    const officialRow = page.getByRole('row').filter({ hasText: '淘宝官方' })
+    const haodankuRow = page.getByRole('row').filter({ hasText: '好单库' })
+
+    await expect(officialRow.getByText('主供应商')).toBeVisible()
+    await expect(haodankuRow.getByText('备用供应商')).toBeVisible()
+    await expect(haodankuRow.getByRole('button', { name: '设为主供应商' })).toBeVisible()
+    await expect(officialRow.getByRole('button', { name: '设为主供应商' })).toHaveCount(0)
+
+    await haodankuRow.getByRole('button', { name: '设为主供应商' }).click()
+
+    await expect(page.getByText('已切换主供应商为：好单库')).toBeVisible()
+    await expect(haodankuRow.getByText('主供应商')).toBeVisible()
+    await expect(officialRow.getByText('备用供应商')).toBeVisible()
+    await expect(officialRow.getByRole('button', { name: '设为主供应商' })).toBeVisible()
+    await expect(haodankuRow.getByRole('button', { name: '设为主供应商' })).toHaveCount(0)
+  })
+
+  test('shows Chinese labels for JD vendor advanced configuration fields', async ({ page }) => {
+    await mockAdminBootstrapAndMenu(page)
+    await mockOnboardingApi(page, {
+      platformCode: 'jd',
+      runtimeVendor: 'official',
+      draftVendor: 'official'
+    })
+    await openReconfigureWorkspace(page, 'jd')
+    await page.getByText('API供应商', { exact: true }).click()
+    const row = page.getByRole('row').filter({ hasText: '京东官方' })
+    await row.getByRole('button', { name: '编辑' }).click()
+
+    await expect(page.getByLabel('应用标识')).toBeVisible()
+    await expect(page.getByLabel('应用密钥')).toBeVisible()
+    await expect(page.getByLabel('推广模式')).toBeVisible()
+    await expect(page.getByLabel('包含奖励订单')).toBeVisible()
+    await expect(page.getByLabel('联盟ID')).toBeVisible()
+    await expect(page.getByText('promotionMode', { exact: true })).toHaveCount(0)
+    await expect(page.getByText('includeBonusOrders', { exact: true })).toHaveCount(0)
+    await expect(page.getByText('unionId', { exact: true })).toHaveCount(0)
   })
 
   test('enables and saves a disabled primary vendor before the full connection test', async ({ page }) => {
