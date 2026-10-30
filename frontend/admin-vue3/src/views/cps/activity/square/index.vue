@@ -12,6 +12,7 @@
           <span class="sync-label">同步来源</span>
             <el-select v-model="syncForm.vendorCode" class="sync-vendor" size="large">
               <el-option label="全部" value="all" />
+              <el-option label="京东官方" value="jd_official" />
               <el-option label="美团官方" value="official" />
               <el-option label="穿山甲" value="csj" />
               <el-option label="大淘客" value="dataoke" />
@@ -139,8 +140,12 @@
           <div class="card-body">
             <div class="card-title-row">
               <h3>{{ item.activityName }}</h3>
-              <el-tag size="small" :type="sourceTagType(item.sourceType)" effect="light">
-                {{ sourceLabel(item.sourceType) }}
+              <el-tag
+                size="small"
+                :type="sourceTagType(item.sourceType, item.platformCode)"
+                effect="light"
+              >
+                {{ sourceLabel(item.sourceType, item.platformCode) }}
               </el-tag>
             </div>
             <p>{{ item.shortDesc || '活动持续更新中' }}</p>
@@ -258,7 +263,16 @@
             <el-form-item label="来源类型">
               <el-select v-model="formData.sourceType" class="w-full">
                 <el-option label="运营配置" value="configured" />
-                <el-option label="美团官方" value="official" />
+                <el-option
+                  :label="
+                    formData.platformCode === 'jd'
+                      ? '京东官方'
+                      : formData.platformCode === 'meituan'
+                        ? '美团官方'
+                        : '平台官方'
+                  "
+                  value="official"
+                />
                 <el-option label="穿山甲" value="csj" />
                 <el-option label="大淘客" value="dataoke" />
                 <el-option label="好单库" value="haodanku" />
@@ -546,15 +560,6 @@ const sortOptions = [
   { label: '热门', value: 'hot' },
   { label: '最新', value: 'latest' }
 ]
-const sourceFilterOptions = [
-  { label: '全部供应商', value: 'all' },
-  { label: '美团官方', value: 'official' },
-  { label: '穿山甲', value: 'csj' },
-  { label: '大淘客', value: 'dataoke' },
-  { label: '好单库', value: 'haodanku' },
-  { label: '聚推客', value: 'jutuike' },
-  { label: '运营配置', value: 'configured' }
-]
 const platformLabelMap: Record<string, string> = {
   hot: '热门',
   meituan: '美团',
@@ -567,6 +572,26 @@ const platformLabelMap: Record<string, string> = {
   jd: '京东',
   vip: '唯品会'
 }
+const platformLabel = (platformCode?: string) => {
+  return platformCode ? platformLabelMap[platformCode] || platformCode : '-'
+}
+const sourceFilterOptions = computed(() => {
+  const officialLabel =
+    queryParams.platformCode === 'jd'
+      ? '京东官方'
+      : queryParams.platformCode === 'meituan'
+        ? '美团官方'
+        : '官方接口'
+  return [
+    { label: '全部供应商', value: 'all' },
+    { label: officialLabel, value: 'official' },
+    { label: '穿山甲', value: 'csj' },
+    { label: '大淘客', value: 'dataoke' },
+    { label: '好单库', value: 'haodanku' },
+    { label: '聚推客', value: 'jutuike' },
+    { label: '运营配置', value: 'configured' }
+  ]
+})
 const supportedPlatformCodes = new Set(Object.keys(platformLabelMap))
 const legacyPlatformCodeMap: Record<string, string[]> = {
   taobao: ['1', '15'],
@@ -748,18 +773,23 @@ const handleSubmit = async () => {
 const handleSyncActivities = async () => {
   syncLoading.value = true
   try {
-    const currentPlatform =
-      queryParams.platformCode === 'hot'
-        ? syncForm.vendorCode === 'dataoke'
-          ? 'taobao'
-          : syncForm.vendorCode === 'official'
-            ? 'meituan'
-            : syncForm.vendorCode === 'csj'
-              ? 'douyin'
-              : undefined
-        : queryParams.platformCode
+    let vendor = syncForm.vendorCode
+    let currentPlatform = queryParams.platformCode === 'hot' ? undefined : queryParams.platformCode
+    if (vendor === 'jd_official') {
+      vendor = 'official'
+      currentPlatform = 'jd'
+    } else if (queryParams.platformCode === 'hot') {
+      if (vendor === 'dataoke') {
+        currentPlatform = 'taobao'
+      } else if (vendor === 'official') {
+        currentPlatform = 'meituan'
+      } else if (vendor === 'csj') {
+        currentPlatform = 'douyin'
+      }
+    }
     const result = await CpsRebateActivityApi.syncActivities({
       ...syncForm,
+      vendorCode: vendor,
       platformCode: currentPlatform,
       keyword: queryParams.keyword || undefined
     })
@@ -820,7 +850,8 @@ const normalizePlatformTabs = (tabs: CpsRebateActivityCenterRespVO['tabs']) => {
 
 const sourceLabelMap: Record<string, string> = {
   configured: '运营配置',
-  official: '美团官方',
+  official: '官方',
+  jd_official: '京东官方',
   csj: '穿山甲',
   meituan: '美团官方',
   douyin: '穿山甲',
@@ -829,15 +860,30 @@ const sourceLabelMap: Record<string, string> = {
   jutuike: '聚推客'
 }
 
-const sourceLabel = (sourceType?: string) =>
-  sourceType ? sourceLabelMap[sourceType] || sourceType : '运营配置'
+const sourceLabel = (sourceType?: string, platformCode?: string) => {
+  if (!sourceType) {
+    return '运营配置'
+  }
+  if (sourceType === 'official') {
+    if (platformCode) {
+      const pName = platformLabel(platformCode)
+      return pName !== '-' ? `${pName}官方` : '官方'
+    }
+    return '官方'
+  }
+  return sourceLabelMap[sourceType] || sourceType
+}
 
 type ActivityTagType = 'primary' | 'success' | 'warning' | 'danger' | 'info'
 
-const sourceTagType = (sourceType?: string) => {
+const sourceTagType = (sourceType?: string, platformCode?: string) => {
+  if (sourceType === 'official' && platformCode === 'jd') {
+    return 'danger'
+  }
   const map: Record<string, ActivityTagType> = {
     configured: 'info',
     official: 'warning',
+    jd_official: 'danger',
     csj: 'danger',
     meituan: 'warning',
     douyin: 'danger',
@@ -1012,9 +1058,7 @@ const formatLocalDate = (date: Date) => {
   return `${year}-${month}-${day}`
 }
 
-const platformLabel = (platformCode?: string) => {
-  return platformCode ? platformLabelMap[platformCode] || platformCode : '-'
-}
+
 
 const attributionStatusLabel = (status?: string) => {
   const map: Record<string, string> = {

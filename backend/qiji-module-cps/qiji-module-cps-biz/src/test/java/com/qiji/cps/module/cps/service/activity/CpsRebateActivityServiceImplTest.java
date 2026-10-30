@@ -1,9 +1,12 @@
 package com.qiji.cps.module.cps.service.activity;
 
+import java.util.Map;
+
 import com.qiji.cps.framework.common.exception.ServiceException;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
 import com.qiji.cps.module.cps.client.didi.DidiOfficialVendorClient;
+import com.qiji.cps.module.cps.client.official.jd.JdOfficialVendorClient;
 import com.qiji.cps.module.cps.client.official.meituan.MeituanOfficialVendorClient;
 import com.qiji.cps.module.cps.client.csj.CsjDouyinVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
@@ -79,6 +82,9 @@ class CpsRebateActivityServiceImplTest {
 
     @Mock
     private CsjDouyinVendorClient csjDouyinVendorClient;
+
+    @Mock
+    private JdOfficialVendorClient jdOfficialVendorClient;
 
     @Mock
     private CpsAdzoneService adzoneService;
@@ -1034,4 +1040,127 @@ class CpsRebateActivityServiceImplTest {
                 .build();
     }
 
+    @Test
+    @DisplayName("generatePromotionContent - 支持京东官方活动转链")
+    void generatePromotionContent_usesJdOfficialActivityLink() {
+        CpsRebateActivityDO activity = CpsRebateActivityDO.builder()
+                .activityName("腕表大促品类日")
+                .sourceType("official")
+                .platformCode("jd")
+                .externalActivityId("jd:official:307006")
+                .promotionActivityId("307006")
+                .jumpType("url")
+                .jumpUrl("https://pro.m.jd.com/mall/active/xxx/index.html")
+                .build();
+        activity.setId(201L);
+        when(activityMapper.selectById(201L)).thenReturn(activity);
+        when(platformClientFactory.getVendorConfig("official", "jd")).thenReturn(CpsVendorConfig.builder()
+                .vendorCode("official")
+                .platformCode("jd")
+                .appKey("jd-appkey")
+                .appSecret("jd-secret")
+                .defaultAdzoneId("2018437167_4100531328_3107726628")
+                .build());
+        when(jdOfficialVendorClient.generatePromotionLink(any(CpsPromotionLinkRequest.class), any(CpsVendorConfig.class)))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .shortUrl("https://u.jd.com/official-promo")
+                        .longUrl("https://union-click.jd.com/jdc?e=xxx")
+                        .build());
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(201L);
+        CpsRebateActivityPromotionRespVO resp = service.generatePromotionContent(reqVO, null);
+
+        assertEquals("SUCCESS", resp.getLinkStatus());
+        assertEquals("https://u.jd.com/official-promo", resp.getPromotionUrl());
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 京东官方转链失败时支持好单库容灾转链")
+    void generatePromotionContent_usesHaodankuFallback_whenJdOfficialFails() {
+        CpsRebateActivityDO activity = CpsRebateActivityDO.builder()
+                .activityName("雅诗兰黛11.11盛典")
+                .sourceType("official")
+                .platformCode("jd")
+                .externalActivityId("jd:official:306965")
+                .promotionActivityId("306965")
+                .jumpType("url")
+                .jumpUrl("https://shop.m.jd.com/?shopId=1000376745")
+                .build();
+        activity.setId(202L);
+        when(activityMapper.selectById(202L)).thenReturn(activity);
+        when(platformClientFactory.getVendorConfig("official", "jd")).thenReturn(CpsVendorConfig.builder()
+                .vendorCode("official")
+                .platformCode("jd")
+                .appKey("jd-appkey")
+                .appSecret("jd-secret")
+                .defaultAdzoneId("2018437167_4100531328_3107726628")
+                .build());
+        when(jdOfficialVendorClient.generatePromotionLink(any(CpsPromotionLinkRequest.class), any(CpsVendorConfig.class)))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .extraFields(Map.of("upstreamCode", "2001701",
+                                "upstreamMessage", "不支持siteId存在此地址形式推广,只支持网站/APP"))
+                        .build());
+
+        CpsVendorConfig hdkConfig = CpsVendorConfig.builder()
+                .vendorCode("haodanku")
+                .platformCode("jd")
+                .appKey("hdk-key")
+                .authToken("2018437167")
+                .defaultAdzoneId("2018437167_4100531328_3107726628")
+                .build();
+        when(platformClientFactory.getVendorConfig("haodanku", "jd")).thenReturn(hdkConfig);
+        com.qiji.cps.module.cps.client.CpsApiVendorClient hdkClient = org.mockito.Mockito.mock(com.qiji.cps.module.cps.client.CpsApiVendorClient.class);
+        when(platformClientFactory.getVendorClient("haodanku", "jd")).thenReturn(hdkClient);
+        when(hdkClient.generatePromotionLink(any(CpsPromotionLinkRequest.class), any(CpsVendorConfig.class)))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .shortUrl("https://u.jd.com/e1QZOUU")
+                        .longUrl("https://union-click.jd.com/jdc?e=hdk-fallback")
+                        .build());
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(202L);
+        CpsRebateActivityPromotionRespVO resp = service.generatePromotionContent(reqVO, null);
+
+        assertEquals("SUCCESS", resp.getLinkStatus());
+        assertEquals("https://u.jd.com/e1QZOUU", resp.getPromotionUrl());
+        assertTrue(resp.getLinkMessage().contains("好单库服务商容灾"));
+    }
+
+    @Test
+    @DisplayName("generatePromotionContent - 京东官方转链失败且无容灾时返回清晰原因")
+    void generatePromotionContent_returnsHelpfulMessage_whenJdOfficialFailsWithSiteIdError() {
+        CpsRebateActivityDO activity = CpsRebateActivityDO.builder()
+                .activityName("雅诗兰黛11.11盛典")
+                .sourceType("official")
+                .platformCode("jd")
+                .externalActivityId("jd:official:306965")
+                .promotionActivityId("306965")
+                .jumpType("url")
+                .jumpUrl("https://shop.m.jd.com/?shopId=1000376745")
+                .build();
+        activity.setId(203L);
+        when(activityMapper.selectById(203L)).thenReturn(activity);
+        when(platformClientFactory.getVendorConfig("official", "jd")).thenReturn(CpsVendorConfig.builder()
+                .vendorCode("official")
+                .platformCode("jd")
+                .appKey("jd-appkey")
+                .appSecret("jd-secret")
+                .defaultAdzoneId("2018437167_4100531328_3107726628")
+                .build());
+        when(jdOfficialVendorClient.generatePromotionLink(any(CpsPromotionLinkRequest.class), any(CpsVendorConfig.class)))
+                .thenReturn(CpsPromotionLinkResult.builder()
+                        .extraFields(Map.of("upstreamCode", "2001701",
+                                "upstreamMessage", "不支持siteId存在此地址形式推广,只支持网站/APP"))
+                        .build());
+        when(platformClientFactory.getVendorConfig("haodanku", "jd")).thenReturn(null);
+
+        CpsRebateActivityPromotionReqVO reqVO = new CpsRebateActivityPromotionReqVO();
+        reqVO.setActivityId(203L);
+        CpsRebateActivityPromotionRespVO resp = service.generatePromotionContent(reqVO, null);
+
+        assertEquals("FAILED", resp.getLinkStatus());
+        assertTrue(resp.getLinkMessage().contains("社交媒体"));
+        assertTrue(resp.getLinkMessage().contains("网站/APP"));
+    }
 }

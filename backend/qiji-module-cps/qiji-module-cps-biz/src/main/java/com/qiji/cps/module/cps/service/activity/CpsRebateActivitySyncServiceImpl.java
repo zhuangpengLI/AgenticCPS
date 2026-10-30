@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
 import com.qiji.cps.module.cps.client.csj.CsjDouyinVendorClient;
+import com.qiji.cps.module.cps.client.official.jd.JdOfficialVendorClient;
 import com.qiji.cps.module.cps.client.official.meituan.MeituanOfficialVendorClient;
 import com.qiji.cps.module.cps.client.CpsThirdPartyActivityVendorClient;
 import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
@@ -67,6 +68,9 @@ public class CpsRebateActivitySyncServiceImpl {
     private CsjDouyinVendorClient csjDouyinVendorClient;
 
     @Resource
+    private JdOfficialVendorClient jdOfficialVendorClient;
+
+    @Resource
     private CpsPlatformClientFactory platformClientFactory;
 
     @Resource
@@ -94,7 +98,8 @@ public class CpsRebateActivitySyncServiceImpl {
             return syncAllSupportedActivities(request);
         }
         CpsRebateActivitySyncResult result = CpsRebateActivitySyncResult.builder().build();
-        CpsThirdPartyActivityVendorClient vendorClient = resolveThirdPartyActivityClient(request.getVendorCode());
+        CpsThirdPartyActivityVendorClient vendorClient = resolveThirdPartyActivityClient(
+                request.getVendorCode(), request.getPlatformCode());
         if (vendorClient == null) {
             result.setSkippedCount(1);
             return result;
@@ -169,6 +174,12 @@ public class CpsRebateActivitySyncServiceImpl {
             mergeResult(aggregate, syncThirdPartyActivities(request.toBuilder()
                     .vendorCode(CpsVendorCodeEnum.OFFICIAL.getCode())
                     .platformCode(CpsPlatformCodeEnum.MEITUAN.getCode())
+                    .build()));
+        }
+        if (targetPlatform == null || CpsPlatformCodeEnum.JD.getCode().equalsIgnoreCase(targetPlatform)) {
+            mergeResult(aggregate, syncThirdPartyActivities(request.toBuilder()
+                    .vendorCode(CpsVendorCodeEnum.OFFICIAL.getCode())
+                    .platformCode(CpsPlatformCodeEnum.JD.getCode())
                     .build()));
         }
         if (targetPlatform == null || CpsPlatformCodeEnum.DOUYIN.getCode().equalsIgnoreCase(targetPlatform)) {
@@ -374,7 +385,8 @@ public class CpsRebateActivitySyncServiceImpl {
         if (StringUtils.hasText(platformCode)) {
             return platformCode;
         }
-        CpsThirdPartyActivityVendorClient vendorClient = resolveThirdPartyActivityClient(request.getVendorCode());
+        CpsThirdPartyActivityVendorClient vendorClient = resolveThirdPartyActivityClient(
+                request.getVendorCode(), request.getPlatformCode());
         return vendorClient == null ? null : vendorClient.getPlatformCode();
     }
 
@@ -476,6 +488,10 @@ public class CpsRebateActivitySyncServiceImpl {
     }
 
     private CpsThirdPartyActivityVendorClient resolveThirdPartyActivityClient(String vendorCode) {
+        return resolveThirdPartyActivityClient(vendorCode, null);
+    }
+
+    private CpsThirdPartyActivityVendorClient resolveThirdPartyActivityClient(String vendorCode, String platformCode) {
         String normalizedVendorCode = StringUtils.hasText(vendorCode)
                 ? vendorCode
                 : CpsVendorCodeEnum.HAODANKU.getCode();
@@ -488,8 +504,16 @@ public class CpsRebateActivitySyncServiceImpl {
         if (CpsVendorCodeEnum.JUTUIKE.getCode().equalsIgnoreCase(normalizedVendorCode)) {
             return jutuikeUnionVendorClient;
         }
-        if (CpsVendorCodeEnum.OFFICIAL.getCode().equalsIgnoreCase(normalizedVendorCode)
-                || CpsPlatformCodeEnum.MEITUAN.getCode().equalsIgnoreCase(normalizedVendorCode)) {
+        if (CpsVendorCodeEnum.OFFICIAL.getCode().equalsIgnoreCase(normalizedVendorCode)) {
+            if (CpsPlatformCodeEnum.JD.getCode().equalsIgnoreCase(platformCode)) {
+                return jdOfficialVendorClient;
+            }
+            return meituanOfficialVendorClient;
+        }
+        if ("jd".equalsIgnoreCase(normalizedVendorCode) || "jd_official".equalsIgnoreCase(normalizedVendorCode)) {
+            return jdOfficialVendorClient;
+        }
+        if (CpsPlatformCodeEnum.MEITUAN.getCode().equalsIgnoreCase(normalizedVendorCode)) {
             return meituanOfficialVendorClient;
         }
         if (CpsVendorCodeEnum.CSJ.getCode().equalsIgnoreCase(normalizedVendorCode)
@@ -516,6 +540,8 @@ public class CpsRebateActivitySyncServiceImpl {
 
     private boolean requiresVendorConfig(CpsThirdPartyActivityVendorClient vendorClient) {
         return CpsVendorCodeEnum.DATAOKE.getCode().equalsIgnoreCase(vendorClient.getVendorCode())
-                || CpsVendorCodeEnum.JUTUIKE.getCode().equalsIgnoreCase(vendorClient.getVendorCode());
+                || CpsVendorCodeEnum.JUTUIKE.getCode().equalsIgnoreCase(vendorClient.getVendorCode())
+                || (CpsVendorCodeEnum.OFFICIAL.getCode().equalsIgnoreCase(vendorClient.getVendorCode())
+                    && CpsPlatformCodeEnum.JD.getCode().equalsIgnoreCase(vendorClient.getPlatformCode()));
     }
 }

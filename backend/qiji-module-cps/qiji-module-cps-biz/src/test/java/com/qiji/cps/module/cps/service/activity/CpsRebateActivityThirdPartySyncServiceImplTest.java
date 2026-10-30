@@ -7,6 +7,7 @@ import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
 import com.qiji.cps.module.cps.client.haodanku.activity.HaodankuActivityVendorClient;
 import com.qiji.cps.module.cps.client.jutuike.JutuikeUnionVendorClient;
+import com.qiji.cps.module.cps.client.official.jd.JdOfficialVendorClient;
 import com.qiji.cps.module.cps.client.official.meituan.MeituanOfficialVendorClient;
 import com.qiji.cps.module.cps.client.csj.CsjDouyinVendorClient;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
@@ -48,6 +49,8 @@ class CpsRebateActivityThirdPartySyncServiceImplTest {
 
     @Mock
     private CsjDouyinVendorClient csjDouyinVendorClient;
+    @Mock
+    private JdOfficialVendorClient jdOfficialVendorClient;
 
     @Mock
     private CpsPlatformClientFactory platformClientFactory;
@@ -126,6 +129,8 @@ class CpsRebateActivityThirdPartySyncServiceImplTest {
         when(meituanOfficialVendorClient.getPlatformCode()).thenReturn("meituan");
         when(csjDouyinVendorClient.getVendorCode()).thenReturn("csj");
         when(csjDouyinVendorClient.getPlatformCode()).thenReturn("douyin");
+        when(jdOfficialVendorClient.getVendorCode()).thenReturn("official");
+        when(jdOfficialVendorClient.getPlatformCode()).thenReturn("jd");
 
         when(platformClientFactory.getVendorConfig("dataoke", "taobao")).thenReturn(CpsVendorConfig.builder()
                 .vendorCode("dataoke")
@@ -160,12 +165,19 @@ class CpsRebateActivityThirdPartySyncServiceImplTest {
                 .appSecret("csj-secret")
                 .apiBaseUrl("https://ecom.pangolin-sdk-toutiao.com")
                 .build());
+        when(platformClientFactory.getVendorConfig("official", "jd")).thenReturn(CpsVendorConfig.builder()
+                .vendorCode("official")
+                .platformCode("jd")
+                .appKey("jd-key")
+                .appSecret("jd-secret")
+                .build());
 
         when(dtkActivityVendorClient.fetchActivities(any(), any())).thenReturn(emptyPage());
         when(haodankuActivityVendorClient.fetchActivities(any(), any())).thenReturn(emptyPage());
         when(jutuikeUnionVendorClient.fetchActivities(any(), any())).thenReturn(emptyPage());
         when(meituanOfficialVendorClient.fetchActivities(any(), any())).thenReturn(emptyPage());
         when(csjDouyinVendorClient.fetchActivities(any(), any())).thenReturn(emptyPage());
+        when(jdOfficialVendorClient.fetchActivities(any(), any())).thenReturn(emptyPage());
 
         service.syncThirdPartyActivities(CpsRebateActivitySyncRequest.builder()
                 .vendorCode("all")
@@ -178,6 +190,7 @@ class CpsRebateActivityThirdPartySyncServiceImplTest {
         verify(jutuikeUnionVendorClient).fetchActivities(any(), any());
         verify(meituanOfficialVendorClient).fetchActivities(any(), any());
         verify(csjDouyinVendorClient).fetchActivities(any(), any());
+        verify(jdOfficialVendorClient).fetchActivities(any(), any());
     }
 
     @Test
@@ -284,6 +297,57 @@ class CpsRebateActivityThirdPartySyncServiceImplTest {
         assertEquals("csj", saved.getSourceType());
         assertEquals("douyin", saved.getPlatformCode());
         assertEquals("1001", saved.getExternalActivityId());
+    }
+
+    @Test
+    @DisplayName("syncThirdPartyActivities - 支持京东官方活动同步")
+    void syncThirdPartyActivities_insertsJdOfficialActivity() {
+        when(jdOfficialVendorClient.getVendorCode()).thenReturn("official");
+        when(jdOfficialVendorClient.getPlatformCode()).thenReturn("jd");
+        when(platformClientFactory.getVendorConfig("official", "jd")).thenReturn(CpsVendorConfig.builder()
+                .vendorCode("official")
+                .platformCode("jd")
+                .appKey("jd-key")
+                .appSecret("jd-secret")
+                .build());
+        when(jdOfficialVendorClient.fetchActivities(any(), any())).thenReturn(CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                .category(CpsThirdPartyApiCategory.ACTIVITY_PULL)
+                .list(List.of(CpsThirdPartyActivity.builder()
+                        .sourceType("official")
+                        .externalActivityId("jd:official:307006")
+                        .activityName("腕表大促品类日")
+                        .activityType("营销会场")
+                        .platformCode("jd")
+                        .mainPic("https://img.jd.com/banner.png")
+                        .shortDesc("五折品限时抢购")
+                        .rebateDesc("京东官方高额佣金")
+                        .billingType("CPS")
+                        .jumpType("url")
+                        .jumpUrl("https://pro.m.jd.com/mall/active/xxx/index.html")
+                        .startTime(LocalDateTime.of(2026, 10, 1, 0, 0))
+                        .endTime(LocalDateTime.of(2026, 11, 1, 0, 0))
+                        .build()))
+                .pageNo(1)
+                .pageSize(20)
+                .total(1L)
+                .build());
+        when(activityMapper.selectBySourceTypeAndExternalActivityId("official", "jd:official:307006")).thenReturn(null);
+
+        CpsRebateActivitySyncResult result = service.syncThirdPartyActivities(CpsRebateActivitySyncRequest.builder()
+                .vendorCode("official")
+                .platformCode("jd")
+                .pageSize(20)
+                .maxPages(1)
+                .build());
+
+        ArgumentCaptor<CpsRebateActivityDO> captor = ArgumentCaptor.forClass(CpsRebateActivityDO.class);
+        verify(activityMapper).insert(captor.capture());
+        CpsRebateActivityDO saved = captor.getValue();
+        assertEquals(1, result.getInsertedCount());
+        assertEquals("腕表大促品类日", saved.getActivityName());
+        assertEquals("official", saved.getSourceType());
+        assertEquals("jd", saved.getPlatformCode());
+        assertEquals("jd:official:307006", saved.getExternalActivityId());
     }
 
     private CpsThirdPartyPage<CpsThirdPartyActivity> emptyPage() {

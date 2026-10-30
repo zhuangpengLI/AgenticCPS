@@ -12,7 +12,9 @@ import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivityPro
 import com.qiji.cps.module.cps.controller.admin.activity.vo.CpsRebateActivitySaveReqVO;
 import com.qiji.cps.module.cps.controller.app.marketing.vo.AppCpsMarketingActivityRespVO;
 import com.qiji.cps.module.cps.client.CpsPlatformClientFactory;
+import com.qiji.cps.module.cps.client.CpsApiVendorClient;
 import com.qiji.cps.module.cps.client.csj.CsjDouyinVendorClient;
+import lombok.extern.slf4j.Slf4j;
 import com.qiji.cps.module.cps.client.dataoke.DtkActivityVendorClient;
 import com.qiji.cps.module.cps.client.didi.DidiOfficialVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
@@ -22,6 +24,7 @@ import com.qiji.cps.module.cps.client.haodanku.activity.HaodankuActivityVendorCl
 import com.qiji.cps.module.cps.client.haodanku.activity.HdkActivityClient;
 import com.qiji.cps.module.cps.client.jutuike.JutuikeUnionVendorClient;
 import com.qiji.cps.module.cps.client.official.eleme.ElemeOfficialVendorClient;
+import com.qiji.cps.module.cps.client.official.jd.JdOfficialVendorClient;
 import com.qiji.cps.module.cps.client.official.meituan.MeituanOfficialVendorClient;
 import com.qiji.cps.module.cps.dal.dataobject.adzone.CpsAdzoneDO;
 import com.qiji.cps.module.cps.dal.dataobject.activity.CpsRebateActivityDO;
@@ -55,6 +58,7 @@ import static com.qiji.cps.framework.common.exception.util.ServiceExceptionUtil.
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.REBATE_ACTIVITY_JUMP_INVALID;
 import static com.qiji.cps.module.cps.enums.CpsErrorCodeConstants.REBATE_ACTIVITY_NOT_EXISTS;
 
+@Slf4j
 @Service
 @Validated
 public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
@@ -81,6 +85,7 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
     private static final String PLATFORM_DOUYIN = "douyin";
     private static final String PLATFORM_TAOBAO = "taobao";
     private static final String PLATFORM_ELEME = "eleme";
+    private static final String PLATFORM_JD = "jd";
     private static final String DTK_EXTERNAL_PREFIX = "dtk:";
     private static final String LINK_STATUS_SUCCESS = "SUCCESS";
     private static final String LINK_STATUS_INTERNAL_FALLBACK = "INTERNAL_FALLBACK";
@@ -127,6 +132,9 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
 
     @Resource
     private CsjDouyinVendorClient csjDouyinVendorClient;
+
+    @Resource
+    private JdOfficialVendorClient jdOfficialVendorClient;
 
     @Resource
     private CpsAdzoneService adzoneService;
@@ -272,6 +280,11 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 && (SOURCE_OFFICIAL.equalsIgnoreCase(firstText(activity.getSourceType(), ""))
                 || "eleme".equalsIgnoreCase(activity.getSourceType()))) {
             return generateElemeOfficialActivityLink(activity, reqVO, memberId);
+        }
+        if (PLATFORM_JD.equalsIgnoreCase(firstText(activity.getPlatformCode(), ""))
+                && (SOURCE_OFFICIAL.equalsIgnoreCase(firstText(activity.getSourceType(), ""))
+                || "jd".equalsIgnoreCase(activity.getSourceType()))) {
+            return generateJdOfficialActivityLink(activity, reqVO, memberId);
         }
         if (SOURCE_CSJ.equalsIgnoreCase(firstText(activity.getSourceType(), ""))
                 || (PLATFORM_DOUYIN.equalsIgnoreCase(firstText(activity.getPlatformCode(), ""))
@@ -438,6 +451,98 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                 : "当前链接没有可信会员归因标识，下单后可通过订单号申请找回";
         return buildExternalPromotion(activity, reqVO, actualAdzoneId, promotionUrl, linkResult.getTpwd(), null,
                 "淘宝闪购官方推广链接已生成", attributionStatus, attributionMessage);
+    }
+
+    private CpsRebateActivityPromotionRespVO generateJdOfficialActivityLink(CpsRebateActivityDO activity,
+                                                                             CpsRebateActivityPromotionReqVO reqVO,
+                                                                             Long memberId) {
+        String jumpUrl = activity.getJumpUrl();
+        if (!StringUtils.hasText(jumpUrl)) {
+            return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(), "京东活动缺少有效的活动链接");
+        }
+        CpsVendorConfig config = platformClientFactory.getVendorConfig(VENDOR_OFFICIAL, PLATFORM_JD);
+        if (config == null) {
+            config = platformClientFactory.getActiveVendorConfig(PLATFORM_JD);
+        }
+        if (config == null) {
+            return buildFailedPromotion(activity, reqVO, reqVO.getAdzoneId(), "未配置京东联盟官方供应商，无法生成推广链接");
+        }
+        String actualAdzoneId = firstText(reqVO.getAdzoneId(), config.getDefaultAdzoneId());
+        CpsTransferRecordDO sidRecord = memberId == null ? null
+                : createPendingSidRecord(activity, memberId, actualAdzoneId, VENDOR_OFFICIAL, PLATFORM_JD);
+        String sourceId = sidRecord == null ? firstText(reqVO.getChannelTag(), actualAdzoneId)
+                : sidRecord.getAttributionToken();
+
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setItemLink(jumpUrl);
+        request.setAdzoneId(actualAdzoneId);
+        request.setChannelId(sourceId);
+        request.setExternalId(sourceId);
+
+        CpsPromotionLinkResult linkResult = jdOfficialVendorClient.generatePromotionLink(request, config);
+        String promotionUrl = firstSafePromotionUrl(linkResult);
+        String fallbackVendorCode = null;
+
+        // 若官方转链不可用，尝试通过好单库服务商容灾（好单库支持社交媒体导购等各类型 PID）
+        if (!StringUtils.hasText(promotionUrl)) {
+            CpsVendorConfig hdkConfig = platformClientFactory.getVendorConfig(VENDOR_HAODANKU, PLATFORM_JD);
+            if (hdkConfig != null && StringUtils.hasText(hdkConfig.getAppKey())) {
+                CpsApiVendorClient hdkClient = platformClientFactory.getVendorClient(VENDOR_HAODANKU, PLATFORM_JD);
+                if (hdkClient != null) {
+                    try {
+                        CpsPromotionLinkResult fallbackResult = hdkClient.generatePromotionLink(request, hdkConfig);
+                        String fallbackUrl = firstSafePromotionUrl(fallbackResult);
+                        if (StringUtils.hasText(fallbackUrl)) {
+                            linkResult = fallbackResult;
+                            promotionUrl = fallbackUrl;
+                            fallbackVendorCode = VENDOR_HAODANKU;
+                            log.info("[JD:Activity] 京东官方转链未获取到链接，通过好单库服务商容灾转链成功: activityId={}, url={}",
+                                    activity.getId(), promotionUrl);
+                        }
+                    } catch (Exception e) {
+                        log.warn("[JD:Activity] 京东好单库容灾转链异常: {}", e.getMessage());
+                    }
+                }
+            }
+        }
+
+        if (!StringUtils.hasText(promotionUrl)) {
+            String upstreamCode = linkResult != null && linkResult.getExtraFields() != null
+                    ? String.valueOf(linkResult.getExtraFields().get("upstreamCode")) : null;
+            String upstreamMessage = linkResult != null && linkResult.getExtraFields() != null
+                    ? String.valueOf(linkResult.getExtraFields().get("upstreamMessage")) : null;
+            if ("2001701".equals(upstreamCode) || (upstreamMessage != null && upstreamMessage.contains("siteId"))) {
+                return buildFailedPromotion(activity, reqVO, actualAdzoneId,
+                        "京东官方转链失败：当前推广位(siteId)属于社交媒体类型，官方接口仅支持网站/APP媒体类型推广位。请在京东联盟后台配置网站/APP媒体PID，或开启好单库等服务商容灾");
+            }
+            if (StringUtils.hasText(upstreamMessage)) {
+                return buildFailedPromotion(activity, reqVO, actualAdzoneId,
+                        "京东联盟官方推广链接暂不可用：" + upstreamMessage);
+            }
+            return buildFailedPromotion(activity, reqVO, actualAdzoneId, "京东联盟官方推广链接暂不可用");
+        }
+
+        if (sidRecord != null) {
+            CpsTransferRecordDO.CpsTransferRecordDOBuilder updateBuilder = CpsTransferRecordDO.builder()
+                    .id(sidRecord.getId())
+                    .promotionUrl(promotionUrl)
+                    .status(1);
+            if (fallbackVendorCode != null) {
+                updateBuilder.vendorCode(fallbackVendorCode);
+            }
+            transferRecordMapper.updateById(updateBuilder.build());
+        }
+        String deeplink = linkResult.getMobileUrl();
+        String attributionStatus = sidRecord != null ? ATTRIBUTION_MEMBER_TRACKED
+                : StringUtils.hasText(sourceId) ? ATTRIBUTION_CHANNEL_TRACKED : ATTRIBUTION_UNTRACKED;
+        String attributionMessage = sidRecord != null ? "已使用可信会员归因标识，订单同步后可自动绑定会员"
+                : StringUtils.hasText(sourceId) ? "当前链接仅支持渠道跟踪，不能自动绑定具体会员"
+                : "当前链接没有可信会员归因标识，下单后可通过订单号申请找回";
+        String linkMessage = fallbackVendorCode != null
+                ? "京东活动推广链接已生成（通过好单库服务商容灾）"
+                : "京东联盟官方推广链接已生成";
+        return buildExternalPromotion(activity, reqVO, actualAdzoneId, promotionUrl, null, deeplink,
+                linkMessage, attributionStatus, attributionMessage);
     }
 
     private CpsRebateActivityPromotionRespVO generateCsjActivityLink(CpsRebateActivityDO activity,
@@ -1011,7 +1116,8 @@ public class CpsRebateActivityServiceImpl implements CpsRebateActivityService {
                     || "tbopen".equalsIgnoreCase(scheme)
                     || "alipays".equalsIgnoreCase(scheme)
                     || "snssdk1128".equalsIgnoreCase(scheme)
-                    || "imeituan".equalsIgnoreCase(scheme));
+                    || "imeituan".equalsIgnoreCase(scheme)
+                    || "openapp.jdmobile".equalsIgnoreCase(scheme));
         } catch (IllegalArgumentException ignored) {
             return false;
         }

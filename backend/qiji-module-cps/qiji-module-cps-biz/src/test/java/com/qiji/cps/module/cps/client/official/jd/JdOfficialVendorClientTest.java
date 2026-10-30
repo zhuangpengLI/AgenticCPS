@@ -6,11 +6,14 @@ import com.jd.open.api.sdk.response.AbstractResponse;
 import com.qiji.cps.module.cps.client.CpsCouponInfoVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsSearchRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
+import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
 import com.qiji.cps.module.cps.client.dto.CpsOrderQueryRequest;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivityRequest;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -148,6 +151,60 @@ class JdOfficialVendorClientTest {
                 client.methods());
     }
 
+    @Test
+    void routesActivityQueryToTheOfficialSdkEndpoint() {
+        CapturingClient client = new CapturingClient();
+        TestJdOfficialVendorClient vendor = new TestJdOfficialVendorClient(client);
+
+        CpsThirdPartyActivityRequest request = CpsThirdPartyActivityRequest.builder()
+                .pageNo(1)
+                .pageSize(20)
+                .build();
+        vendor.fetchActivities(request, config(Map.of()));
+        assertTrue(client.methods.contains("jd.union.open.activity.query"));
+        assertTrue(vendor.getCapabilities().stream().anyMatch(capability -> "activity_pull".equals(capability.getCode())));
+    }
+
+    @Test
+    void rejectsPromotionLinkWithUpstreamCodeAndMessageWhenJdRejectsSiteId() {
+        CapturingClient client = new CapturingClient();
+        com.jd.open.api.sdk.response.kplunion.UnionOpenPromotionCommonGetResponse response =
+                new com.jd.open.api.sdk.response.kplunion.UnionOpenPromotionCommonGetResponse();
+        response.setCode("0");
+        com.jd.open.api.sdk.domain.kplunion.promotioncommon.PromotionService.response.get.GetResult getResult =
+                new com.jd.open.api.sdk.domain.kplunion.promotioncommon.PromotionService.response.get.GetResult();
+        getResult.setCode(2001701);
+        getResult.setMessage("不支持siteId存在此地址形式推广,只支持网站/APP");
+        response.setGetResult(getResult);
+        client.nextResponse = response;
+
+        TestJdOfficialVendorClient vendor = new TestJdOfficialVendorClient(client);
+
+        CpsPromotionLinkRequest request = new CpsPromotionLinkRequest();
+        request.setItemLink("https://shop.m.jd.com/?shopId=1000376745");
+        request.setAdzoneId("2018437167_4100531328_3107726628");
+
+        CpsPromotionLinkResult result = vendor.generatePromotionLink(request, config(Map.of()));
+        org.junit.jupiter.api.Assertions.assertNotNull(result);
+        org.junit.jupiter.api.Assertions.assertNull(result.getShortUrl());
+        assertEquals("2001701", result.getExtraFields().get("upstreamCode"));
+        assertEquals("不支持siteId存在此地址形式推广,只支持网站/APP", result.getExtraFields().get("upstreamMessage"));
+
+        CpsPromotionLinkRequest propagateRequest = new CpsPromotionLinkRequest();
+        propagateRequest.setItemLink("https://shop.m.jd.com/?shopId=1000376745");
+        propagateRequest.setAdzoneId("2018437167_4100531328_3107726628");
+        propagateRequest.setPropagateVendorError(true);
+        client.nextResponse = response;
+
+        com.qiji.cps.module.cps.client.CpsVendorException ex = org.junit.jupiter.api.Assertions.assertThrows(
+                com.qiji.cps.module.cps.client.CpsVendorException.class,
+                () -> vendor.generatePromotionLink(propagateRequest, config(Map.of()))
+        );
+        assertEquals("2001701", ex.getUpstreamCode());
+        assertEquals("不支持siteId存在此地址形式推广,只支持网站/APP", ex.getUpstreamMessage());
+        assertTrue(ex.getMessage().contains("不支持siteId存在此地址形式推广,只支持网站/APP"));
+    }
+
     private CpsGoodsSearchRequest request(String mode) {
         CpsGoodsSearchRequest request = new CpsGoodsSearchRequest();
         request.setSearchMode(mode);
@@ -182,11 +239,17 @@ class JdOfficialVendorClientTest {
     private static final class CapturingClient implements JdClient {
         private final List<String> methods = new ArrayList<>();
         private String nextCode = "0";
+        private Object nextResponse = null;
 
         @Override
         @SuppressWarnings("unchecked")
         public <T extends AbstractResponse> T execute(JdRequest<T> request) throws Exception {
             methods.add(request.getApiMethod());
+            if (nextResponse != null) {
+                T res = (T) nextResponse;
+                nextResponse = null;
+                return res;
+            }
             T response = request.getResponseClass().getDeclaredConstructor().newInstance();
             response.setCode(nextCode != null ? nextCode : "0");
             nextCode = "0";

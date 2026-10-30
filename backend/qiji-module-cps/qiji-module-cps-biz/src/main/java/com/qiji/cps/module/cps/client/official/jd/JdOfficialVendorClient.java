@@ -3,6 +3,10 @@ package com.qiji.cps.module.cps.client.official.jd;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.jd.open.api.sdk.DefaultJdClient;
 import com.jd.open.api.sdk.JdClient;
+import com.jd.open.api.sdk.domain.kplunion.ActivityService.request.query.ActivityReq;
+import com.jd.open.api.sdk.domain.kplunion.ActivityService.response.query.ActivityResp;
+import com.jd.open.api.sdk.domain.kplunion.ActivityService.response.query.Image;
+import com.jd.open.api.sdk.domain.kplunion.ActivityService.response.query.QueryResult;
 import com.jd.open.api.sdk.domain.kplunion.GoodsService.request.query.GoodsReq;
 import com.jd.open.api.sdk.domain.kplunion.GoodsService.request.query.JFGoodsReq;
 import com.jd.open.api.sdk.domain.kplunion.GoodsService.request.query.RecommendGoodsReq;
@@ -11,6 +15,7 @@ import com.jd.open.api.sdk.domain.kplunion.OrderService.request.query.BonusOrder
 import com.jd.open.api.sdk.domain.kplunion.ChannelService.request.get.ChannelRelationGetReq;
 import com.jd.open.api.sdk.domain.kplunion.UserService.request.get.PidReq;
 import com.jd.open.api.sdk.domain.kplunion.promotioncommon.PromotionService.request.get.PromotionCodeReq;
+import com.jd.open.api.sdk.request.kplunion.UnionOpenActivityQueryRequest;
 import com.jd.open.api.sdk.request.kplunion.UnionOpenCouponQueryRequest;
 import com.jd.open.api.sdk.request.kplunion.UnionOpenGoodsJingfenQueryRequest;
 import com.jd.open.api.sdk.request.kplunion.UnionOpenGoodsQueryRequest;
@@ -29,13 +34,16 @@ import com.jd.open.api.sdk.request.kplunion.UnionOpenCouponGiftStopRequest;
 import com.jd.open.api.sdk.request.kplunion.UnionOpenStatisticsGiftcouponQueryRequest;
 import com.jd.open.api.sdk.request.kplunion.UnionOpenStatisticsRedpacketQueryRequest;
 import com.jd.open.api.sdk.request.kplunion.UnionOpenStatisticsPromotionQueryRequest;
+import com.jd.open.api.sdk.response.kplunion.UnionOpenActivityQueryResponse;
 import com.jd.open.api.sdk.response.kplunion.UnionOpenGoodsQueryResponse;
 import com.jd.open.api.sdk.response.kplunion.UnionOpenOrderRowQueryResponse;
 import com.jd.open.api.sdk.response.kplunion.UnionOpenPromotionCommonGetResponse;
 import com.qiji.cps.module.cps.client.CpsCouponInfoVendorClient;
+import com.qiji.cps.module.cps.client.CpsThirdPartyActivityVendorClient;
 import com.qiji.cps.module.cps.client.CpsVendorCapability;
 import com.qiji.cps.module.cps.client.CpsVendorConfigField;
 import com.qiji.cps.module.cps.client.CpsVendorConfigSchema;
+import com.qiji.cps.module.cps.client.CpsVendorException;
 import com.qiji.cps.module.cps.client.common.AbstractOfficialVendorClient;
 import com.qiji.cps.module.cps.client.dto.CpsCouponInfo;
 import com.qiji.cps.module.cps.client.dto.CpsGoodsItem;
@@ -46,6 +54,10 @@ import com.qiji.cps.module.cps.client.dto.CpsOrderPageResult;
 import com.qiji.cps.module.cps.client.dto.CpsOrderQueryRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkRequest;
 import com.qiji.cps.module.cps.client.dto.CpsPromotionLinkResult;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivity;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyActivityRequest;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyApiCategory;
+import com.qiji.cps.module.cps.client.dto.CpsThirdPartyPage;
 import com.qiji.cps.module.cps.client.dto.CpsVendorConfig;
 import com.qiji.cps.module.cps.enums.CpsPlatformCodeEnum;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +66,7 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -68,7 +81,8 @@ import java.util.Map;
 @Slf4j
 @Component
 public class JdOfficialVendorClient extends AbstractOfficialVendorClient
-        implements CpsCouponInfoVendorClient, JdOfficialManagementClient, JdOfficialExtendedClient {
+        implements CpsCouponInfoVendorClient, JdOfficialManagementClient, JdOfficialExtendedClient,
+                   CpsThirdPartyActivityVendorClient {
 
     /** SDK 的 JSON 解析器要求 JOS 路由以 routerjson 结尾。 */
     private static final String DEFAULT_API_BASE_URL = "https://api.jd.com/routerjson";
@@ -87,6 +101,7 @@ public class JdOfficialVendorClient extends AbstractOfficialVendorClient
     private static final String GIFT_EFFECT_API = "jd.union.open.statistics.giftcoupon.query";
     private static final String RED_PACKET_EFFECT_API = "jd.union.open.statistics.redpacket.query";
     private static final String PROMOTION_EFFECT_API = "jd.union.open.statistics.promotion.query";
+    private static final String ACTIVITY_QUERY_API = "jd.union.open.activity.query";
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
             .withZone(ZoneId.of("Asia/Shanghai"));
 
@@ -100,6 +115,7 @@ public class JdOfficialVendorClient extends AbstractOfficialVendorClient
         return java.util.Set.of(CpsVendorCapability.GOODS_SEARCH, CpsVendorCapability.SELECTION_LIBRARY,
                 CpsVendorCapability.COUPON_QUERY,
                 CpsVendorCapability.PROMOTION_LINK, CpsVendorCapability.ORDER_QUERY,
+                CpsVendorCapability.ACTIVITY_PULL,
                 CpsVendorCapability.CONNECTION_TEST);
     }
 
@@ -554,6 +570,190 @@ public class JdOfficialVendorClient extends AbstractOfficialVendorClient
     }
 
     @Override
+    public CpsThirdPartyPage<CpsThirdPartyActivity> fetchActivities(CpsThirdPartyActivityRequest request,
+                                                                    CpsVendorConfig config) {
+        int pageNo = request != null && request.getPageNo() != null && request.getPageNo() > 0 ? request.getPageNo() : 1;
+        int pageSize = request != null && request.getPageSize() != null && request.getPageSize() > 0 ? request.getPageSize() : 20;
+        String keyword = request != null ? firstNonBlank(request.getKeyword(), request.getCategoryName()) : null;
+
+        if (config == null || !StringUtils.hasText(config.getAppKey()) || !StringUtils.hasText(config.getAppSecret())) {
+            log.warn("[京东联盟官方] 拉取活动缺少必要配置参数: appKey 或 appSecret 为空");
+            return CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                    .category(CpsThirdPartyApiCategory.ACTIVITY_PULL)
+                    .list(Collections.emptyList())
+                    .total(0L)
+                    .pageNo(pageNo)
+                    .pageSize(pageSize)
+                    .build();
+        }
+
+        String activeDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        List<Integer> poolIds = new ArrayList<>();
+        if (request != null && StringUtils.hasText(request.getCategoryName())) {
+            String cat = request.getCategoryName().trim();
+            if (cat.contains("榜单")) {
+                poolIds.add(2);
+            } else if (cat.contains("会场")) {
+                poolIds.add(1);
+            }
+        }
+        if (poolIds.isEmpty()) {
+            poolIds.add(1); // 1: 营销日历热门会场
+            if (pageNo == 1) {
+                poolIds.add(2); // 2: 营销日历热门榜单
+            }
+        }
+
+        List<CpsThirdPartyActivity> activities = new ArrayList<>();
+        long totalCount = 0L;
+
+        try {
+            JdClient client = createClient(config);
+            for (Integer poolId : poolIds) {
+                UnionOpenActivityQueryRequest queryRequest = new UnionOpenActivityQueryRequest();
+                ActivityReq activityReq = new ActivityReq();
+                activityReq.setPageIndex(pageNo);
+                activityReq.setPageSize(pageSize);
+                activityReq.setPoolId(poolId);
+                activityReq.setActiveDate(activeDate);
+                queryRequest.setActivityReq(activityReq);
+
+                UnionOpenActivityQueryResponse queryResponse = client.execute(queryRequest);
+                if (queryResponse != null && queryResponse.getQueryResult() != null) {
+                    QueryResult queryResult = queryResponse.getQueryResult();
+                    if (queryResult.getCode() == 200 && queryResult.getData() != null) {
+                        totalCount = Math.max(totalCount, queryResult.getTotalCount());
+                        for (ActivityResp act : queryResult.getData()) {
+                            if (act == null || act.getId() <= 0) {
+                                continue;
+                            }
+                            CpsThirdPartyActivity parsed = mapToThirdPartyActivity(act, poolId);
+                            if (StringUtils.hasText(keyword)) {
+                                String kw = keyword.trim();
+                                boolean match = (parsed.getActivityName() != null && parsed.getActivityName().contains(kw))
+                                        || (parsed.getShortDesc() != null && parsed.getShortDesc().contains(kw))
+                                        || (parsed.getActivityType() != null && parsed.getActivityType().contains(kw))
+                                        || (parsed.getTagText() != null && parsed.getTagText().contains(kw));
+                                if (!match) {
+                                    continue;
+                                }
+                            }
+                            activities.add(parsed);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[京东联盟官方] 拉取活动异常: {}", e.getMessage(), e);
+        }
+
+        if (totalCount == 0L) {
+            totalCount = activities.size();
+        }
+
+        return CpsThirdPartyPage.<CpsThirdPartyActivity>builder()
+                .category(CpsThirdPartyApiCategory.ACTIVITY_PULL)
+                .list(activities)
+                .total(totalCount)
+                .pageNo(pageNo)
+                .pageSize(pageSize)
+                .nextPageId(activities.size() >= pageSize ? String.valueOf(pageNo + 1) : null)
+                .build();
+    }
+
+    private CpsThirdPartyActivity mapToThirdPartyActivity(ActivityResp act, int poolId) {
+        String mainPic = null;
+        String icon = null;
+        if (act.getImgList() != null && act.getImgList().length > 0) {
+            for (Image img : act.getImgList()) {
+                if (img == null || !StringUtils.hasText(img.getImgUrl())) {
+                    continue;
+                }
+                String name = img.getImgName() != null ? img.getImgName() : "";
+                String wh = img.getWidthHeight() != null ? img.getWidthHeight() : "";
+                if (mainPic == null) {
+                    mainPic = img.getImgUrl();
+                }
+                if (wh.contains("630") || wh.contains("600") || wh.contains("686") || wh.contains("1080*430")
+                        || name.contains("630") || name.contains("600") || name.contains("686") || name.contains("1080")) {
+                    mainPic = img.getImgUrl();
+                }
+                if (wh.contains("100") || wh.contains("350") || name.contains("100") || name.contains("350")) {
+                    icon = img.getImgUrl();
+                }
+            }
+        }
+        if (icon == null) {
+            icon = mainPic;
+        }
+
+        LocalDateTime startTime = act.getStartTime() > 0
+                ? LocalDateTime.ofInstant(Instant.ofEpochMilli(act.getStartTime()), ZoneId.of("Asia/Shanghai"))
+                : null;
+        LocalDateTime endTime = act.getEndTime() > 0
+                ? LocalDateTime.ofInstant(Instant.ofEpochMilli(act.getEndTime()), ZoneId.of("Asia/Shanghai"))
+                : null;
+
+        String jumpUrl = firstNonBlank(act.getUrlM(), act.getUrlPC());
+        String activityType = poolId == 2 ? "热门榜单" : "营销会场";
+        String tagText = poolId == 2 ? "榜单" : "精选会场";
+        String shortDesc = firstNonBlank(act.getAdvantage(), act.getContent(), act.getTitle());
+
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("poolId", poolId);
+        metadata.put("activityId", act.getId());
+        metadata.put("urlM", act.getUrlM());
+        metadata.put("urlPC", act.getUrlPC());
+        metadata.put("actStatus", act.getActStatus());
+        metadata.put("eliteId", act.getEliteId());
+        metadata.put("platform", "jd");
+        metadata.put("supportsList", true);
+        metadata.put("supportsPromotionLink", true);
+        metadata.put("supportsOrders", true);
+        metadata.put("supportsMiniProgram", false);
+        metadata.put("supportsLocalLife", false);
+
+        return CpsThirdPartyActivity.builder()
+                .sourceType(getVendorCode())
+                .externalActivityId("jd:official:" + act.getId())
+                .promotionActivityId(String.valueOf(act.getId()))
+                .activityName(act.getTitle())
+                .activityType(activityType)
+                .platformCode(getPlatformCode())
+                .mainPic(mainPic)
+                .icon(icon)
+                .shortDesc(shortDesc)
+                .rebateDesc("京东官方高额佣金")
+                .billingType("CPS")
+                .promotionCount(0)
+                .tagText(tagText)
+                .jumpType("url")
+                .jumpUrl(jumpUrl)
+                .searchKeyword(act.getTitle())
+                .startTime(startTime)
+                .endTime(endTime)
+                .extraFields(metadata)
+                .vendorMetadata(toJson(metadata))
+                .supportsList(true)
+                .supportsPromotionLink(true)
+                .supportsOrders(true)
+                .supportsMiniProgram(false)
+                .supportsLocalLife(false)
+                .build();
+    }
+
+    private String toJson(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Override
     public boolean testConnection(CpsVendorConfig config) {
         if (config == null || !StringUtils.hasText(config.getAppKey()) || !StringUtils.hasText(config.getAppSecret())) {
             log.warn("[京东联盟官方] 连接测试缺少必要配置参数: appKey 或 appSecret 为空");
@@ -823,6 +1023,15 @@ public class JdOfficialVendorClient extends AbstractOfficialVendorClient
                 UnionOpenOrderRowQueryRequest request = new UnionOpenOrderRowQueryRequest();
                 request.setOrderReq(req);
                 response = client.execute(request);
+            } else if (ACTIVITY_QUERY_API.equals(path)) {
+                ActivityReq req = new ActivityReq();
+                req.setPageIndex(integer(params.get("pageIndex"), 1));
+                req.setPageSize(integer(params.get("pageSize"), 20));
+                req.setPoolId(integer(params.get("poolId"), 1));
+                req.setActiveDate(string(params.get("activeDate")));
+                UnionOpenActivityQueryRequest request = new UnionOpenActivityQueryRequest();
+                request.setActivityReq(req);
+                response = client.execute(request);
             } else {
                 throw new IllegalArgumentException("Unsupported JD API path: " + path);
             }
@@ -845,20 +1054,61 @@ public class JdOfficialVendorClient extends AbstractOfficialVendorClient
 
     @Override
     protected boolean isSuccessResponse(JsonNode root) {
-        if (root == null) {
+        if (root == null || root.isMissingNode()) {
             return false;
         }
-        String code = root.path("code").asText(null);
-        if ("0".equals(code) || "200".equals(code) || "2000".equals(code)) {
-            return true;
-        }
-        for (String name : List.of("queryResult", "getResult", "createResult")) {
+        for (String name : List.of("getResult", "queryResult", "createResult")) {
             JsonNode result = root.path(name);
-            if (result.path("code").asInt(-1) == 0 || result.path("code").asInt(-1) == 200) {
-                return true;
+            if (!result.isMissingNode() && !result.isNull()) {
+                int code = result.path("code").asInt(-1);
+                return code == 0 || code == 200;
             }
         }
-        return false;
+        String code = root.path("code").asText(null);
+        return "0".equals(code) || "200".equals(code) || "2000".equals(code);
+    }
+
+    @Override
+    protected CpsPromotionLinkResult rejectPromotionLink(CpsPromotionLinkRequest request, JsonNode response) {
+        String upstreamCode = null;
+        String upstreamMessage = null;
+        if (response != null) {
+            for (String name : List.of("getResult", "queryResult", "createResult")) {
+                JsonNode result = response.path(name);
+                if (!result.isMissingNode() && !result.isNull()) {
+                    if (result.has("code")) {
+                        upstreamCode = result.path("code").asText(null);
+                    }
+                    if (result.has("message") || result.has("msg")) {
+                        upstreamMessage = firstText(result.path("message"), result.path("msg"));
+                    }
+                    break;
+                }
+            }
+            if (upstreamCode == null) {
+                upstreamCode = response.path("code").asText(null);
+            }
+            if (upstreamMessage == null) {
+                upstreamMessage = firstText(response.path("message"), response.path("msg"), response.path("zh_desc"));
+            }
+        }
+        log.warn("[{}:{}] 转链失败: goodsId={}, upstreamCode={}, upstreamMessage={}",
+                getVendorCode(), getPlatformCode(), request.getGoodsId(), upstreamCode, upstreamMessage);
+        if (request.isPropagateVendorError()) {
+            throw CpsVendorException.upstreamRejected(getVendorCode(), getPlatformCode(),
+                    CpsVendorCapability.PROMOTION_LINK,
+                    upstreamCode, upstreamMessage);
+        }
+        Map<String, Object> extra = new LinkedHashMap<>();
+        if (upstreamCode != null) {
+            extra.put("upstreamCode", upstreamCode);
+        }
+        if (upstreamMessage != null) {
+            extra.put("upstreamMessage", upstreamMessage);
+        }
+        return CpsPromotionLinkResult.builder()
+                .extraFields(extra)
+                .build();
     }
 
     private JsonNode resultNode(JsonNode root, String name) {

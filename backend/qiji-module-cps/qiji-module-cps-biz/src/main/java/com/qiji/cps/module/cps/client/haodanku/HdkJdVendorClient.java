@@ -148,8 +148,12 @@ public class HdkJdVendorClient extends AbstractHdkVendorClient {
     @Override
     protected CpsPromotionLinkResult parsePromotionLinkResponse(JsonNode response) {
         JsonNode data = hdkPayload(response);
+        String shortUrl = data.path("short_url").asText(null);
+        String clickUrl = data.path("click_url").asText(null);
         return CpsPromotionLinkResult.builder()
-                .shortUrl(data.path("short_url").asText(null))
+                .shortUrl(shortUrl)
+                .longUrl(firstNonBlank(clickUrl, shortUrl))
+                .rawPayload(response.toString())
                 .build();
     }
 
